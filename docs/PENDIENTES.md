@@ -21,6 +21,8 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-12 | Familia de iconos base | **F0** | abierta |
 | D-13 | Reserva de regalos sin identidad en modo abierto | F3 | abierta |
 | D-14 | Consentimiento para publicar fotos de terceros en Personas importantes | F2, RGPD | abierta |
+| D-15 | Dominio definitivo: `siquiero.com` está registrado y aparcado | **Bloque 1 de puesta en marcha** | abierta |
+| D-16 | Dónde vive el panel de la pareja: subdominio de la boda o host fijo | **F0.3, F0.4** | abierta |
 
 ---
 
@@ -100,3 +102,24 @@ es solo informativa.
 Son fotos de personas identificables publicadas en una web. Decidir si basta con
 el consentimiento verbal que gestiona la pareja o si conviene un aviso explícito
 en el panel en el momento de subirlas.
+
+### D-15 · Dominio definitivo — **bloquea la compra**
+`siquiero.com` está registrado desde 2001 y aparcado en ParkingCrew, lo que
+normalmente significa que está en venta a precio de negociación. `siquiero.app`
+lo registró alguien en febrero de 2026. `siquiero.net` está libre. El `.es` hay
+que comprobarlo en un registrador.
+**Opciones:** negociar el `.com`, ir a `.es` (que además es el mercado natural del
+producto), o cambiar de nombre. No bloquea el desarrollo, solo el despliegue.
+Ver `PUESTA-EN-MARCHA.md`.
+
+### D-16 · Dónde vive el panel de la pareja — **bloquea F0.3 y F0.4**
+Los requisitos dicen `<slug>.siquiero.com/panel`. Firebase Auth mantiene una lista
+de dominios autorizados para OAuth y no consta que admita comodines; si no los
+admite, el acceso con Google se rompe en cada boda nueva. Los invitados no se ven
+afectados porque entran con `signInWithCustomToken`.
+**Alternativa segura:** panel en un host fijo `app.siquiero.com`, resolviendo la
+boda por el claim del token. Ventajas adicionales: un solo origen OAuth, cookies
+del panel aisladas de los subdominios de las bodas (ver el aviso de Vercel sobre
+la Public Suffix List) y el bundle del panel fuera del dominio de los invitados.
+**Coste:** la pareja pierde entrar por su propio subdominio; se compensa con una
+redirección. Lo decide el spike S-1.

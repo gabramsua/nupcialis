@@ -6,7 +6,11 @@ Lista viva. Se amplía en cada sesión de trabajo.
 (indicar por qué). Las tareas bloqueadas por una decisión abierta llevan su ID de
 `PENDIENTES.md`.
 
-**Fase actual: F0 — Fundaciones**
+**Fase actual: puesta en marcha.** Las tareas de infraestructura previas a F0
+están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
+F0.1 se puede empezar en paralelo, solo necesita el repositorio.
+
+**Fase de desarrollo: F0 — Fundaciones**
 **Progreso F0: 0 / 41**
 
 ---
@@ -28,7 +32,7 @@ Lista viva. Se amplía en cada sesión de trabajo.
 
 > `F0.2.1` está bloqueada por **D-12** (familia de iconos base).
 
-- [!] `F0.2.1` Elegir familia de iconos base y verificar licencia comercial — *bloqueada por D-12*
+- [!] `F0.2.1` Elegir familia de iconos base y verificar licencia comercial — *bloqueada por D-12, la resuelve el spike S-2*
 - [ ] `F0.2.2` Tokens de la paleta semántica fija del panel
 - [ ] `F0.2.3` Estructura de la paleta de marca por boda, con variables CSS por tenant
 - [ ] `F0.2.4` Paleta categórica de 12-16 colores con contraste verificado en claro y oscuro
@@ -42,7 +46,7 @@ Lista viva. Se amplía en cada sesión de trabajo.
 
 ## F0.3 · Multi-tenant
 
-- [ ] `F0.3.1` Servicio de resolución de tenant por `hostname`
+- [!] `F0.3.1` Servicio de resolución de tenant por `hostname` — *depende de D-16 (dónde vive el panel)*
 - [ ] `F0.3.2` Normalización y validación de slug, con lista de reservados
 - [ ] `F0.3.3` Índice `slugs/{slug}` y su lectura pública
 - [ ] `F0.3.4` Servicio de contexto de boda accesible en toda la aplicación
@@ -52,7 +56,7 @@ Lista viva. Se amplía en cada sesión de trabajo.
 
 ## F0.4 · Autenticación
 
-- [ ] `F0.4.1` Firebase Auth con email y contraseña, y Google
+- [!] `F0.4.1` Firebase Auth con email y contraseña, y Google — *depende de D-16*
 - [ ] `F0.4.2` Cloud Function `setUserClaims` con Admin SDK
 - [ ] `F0.4.3` Dos cuentas de owner por boda sobre `ownerUids`
 - [ ] `F0.4.4` Claim `superadmin` y lista blanca de UIDs
@@ -119,3 +123,4 @@ donde toque.
 | Fecha | Qué se hizo |
 |---|---|
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado. |
+| 2026-09-07 | `PUESTA-EN-MARCHA.md`. Cloudflare Pages descartado (sin wildcard). Vercel elegido. `siquiero.com` resulta estar registrado y aparcado: nueva decisión D-15. Riesgo detectado en los dominios autorizados de Firebase Auth: nueva decisión D-16 y spike S-1. |
