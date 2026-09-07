@@ -1,0 +1,50 @@
+# Credenciales y secretos
+src/environments/environment.ts
+src/environments/environment.prod.ts
+**/serviceAccountKey.json
+.env
+.env.*
+!.env.example
+
+# Datos personales de invitados
+scripts/data/
+*.csv
+!docs/**/*.csv
+
+# Node
+/node_modules
+functions/node_modules
+npm-debug.log
+yarn-error.log
+
+# Build
+/dist
+/tmp
+/out-tsc
+functions/lib
+.firebase/
+
+# Angular
+/.angular/cache
+.sass-cache/
+
+# Emuladores
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*-debug.log
+
+# Cobertura y tests
+/coverage
+__screenshots__/
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.history/*
+
+# Sistema
+.DS_Store
+Thumbs.db
