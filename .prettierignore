@@ -1,0 +1,11 @@
+# Ficheros generados: los formatea su generador, no Prettier.
+# Si Prettier los tocara, la comprobación de sincronía del CI
+# (npm run tokens && git diff --exit-code) fallaría sin motivo real.
+src/app/design-system/tokens/_palette.generated.scss
+
+# Artefactos
+dist/
+coverage/
+node_modules/
+.angular/
+package-lock.json
