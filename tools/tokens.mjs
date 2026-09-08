@@ -16,6 +16,7 @@ import { dirname, join } from 'node:path';
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGEN = join(raiz, 'src/app/design-system/tokens/palette.json');
 const DESTINO = join(raiz, 'src/app/design-system/tokens/_palette.generated.scss');
+const DESTINO_TS = join(raiz, 'src/app/design-system/tokens/semantic.generated.ts');
 
 /** WCAG 2.1: 4.5:1 en texto normal, 3:1 en elementos de interfaz. */
 const MIN_TEXTO = 4.5;
@@ -165,6 +166,36 @@ ${bloque('dark')}
 `;
 }
 
+/**
+ * El mapa de estado a icono sale del MISMO palette.json que los colores.
+ * Si estuviera escrito a mano en el componente, alguien acabaría poniendo un
+ * icono distinto para 'confirmado' en algún módulo y la consistencia entre
+ * pantallas —que es justo lo que se prometió en §9.1— se rompería sin que
+ * nadie lo notara.
+ */
+function semanticTs() {
+  const entradas = Object.entries(paleta.semantic).filter(([k]) => !k.startsWith('_'));
+  return `// GENERADO por tools/tokens.mjs — no editar a mano.
+// La fuente de verdad es src/app/design-system/tokens/palette.json.
+
+import type { NpIconName } from '../icons/icon-name.generated';
+
+/** Los cinco estados del vocabulario semántico. Ver docs/REQUISITOS.md §9.1. */
+export type NpStatus =
+${entradas.map(([k]) => `  | '${k}'`).join('\n')};
+
+/** Icono de cada estado. El color nunca viaja solo: esto es la otra mitad. */
+export const NP_STATUS_ICON: Record<NpStatus, NpIconName> = {
+${entradas.map(([k, v]) => `  ${k}: '${v.icon}',`).join('\n')}
+};
+
+/** Para qué sirve cada estado, por si alguien duda al elegir. */
+export const NP_STATUS_MEANING: Record<NpStatus, string> = {
+${entradas.map(([k, v]) => `  ${k}: ${JSON.stringify(v.significado)},`).join('\n')}
+};
+`;
+}
+
 const soloVerificar = process.argv.includes('--check');
 
 if (fallos.length) {
@@ -176,7 +207,9 @@ if (fallos.length) {
 
 if (!soloVerificar) {
   writeFileSync(DESTINO, scss(), 'utf8');
+  writeFileSync(DESTINO_TS, semanticTs(), 'utf8');
   console.log(`Escrito ${DESTINO.replace(raiz + '/', '')}`);
+  console.log(`Escrito ${DESTINO_TS.replace(raiz + '/', '')}`);
 }
 
 const peor = comprobaciones.reduce((a, b) => (a.ratio / a.minimo < b.ratio / b.minimo ? a : b));

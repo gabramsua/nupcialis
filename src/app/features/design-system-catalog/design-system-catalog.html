@@ -1,0 +1,82 @@
+<header>
+  <div>
+    <h1>Sistema visual</h1>
+    <p>
+      Todo el color sale de <code>palette.json</code>. Los iconos, del set curado. Si algo no está
+      aquí, no existe.
+    </p>
+  </div>
+  <button type="button" (click)="cambiarTema()">
+    <np-icon [name]="tema() === 'light' ? 'moon-stars' : 'sun'" />
+    {{ tema() === 'light' ? 'Modo oscuro' : 'Modo claro' }}
+  </button>
+</header>
+
+<section>
+  <h2>Estado</h2>
+  <p class="nota">
+    Paleta fija, igual en todas las bodas. El chip obliga por construcción a que el color lleve
+    icono y texto: no se puede pintar un estado sin etiqueta.
+  </p>
+  <div class="chips">
+    @for (estado of estados; track estado) {
+      <div class="chip-fila">
+        <np-status-chip [status]="estado" [label]="etiquetaEstado[estado]" />
+        <np-status-chip
+          [status]="estado"
+          [label]="etiquetaEstado[estado]"
+          emphasis="strong"
+          [count]="12"
+        />
+        <span class="significado">{{ significado[estado] }}</span>
+      </div>
+    }
+  </div>
+</section>
+
+<section>
+  <h2>Categorías</h2>
+  <p class="nota">
+    Trece tonos equiespaciados en LCh, generados y no elegidos a ojo. Para grupos de invitados,
+    categorías de gasto y hitos del timeline. Sin selector hexadecimal libre.
+  </p>
+  <ul class="muestras">
+    @for (color of categoricos; track color) {
+      <li>
+        <span class="muestra" [style.background]="'var(--np-cat-' + color + ')'"></span>
+        <span>{{ color }}</span>
+      </li>
+    }
+  </ul>
+</section>
+
+<section>
+  <h2>
+    Iconos <small>{{ iconos.length }}</small>
+  </h2>
+  <p class="nota">
+    Dos pesos: <code>regular</code> inactivo, <code>fill</code> activo. Los nombres están tipados,
+    así que uno mal escrito no compila.
+  </p>
+  <ul class="iconos">
+    @for (icono of iconos; track icono[0]) {
+      <li>
+        <np-icon [name]="icono[0]" />
+        <np-icon [name]="icono[0]" weight="fill" />
+        <span>{{ icono[1] }}</span>
+        <code>{{ icono[0] }}</code>
+      </li>
+    }
+  </ul>
+</section>
+
+<section>
+  <h2>Tipografía</h2>
+  <p class="tipo" style="font-size: var(--np-text-3xl)">Nupcialis 3xl</p>
+  <p class="tipo" style="font-size: var(--np-text-2xl)">Nupcialis 2xl</p>
+  <p class="tipo" style="font-size: var(--np-text-xl)">Nupcialis xl</p>
+  <p class="tipo" style="font-size: var(--np-text-lg)">Nupcialis lg</p>
+  <p class="tipo" style="font-size: var(--np-text-base)">Nupcialis base</p>
+  <p class="tipo" style="font-size: var(--np-text-sm)">Nupcialis sm</p>
+  <p class="tipo" style="font-size: var(--np-text-xs)">Nupcialis xs</p>
+</section>

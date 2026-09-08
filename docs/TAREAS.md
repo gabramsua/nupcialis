@@ -11,7 +11,7 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 23 / 46**
+**Progreso F0: 26 / 46**
 
 ---
 
@@ -36,13 +36,13 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.2.2` Paleta semántica fija: confirmado, pendiente, rechazado, atención e informativo, cada una con `fg`, `bg`, `border` y `solid` en claro y oscuro, y con su icono asociado
 - [ ] `F0.2.3` Estructura de la paleta de marca por boda, con variables CSS por tenant
 - [x] `F0.2.4` Paleta categórica de 13 tonos equiespaciados en LCh, generados y no elegidos a ojo. ΔE mínimo 19,1 en claro y 20,0 en oscuro
-- [ ] `F0.2.5` Escala tipográfica y de espaciado
+- [x] `F0.2.5` Escala tipográfica fluida y espaciado en base 4, con área de pulsación mínima de 44 px
 - [x] `F0.2.6` 99 iconos de Phosphor en 8 categorías, compilados en **dos** sprites: 73 para la web pública, 99 para el panel
 - [x] `F0.2.12` Pesos como estado: `regular` inactivo, `fill` activo, ambos en el sprite
 - [x] `F0.2.7` Componente `<np-icon>`, con nombres tipados: un icono mal escrito no compila. Falta el selector visual del panel
-- [ ] `F0.2.8` Componentes base: botón, campo, tarjeta, chip de estado, tabla, modal, aviso, estado vacío
-- [ ] `F0.2.9` Chip de estado con la regla color + icono + texto aplicada por construcción
-- [ ] `F0.2.10` Catálogo del design system en `/dev/ds`, fuera de producción
+- [~] `F0.2.8` Componentes base: hecho el chip de estado. Faltan botón, campo, tarjeta, tabla, modal, aviso y estado vacío
+- [x] `F0.2.9` `<np-status-chip>`: `label` es obligatorio y el icono lo decide el mapa generado desde `palette.json`. No se puede pintar un estado sin texto
+- [x] `F0.2.10` Catálogo en `/dev/ds` con paleta, chips, los 99 iconos y la escala tipográfica, y conmutador de tema claro/oscuro
 - [x] `F0.2.11` `tools/tokens.mjs`: 74 comprobaciones de contraste más la distancia perceptual entre categóricos. Bloqueante en CI, junto con la comprobación de que el SCSS generado está al día
 
 ## F0.3 · Multi-tenant
@@ -141,6 +141,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-08 | Escala tipográfica y de espaciado, `<np-status-chip>` y catálogo del sistema visual en `/dev/ds`. El mapa de estado a icono se genera desde `palette.json`, así que ningún módulo puede decidir que en su pantalla "confirmado" es otro icono.                                                                                        |
 | 2026-09-08 | Sprites de iconos con nombres tipados y `<np-icon>`. Dos sprites, público y panel, con la misma disciplina de reparto que los chunks de JS. Añadido `.nvmrc`.                                                                                                                                                                         |
 | 2026-09-08 | Arrancado F0.2. Paleta en `palette.json` como fuente única, con generador y verificador de contraste. Primer intento de regla para los categóricos era erróneo —pedía separación de luminancia, imposible con 13 tonos— y se cambió por distancia perceptual ΔE en CIELAB. Los colores se generan equiespaciados en LCh, no a ojo.    |
 | 2026-09-08 | **CI run #1: el job `reglas` pasa.** Los ~90 casos de aislamiento verdes contra el emulador real. El job `calidad` falló solo por formato: 13 ficheros anteriores a la instalación de husky nunca habían pasado por Prettier. Corregido.                                                                                              |

@@ -28,7 +28,7 @@
     },
     "pending": {
       "significado": "Pendiente, sin respuesta, sin agradecer",
-      "icon": "clock",
+      "icon": "clock-countdown",
       "light": {
         "fg": "#8a5a00",
         "bg": "#fdf3e0",
