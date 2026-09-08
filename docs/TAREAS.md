@@ -11,17 +11,17 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 1 / 46**
+**Progreso F0: 2 / 46**
 
 ---
 
 ## F0.1 · Proyecto y entornos
 
-- [ ] `F0.1.1` Inicializar proyecto Angular con enrutado, SCSS y TypeScript estricto
-- [ ] `F0.1.2` Configurar Prettier, ESLint y hooks de pre-commit
+- [x] `F0.1.1` Proyecto Angular 22.1.7: enrutado, SCSS, estricto, **zoneless**, Vitest. Compila en 59,6 kB comprimidos
+- [~] `F0.1.2` Prettier configurado por el andamiaje. Faltan ESLint y hooks de pre-commit
 - [ ] `F0.1.3` Crear los tres proyectos de Firebase (`dev`, `staging`, `prod`) en región europea
 - [ ] `F0.1.4` Configuración por entorno sin credenciales en el repositorio
-- [ ] `F0.1.5` Instalar y configurar AngularFire
+- [ ] `F0.1.5` Capa `core/firebase` sobre el SDK modular v12 (sin AngularFire, ver D-17)
 - [ ] `F0.1.6` Levantar emuladores de Firestore, Auth, Functions y Storage
 - [ ] `F0.1.7` Estructura de carpetas de `CLAUDE.md` con ficheros índice
 - [ ] `F0.1.8` Infraestructura de i18n con español como idioma base
@@ -127,5 +127,6 @@ donde toque.
 | Fecha | Qué se hizo |
 |---|---|
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado. |
+| 2026-09-08 | F0.1 arrancado: andamiaje Angular 22 zoneless, compila y cabe de sobra en el presupuesto. Descubierto que AngularFire no soporta Angular 22 (D-17): se usa el SDK modular directo. Node ≥ 22.22.3 y npm ≥ 11 como requisito; `firebase-tools` pasa a instalación global. |
 | 2026-09-08 | Cambio de nombre a **Nupcialis** (`nupcialis.com`, libre). Cerradas D-03, D-12, D-15 y D-16. Spikes S-1, S-2 y S-3 resueltos. Dos riesgos nuevos en §11: tope no documentado de dominios autorizados y aislamiento de cookies entre subdominios. |
 | 2026-09-07 | `PUESTA-EN-MARCHA.md`. Cloudflare Pages descartado (sin wildcard). Vercel elegido. `nupcialis.com` resulta estar registrado y aparcado: nueva decisión D-15. Riesgo detectado en los dominios autorizados de Firebase Auth: nueva decisión D-16 y spike S-1. |
