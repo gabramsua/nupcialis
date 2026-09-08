@@ -1,7 +1,7 @@
-# SiQuiero
+# Nupcialis
 
 SaaS multi-tenant de organización de bodas. Cada pareja tiene su web pública en
-`<slug>.siquiero.com` y un panel privado donde activa y configura sus módulos.
+`<slug>.nupcialis.com` y un panel privado donde activa y configura sus módulos.
 
 ## Documentación
 

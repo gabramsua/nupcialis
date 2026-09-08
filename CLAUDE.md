@@ -1,7 +1,7 @@
-# SiQuiero — Guía del proyecto
+# Nupcialis — Guía del proyecto
 
 SaaS multi-tenant de organización de bodas. Cada pareja tiene su web pública en
-`<slug>.siquiero.com` y un panel privado donde activa y configura sus módulos.
+`<slug>.nupcialis.com` y un panel privado donde activa y configura sus módulos.
 
 ## Antes de tocar código
 
@@ -22,12 +22,14 @@ improvises una tercera versión.
 - **Angular 20+**, componentes standalone, signals, `ChangeDetectionStrategy.OnPush`.
 - **Firebase**: Firestore (una sola base multi-tenant), Auth, Storage, Cloud Functions v2, App Check.
 - **AngularFire** para el acceso desde el cliente.
-- **Hosting del frontal**: plataforma con dominio wildcard `*.siquiero.com` (Cloudflare Pages o Vercel). **No Firebase Hosting**: limita a 20 subdominios por dominio apex.
+- **Hosting del frontal**: plataforma con dominio wildcard `*.nupcialis.com` (Cloudflare Pages o Vercel). **No Firebase Hosting**: limita a 20 subdominios por dominio apex.
 - **Mapas**: Leaflet o MapLibre sobre OpenStreetMap. Enlaces profundos a Google Maps para navegar. Sin clave de Google.
+- **Iconos**: Phosphor (MIT). Solo el set curado, compilado en sprite propio. `regular` = inactivo, `fill` = activo.
+- **Editor de texto enriquecido**: Jodit con `ngx-jodit`, barra acotada y saneado en servidor.
 - **i18n**: toda cadena visible en ficheros de traducción desde el primer commit. Español por defecto.
 - **Tests**: Jasmine/Karma para unidad, `@firebase/rules-unit-testing` contra el emulador para las reglas.
 
-## Las siete reglas de oro
+## Las ocho reglas de oro
 
 Estas no se negocian. Si una tarea parece pedir saltárselas, es que la tarea está mal planteada.
 
@@ -38,6 +40,7 @@ Estas no se negocian. Si una tarea parece pedir saltárselas, es que la tarea es
 5. **Todo HTML del editor de contenidos se sanea en servidor** antes de publicarse. Lo van a ver cientos de invitados.
 6. **La pareja no escribe campos de sistema**: `counters`, `plan`, `status`, `ownerUids`, `slug`, `loginCount`, `quizPlayCount`. Esos los mueve el servidor.
 7. **`giftsReceived` no sale nunca de la sesión de la pareja.** Ni proyección pública, ni exportaciones compartidas, ni logs.
+8. **Al dar de alta una boda hay que autorizar su subdominio en Firebase Auth.** No admite comodines: si `provisionWedding` no llama al Identity Toolkit Admin API, el acceso con Google se rompe en esa boda y solo se descubre cuando la pareja intenta entrar.
 
 Toda regla de seguridad nueva llega acompañada de su test de aislamiento. Sin test, no se mergea.
 

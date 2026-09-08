@@ -1,4 +1,4 @@
-# SiQuiero — Plan de implementación
+# Nupcialis — Plan de implementación
 
 Documento de ejecución. Qué se construye, en qué orden y cuándo se considera
 terminado. El *qué* y el *por qué* están en `REQUISITOS.md`; aquí está el *cómo* y
@@ -45,7 +45,7 @@ vacío, con el aislamiento demostrado por tests.
 - Resolución de tenant por `hostname` con extracción y validación de slug.
 - Índice `slugs/{slug}` y comprobación de reservados.
 - Servicio de contexto de boda accesible en toda la aplicación.
-- Fallback por ruta `siquiero.com/<slug>` para desarrollo local y como plan B.
+- Fallback por ruta `nupcialis.com/<slug>` para desarrollo local y como plan B.
 - Estados `draft`, `active` y `archived`, con su comportamiento en la web pública.
 
 ### F0.4 Autenticación
@@ -151,7 +151,7 @@ y cierra los agradecimientos desde el panel.
 - Planes `basic` y `premium` con módulos por plan.
 - WhatsApp Business API para invitaciones y recordatorios.
 - Plano real de finca como extra.
-- Landing comercial en `siquiero.com`.
+- Landing comercial en `nupcialis.com`.
 
 ---
 

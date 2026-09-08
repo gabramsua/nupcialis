@@ -1,4 +1,4 @@
-# SiQuiero — Puesta en marcha
+# Nupcialis — Puesta en marcha
 
 Todo lo que hay que tener montado **antes** de escribir la primera línea de código
 de F0. Ordenado por dependencias, con quién hace cada cosa.
@@ -8,33 +8,24 @@ Leyenda: **G** = Gabriel (requiere cuenta, tarjeta o decisión) · **C** = Claud
 
 ---
 
-## Antes de nada: tres cosas que han cambiado
+## Antes de nada: tres cosas que condicionan todo
 
-### 1. `siquiero.com` no está libre
+### 1. El nombre es Nupcialis — decidido el 08/09/2026
 
-Consultado el registro el 7 de septiembre de 2026:
+`nupcialis.com` está **libre**, verificado en el registro. Queda comprarlo (B1.1).
 
-| Dominio | Estado |
-|---|---|
-| `siquiero.com` | **Registrado desde 2001**, en Domain.com / Network Solutions, aparcado en ParkingCrew. Renovado hasta el 29/12/2026. Aparcado en ParkingCrew normalmente significa que está en venta. |
-| `siquiero.app` | **Registrado el 17/02/2026**, en Cloudflare. Muy reciente. Puede ser un particular, puede ser alguien con la misma idea. |
-| `siquiero.net` | **Libre** (el registro de Verisign no lo encuentra). |
-| `siquiero.es` | No he podido comprobarlo con fiabilidad: el `.es` no expone RDAP público de forma consistente. Hay que mirarlo en un registrador. |
+El nombre original, SiQuiero, se descartó porque `siquiero.com` lleva registrado
+desde 2001 y está aparcado en ParkingCrew, o sea en venta a precio de negociación
+desconocido, y `siquiero.app` lo registró alguien en febrero de 2026.
 
-Esto no bloquea el desarrollo —el dominio solo hace falta para desplegar— pero sí
-conviene decidirlo pronto, porque el nombre aparece en el producto, en el correo y
-en la marca. Comprar un `.com` aparcado es una negociación: pueden ser 500 € o
-pueden ser 15.000 €, y el precio no se sabe hasta preguntar.
-
-Opciones razonables: negociar el `.com`, tirar de `.es` (que además es el mercado
-natural), o cambiar el nombre. **Decisión D-15.**
+Riesgo asumido: "nupci**alis**" contiene "cialis". Se acepta conscientemente.
 
 ### 2. Cloudflare Pages queda descartado
 
 Cloudflare Pages **no soporta dominios wildcard** y la propia comunidad de
 Cloudflare confirma en 2026 que no lo va a soportar, porque Pages está siendo
 reemplazado por Workers con Static Assets. La alternativa sería desplegar un
-Worker de "puerta de entrada" que intercepte `*.siquiero.com/*` y enrute — con el
+Worker de "puerta de entrada" que intercepte `*.nupcialis.com/*` y enrute — con el
 efecto secundario de que ese Worker también captura subdominios que apuntan a
 otro sitio, lo que hay que ir excluyendo a mano.
 
@@ -42,7 +33,7 @@ Es infraestructura extra que mantener para conseguir lo que Vercel hace de serie
 
 ### 3. Vercel sí lo hace nativo, con dos condiciones
 
-Vercel soporta `*.siquiero.com` de forma nativa y emite certificado por subdominio
+Vercel soporta `*.nupcialis.com` de forma nativa y emite certificado por subdominio
 sobre la marcha. Dos letras pequeñas:
 
 - **Exige usar los nameservers de Vercel** (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`), porque necesita resolver los retos DNS del certificado wildcard. Consecuencia práctica: **no compres el dominio en Cloudflare Registrar**, que obliga a mantener sus propios nameservers.
@@ -57,34 +48,24 @@ importa mucho y se acepta mantener el Worker.
 
 | ID | Decisión | Bloquea | Quién |
 |---|---|---|---|
-| D-15 | Dominio definitivo | Bloque 1 completo | G |
-| D-12 | Familia de iconos base | F0.2, y F0.2 bloquea todo lo demás | G, con comparativa mía |
-| D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | G, tras el spike S-1 |
+| D-15 | Dominio definitivo | Bloque 1 | ✅ `nupcialis.com` |
+| D-12 | Familia de iconos base | F0.2 | ✅ Phosphor |
+| D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | ✅ Subdominio de la boda |
+| D-03 | Editor de texto enriquecido | F1 | ✅ Jodit con `ngx-jodit` |
 
-### D-16 · Dónde vive el panel de la pareja
+**Ninguna decisión bloquea ya el arranque de F0.**
 
-Los requisitos dicen hoy `<slug>.siquiero.com/panel`. Hay un riesgo que conviene
-verificar antes de construirlo: Firebase Auth mantiene una lista de **dominios
-autorizados** para las operaciones de OAuth, y no me consta que admita comodines.
-Si no los admite, el acceso con Google se rompería en cada boda nueva, porque
-habría que dar de alta su subdominio a mano — exactamente el trabajo manual que la
-arquitectura elimina.
+### D-16 · resuelto — el panel se queda en el subdominio de la boda
 
-Los invitados no se ven afectados: entran con `signInWithCustomToken`, que no pasa
-por OAuth.
+Firebase Auth **no admite comodines** en su lista de dominios autorizados, pero
+**sí permite añadirlos por API** (Identity Toolkit Admin v2, con cuenta de
+servicio). `provisionWedding` da de alta `<slug>.nupcialis.com` como un paso más
+del alta, así que la intervención humana sigue siendo cero y la pareja conserva su
+`mariaygabriel.nupcialis.com/panel`.
 
-**Alternativa segura:** el panel de la pareja vive en un host fijo,
-`app.siquiero.com`, resolviendo la boda por el claim del token en lugar de por el
-subdominio. Tiene tres ventajas independientes de este problema:
-
-- Un solo origen de OAuth que autorizar, para siempre.
-- Aísla las cookies del panel de las de los subdominios de las bodas. Vercel avisa de esto: sin una entrada en la Public Suffix List, `boda1.siquiero.com` puede escribir una cookie con `Domain=siquiero.com` que el navegador enviará a `boda2.siquiero.com` y al panel.
-- El bundle del panel deja de estar servido desde el dominio que abren los invitados.
-
-**Coste:** la pareja pierde el "mi boda es `mariaygabriel.siquiero.com` y ahí entro
-yo". Se puede compensar con una redirección desde `<slug>.siquiero.com/panel`.
-
-Lo resuelve el spike **S-1**.
+Dos cabos sueltos que van a `REQUISITOS.md` §11 como riesgos instrumentados: no hay
+límite documentado de dominios autorizados, y sin entrada en la Public Suffix List
+un subdominio de boda puede escribir cookies visibles en otro.
 
 ---
 
@@ -117,7 +98,7 @@ Fuera de esto, el `.com` aparcado si se decide negociarlo.
 
 Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
-- [ ] `B3.1` Crear `siquiero-dev`, `siquiero-staging` y `siquiero-prod`.
+- [ ] `B3.1` Crear `nupcialis-dev`, `nupcialis-staging` y `nupcialis-prod`.
 - [ ] `B3.2` En los tres: Firestore en modo nativo, **región europea** (`eur3` o `europe-west1`). **Esto no se puede cambiar después:** la ubicación de Firestore se fija al crearla.
 - [ ] `B3.3` Activar Storage en la misma región.
 - [ ] `B3.4` Activar Authentication con email/contraseña y Google.
@@ -130,7 +111,7 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 ## Bloque 4 · Hosting y dominios — **G** con mi guion
 
 - [ ] `B4.1` Crear el proyecto en Vercel conectado al repositorio.
-- [ ] `B4.2` Añadir el dominio apex y el wildcard `*.siquiero.com`.
+- [ ] `B4.2` Añadir el dominio apex y el wildcard `*.nupcialis.com`.
 - [ ] `B4.3` Configurar `admin.` y, si se decide D-16, `app.`
 - [ ] `B4.4` Entornos de preview y producción, con sus variables.
 - [ ] `B4.5` Verificar que un subdominio inventado resuelve y sirve la aplicación con HTTPS.
@@ -149,9 +130,9 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
 Pruebas cortas para no construir sobre una suposición. Ninguna pasa de medio día.
 
-- [ ] `S-1` **Dominios autorizados de Firebase Auth.** ¿Admiten comodín? ¿Hay límite de cuántos se pueden dar de alta? Decide D-16. **Es el spike más importante: condiciona dónde vive el panel.**
-- [ ] `S-2` **Comparativa de familias de iconos.** Phosphor, Lucide y Tabler contra la lista real de conceptos de boda del set curado, con licencia y peso. Decide D-12.
-- [ ] `S-3` **Editor de texto enriquecido.** Jodit con `ngx-jodit` frente a una alternativa ligera, midiendo peso en el bundle y saneado. Decide D-03.
+- [x] `S-1` **Dominios autorizados de Firebase Auth.** *Hecho 08/09/2026.* No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
+- [x] `S-2` **Comparativa de familias de iconos.** *Hecho 08/09/2026.* Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
+- [x] `S-3` **Editor de texto enriquecido.** *Cerrado por decisión 08/09/2026:* Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
 - [ ] `S-4` **Wildcard en Vercel de punta a punta.** Desplegar una página mínima y comprobar que tres subdominios inventados resuelven con certificado válido, y cuánto tarda uno nuevo la primera vez.
 - [ ] `S-5` **Coste de la galería.** Estimar almacenamiento y transferencia de una boda de 150 invitados subiendo fotos, para fijar las cuotas por plan.
 

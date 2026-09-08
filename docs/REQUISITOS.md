@@ -1,7 +1,7 @@
-# SiQuiero — Documento de requisitos
+# Nupcialis — Documento de requisitos
 
 **Producto:** plataforma SaaS multi-tenant de organización de bodas, operada por los propios novios.
-**Dominio:** `siquiero.com`, con una web por boda en `<slug>.siquiero.com`.
+**Dominio:** `nupcialis.com`, con una web por boda en `<slug>.nupcialis.com`.
 **Fecha del documento:** 2026-09-07
 **Estado:** requisitos cerrados para Fase 1–4. Las decisiones marcadas como *pendientes* no bloquean el arranque.
 
@@ -9,7 +9,7 @@
 
 ## 1. Visión
 
-Cada pareja que contrata SiQuiero recibe:
+Cada pareja que contrata Nupcialis recibe:
 
 1. Una **web pública de su boda** en su propio subdominio, personalizable dentro de plantillas prediseñadas.
 2. Un **panel de administración privado** donde activan y configuran los módulos que quieren usar.
@@ -21,9 +21,9 @@ El principio rector del sistema es que **la intervención humana del operador se
 
 | Actor | Descripción | Acceso |
 |---|---|---|
-| **Superadmin** | El operador de la plataforma (Gabriel). Da de alta bodas, ve el estado global, resuelve incidencias. | Panel de superadmin en `admin.siquiero.com` |
-| **Pareja (owner)** | Los dos miembros de la pareja. Cada uno con su propia cuenta, ambas sobre la misma boda. | Panel en `<slug>.siquiero.com/panel` |
-| **Invitado** | Persona invitada a la boda. Puede ser identificada o anónima según el modo de acceso configurado. | Web pública en `<slug>.siquiero.com` |
+| **Superadmin** | El operador de la plataforma (Gabriel). Da de alta bodas, ve el estado global, resuelve incidencias. | Panel de superadmin en `admin.nupcialis.com` |
+| **Pareja (owner)** | Los dos miembros de la pareja. Cada uno con su propia cuenta, ambas sobre la misma boda. | Panel en `<slug>.nupcialis.com/panel` |
+| **Invitado** | Persona invitada a la boda. Puede ser identificada o anónima según el modo de acceso configurado. | Web pública en `<slug>.nupcialis.com` |
 | **Visitante anónimo** | Cualquiera con la URL, cuando el modo de acceso es abierto. | Web pública, solo lectura de contenido público |
 
 ---
@@ -40,7 +40,7 @@ El principio rector del sistema es que **la intervención humana del operador se
 | Autenticación | Firebase Auth (email/contraseña y Google para la pareja; custom tokens para invitados) |
 | Ficheros | Firebase Storage, particionado por `weddings/{weddingId}/...` |
 | Lógica de servidor | Cloud Functions for Firebase, solo como pegamento. **Sin backend con framework.** |
-| Hosting del frontal | Plataforma con soporte de **dominio wildcard `*.siquiero.com`** (Cloudflare Pages o Vercel) |
+| Hosting del frontal | Plataforma con soporte de **dominio wildcard `*.nupcialis.com`** (Cloudflare Pages o Vercel) |
 | Alta de bodas | Manual por el superadmin en Fase 1; self-service con pago en Fase 5 |
 | i18n | Infraestructura de traducción desde el primer día, arrancando solo con español |
 | Protección | Firebase App Check obligatorio en Firestore, Storage y Functions |
@@ -57,7 +57,7 @@ El principio rector del sistema es que **la intervención humana del operador se
 ### 2.3 Resolución de tenant
 
 1. La aplicación lee `window.location.hostname` en el arranque.
-2. Extrae el primer segmento como **slug** (`mariaygabriel.siquiero.com` → `mariaygabriel`).
+2. Extrae el primer segmento como **slug** (`mariaygabriel.nupcialis.com` → `mariaygabriel`).
 3. Consulta el índice público `slugs/{slug}` para obtener el `weddingId`.
 4. Carga la proyección pública de la boda y arranca con ese tenant en contexto.
 
@@ -68,7 +68,7 @@ Reglas del slug:
 - **Reservados** y no asignables: `www`, `admin`, `api`, `app`, `panel`, `static`, `cdn`, `mail`, `blog`, `soporte`, `ayuda`, `demo`, `test`, `staging`.
 - Un slug liberado (boda cancelada) queda en cuarentena y no se reasigna automáticamente.
 
-Entornos: `*.dev.siquiero.com` para desarrollo y `*.staging.siquiero.com` para preproducción, cada uno contra su propio proyecto de Firebase.
+Entornos: `*.dev.nupcialis.com` para desarrollo y `*.staging.nupcialis.com` para preproducción, cada uno contra su propio proyecto de Firebase.
 
 ### 2.4 Aplicaciones
 
@@ -76,10 +76,10 @@ Un único proyecto Angular que sirve tres experiencias, resueltas por el host y 
 
 | Superficie | URL | Contenido |
 |---|---|---|
-| Web pública de la boda | `<slug>.siquiero.com/` | Plantilla configurada por la pareja, módulos públicos activos |
-| Panel de la pareja | `<slug>.siquiero.com/panel` | Configuración y herramientas de gestión, requiere sesión de owner |
-| Panel de superadmin | `admin.siquiero.com` | Alta y supervisión de bodas, requiere claim de superadmin |
-| Landing comercial | `siquiero.com` y `www.siquiero.com` | Página de venta del producto |
+| Web pública de la boda | `<slug>.nupcialis.com/` | Plantilla configurada por la pareja, módulos públicos activos |
+| Panel de la pareja | `<slug>.nupcialis.com/panel` | Configuración y herramientas de gestión, requiere sesión de owner |
+| Panel de superadmin | `admin.nupcialis.com` | Alta y supervisión de bodas, requiere claim de superadmin |
+| Landing comercial | `nupcialis.com` y `www.nupcialis.com` | Página de venta del producto |
 
 El bundle del panel se carga de forma diferida: un invitado que abre la web de la boda no debe descargar el código de administración.
 
@@ -98,7 +98,7 @@ El bundle del panel se carga de forma diferida: un invitado que abre la web de l
 ### 3.2 Superadmin
 
 - Claim `{ superadmin: true }`, asignado manualmente fuera de banda a una lista blanca de UIDs.
-- Acceso a todas las bodas, exclusivamente desde `admin.siquiero.com`.
+- Acceso a todas las bodas, exclusivamente desde `admin.nupcialis.com`.
 - Toda acción del superadmin sobre una boda queda registrada en un log de auditoría.
 
 ### 3.3 Invitados — modos de acceso configurables
@@ -140,10 +140,16 @@ Pasos:
    Además se siembran: las **preguntas de fábrica del formulario de RSVP**, un **banco de preguntas de ejemplo del quiz**, la **plantilla de checklist** con fechas relativas a la fecha de la boda y un **grupo por defecto** de audiencia pública.
 4. Crear la proyección pública `weddings/{weddingId}/public/site`.
 5. Crear o localizar las cuentas de Firebase Auth de los dos emails y asignarles los claims.
-6. Enviar a cada miembro de la pareja su enlace de acceso inicial.
-7. Registrar la operación en el log de auditoría.
+6. **Dar de alta `<slug>.nupcialis.com` en los dominios autorizados de Firebase Auth**, mediante el Identity Toolkit Admin API v2 (`PATCH admin/v2/projects/{projectId}/config`) con cuenta de servicio. Firebase Auth no admite comodines ahí, así que sin este paso el acceso con Google no funcionaría en la boda nueva. Es una lectura del listado actual, más el dominio, y un patch del conjunto completo.
+7. Enviar a cada miembro de la pareja su enlace de acceso inicial.
+8. Registrar la operación en el log de auditoría.
 
-**No se toca DNS.** El registro wildcard `*.siquiero.com` ya cubre cualquier subdominio nuevo, y el certificado wildcard también. Este es el motivo de la decisión de hosting de la sección 2.2.
+**No se toca DNS,** pero sí se toca la configuración de Auth. El registro wildcard y
+el certificado ya cubren cualquier subdominio nuevo; lo que no cubre nadie
+automáticamente es la lista de dominios autorizados de Firebase Auth, y por eso el
+paso 6 existe.
+
+**Original:** El registro wildcard `*.nupcialis.com` ya cubre cualquier subdominio nuevo, y el certificado wildcard también. Este es el motivo de la decisión de hosting de la sección 2.2.
 
 Estados de una boda: `draft` → `active` → `archived`. Una boda en `draft` no es visible públicamente aunque su slug resuelva.
 
@@ -491,6 +497,7 @@ Solo como pegamento. Todas con App Check activado.
 |---|---|---|
 | `provisionWedding` | callable (superadmin) | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo) |
 | `setUserClaims` | callable (superadmin) | Asignar o revocar `weddingId` y `role` |
+| `authorizeWeddingDomain` | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch |
 | `guestLogin` | callable (público) | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`** |
 | `addCompanion` | callable (guest) | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'` |
 | `submitRsvp` | callable (guest) | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores |
@@ -600,7 +607,7 @@ Además:
 - Lista de ubicaciones bajo el mapa, ordenable, para quien prefiera leer.
 - Las ubicaciones se enlazan con los eventos del timeline (§8.10), de modo que la agenda del día sabe dónde ocurre cada cosa.
 
-**Elección técnica.** Recomendación: **Leaflet o MapLibre con teselas de OpenStreetMap** para el mapa interactivo, y **enlaces profundos a Google Maps** para la navegación. Motivo: no requiere clave de API ni facturación, no hay coste por carga de mapa, y el invitado acaba igualmente en Google Maps cuando pulsa "Cómo llegar", que es lo que realmente pide el requisito. La alternativa —Maps JavaScript API— exige clave con facturación activada, se paga por carga y obliga a restringir por *referrer*; con subdominios wildcard la restricción tendría que ser `*.siquiero.com/*`, que es tan amplia que protege poco. Si se decide usarla igualmente, la clave debe vivir en configuración de servidor y no en el bundle.
+**Elección técnica.** Recomendación: **Leaflet o MapLibre con teselas de OpenStreetMap** para el mapa interactivo, y **enlaces profundos a Google Maps** para la navegación. Motivo: no requiere clave de API ni facturación, no hay coste por carga de mapa, y el invitado acaba igualmente en Google Maps cuando pulsa "Cómo llegar", que es lo que realmente pide el requisito. La alternativa —Maps JavaScript API— exige clave con facturación activada, se paga por carga y obliga a restringir por *referrer*; con subdominios wildcard la restricción tendría que ser `*.nupcialis.com/*`, que es tan amplia que protege poco. Si se decide usarla igualmente, la clave debe vivir en configuración de servidor y no en el bundle.
 
 ### 8.7 Quiz de la boda
 
@@ -929,7 +936,9 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 | Fuerza bruta sobre los últimos 4 dígitos del teléfono | Medio | Límite de intentos, App Check, respuestas genéricas, log de accesos |
 | Coste de almacenamiento disparado por la galería | Medio | Cuotas por plan, compresión en subida, límites de tamaño en reglas |
 | Alcance del MVP demasiado ancho (los cuatro grupos de módulos entran) | Alto, en plazo | Las fases F1–F4 secuencian la entrega; F1 ya es vendible por sí sola |
-| Dependencia del wildcard del proveedor de hosting | Bajo | El modelo de datos no depende del subdominio; el fallback de rutas `siquiero.com/<slug>` funciona sin migración |
+| Tope no documentado de dominios autorizados en Firebase Auth | Alto si se alcanza: rompe el alta de bodas nuevas | La API no publica límite. Contar los dominios dados de alta, avisar al superadmin en 500 y tener listo el plan B: mover el panel a `app.nupcialis.com` y resolver la boda por el claim |
+| Cookie de un subdominio de boda visible en otro | Medio | Cookies de sesión sin atributo `Domain`, prefijo `__Host-`, `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`. Valorar entrada en la Public Suffix List |
+| Dependencia del wildcard del proveedor de hosting | Bajo | El modelo de datos no depende del subdominio; el fallback de rutas `nupcialis.com/<slug>` funciona sin migración |
 | Fuga del plano de mesas o notas privadas a invitados | Alto | `notes` y datos de gestión nunca entran en la proyección pública |
 | Una foto de un grupo restringido llega a quien no debe | Alto, es una promesa explícita al invitado | `photos` cerrada en reglas; la visibilidad la resuelve siempre `listPhotos`; test de aislamiento por grupo en la batería de reglas |
 | Puntuaciones de quiz falseadas desde la consola | Bajo, pero arruina el juego | Corrección y puntuación en servidor; `quizResults` no admite escritura desde cliente |
@@ -956,7 +965,7 @@ Ninguna bloquea el arranque del desarrollo.
 9. **Autenticación adicional para módulos sensibles en modo A.** Con entrada abierta, ¿qué hacen la galería, el quiz y el libro de firmas? Propuesta a validar: en modo A esos módulos o se desactivan o funcionan en modo anónimo sin ranking nominal ni audiencias por grupo, porque ambas cosas necesitan saber quién es quién.
 10. **Plano real de la finca.** El lienzo de mesas de F2 es genérico a propósito. Reproducir el salón concreto de cada hacienda es un módulo aparte y caro; evaluar como extra de pago en F5.
 11. **¿Puede un invitado jugar al quiz más de una vez?** Está modelado como configurable y el historial guarda todas las partidas; falta decidir el valor por defecto y si el ranking muestra la mejor puntuación o la primera.
-12. **Origen del set de iconos.** Hace falta una familia con licencia comercial clara y cobertura de los conceptos de boda. Candidatas habituales: Phosphor, Lucide, Tabler. Conviene fijarla antes de F0, porque el set curado se dibuja sobre ella.
+12. ~~Origen del set de iconos.~~ **Decidido: Phosphor** (MIT). Única de las tres candidatas que cubre los 50 conceptos del producto, y sus seis pesos sirven como mecanismo de estado: `regular` inactivo, `fill` activo.
 13. **¿La lista de regalos permite reservar sin identificarse?** En modo de acceso abierto no hay identidad, así que una reserva anónima la puede deshacer cualquiera. Propuesta a validar: en modo A la reserva se desactiva y la lista es solo informativa.
 14. **Fotos de personas importantes.** Son fotos de terceros publicadas en una web. Hace falta decidir si basta con el consentimiento verbal que gestiona la pareja o si conviene un aviso explícito en el panel al subirlas.
 
