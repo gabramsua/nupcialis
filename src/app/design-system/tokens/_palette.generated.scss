@@ -1,0 +1,131 @@
+// GENERADO por tools/tokens.mjs — no editar a mano.
+// La fuente de verdad es src/app/design-system/tokens/palette.json.
+// Regenerar con: npm run tokens
+
+:root {
+  --np-surface-canvas: #faf8f6;
+  --np-surface-surface: #ffffff;
+  --np-surface-surface-alt: #f2efec;
+  --np-surface-border: #ddd6d0;
+  --np-surface-text: #241f1c;
+  --np-surface-text-muted: #5f564f;
+  --np-confirmed-fg: #0f6c3f;
+  --np-confirmed-bg: #e6f4ec;
+  --np-confirmed-border: #9ccfb4;
+  --np-confirmed-solid: #158a51;
+  --np-pending-fg: #8a5a00;
+  --np-pending-bg: #fdf3e0;
+  --np-pending-border: #e8c88a;
+  --np-pending-solid: #b8790a;
+  --np-declined-fg: #a3282a;
+  --np-declined-bg: #fceceb;
+  --np-declined-border: #eaa9a7;
+  --np-declined-solid: #c23b3d;
+  --np-attention-fg: #8a4b00;
+  --np-attention-bg: #fdefe2;
+  --np-attention-border: #eebd8e;
+  --np-attention-solid: #c26a12;
+  --np-info-fg: #1f5a8f;
+  --np-info-bg: #e8f1fa;
+  --np-info-border: #a5c7e4;
+  --np-info-solid: #2b74b5;
+  --np-cat-rosa: #e54d69;
+  --np-cat-coral: #d85e3a;
+  --np-cat-teja: #b9740b;
+  --np-cat-mostaza: #8e8600;
+  --np-cat-oliva: #589321;
+  --np-cat-verde: #009a52;
+  --np-cat-esmeralda: #009d86;
+  --np-cat-turquesa: #009cb9;
+  --np-cat-cian: #0098df;
+  --np-cat-celeste: #008df1;
+  --np-cat-azul: #687be9;
+  --np-cat-indigo: #b463ca;
+  --np-cat-ciruela: #db4f9b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-np-theme='light']) {
+    --np-surface-canvas: #16130f;
+    --np-surface-surface: #1f1b17;
+    --np-surface-surface-alt: #2a2521;
+    --np-surface-border: #3d362f;
+    --np-surface-text: #f2ede8;
+    --np-surface-text-muted: #b0a69c;
+    --np-confirmed-fg: #7fd6a8;
+    --np-confirmed-bg: #0e2a1d;
+    --np-confirmed-border: #276b48;
+    --np-confirmed-solid: #2f9e68;
+    --np-pending-fg: #f0c674;
+    --np-pending-bg: #2e2209;
+    --np-pending-border: #7a5b16;
+    --np-pending-solid: #c9911f;
+    --np-declined-fg: #f0a3a1;
+    --np-declined-bg: #33110f;
+    --np-declined-border: #7d2f2d;
+    --np-declined-solid: #c94a48;
+    --np-attention-fg: #f3b277;
+    --np-attention-bg: #301c0a;
+    --np-attention-border: #7d4a18;
+    --np-attention-solid: #cf7a24;
+    --np-info-fg: #8ec2ea;
+    --np-info-bg: #0d2233;
+    --np-info-border: #2a577c;
+    --np-info-solid: #3d86c4;
+    --np-cat-rosa: #f77fa8;
+    --np-cat-coral: #f9837e;
+    --np-cat-teja: #e8905c;
+    --np-cat-mostaza: #c9a04a;
+    --np-cat-oliva: #a1ad4e;
+    --np-cat-verde: #71b668;
+    --np-cat-esmeralda: #23bb8f;
+    --np-cat-turquesa: #00bdba;
+    --np-cat-cian: #00bae0;
+    --np-cat-celeste: #00b3f9;
+    --np-cat-azul: #6ba7ff;
+    --np-cat-indigo: #b297f0;
+    --np-cat-ciruela: #e088d0;
+  }
+}
+
+:root[data-np-theme='dark'] {
+  --np-surface-canvas: #16130f;
+  --np-surface-surface: #1f1b17;
+  --np-surface-surface-alt: #2a2521;
+  --np-surface-border: #3d362f;
+  --np-surface-text: #f2ede8;
+  --np-surface-text-muted: #b0a69c;
+  --np-confirmed-fg: #7fd6a8;
+  --np-confirmed-bg: #0e2a1d;
+  --np-confirmed-border: #276b48;
+  --np-confirmed-solid: #2f9e68;
+  --np-pending-fg: #f0c674;
+  --np-pending-bg: #2e2209;
+  --np-pending-border: #7a5b16;
+  --np-pending-solid: #c9911f;
+  --np-declined-fg: #f0a3a1;
+  --np-declined-bg: #33110f;
+  --np-declined-border: #7d2f2d;
+  --np-declined-solid: #c94a48;
+  --np-attention-fg: #f3b277;
+  --np-attention-bg: #301c0a;
+  --np-attention-border: #7d4a18;
+  --np-attention-solid: #cf7a24;
+  --np-info-fg: #8ec2ea;
+  --np-info-bg: #0d2233;
+  --np-info-border: #2a577c;
+  --np-info-solid: #3d86c4;
+  --np-cat-rosa: #f77fa8;
+  --np-cat-coral: #f9837e;
+  --np-cat-teja: #e8905c;
+  --np-cat-mostaza: #c9a04a;
+  --np-cat-oliva: #a1ad4e;
+  --np-cat-verde: #71b668;
+  --np-cat-esmeralda: #23bb8f;
+  --np-cat-turquesa: #00bdba;
+  --np-cat-cian: #00bae0;
+  --np-cat-celeste: #00b3f9;
+  --np-cat-azul: #6ba7ff;
+  --np-cat-indigo: #b297f0;
+  --np-cat-ciruela: #e088d0;
+}

@@ -1,0 +1,196 @@
+{
+  "_comentario": [
+    "Fuente única de verdad del color. De aquí salen las variables CSS y contra",
+    "esto se verifica el contraste. No escribas hexadecimales en ningún otro",
+    "sitio: si un color no está aquí, no existe. Ver docs/REQUISITOS.md §9.1.",
+    "",
+    "Dos paletas que no se mezclan: la semántica es fija e igual en todas las",
+    "bodas, y manda en el panel. La de marca la elige la pareja y manda en la",
+    "web pública."
+  ],
+  "semantic": {
+    "_comentario": "Estado. Fija, no configurable. Cada entrada lleva su icono y su etiqueta porque el color nunca viaja solo.",
+    "confirmed": {
+      "significado": "Confirmado, hecho, pagado, agradecido",
+      "icon": "check-circle",
+      "light": {
+        "fg": "#0f6c3f",
+        "bg": "#e6f4ec",
+        "border": "#9ccfb4",
+        "solid": "#158a51"
+      },
+      "dark": {
+        "fg": "#7fd6a8",
+        "bg": "#0e2a1d",
+        "border": "#276b48",
+        "solid": "#2f9e68"
+      }
+    },
+    "pending": {
+      "significado": "Pendiente, sin respuesta, sin agradecer",
+      "icon": "clock",
+      "light": {
+        "fg": "#8a5a00",
+        "bg": "#fdf3e0",
+        "border": "#e8c88a",
+        "solid": "#b8790a"
+      },
+      "dark": {
+        "fg": "#f0c674",
+        "bg": "#2e2209",
+        "border": "#7a5b16",
+        "solid": "#c9911f"
+      }
+    },
+    "declined": {
+      "significado": "No asiste, descartado, vencido",
+      "icon": "x-circle",
+      "light": {
+        "fg": "#a3282a",
+        "bg": "#fceceb",
+        "border": "#eaa9a7",
+        "solid": "#c23b3d"
+      },
+      "dark": {
+        "fg": "#f0a3a1",
+        "bg": "#33110f",
+        "border": "#7d2f2d",
+        "solid": "#c94a48"
+      }
+    },
+    "attention": {
+      "significado": "Requiere revisión: aforo fuera de rango, presupuesto desviado, cola de moderación",
+      "icon": "warning",
+      "light": {
+        "fg": "#8a4b00",
+        "bg": "#fdefe2",
+        "border": "#eebd8e",
+        "solid": "#c26a12"
+      },
+      "dark": {
+        "fg": "#f3b277",
+        "bg": "#301c0a",
+        "border": "#7d4a18",
+        "solid": "#cf7a24"
+      }
+    },
+    "info": {
+      "significado": "Informativo, neutro, desactivado",
+      "icon": "info",
+      "light": {
+        "fg": "#1f5a8f",
+        "bg": "#e8f1fa",
+        "border": "#a5c7e4",
+        "solid": "#2b74b5"
+      },
+      "dark": {
+        "fg": "#8ec2ea",
+        "bg": "#0d2233",
+        "border": "#2a577c",
+        "solid": "#3d86c4"
+      }
+    }
+  },
+  "categorical": {
+    "_comentario": "Categoría, no estado: grupos de invitados, categorías de gasto, tipos de proveedor, hitos del timeline. Trece tonos equiespaciados en LCh, generados y no elegidos a ojo, para que ningún par se confunda. La pareja elige de aquí; no hay selector hexadecimal libre.",
+    "colores": [
+      {
+        "id": "rosa",
+        "nombre": "Rosa",
+        "light": "#e54d69",
+        "dark": "#f77fa8"
+      },
+      {
+        "id": "coral",
+        "nombre": "Coral",
+        "light": "#d85e3a",
+        "dark": "#f9837e"
+      },
+      {
+        "id": "teja",
+        "nombre": "Teja",
+        "light": "#b9740b",
+        "dark": "#e8905c"
+      },
+      {
+        "id": "mostaza",
+        "nombre": "Mostaza",
+        "light": "#8e8600",
+        "dark": "#c9a04a"
+      },
+      {
+        "id": "oliva",
+        "nombre": "Oliva",
+        "light": "#589321",
+        "dark": "#a1ad4e"
+      },
+      {
+        "id": "verde",
+        "nombre": "Verde",
+        "light": "#009a52",
+        "dark": "#71b668"
+      },
+      {
+        "id": "esmeralda",
+        "nombre": "Esmeralda",
+        "light": "#009d86",
+        "dark": "#23bb8f"
+      },
+      {
+        "id": "turquesa",
+        "nombre": "Turquesa",
+        "light": "#009cb9",
+        "dark": "#00bdba"
+      },
+      {
+        "id": "cian",
+        "nombre": "Cian",
+        "light": "#0098df",
+        "dark": "#00bae0"
+      },
+      {
+        "id": "celeste",
+        "nombre": "Celeste",
+        "light": "#008df1",
+        "dark": "#00b3f9"
+      },
+      {
+        "id": "azul",
+        "nombre": "Azul",
+        "light": "#687be9",
+        "dark": "#6ba7ff"
+      },
+      {
+        "id": "indigo",
+        "nombre": "Índigo",
+        "light": "#b463ca",
+        "dark": "#b297f0"
+      },
+      {
+        "id": "ciruela",
+        "nombre": "Ciruela",
+        "light": "#db4f9b",
+        "dark": "#e088d0"
+      }
+    ]
+  },
+  "surface": {
+    "_comentario": "Fondos y texto del panel.",
+    "light": {
+      "canvas": "#faf8f6",
+      "surface": "#ffffff",
+      "surfaceAlt": "#f2efec",
+      "border": "#ddd6d0",
+      "text": "#241f1c",
+      "textMuted": "#5f564f"
+    },
+    "dark": {
+      "canvas": "#16130f",
+      "surface": "#1f1b17",
+      "surfaceAlt": "#2a2521",
+      "border": "#3d362f",
+      "text": "#f2ede8",
+      "textMuted": "#b0a69c"
+    }
+  }
+}

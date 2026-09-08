@@ -8,21 +8,23 @@
     "npm": ">=11"
   },
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "test:rules": "firebase emulators:exec --only firestore --project nupcialis-rules-test \"vitest run --config vitest.rules.config.ts\"",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "emulators": "firebase emulators:start",
-    "lint": "ng lint",
     "format": "prettier --write \"**/*.{ts,html,scss,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,html,scss,json,md}\"",
     "icons:build": "node tools/build-icon-sprite.mjs",
-    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
-    "deploy:functions": "firebase deploy --only functions",
+    "lint": "ng lint",
+    "ng": "ng",
     "prepare": "husky",
-    "typecheck:rules": "tsc -p tsconfig.rules.json"
+    "start": "ng serve",
+    "test": "ng test",
+    "test:rules": "firebase emulators:exec --only firestore --project nupcialis-rules-test \"vitest run --config vitest.rules.config.ts\"",
+    "tokens": "node tools/tokens.mjs",
+    "tokens:check": "node tools/tokens.mjs --check",
+    "typecheck:rules": "tsc -p tsconfig.rules.json",
+    "watch": "ng build --watch --configuration development"
   },
   "dependencies": {
     "@angular/common": "^22.1.0",

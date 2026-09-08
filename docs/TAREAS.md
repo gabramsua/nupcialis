@@ -11,7 +11,7 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 17 / 46**
+**Progreso F0: 20 / 46**
 
 ---
 
@@ -33,9 +33,9 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 > `F0.2.1` está bloqueada por **D-12** (familia de iconos base).
 
 - [x] `F0.2.1` Familia de iconos base: **Phosphor** (MIT), elegida con el spike S-2
-- [ ] `F0.2.2` Tokens de la paleta semántica fija del panel
+- [x] `F0.2.2` Paleta semántica fija: confirmado, pendiente, rechazado, atención e informativo, cada una con `fg`, `bg`, `border` y `solid` en claro y oscuro, y con su icono asociado
 - [ ] `F0.2.3` Estructura de la paleta de marca por boda, con variables CSS por tenant
-- [ ] `F0.2.4` Paleta categórica de 12-16 colores con contraste verificado en claro y oscuro
+- [x] `F0.2.4` Paleta categórica de 13 tonos equiespaciados en LCh, generados y no elegidos a ojo. ΔE mínimo 19,1 en claro y 20,0 en oscuro
 - [ ] `F0.2.5` Escala tipográfica y de espaciado
 - [ ] `F0.2.6` Set curado de 80-100 iconos de Phosphor, agrupados por categoría, compilados en sprite SVG propio
 - [ ] `F0.2.12` Convención de pesos como estado: `regular` inactivo, `fill` activo o seleccionado
@@ -43,7 +43,7 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [ ] `F0.2.8` Componentes base: botón, campo, tarjeta, chip de estado, tabla, modal, aviso, estado vacío
 - [ ] `F0.2.9` Chip de estado con la regla color + icono + texto aplicada por construcción
 - [ ] `F0.2.10` Catálogo del design system en `/dev/ds`, fuera de producción
-- [ ] `F0.2.11` Verificación automática de contraste sobre todas las combinaciones ofrecidas
+- [x] `F0.2.11` `tools/tokens.mjs`: 74 comprobaciones de contraste más la distancia perceptual entre categóricos. Bloqueante en CI, junto con la comprobación de que el SCSS generado está al día
 
 ## F0.3 · Multi-tenant
 
@@ -141,6 +141,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-08 | Arrancado F0.2. Paleta en `palette.json` como fuente única, con generador y verificador de contraste. Primer intento de regla para los categóricos era erróneo —pedía separación de luminancia, imposible con 13 tonos— y se cambió por distancia perceptual ΔE en CIELAB. Los colores se generan equiespaciados en LCh, no a ojo.    |
 | 2026-09-08 | **CI run #1: el job `reglas` pasa.** Los ~90 casos de aislamiento verdes contra el emulador real. El job `calidad` falló solo por formato: 13 ficheros anteriores a la instalación de husky nunca habían pasado por Prettier. Corregido.                                                                                              |
 | 2026-09-08 | Batería de aislamiento escrita: 4 ficheros, ~90 casos entre las 14 colecciones parametrizadas y los casos sueltos. CI en GitHub Actions con job de reglas bloqueante. No he podido ejecutarla: el JAR del emulador vive en un host bloqueado por la política de egreso. La ejecuta el CI en el primer push.                           |
 | 2026-09-08 | F0.1 casi cerrado: ESLint, husky, estructura, entornos, i18n en runtime, `firestore.rules` y `storage.rules`, config de emuladores y capa `core/firebase`. Build, lint y tests en verde. Hallazgo gordo: el SDK de Firebase costaba 122 kB comprimidos en el arranque; repartido por rutas el inicial baja de 189,7 a 76,3 kB (D-18). |

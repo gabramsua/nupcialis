@@ -1,1 +1,27 @@
-/* You can add global styles to this file, and also import other style files */
+// Variables de color generadas desde palette.json. Ver tools/tokens.mjs.
+@use './app/design-system/tokens/palette.generated';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  min-block-size: 100dvh;
+  background: var(--np-surface-canvas);
+  color: var(--np-surface-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}

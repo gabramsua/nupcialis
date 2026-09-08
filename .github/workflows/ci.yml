@@ -24,6 +24,14 @@ jobs:
 
       - run: npm ci
 
+      - name: Contraste de la paleta
+        run: npm run tokens:check
+
+      - name: La paleta generada está al día
+        run: |
+          npm run tokens
+          git diff --exit-code -- src/app/design-system/tokens/_palette.generated.scss
+
       - name: Lint
         run: npm run lint
 
