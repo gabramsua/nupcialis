@@ -11,7 +11,7 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 12 / 46**
+**Progreso F0: 17 / 46**
 
 ---
 
@@ -71,11 +71,11 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.5.1` `firestore.rules` completo, denegando por defecto, con `guests` y `photos` cerradas
 - [x] `F0.5.2` `storage.rules` con límites de tamaño y tipos MIME
 - [ ] `F0.5.3` `firestore.indexes.json` con los índices previstos
-- [~] `F0.5.4` Escrito: 14 colecciones × 4 casos, más el documento de la boda. **Sin ejecutar todavía**
-- [~] `F0.5.5` Escrito, junto con photos, quizResults, giftsReceived y guestAccessLog. **Sin ejecutar**
-- [~] `F0.5.6` Escrito. **Sin ejecutar**
-- [~] `F0.5.7` Escrito, incluido el caso de colar un campo de sistema junto a uno legítimo. **Sin ejecutar**
-- [~] `F0.5.8` Escrito. **Sin ejecutar**
+- [x] `F0.5.4` 14 colecciones × 4 casos, más el documento de la boda. Verde en CI
+- [x] `F0.5.5` Junto con photos, quizResults, giftsReceived y guestAccessLog. Verde en CI
+- [x] `F0.5.6` Verde en CI
+- [x] `F0.5.7` Incluido el caso de colar un campo de sistema junto a uno legítimo. Verde en CI
+- [x] `F0.5.8` Verde en CI
 - [x] `F0.5.9` Job `reglas` en CI, bloqueante
 
 ## F0.6 · Provisioning
@@ -115,6 +115,8 @@ Se detallarán al cerrar la fase anterior. El alcance de cada una está en
 
 ## Bloqueadas por el entorno
 
+_(ninguna)_
+
 - [!] `F0.5.V` **Ejecutar la batería de reglas.** _Primer intento fallido: el push
   fue a una rama y el workflow solo disparaba en `main` y en pull requests, así
   que no llegó a correr. Corregido para que dispare en cualquier rama._ Los tests están escritos y pasan
@@ -139,6 +141,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-08 | **CI run #1: el job `reglas` pasa.** Los ~90 casos de aislamiento verdes contra el emulador real. El job `calidad` falló solo por formato: 13 ficheros anteriores a la instalación de husky nunca habían pasado por Prettier. Corregido.                                                                                              |
 | 2026-09-08 | Batería de aislamiento escrita: 4 ficheros, ~90 casos entre las 14 colecciones parametrizadas y los casos sueltos. CI en GitHub Actions con job de reglas bloqueante. No he podido ejecutarla: el JAR del emulador vive en un host bloqueado por la política de egreso. La ejecuta el CI en el primer push.                           |
 | 2026-09-08 | F0.1 casi cerrado: ESLint, husky, estructura, entornos, i18n en runtime, `firestore.rules` y `storage.rules`, config de emuladores y capa `core/firebase`. Build, lint y tests en verde. Hallazgo gordo: el SDK de Firebase costaba 122 kB comprimidos en el arranque; repartido por rutas el inicial baja de 189,7 a 76,3 kB (D-18). |
 | 2026-09-08 | F0.1 arrancado: andamiaje Angular 22 zoneless, compila y cabe de sobra en el presupuesto. Descubierto que AngularFire no soporta Angular 22 (D-17): se usa el SDK modular directo. Node ≥ 22.22.3 y npm ≥ 11 como requisito; `firebase-tools` pasa a instalación global.                                                              |

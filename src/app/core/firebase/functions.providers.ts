@@ -1,4 +1,9 @@
-import { EnvironmentProviders, InjectionToken, inject, makeEnvironmentProviders } from '@angular/core';
+import {
+  EnvironmentProviders,
+  InjectionToken,
+  inject,
+  makeEnvironmentProviders,
+} from '@angular/core';
 import { Functions, connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 import { EMULATORS, FIREBASE_APP, FUNCTIONS_REGION } from './firebase.providers';
 

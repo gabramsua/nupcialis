@@ -1,4 +1,9 @@
-import { EnvironmentProviders, InjectionToken, inject, makeEnvironmentProviders } from '@angular/core';
+import {
+  EnvironmentProviders,
+  InjectionToken,
+  inject,
+  makeEnvironmentProviders,
+} from '@angular/core';
 import { FirebaseStorage, connectStorageEmulator, getStorage } from 'firebase/storage';
 import { EMULATORS, FIREBASE_APP } from './firebase.providers';
 

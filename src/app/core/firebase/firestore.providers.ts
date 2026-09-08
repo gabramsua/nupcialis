@@ -1,4 +1,9 @@
-import { EnvironmentProviders, InjectionToken, inject, makeEnvironmentProviders } from '@angular/core';
+import {
+  EnvironmentProviders,
+  InjectionToken,
+  inject,
+  makeEnvironmentProviders,
+} from '@angular/core';
 import { Firestore, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { EMULATORS, FIREBASE_APP } from './firebase.providers';
 
