@@ -11,7 +11,7 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 27 / 46**
+**Progreso F0: 28 / 46**
 
 ---
 
@@ -47,8 +47,8 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 ## F0.3 · Multi-tenant
 
-- [ ] `F0.3.1` Servicio de resolución de tenant por `hostname`
-- [ ] `F0.3.2` Normalización y validación de slug, con lista de reservados
+- [~] `F0.3.1` `resolverTenant()` puro, con 14 casos cubiertos. Falta enchufarlo a la aplicación
+- [x] `F0.3.2` `normalizarSlug` y `validarSlug` con 29 casos, y 60 reservados en tres familias: superficies, infraestructura y palabras que dan pie a suplantación
 - [ ] `F0.3.3` Índice `slugs/{slug}` y su lectura pública
 - [ ] `F0.3.4` Servicio de contexto de boda accesible en toda la aplicación
 - [ ] `F0.3.5` Fallback por ruta `nupcialis.com/<slug>` para local y plan B
@@ -141,6 +141,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-08 | Arrancado F0.3: slug y resolución de tenant como funciones puras, 43 tests en verde. Los tests cazaron una rama muerta en mi código (la comprobación de punycode, inalcanzable) y una suposición falsa en mi propio test.                                                                                                             |
 | 2026-09-08 | Tablas ordenables como directiva, sin componente de tabla. Comparador con reglas de español: sin `localeCompare('es')`, "Álvarez" se va detrás de "Zurita". Los nombres tipados de iconos cazaron dos que faltaban en el set.                                                                                                         |
 | 2026-09-08 | Componentes base terminados. F0.2 cerrado salvo la paleta de marca por boda, que espera al contexto de tenant. `<np-field>` usaba `::ng-deep`, obsoleto y capaz de escaparse a todo el árbol; cambiado por la directiva `npInput`.                                                                                                    |
 | 2026-09-08 | Escala tipográfica y de espaciado, `<np-status-chip>` y catálogo del sistema visual en `/dev/ds`. El mapa de estado a icono se genera desde `palette.json`, así que ningún módulo puede decidir que en su pantalla "confirmado" es otro icono.                                                                                        |
