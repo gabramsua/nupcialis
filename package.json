@@ -13,7 +13,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:rules": "firebase emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
+    "test:rules": "firebase emulators:exec --only firestore --project nupcialis-rules-test \"vitest run --config vitest.rules.config.ts\"",
     "emulators": "firebase emulators:start",
     "lint": "ng lint",
     "format": "prettier --write \"**/*.{ts,html,scss,json,md}\"",
@@ -21,7 +21,8 @@
     "icons:build": "node tools/build-icon-sprite.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "deploy:functions": "firebase deploy --only functions",
-    "prepare": "husky"
+    "prepare": "husky",
+    "typecheck:rules": "tsc -p tsconfig.rules.json"
   },
   "dependencies": {
     "@angular/common": "^22.1.0",
@@ -50,7 +51,8 @@
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.70.0",
-    "vitest": "^4.0.8"
+    "vitest": "^4.0.8",
+    "@types/node": "^26.5.0"
   },
   "lint-staged": {
     "*.{ts,html,scss,json,md}": [

@@ -39,8 +39,11 @@ module.exports = tseslint.config(
     },
   },
   {
-    // La capa core/firebase es la única que puede importar el SDK.
-    files: ['src/app/core/firebase/**/*.ts'],
+    // Dos excepciones a la regla anterior:
+    //  - core/firebase es la capa que envuelve el SDK.
+    //  - los tests de reglas necesitan el SDK crudo para ejercitarlas: su
+    //    trabajo es precisamente atacar Firestore como lo haría un cliente.
+    files: ['src/app/core/firebase/**/*.ts', 'tests/**/*.ts'],
     rules: { 'no-restricted-imports': 'off' },
   },
   {

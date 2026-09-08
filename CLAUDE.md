@@ -7,12 +7,12 @@ SaaS multi-tenant de organización de bodas. Cada pareja tiene su web pública e
 
 Lee siempre, en este orden:
 
-| Documento | Para qué |
-|---|---|
-| `docs/REQUISITOS.md` | La verdad del producto. Modelo de datos, módulos, reglas de negocio. |
-| `docs/PLAN-IMPLEMENTACION.md` | En qué fase estamos y qué entra en ella. |
-| `docs/TAREAS.md` | Qué hay que hacer ahora. Se actualiza en cada sesión. |
-| `docs/PENDIENTES.md` | Decisiones abiertas. **No las resuelvas por tu cuenta: pregunta.** |
+| Documento                     | Para qué                                                             |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `docs/REQUISITOS.md`          | La verdad del producto. Modelo de datos, módulos, reglas de negocio. |
+| `docs/PLAN-IMPLEMENTACION.md` | En qué fase estamos y qué entra en ella.                             |
+| `docs/TAREAS.md`              | Qué hay que hacer ahora. Se actualiza en cada sesión.                |
+| `docs/PENDIENTES.md`          | Decisiones abiertas. **No las resuelvas por tu cuenta: pregunta.**   |
 
 Si algo que vas a implementar contradice `docs/REQUISITOS.md`, para y dilo. No
 improvises una tercera versión.
@@ -65,8 +65,7 @@ pública no puede arrastrar código del panel**: el invitado abre el enlace desd
 WhatsApp con datos móviles.
 
 **Los servicios de Firebase se proveen por ruta, dentro de ficheros de rutas
-diferidos** (`features/*/`*.routes.ts`), nunca en `app.config.ts` ni en
-`app.routes.ts`. Proveerlos arriba metía 122 kB comprimidos de SDK en el
+diferidos** (`features/*/`*.routes.ts`), nunca en `app.config.ts`ni en`app.routes.ts`. Proveerlos arriba metía 122 kB comprimidos de SDK en el
 arranque. Medido: 189,7 kB con todo arriba frente a 76,3 kB con el reparto por
 rutas. Si añades un servicio de Firebase, va en su propio fichero de
 `core/firebase` y se provee en la ruta que lo usa.
@@ -110,7 +109,8 @@ módulos nativos enormes y multiplica el tiempo de instalación de todo el equip
 npm start                      # ng serve
 npm run build
 npm test                       # unidad (Vitest)
-npm run test:rules             # tests de reglas contra el emulador
+npm run test:rules             # batería de aislamiento contra el emulador
+npm run typecheck:rules        # solo tipos, sin emulador
 firebase emulators:start       # Firestore, Auth, Functions, Storage
 npm run deploy:rules
 npm run deploy:functions

@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # npm 10 revienta instalando este proyecto con un error críptico
+      # (edgesOut) al resolver un peer opcional de Vitest.
+      - name: Fijar npm 11
+        run: npm install -g npm@11
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formato
+        run: npm run format:check
+
+      - name: Tests unitarios
+        run: npm test -- --watch=false
+
+      - name: Build de producción
+        run: npm run build -- --configuration production
+
+  reglas:
+    # Bloqueante a propósito: la batería de aislamiento multi-tenant es lo que
+    # sustituye al aislamiento por bases de datos separadas. Si no pasa, no se
+    # despliega. Ver docs/REQUISITOS.md §6.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm install -g npm@11
+      - run: npm ci
+
+      # No es dependencia del proyecto: arrastra módulos nativos enormes y
+      # multiplicaría el tiempo de instalación de todo el equipo.
+      - name: Instalar firebase-tools
+        run: npm install -g firebase-tools@15
+
+      - name: Comprobar tipos de la batería de reglas
+        run: npx tsc -p tsconfig.rules.json
+
+      - name: Tests de reglas contra el emulador
+        run: npm run test:rules
