@@ -77,7 +77,20 @@ Depende de D-15.
 - [ ] `B1.2` Comprar defensivamente la variante obvia (`.es` si se va a `.com`, o al revés). Son 15 € al año contra el disgusto de que alguien la registre después.
 - [ ] `B1.3` Crear cuenta de Vercel y contratar **Pro**.
 - [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel.
-- [ ] `B1.5` Crear cuenta de Google Cloud con facturación activada. Firebase necesita **plan Blaze** para Cloud Functions; el nivel gratuito sigue aplicándose, pero hace falta tarjeta.
+- [ ] `B1.5` Cuenta de Google para Firebase. **Recomendación: usa tu Gmail actual**,
+      no crees uno vacío. Lo que de verdad da separación no es la cuenta, es esto:
+  - [ ] `B1.5a` **Cuenta de facturación propia** para Nupcialis, separada de la de
+        tus proyectos antiguos. Es lo que impide que una función en bucle aquí
+        toque el presupuesto de otra cosa, y lo que te deja ver el coste real del
+        producto aislado.
+  - [ ] `B1.5b` **Un segundo propietario** en los tres proyectos: otra cuenta de
+        Google que controles. Perder el acceso a la cuenta personal es el modo de
+        fallo que más se subestima y del que peor se sale.
+  - [ ] `B1.5c` Verificación en dos pasos con códigos de recuperación guardados
+        fuera del móvil.
+  - [ ] `B1.5d` Reservar pronto los IDs `nupcialis-dev`, `nupcialis-staging` y
+        `nupcialis-prod`: los identificadores de proyecto son únicos a nivel
+        mundial y no se pueden cambiar después. Firebase necesita **plan Blaze** para Cloud Functions; el nivel gratuito sigue aplicándose, pero hace falta tarjeta.
 - [ ] `B1.6` Decidir el correo de la organización (`hola@`, `soporte@`) — hace falta para el registrador, para Firebase y para las notificaciones.
 
 **Coste recurrente estimado:** Vercel Pro ~20 $/mes, dominio 10-40 €/año, Firebase
@@ -87,7 +100,11 @@ Fuera de esto, el `.com` aparcado si se decide negociarlo.
 ## Bloque 2 · Repositorio — **G** crea, **C** configura
 
 - [x] `B2.1` **G**: repositorio creado en `github.com/gabramsua/nupcialis`.
-- [!] `B2.1b` **G**: **el repositorio es público.** Decidir si es lo que quieres: hoy cualquiera lee `REQUISITOS.md` entero, con el modelo de negocio, la estrategia de dominio, los planes de precio y el razonamiento de seguridad. No hay secretos commiteados —lo he comprobado—, así que no es una fuga, pero sí es tu plan de producto a la vista. Se cambia en Settings → General → Danger Zone.
+- [x] `B2.1b` **G**: **el repositorio se queda público**, decidido el 08/09/2026,
+      de momento y de forma consciente. No hay secretos commiteados. Si algún día
+      se cierra, recordar que el historial ya es público: lo que se subió, subido
+      está.
+- [x] ~~`B2.1c`~~ _(contexto original de la decisión)_: **el repositorio es público.** Decidir si es lo que quieres: hoy cualquiera lee `REQUISITOS.md` entero, con el modelo de negocio, la estrategia de dominio, los planes de precio y el razonamiento de seguridad. No hay secretos commiteados —lo he comprobado—, así que no es una fuga, pero sí es tu plan de producto a la vista. Se cambia en Settings → General → Danger Zone.
 - [x] `B2.2` **C**: remoto añadido. **G** hace los push.
 - [ ] `B2.3` **G**: protección de rama en `main` — sin push directo, revisión antes de fusionar.
 - [ ] `B2.4` **C**: plantilla de pull request con recordatorio de las siete reglas de oro.
