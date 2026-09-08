@@ -39,6 +39,19 @@ module.exports = tseslint.config(
     },
   },
   {
+    // La cabecera ordenable es un componente con selector de ATRIBUTO sobre
+    // <th>, y tiene que serlo: el patrón que recomienda ARIA pone `aria-sort`
+    // en la propia celda de cabecera y el botón dentro. Un componente de
+    // elemento no puede poner ese atributo en su padre sin trucos.
+    files: ['src/app/design-system/components/table/**/*.ts'],
+    rules: {
+      '@angular-eslint/component-selector': [
+        'error',
+        { type: ['element', 'attribute'], prefix: 'np', style: 'camelCase' },
+      ],
+    },
+  },
+  {
     // Dos excepciones a la regla anterior:
     //  - core/firebase es la capa que envuelve el SDK.
     //  - los tests de reglas necesitan el SDK crudo para ejercitarlas: su

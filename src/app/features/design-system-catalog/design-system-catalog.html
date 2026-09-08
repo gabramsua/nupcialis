@@ -178,37 +178,31 @@
     especial y un componente genérico acabaría lleno de escapatorias.
   </p>
   <div class="np-table-scroll">
-    <table class="np-table">
+    <table class="np-table" npSortable [(sort)]="orden">
       <thead>
         <tr>
-          <th>Invitado</th>
-          <th>Grupo</th>
-          <th>Estado</th>
-          <th class="np-num">Accesos</th>
+          <th npSortHeader="nombre">Invitado</th>
+          <th npSortHeader="grupo">Grupo</th>
+          <th npSortHeader="estado">Estado</th>
+          <th npSortHeader="accesos" class="np-num">Accesos</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>María García</td>
-          <td>Familia de la novia</td>
-          <td><np-status-chip status="confirmed" label="Confirmado" /></td>
-          <td class="np-num">4</td>
-        </tr>
-        <tr>
-          <td>Pablo Ruiz</td>
-          <td>Universidad</td>
-          <td><np-status-chip status="pending" label="Sin respuesta" /></td>
-          <td class="np-num">0</td>
-        </tr>
-        <tr>
-          <td>Consuelo Márquez</td>
-          <td>Familia del novio</td>
-          <td><np-status-chip status="declined" label="No asiste" /></td>
-          <td class="np-num">2</td>
-        </tr>
+        @for (fila of filasOrdenadas(); track fila.nombre) {
+          <tr>
+            <td>{{ fila.nombre }}</td>
+            <td>{{ fila.grupo }}</td>
+            <td><np-status-chip [status]="fila.estado" [label]="etiquetaEstado[fila.estado]" /></td>
+            <td class="np-num">{{ fila.accesos }}</td>
+          </tr>
+        }
       </tbody>
     </table>
   </div>
+  <p class="nota">
+    Tres estados por columna: ascendente, descendente y sin ordenar. Prueba con "Álvaro" y "Zoe": el
+    comparador usa reglas de español, así que los acentos y la eñe caen donde deben.
+  </p>
 </section>
 
 <section>

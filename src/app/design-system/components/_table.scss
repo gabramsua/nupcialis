@@ -27,6 +27,20 @@
     letter-spacing: 0.04em;
   }
 
+  .np-sort-th {
+    padding: 0;
+  }
+
+  .np-sort-th button {
+    inline-size: 100%;
+    min-block-size: var(--np-tap-target);
+    padding: var(--np-space-3);
+  }
+
+  .np-sort-th.np-num button {
+    justify-content: flex-end;
+  }
+
   tbody tr:last-child td {
     border-block-end: 0;
   }

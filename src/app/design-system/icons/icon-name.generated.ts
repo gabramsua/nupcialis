@@ -20,6 +20,8 @@ export type NpIconName =
   | 'caret-down'
   | 'caret-left'
   | 'caret-right'
+  | 'caret-up'
+  | 'caret-up-down'
   | 'champagne'
   | 'chart-bar'
   | 'chart-pie-slice'
@@ -190,6 +192,8 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'magnifying-glass': "Buscar",
   'funnel': "Filtrar",
   'dots-three': "Más acciones",
+  'caret-up': "Orden ascendente",
+  'caret-up-down': "Ordenar",
   'caret-down': "Desplegar",
   'caret-right': "Siguiente",
   'caret-left': "Anterior",

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { NpIcon } from '../../design-system/icons/icon';
 import { NP_ICON_LABELS, NpIconName } from '../../design-system/icons/icon-name.generated';
 import { NpStatusChip } from '../../design-system/components/status-chip/status-chip';
@@ -9,6 +9,9 @@ import { NpEmptyState } from '../../design-system/components/empty-state/empty-s
 import { NpField } from '../../design-system/components/field/field';
 import { NpInput } from '../../design-system/components/field/input';
 import { NpModal } from '../../design-system/components/modal/modal';
+import { NpSortHeader } from '../../design-system/components/table/sort-header';
+import { NpSortable } from '../../design-system/components/table/sortable';
+import { NpSortState, npSortRows } from '../../design-system/components/table/sort';
 import {
   NP_STATUS_ICON,
   NP_STATUS_MEANING,
@@ -52,6 +55,8 @@ const ETIQUETAS_ESTADO: Record<NpStatus, string> = {
     NpField,
     NpInput,
     NpModal,
+    NpSortable,
+    NpSortHeader,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './design-system-catalog.html',
@@ -66,6 +71,35 @@ export class DesignSystemCatalog {
   protected readonly tema = signal<'light' | 'dark'>('light');
   protected readonly modalAbierto = signal(false);
   protected readonly cargando = signal(false);
+
+  protected readonly orden = signal<NpSortState | null>(null);
+
+  private readonly filas = [
+    {
+      nombre: 'María García',
+      grupo: 'Familia de la novia',
+      estado: 'confirmed' as NpStatus,
+      accesos: 4,
+    },
+    { nombre: 'Pablo Ruiz', grupo: 'Universidad', estado: 'pending' as NpStatus, accesos: 0 },
+    {
+      nombre: 'Consuelo Márquez',
+      grupo: 'Familia del novio',
+      estado: 'declined' as NpStatus,
+      accesos: 2,
+    },
+    { nombre: 'Álvaro Ñíguez', grupo: 'Universidad', estado: 'confirmed' as NpStatus, accesos: 11 },
+    { nombre: 'Zoe Ibáñez', grupo: 'Trabajo', estado: 'pending' as NpStatus, accesos: 1 },
+  ];
+
+  protected readonly filasOrdenadas = computed(() =>
+    npSortRows(this.filas, this.orden(), {
+      nombre: (f) => f.nombre,
+      grupo: (f) => f.grupo,
+      estado: (f) => this.etiquetaEstado[f.estado],
+      accesos: (f) => f.accesos,
+    }),
+  );
 
   protected simularCarga(): void {
     this.cargando.set(true);
