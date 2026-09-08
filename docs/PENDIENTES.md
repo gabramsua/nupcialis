@@ -254,3 +254,22 @@ en la web pública en absoluto.
 
 **Regla derivada, en `CLAUDE.md`:** ni `app.config.ts` ni `app.routes.ts` pueden
 importar nada de `core/firebase` salvo `provideFirebaseApp`.
+
+### D-19 · Los adaptadores de datos van en `*.firestore.ts` — **DECIDIDA 2026-09-08**
+
+La regla de D-17 decía que `firebase/*` solo se importa en `core/firebase`. Al
+escribir el primer adaptador de datos real se vio que no escala: cada módulo del
+panel va a necesitar sus consultas, y meterlas todas en `core/firebase`
+convertiría esa carpeta en un cajón de sastre que conoce el modelo de datos de
+todo el producto.
+
+**Regla nueva:** el SDK se importa en `core/firebase` y en cualquier fichero con
+sufijo **`.firestore.ts`**. Se mantiene lo que de verdad prometía D-17 —que el
+acoplamiento sea localizable de un `grep`— sin forzar una carpeta única. Y se
+mantiene lo importante: ningún componente ni servicio de funcionalidad importa
+el SDK.
+
+Además, un `.firestore.ts` tiene un trabajo concreto: **es la frontera de
+confianza**. Lo que llega de la base es `unknown` hasta que ahí se comprueba su
+forma. Hacer un `as` y seguir es cómodo hasta el día en que un documento
+antiguo no tiene un campo.

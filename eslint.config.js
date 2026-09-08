@@ -54,9 +54,14 @@ module.exports = tseslint.config(
   {
     // Dos excepciones a la regla anterior:
     //  - core/firebase es la capa que envuelve el SDK.
+    //  - los ficheros `*.firestore.ts` son adaptadores de datos. La regla
+    //    original obligaba a meterlos todos en core/firebase, y eso no escala:
+    //    cada módulo del panel va a necesitar sus consultas. El sufijo mantiene
+    //    la promesa que importa —que el acoplamiento sea localizable de un
+    //    grep— sin forzar una carpeta que acabaría siendo un cajón de sastre.
     //  - los tests de reglas necesitan el SDK crudo para ejercitarlas: su
     //    trabajo es precisamente atacar Firestore como lo haría un cliente.
-    files: ['src/app/core/firebase/**/*.ts', 'tests/**/*.ts'],
+    files: ['src/app/core/firebase/**/*.ts', '**/*.firestore.ts', 'tests/**/*.ts'],
     rules: { 'no-restricted-imports': 'off' },
   },
   {

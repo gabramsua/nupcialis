@@ -11,7 +11,7 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 28 / 46**
+**Progreso F0: 31 / 46**
 
 ---
 
@@ -47,12 +47,12 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 ## F0.3 · Multi-tenant
 
-- [~] `F0.3.1` `resolverTenant()` puro, con 14 casos cubiertos. Falta enchufarlo a la aplicación
+- [x] `F0.3.1` `resolverTenant()` puro y enchufado a la aplicación con un resolver de ruta
 - [x] `F0.3.2` `normalizarSlug` y `validarSlug` con 29 casos, y 60 reservados en tres familias: superficies, infraestructura y palabras que dan pie a suplantación
-- [ ] `F0.3.3` Índice `slugs/{slug}` y su lectura pública
-- [ ] `F0.3.4` Servicio de contexto de boda accesible en toda la aplicación
+- [x] `F0.3.3` Lectura de `slugs/{slug}` y de la proyección pública, tras un puerto que permite probar la lógica sin emulador
+- [~] `F0.3.4` La web pública recibe el tenant resuelto por la ruta. El contexto compartido llega con el panel
 - [ ] `F0.3.5` Fallback por ruta `nupcialis.com/<slug>` para local y plan B
-- [ ] `F0.3.6` Estados `draft`, `active` y `archived` con su efecto en la web pública
+- [x] `F0.3.6` Cinco estados con su pantalla propia: publicada, no publicada, archivada, no encontrada y error
 - [ ] `F0.3.7` Configurar el hosting con wildcard `*.nupcialis.com` en `dev`
 
 ## F0.4 · Autenticación
@@ -141,6 +141,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-08 | Tenant resuelto de punta a punta, con 51 tests. Nueva decisión D-19: los adaptadores de datos van en ficheros `*.firestore.ts`, porque meterlos todos en `core/firebase` no escala.                                                                                                                                                   |
 | 2026-09-08 | Arrancado F0.3: slug y resolución de tenant como funciones puras, 43 tests en verde. Los tests cazaron una rama muerta en mi código (la comprobación de punycode, inalcanzable) y una suposición falsa en mi propio test.                                                                                                             |
 | 2026-09-08 | Tablas ordenables como directiva, sin componente de tabla. Comparador con reglas de español: sin `localeCompare('es')`, "Álvarez" se va detrás de "Zurita". Los nombres tipados de iconos cazaron dos que faltaban en el set.                                                                                                         |
 | 2026-09-08 | Componentes base terminados. F0.2 cerrado salvo la paleta de marca por boda, que espera al contexto de tenant. `<np-field>` usaba `::ng-deep`, obsoleto y capaz de escaparse a todo el árbol; cambiado por la directiva `npInput`.                                                                                                    |
