@@ -120,7 +120,13 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
 ## Bloque 5 · Entorno local — **G**
 
-- [ ] `B5.1` Node LTS (20 o 22).
+- [ ] `B5.1` **Node 22.22.3 o superior** (o 24.15+, o 26+). Angular 22 lo exige y
+      con Node 20 el CLI ni arranca. En Windows: `winget install OpenJS.NodeJS.LTS`,
+      o `fnm`/`nvm-windows` si quieres varias versiones a la vez.
+- [ ] `B5.1b` **npm 11 o superior**, después de instalar Node: `npm i -g npm@11`.
+      Node trae npm 10 de serie, y con npm 10 la instalación de este proyecto
+      falla con un error críptico (`edgesOut`) al resolver un peer de Vitest.
+      Hay que repetirlo cada vez que se cambia de versión de Node.
 - [ ] `B5.2` `npm i -g @angular/cli firebase-tools`.
 - [ ] `B5.3` `firebase login` y comprobar acceso a los tres proyectos.
 - [ ] `B5.4` `gh` autenticado, si quieres que yo pueda crear ramas y PRs.

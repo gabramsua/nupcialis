@@ -96,7 +96,11 @@ Ver `docs/REQUISITOS.md` §9.1. Lo mínimo que hay que respetar:
 
 ## Requisitos de entorno
 
-**Node ≥ 22.22.3 y npm ≥ 11.** Con npm 10 la instalación falla con un error
+**Node ≥ 22.22.3 y npm ≥ 11.** Angular 22 rechaza Node 20 y 21 directamente; los
+tramos válidos son 22.22.3+, 24.15+ y 26+. Al cambiar de versión de Node hay que
+volver a instalar npm 11 (`npm i -g npm@11`) y regenerar `node_modules`, porque
+los binarios nativos se compilan contra la versión de Node con la que se
+instalaron. Con npm 10 la instalación falla con un error
 críptico (`Cannot read properties of null (reading 'edgesOut')`) al resolver un
 peer opcional de Vitest. Si te pasa: `npm install -g npm@11`.
 
