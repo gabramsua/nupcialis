@@ -1,10 +1,23 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+} from '@angular/core';
+import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+
 import { routes } from './app.routes';
+import { provideFirebaseApp } from './core/firebase/firebase.providers';
+import { provideI18n } from './core/i18n/i18n.providers';
+import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes)
-  ]
+    provideZonelessChangeDetection(),
+    provideRouter(routes),
+    provideHttpClient(withFetch()),
+    provideFirebaseApp(environment),
+    provideI18n(),
+  ],
 };

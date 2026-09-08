@@ -24,6 +24,7 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-15 | Dominio definitivo: `nupcialis.com` está registrado y aparcado | **Bloque 1 de puesta en marcha** | abierta |
 | D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | **decidida 2026-09-08: subdominio de la boda** |
 | D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo | F0.1 | **decidida 2026-09-08: SDK modular directo** |
+| D-18 | Cómo se cargan los servicios de Firebase | F0.1 | **decidida 2026-09-08: por ruta, en chunks diferidos** |
 
 ---
 
@@ -210,3 +211,34 @@ versiones mayores por detrás de Angular.
 Ningún componente ni servicio de funcionalidad importa el SDK directamente. Así, si
 algún día aparece AngularFire para Angular 22 o se cambia de backend, hay un solo
 sitio que tocar.
+
+### D-18 · Firebase por ruta, no en el arranque — **DECIDIDA 2026-09-08**
+
+Al montar la capa `core/firebase` con un único `provideFirebase()` en
+`app.config.ts`, el bundle inicial pasó de **59,6 kB a 189,7 kB comprimidos**. El
+presupuesto de la web pública son 200 kB, así que la infraestructura se comía el
+95% antes de escribir una sola pantalla.
+
+Medición por partes:
+
+| Configuración | Inicial comprimido |
+|---|---|
+| Angular 22 zoneless a secas | 59,6 kB |
+| + HttpClient e i18n | 67,9 kB |
+| + SDK de Firebase completo | **189,7 kB** |
+| + SDK repartido por rutas | **76,3 kB** |
+
+El SDK de Firebase cuesta 122 kB comprimidos. La primera solución —`providers` en
+las rutas de `app.routes.ts`— **no funcionó**: ese fichero lo importa
+`app.config.ts` de forma estática, así que el empaquetador arrastraba todo al
+bundle inicial igualmente. Solo funcionó moviendo los `providers` **dentro de
+ficheros de rutas cargados con `loadChildren`**.
+
+Resultado: Firestore (96 kB) y Auth con Storage (18 kB) viajan en chunks
+diferidos. La web pública carga Firestore bajo demanda, unos 172 kB en total,
+dentro de presupuesto pero sin margen alegre. Si aprieta, la salida es servir la
+proyección pública por una Cloud Function cacheada en CDN y no cargar Firestore
+en la web pública en absoluto.
+
+**Regla derivada, en `CLAUDE.md`:** ni `app.config.ts` ni `app.routes.ts` pueden
+importar nada de `core/firebase` salvo `provideFirebaseApp`.

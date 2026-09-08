@@ -64,6 +64,13 @@ Cada módulo del panel se carga con `loadComponent` diferido. **El bundle de la 
 pública no puede arrastrar código del panel**: el invitado abre el enlace desde
 WhatsApp con datos móviles.
 
+**Los servicios de Firebase se proveen por ruta, dentro de ficheros de rutas
+diferidos** (`features/*/`*.routes.ts`), nunca en `app.config.ts` ni en
+`app.routes.ts`. Proveerlos arriba metía 122 kB comprimidos de SDK en el
+arranque. Medido: 189,7 kB con todo arriba frente a 76,3 kB con el reparto por
+rutas. Si añades un servicio de Firebase, va en su propio fichero de
+`core/firebase` y se provee en la ruta que lo usa.
+
 ## Convenciones Angular
 
 - Componentes standalone. No pongas `standalone: true`: es el valor por defecto.

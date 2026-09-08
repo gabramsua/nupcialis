@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "Nupcialis",
+    "tagline": "Vuestra boda, organizada"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar",
+    "loading": "Cargando…",
+    "empty": "Todavía no hay nada aquí",
+    "error": "Algo ha ido mal"
+  },
+  "rsvp": {
+    "status": {
+      "confirmed": "Confirmado",
+      "declined": "No asiste",
+      "pending": "Sin respuesta"
+    }
+  }
+}

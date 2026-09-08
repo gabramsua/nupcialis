@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner(wid) {
+      return request.auth != null
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'owner';
+    }
+
+    function isGuestOf(wid) {
+      return request.auth != null
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'guest';
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
+    }
+
+    match /weddings/{wid}/hero/{file} {
+      allow read: if true;                                   // portada pública
+      allow write: if isOwner(wid) && isImage()
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // La galería no se lee directamente: las URLs las entrega listPhotos, que
+    // es quien decide la visibilidad según el grupo de quien pregunta.
+    match /weddings/{wid}/gallery/{photoId}/{file} {
+      allow read: if false;
+      allow write: if (isGuestOf(wid) || isOwner(wid)) && isImage()
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Contratos de proveedores: privados de la pareja.
+    match /weddings/{wid}/vendors/{vendorId}/{file} {
+      allow read, write: if isOwner(wid)
+                         && request.resource.size < 20 * 1024 * 1024;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,6 +1,9 @@
 # Credenciales y secretos
-src/environments/environment.ts
-src/environments/environment.prod.ts
+# Ojo: los ficheros de src/environments SÍ se versionan. La configuración web de
+# Firebase (apiKey, projectId...) no es un secreto: viaja en el bundle que
+# descarga cualquier invitado. La seguridad la dan las reglas y App Check.
+# Solo se ignoran las sobrescrituras locales.
+src/environments/*.local.ts
 **/serviceAccountKey.json
 .env
 .env.*

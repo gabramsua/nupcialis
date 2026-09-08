@@ -11,22 +11,22 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 2 / 46**
+**Progreso F0: 10 / 46**
 
 ---
 
 ## F0.1 · Proyecto y entornos
 
 - [x] `F0.1.1` Proyecto Angular 22.1.7: enrutado, SCSS, estricto, **zoneless**, Vitest. Compila en 59,6 kB comprimidos
-- [~] `F0.1.2` Prettier configurado por el andamiaje. Faltan ESLint y hooks de pre-commit
+- [x] `F0.1.2` Prettier, ESLint (angular-eslint 22) con regla que prohíbe importar `firebase/*` fuera de `core/firebase`, husky y lint-staged
 - [ ] `F0.1.3` Crear los tres proyectos de Firebase (`dev`, `staging`, `prod`) en región europea
-- [ ] `F0.1.4` Configuración por entorno sin credenciales en el repositorio
-- [ ] `F0.1.5` Capa `core/firebase` sobre el SDK modular v12 (sin AngularFire, ver D-17)
+- [x] `F0.1.4` `src/environments` con los tres entornos y `fileReplacements` en angular.json. Valores de Firebase pendientes de crear los proyectos
+- [x] `F0.1.5` Capa `core/firebase` sobre el SDK modular v12, repartida por rutas (D-17, D-18)
 - [ ] `F0.1.6` Levantar emuladores de Firestore, Auth, Functions y Storage
-- [ ] `F0.1.7` Estructura de carpetas de `CLAUDE.md` con ficheros índice
-- [ ] `F0.1.8` Infraestructura de i18n con español como idioma base
+- [x] `F0.1.7` Estructura de carpetas con READMEs de intención en core, design-system, features y tests/rules
+- [x] `F0.1.8` i18n en runtime con Transloco y `public/i18n/es.json`. Descartado el i18n nativo: compila un bundle por idioma
 - [ ] `F0.1.9` CI: lint, build, tests unitarios y tests de reglas
-- [ ] `F0.1.10` Presupuesto de tamaño de bundle que falla el build al superar 200 KB comprimidos
+- [x] `F0.1.10` Budgets en angular.json a 600 kB de aviso y 800 kB de error en bruto. Estado actual: 76,3 kB comprimidos
 
 ## F0.2 · Sistema visual
 
@@ -68,8 +68,8 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 ## F0.5 · Reglas de seguridad y sus tests
 
-- [ ] `F0.5.1` `firestore.rules` completo, denegando por defecto
-- [ ] `F0.5.2` `storage.rules` con límites de tamaño y tipos MIME
+- [x] `F0.5.1` `firestore.rules` completo, denegando por defecto, con `guests` y `photos` cerradas
+- [x] `F0.5.2` `storage.rules` con límites de tamaño y tipos MIME
 - [ ] `F0.5.3` `firestore.indexes.json` con los índices previstos
 - [ ] `F0.5.4` Test: el owner de A no accede a nada de B, colección por colección
 - [ ] `F0.5.5` Test: un invitado no puede leer la lista de invitados
@@ -127,6 +127,7 @@ donde toque.
 | Fecha | Qué se hizo |
 |---|---|
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado. |
+| 2026-09-08 | F0.1 casi cerrado: ESLint, husky, estructura, entornos, i18n en runtime, `firestore.rules` y `storage.rules`, config de emuladores y capa `core/firebase`. Build, lint y tests en verde. Hallazgo gordo: el SDK de Firebase costaba 122 kB comprimidos en el arranque; repartido por rutas el inicial baja de 189,7 a 76,3 kB (D-18). |
 | 2026-09-08 | F0.1 arrancado: andamiaje Angular 22 zoneless, compila y cabe de sobra en el presupuesto. Descubierto que AngularFire no soporta Angular 22 (D-17): se usa el SDK modular directo. Node ≥ 22.22.3 y npm ≥ 11 como requisito; `firebase-tools` pasa a instalación global. |
 | 2026-09-08 | Cambio de nombre a **Nupcialis** (`nupcialis.com`, libre). Cerradas D-03, D-12, D-15 y D-16. Spikes S-1, S-2 y S-3 resueltos. Dos riesgos nuevos en §11: tope no documentado de dominios autorizados y aislamiento de cookies entre subdominios. |
 | 2026-09-07 | `PUESTA-EN-MARCHA.md`. Cloudflare Pages descartado (sin wildcard). Vercel elegido. `nupcialis.com` resulta estar registrado y aparcado: nueva decisión D-15. Riesgo detectado en los dominios autorizados de Firebase Auth: nueva decisión D-16 y spike S-1. |

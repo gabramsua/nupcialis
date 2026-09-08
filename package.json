@@ -20,7 +20,8 @@
     "format:check": "prettier --check \"**/*.{ts,html,scss,json,md}\"",
     "icons:build": "node tools/build-icon-sprite.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
-    "deploy:functions": "firebase deploy --only functions"
+    "deploy:functions": "firebase deploy --only functions",
+    "prepare": "husky"
   },
   "dependencies": {
     "@angular/common": "^22.1.0",
@@ -29,6 +30,7 @@
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@jsverse/transloco": "^8.4.0",
     "firebase": "^12.18.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -37,11 +39,25 @@
     "@angular/build": "^22.1.7",
     "@angular/cli": "^22.1.7",
     "@angular/compiler-cli": "^22.1.0",
+    "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@phosphor-icons/core": "^2.1.1",
+    "angular-eslint": "^22.5.0",
+    "eslint": "^10.10.0",
+    "husky": "^9.1.7",
     "jsdom": "^28.0.0",
+    "lint-staged": "^17.5.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^4.0.8"
+  },
+  "lint-staged": {
+    "*.{ts,html,scss,json,md}": [
+      "prettier --write"
+    ],
+    "*.{ts,html}": [
+      "eslint --fix"
+    ]
   }
 }
