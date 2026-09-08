@@ -71,6 +71,147 @@
 </section>
 
 <section>
+  <h2>Botones</h2>
+  <p class="nota">
+    Directiva sobre <code>&lt;button&gt;</code> nativo: conserva de balde el foco, el teclado y la
+    semántica. Altura mínima de 44 px.
+  </p>
+  <div class="fila">
+    <button npButton variant="primary">Guardar</button>
+    <button npButton variant="secondary">Cancelar</button>
+    <button npButton variant="ghost">Descartar</button>
+    <button npButton variant="danger">
+      <np-icon name="trash" />
+      Eliminar
+    </button>
+    <button npButton variant="secondary" size="sm">Pequeño</button>
+    <button npButton variant="primary" [disabled]="true">Desactivado</button>
+    <button npButton variant="primary" [loading]="cargando()" (click)="simularCarga()">
+      @if (cargando()) {
+        <np-icon name="spinner-gap" />
+      }
+      {{ cargando() ? 'Guardando…' : 'Pulsa para ver la carga' }}
+    </button>
+  </div>
+</section>
+
+<section>
+  <h2>Avisos</h2>
+  <p class="nota">
+    Mismo trato que el chip: el icono lo decide el estado y siempre hay texto.
+    <code>attention</code> y <code>declined</code> se anuncian solos a los lectores de pantalla.
+  </p>
+  <div class="pila">
+    <np-alert status="info" heading="Modo de acceso abierto">
+      Con entrada abierta no hay identidad, así que el ranking del quiz no puede mostrar nombres.
+    </np-alert>
+    <np-alert status="attention" heading="Mesa por debajo del mínimo">
+      La mesa 4 tiene 3 comensales y su mínimo son 6.
+    </np-alert>
+    <np-alert status="declined" heading="No se pudo enviar">
+      Revisa el teléfono del invitado antes de reintentar.
+    </np-alert>
+    <np-alert status="confirmed">Se han importado 137 invitados.</np-alert>
+  </div>
+</section>
+
+<section>
+  <h2>Formulario</h2>
+  <div class="pila pila--estrecha">
+    <np-field label="Nombre y apellidos" [required]="true" hint="Como aparece en la invitación">
+      <input npInput type="text" placeholder="María García" />
+    </np-field>
+    <np-field label="Teléfono" error="Ese número ya está en la lista de invitados">
+      <input npInput type="tel" value="600 000 000" aria-invalid="true" />
+    </np-field>
+    <np-field label="Alergias e intolerancias" hint="Lo verá el catering">
+      <textarea npInput placeholder="Marisco, frutos secos…"></textarea>
+    </np-field>
+  </div>
+</section>
+
+<section>
+  <h2>Tarjeta, estado vacío y diálogo</h2>
+  <div class="fila fila--arriba">
+    <np-card heading="Resumen">
+      <div class="pila">
+        <np-status-chip status="confirmed" label="Confirmados" [count]="94" />
+        <np-status-chip status="pending" label="Sin respuesta" [count]="31" />
+        <np-status-chip status="declined" label="No asisten" [count]="12" />
+      </div>
+    </np-card>
+
+    <np-card>
+      <np-empty-state
+        icon="users"
+        title="Todavía no hay invitados"
+        description="Cárgalos desde un Excel o añádelos uno a uno. Podrás enviarles el enlace por WhatsApp."
+      >
+        <button npButton variant="primary">
+          <np-icon name="upload-simple" />
+          Importar lista
+        </button>
+      </np-empty-state>
+    </np-card>
+  </div>
+
+  <div class="fila">
+    <button npButton variant="secondary" (click)="modalAbierto.set(true)">Abrir diálogo</button>
+  </div>
+
+  <np-modal heading="Eliminar invitado" [open]="modalAbierto()" (closed)="modalAbierto.set(false)">
+    <p>
+      Se eliminará a María García y a su acompañante. Sus respuestas al formulario se pierden y no
+      se pueden recuperar.
+    </p>
+    <div np-modal-actions>
+      <button npButton variant="ghost" (click)="modalAbierto.set(false)">Cancelar</button>
+      <button npButton variant="danger" (click)="modalAbierto.set(false)">Eliminar</button>
+    </div>
+  </np-modal>
+</section>
+
+<section>
+  <h2>Tabla</h2>
+  <p class="nota">
+    Clase sobre <code>&lt;table&gt;</code> nativa, no componente: cada pantalla necesita su celda
+    especial y un componente genérico acabaría lleno de escapatorias.
+  </p>
+  <div class="np-table-scroll">
+    <table class="np-table">
+      <thead>
+        <tr>
+          <th>Invitado</th>
+          <th>Grupo</th>
+          <th>Estado</th>
+          <th class="np-num">Accesos</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>María García</td>
+          <td>Familia de la novia</td>
+          <td><np-status-chip status="confirmed" label="Confirmado" /></td>
+          <td class="np-num">4</td>
+        </tr>
+        <tr>
+          <td>Pablo Ruiz</td>
+          <td>Universidad</td>
+          <td><np-status-chip status="pending" label="Sin respuesta" /></td>
+          <td class="np-num">0</td>
+        </tr>
+        <tr>
+          <td>Consuelo Márquez</td>
+          <td>Familia del novio</td>
+          <td><np-status-chip status="declined" label="No asiste" /></td>
+          <td class="np-num">2</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
   <h2>Tipografía</h2>
   <p class="tipo" style="font-size: var(--np-text-3xl)">Nupcialis 3xl</p>
   <p class="tipo" style="font-size: var(--np-text-2xl)">Nupcialis 2xl</p>

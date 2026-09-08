@@ -1,6 +1,9 @@
 // Variables de color generadas desde palette.json. Ver tools/tokens.mjs.
 @use './app/design-system/tokens/palette.generated';
 @use './app/design-system/tokens/scale';
+@use './app/design-system/components/button/button';
+@use './app/design-system/components/field/input';
+@use './app/design-system/components/table';
 
 *,
 *::before,

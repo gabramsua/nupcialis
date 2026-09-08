@@ -1,0 +1,45 @@
+// Tabla.
+//
+// Clase, no componente, y es deliberado. Una tabla genérica con columnas
+// configurables acaba siendo un lenguaje de plantillas peor que el de Angular:
+// cada pantalla necesita su celda especial —un chip de estado aquí, un botón
+// allá— y el componente termina lleno de escapatorias. Con una clase, cada
+// pantalla escribe su `<table>` nativa, que además es accesible de serie, y
+// hereda el aspecto.
+.np-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--np-text-sm);
+
+  th,
+  td {
+    padding: var(--np-space-3);
+    border-block-end: 1px solid var(--np-surface-border);
+    text-align: start;
+    vertical-align: middle;
+  }
+
+  th {
+    color: var(--np-surface-text-muted);
+    font-size: var(--np-text-xs);
+    font-weight: var(--np-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  tbody tr:last-child td {
+    border-block-end: 0;
+  }
+
+  // Números alineados para poder compararlos de un vistazo.
+  .np-num {
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+}
+
+// En móvil no se fuerza el zoom: la tabla desplaza dentro de su contenedor.
+.np-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

@@ -134,3 +134,29 @@ section {
   margin-block: var(--np-space-2);
   line-height: var(--np-leading-tight);
 }
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--np-space-3);
+  margin-block-start: var(--np-space-4);
+}
+
+.fila--arriba {
+  align-items: stretch;
+}
+
+.fila--arriba np-card {
+  flex: 1 1 20rem;
+}
+
+.pila {
+  display: grid;
+  gap: var(--np-space-3);
+  margin-block-start: var(--np-space-4);
+}
+
+.pila--estrecha {
+  max-inline-size: 26rem;
+}
