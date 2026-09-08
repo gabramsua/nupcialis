@@ -32,6 +32,11 @@ jobs:
           npm run tokens
           git diff --exit-code -- src/app/design-system/tokens/_palette.generated.scss
 
+      - name: Los iconos generados están al día
+        run: |
+          npm run icons
+          git diff --exit-code -- public/icons src/app/design-system/icons/icon-name.generated.ts
+
       - name: Lint
         run: npm run lint
 

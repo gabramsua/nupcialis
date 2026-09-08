@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
 import { provideFirestore } from '../../core/firebase/firestore.providers';
 import { provideFirebaseFunctions } from '../../core/firebase/functions.providers';
 
@@ -10,7 +11,7 @@ import { provideFirebaseFunctions } from '../../core/firebase/functions.provider
 export const publicSiteRoutes: Routes = [
   {
     path: '',
-    providers: [provideFirestore(), provideFirebaseFunctions()],
+    providers: [provideIconSprite('public'), provideFirestore(), provideFirebaseFunctions()],
     loadComponent: () =>
       import('../../layouts/public-shell/public-shell').then((m) => m.PublicShell),
   },
