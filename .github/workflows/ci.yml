@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # En todas las ramas, no solo en main: si el CI solo corre al fusionar, se
+  # entera del problema quien menos puede arreglarlo y cuando ya es tarde.
   push:
-    branches: [main]
   pull_request:
 
 jobs:

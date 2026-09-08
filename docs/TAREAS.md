@@ -115,7 +115,9 @@ Se detallarán al cerrar la fase anterior. El alcance de cada una está en
 
 ## Bloqueadas por el entorno
 
-- [!] `F0.5.V` **Ejecutar la batería de reglas.** Los tests están escritos y pasan
+- [!] `F0.5.V` **Ejecutar la batería de reglas.** _Primer intento fallido: el push
+  fue a una rama y el workflow solo disparaba en `main` y en pull requests, así
+  que no llegó a correr. Corregido para que dispare en cualquier rama._ Los tests están escritos y pasan
   la comprobación de tipos, pero **no se han ejecutado nunca**. El emulador de
   Firestore descarga su JAR de `storage.googleapis.com`, y ese host está
   bloqueado por la política de egreso tanto en el contenedor como en la máquina

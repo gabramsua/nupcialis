@@ -46,12 +46,12 @@ importa mucho y se acepta mantener el Worker.
 
 ## Bloque 0 · Decisiones que bloquean
 
-| ID | Decisión | Bloquea | Quién |
-|---|---|---|---|
-| D-15 | Dominio definitivo | Bloque 1 | ✅ `nupcialis.com` |
-| D-12 | Familia de iconos base | F0.2 | ✅ Phosphor |
+| ID   | Decisión                         | Bloquea    | Quién                    |
+| ---- | -------------------------------- | ---------- | ------------------------ |
+| D-15 | Dominio definitivo               | Bloque 1   | ✅ `nupcialis.com`       |
+| D-12 | Familia de iconos base           | F0.2       | ✅ Phosphor              |
 | D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | ✅ Subdominio de la boda |
-| D-03 | Editor de texto enriquecido | F1 | ✅ Jodit con `ngx-jodit` |
+| D-03 | Editor de texto enriquecido      | F1         | ✅ Jodit con `ngx-jodit` |
 
 **Ninguna decisión bloquea ya el arranque de F0.**
 
@@ -86,11 +86,12 @@ Fuera de esto, el `.com` aparcado si se decide negociarlo.
 
 ## Bloque 2 · Repositorio — **G** crea, **C** configura
 
-- [ ] `B2.1` **G**: crear el repositorio en GitHub (privado) y pasarme la URL.
-- [ ] `B2.2` **C**: añadir el remoto y subir el trabajo hecho.
+- [x] `B2.1` **G**: repositorio creado en `github.com/gabramsua/nupcialis`.
+- [!] `B2.1b` **G**: **el repositorio es público.** Decidir si es lo que quieres: hoy cualquiera lee `REQUISITOS.md` entero, con el modelo de negocio, la estrategia de dominio, los planes de precio y el razonamiento de seguridad. No hay secretos commiteados —lo he comprobado—, así que no es una fuga, pero sí es tu plan de producto a la vista. Se cambia en Settings → General → Danger Zone.
+- [x] `B2.2` **C**: remoto añadido. **G** hace los push.
 - [ ] `B2.3` **G**: protección de rama en `main` — sin push directo, revisión antes de fusionar.
 - [ ] `B2.4` **C**: plantilla de pull request con recordatorio de las siete reglas de oro.
-- [ ] `B2.5` **C**: workflow de GitHub Actions con lint, build, tests unitarios y **tests de reglas** como bloqueantes.
+- [x] `B2.5` **C**: workflow de GitHub Actions con lint, formato, tests unitarios, build y batería de reglas, en todas las ramas.
 - [ ] `B2.6` **G**: dar de alta los secretos de Actions (tokens de Firebase y Vercel).
 - [ ] `B2.7` **C**: `.env.example` documentando cada variable, sin valores reales.
 
@@ -130,9 +131,9 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
 Pruebas cortas para no construir sobre una suposición. Ninguna pasa de medio día.
 
-- [x] `S-1` **Dominios autorizados de Firebase Auth.** *Hecho 08/09/2026.* No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
-- [x] `S-2` **Comparativa de familias de iconos.** *Hecho 08/09/2026.* Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
-- [x] `S-3` **Editor de texto enriquecido.** *Cerrado por decisión 08/09/2026:* Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
+- [x] `S-1` **Dominios autorizados de Firebase Auth.** _Hecho 08/09/2026._ No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
+- [x] `S-2` **Comparativa de familias de iconos.** _Hecho 08/09/2026._ Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
+- [x] `S-3` **Editor de texto enriquecido.** _Cerrado por decisión 08/09/2026:_ Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
 - [ ] `S-4` **Wildcard en Vercel de punta a punta.** Desplegar una página mínima y comprobar que tres subdominios inventados resuelven con certificado válido, y cuánto tarda uno nuevo la primera vez.
 - [ ] `S-5` **Coste de la galería.** Estimar almacenamiento y transferencia de una boda de 150 invitados subiendo fotos, para fijar las cuotas por plan.
 
