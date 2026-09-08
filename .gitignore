@@ -43,6 +43,9 @@ __screenshots__/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+!.vscode/mcp.json
+!.vscode/tasks.json
+!.vscode/launch.json
 .history/*
 
 # Sistema

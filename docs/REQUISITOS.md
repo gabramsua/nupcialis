@@ -34,7 +34,7 @@ El principio rector del sistema es que **la intervención humana del operador se
 
 | Área | Decisión |
 |---|---|
-| Frontal | Angular (última versión estable), SPA, componentes standalone y signals |
+| Frontal | Angular 22, SPA **zoneless**, componentes standalone y signals |
 | Datos | **Una sola base de datos Firestore** multi-tenant, raíz `weddings/{weddingId}` |
 | Aislamiento | Reglas de seguridad de Firestore + custom claims en el token, **no** bases separadas |
 | Autenticación | Firebase Auth (email/contraseña y Google para la pareja; custom tokens para invitados) |

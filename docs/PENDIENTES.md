@@ -23,6 +23,7 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-14 | Consentimiento para publicar fotos de terceros en Personas importantes | F2, RGPD | abierta |
 | D-15 | Dominio definitivo: `nupcialis.com` está registrado y aparcado | **Bloque 1 de puesta en marcha** | abierta |
 | D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | **decidida 2026-09-08: subdominio de la boda** |
+| D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo | F0.1 | **decidida 2026-09-08: SDK modular directo** |
 
 ---
 
@@ -181,3 +182,31 @@ Sin entrada en la PSL, `boda1.nupcialis.com` puede escribir una cookie con
 `Domain=nupcialis.com` que el navegador enviará a `boda2.nupcialis.com`. Mitigación
 mientras tanto: cookies de sesión sin atributo `Domain`, prefijo `__Host-`,
 `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`.
+
+### D-17 · Sin AngularFire — **DECIDIDA 2026-09-08**
+
+Los requisitos preveían AngularFire. Al fijar versiones aparecieron dos conflictos
+reales, no teóricos:
+
+- **AngularFire 20.0.1 es la última publicada y declara `@angular/core: ^20.0.0`.**
+  No hay versión para Angular 22.
+- **`@firebase/rules-unit-testing` 5 exige `firebase ^12`, y AngularFire arrastra
+  `firebase ^11`.** Los tests de reglas son requisito de release, así que ese
+  conflicto no es negociable.
+
+**Decisión: SDK modular de Firebase v12 directamente**, sin wrapper. Verificado:
+Angular 22 + firebase 12 + rules-unit-testing 5 instalan sin conflictos y la
+aplicación compila.
+
+Lo que se pierde es poco en esta arquitectura: el valor principal de AngularFire
+es la integración con zonas y los observables de conveniencia, y aquí la
+aplicación es **zoneless** y la mayoría de los accesos sensibles van por Cloud
+Functions, no por consultas directas a Firestore.
+
+Lo que se gana: no depender del ritmo de publicación de un wrapper que ya va dos
+versiones mayores por detrás de Angular.
+
+**Regla derivada:** `firebase/*` solo se importa dentro de `src/app/core/firebase`.
+Ningún componente ni servicio de funcionalidad importa el SDK directamente. Así, si
+algún día aparece AngularFire para Angular 22 o se cambia de backend, hay un solo
+sitio que tocar.

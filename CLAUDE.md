@@ -19,15 +19,15 @@ improvises una tercera versión.
 
 ## Stack
 
-- **Angular 20+**, componentes standalone, signals, `ChangeDetectionStrategy.OnPush`.
+- **Angular 22**, **zoneless**, componentes standalone, signals, `ChangeDetectionStrategy.OnPush`.
 - **Firebase**: Firestore (una sola base multi-tenant), Auth, Storage, Cloud Functions v2, App Check.
-- **AngularFire** para el acceso desde el cliente.
+- **SDK modular de Firebase v12 directamente**, sin AngularFire: no existe versión compatible con Angular 22. Los servicios de `core/firebase` envuelven el SDK y son el único sitio donde se importa `firebase/*`.
 - **Hosting del frontal**: plataforma con dominio wildcard `*.nupcialis.com` (Cloudflare Pages o Vercel). **No Firebase Hosting**: limita a 20 subdominios por dominio apex.
 - **Mapas**: Leaflet o MapLibre sobre OpenStreetMap. Enlaces profundos a Google Maps para navegar. Sin clave de Google.
 - **Iconos**: Phosphor (MIT). Solo el set curado, compilado en sprite propio. `regular` = inactivo, `fill` = activo.
 - **Editor de texto enriquecido**: Jodit con `ngx-jodit`, barra acotada y saneado en servidor.
 - **i18n**: toda cadena visible en ficheros de traducción desde el primer commit. Español por defecto.
-- **Tests**: Jasmine/Karma para unidad, `@firebase/rules-unit-testing` contra el emulador para las reglas.
+- **Tests**: **Vitest** para unidad, `@firebase/rules-unit-testing` contra el emulador para las reglas.
 
 ## Las ocho reglas de oro
 
@@ -88,12 +88,21 @@ Ver `docs/REQUISITOS.md` §9.1. Lo mínimo que hay que respetar:
 - Iconos, solo del set curado. Si falta uno, se añade al set; no se importa suelto de otra librería.
 - El panel se diseña primero para móvil.
 
+## Requisitos de entorno
+
+**Node ≥ 22.22.3 y npm ≥ 11.** Con npm 10 la instalación falla con un error
+críptico (`Cannot read properties of null (reading 'edgesOut')`) al resolver un
+peer opcional de Vitest. Si te pasa: `npm install -g npm@11`.
+
+`firebase-tools` se instala **global**, no como dependencia del proyecto: arrastra
+módulos nativos enormes y multiplica el tiempo de instalación de todo el equipo.
+
 ## Comandos
 
 ```bash
 npm start                      # ng serve
 npm run build
-npm test                       # unidad
+npm test                       # unidad (Vitest)
 npm run test:rules             # tests de reglas contra el emulador
 firebase emulators:start       # Firestore, Auth, Functions, Storage
 npm run deploy:rules
