@@ -149,8 +149,12 @@ en el panel en el momento de subirlas.
 
 ### D-15 · Dominio definitivo — **DECIDIDA 2026-09-08: `nupcialis.com`**
 
-Verificado libre en el registro el 07/09/2026. Queda pendiente comprarlo (bloque
-B1.1) y registrar defensivamente `nupcialis.es`.
+**Comprado el 09/09/2026 en Hostalia.** 0,59 € el primer año, 12,99 € + IVA de
+renovación. Queda registrar `nupcialis.es` de forma defensiva, que allí es gratis
+el primer año.
+
+Registrador elegido tras verificar que Hostalia permite apuntar los nameservers
+a Vercel, que era el único requisito técnico duro. Ver `PUESTA-EN-MARCHA.md`.
 
 Riesgo asumido y consciente: la cadena "nupci**alis**" contiene "cialis", marca
 farmacéutica muy conocida. Es previsible que alguien haga la broma. Se acepta.

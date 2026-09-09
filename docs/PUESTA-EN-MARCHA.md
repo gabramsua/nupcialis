@@ -73,10 +73,30 @@ un subdominio de boda puede escribir cookies visibles en otro.
 
 Depende de D-15.
 
-- [ ] `B1.1` Decidir el dominio y comprarlo. **No en Cloudflare Registrar**, que obliga a sus nameservers y rompería el wildcard de Vercel. Registradores neutros: Porkbun, Namecheap, Dynadot. O directamente en Vercel, que además regala el primer año con Pro.
-- [ ] `B1.2` Comprar defensivamente la variante obvia (`.es` si se va a `.com`, o al revés). Son 15 € al año contra el disgusto de que alguien la registre después.
+- [x] `B1.1` **`nupcialis.com` comprado en Hostalia el 09/09/2026.** 0,59 € el primer
+      año; **la renovación son 12,99 € + IVA**, unos 15,7 €.
+- [ ] `B1.1a` Activar **renovación automática**. Perder el dominio por un descuido
+      de quince euros sería un desastre desproporcionado.
+- [ ] `B1.1b` Comprobar y activar la **privacidad WHOIS** del `.com`. Sin ella, tu
+      nombre y tu dirección quedan en un registro público que rastrean los
+      spammers.
+- [ ] `B1.2` Registrar `nupcialis.es`, que en Hostalia es **gratis el primer año**
+      y 6,99 € + IVA después. Los `.es` no publican datos de particulares, así que
+      ahí no hace falta privacidad.
+
+> **Por qué Hostalia y no Porkbun.** La recomendación original era "no compres el
+> dominio en tu proveedor de hosting", y el hosting aquí es Vercel; Hostalia es
+> solo el registrador, así que el acoplamiento que preocupaba no aplica.
+> Verificado el 09/09/2026 lo único que era un "no" técnico: **Hostalia permite
+> cambiar los servidores DNS a nameservers externos desde su panel**, sin
+> restricciones ni coste, que es lo que exige el wildcard de Vercel. La
+> diferencia de precio frente a un registrador especialista son tres o cuatro
+> euros al año.
+
 - [ ] `B1.3` Crear cuenta de Vercel y contratar **Pro**.
-- [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel.
+- [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel desde el panel de
+      Hostalia: `ns1.vercel-dns.com` y `ns2.vercel-dns.com`. **La propagación
+      tarda entre 24 y 48 horas**: no te asustes si a los diez minutos no va.
 - [ ] `B1.5` Cuenta de Google para Firebase. **Recomendación: usa tu Gmail actual**,
       no crees uno vacío. Lo que de verdad da separación no es la cuenta, es esto:
   - [ ] `B1.5a` **Cuenta de facturación propia** para Nupcialis, separada de la de
