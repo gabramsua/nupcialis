@@ -120,6 +120,33 @@ npm run deploy:rules
 npm run deploy:functions
 ```
 
+### Ciclo de trabajo en local
+
+Tres terminales, o dos si no vas a tocar los datos:
+
+```bash
+npm run emulators   # Firestore, Auth, Storage y Functions
+npm run seed        # cuatro bodas de ejemplo, una por estado
+npm start           # la aplicación
+```
+
+Y entra por **subdominio**, no por `localhost` a secas: los navegadores resuelven
+`*.localhost` solos, sin tocar el fichero hosts.
+
+| URL                            | Qué debe salir                               |
+| ------------------------------ | -------------------------------------------- |
+| `mariaygabriel.localhost:4200` | La boda publicada                            |
+| `anayjuan.localhost:4200`      | En borrador, todavía no publicada            |
+| `lolaymanu.localhost:4200`     | Archivada                                    |
+| `pepeypepa.localhost:4200`     | **No encontrada**, porque está en cuarentena |
+| `noexiste.localhost:4200`      | No encontrada                                |
+| `localhost:4200`               | La landing                                   |
+| `localhost:4200/dev/ds`        | El catálogo del sistema visual               |
+
+`pepeypepa` merece atención: está en cuarentena y **tiene que comportarse como
+inexistente**. Si algún día empieza a decir "archivada", se ha roto algo que
+importa: estaría confirmando a un desconocido que esa boda existió.
+
 Trabaja siempre contra los emuladores. **Nunca ejecutes scripts ni pruebas contra el
 proyecto de producción.**
 

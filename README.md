@@ -18,6 +18,20 @@ SaaS multi-tenant de organización de bodas. Cada pareja tiene su web pública e
 
 **Puesta en marcha.** Ver `docs/PUESTA-EN-MARCHA.md`. F0 sin empezar.
 
+## En local
+
+```bash
+npm ci
+npm run emulators   # en otra terminal
+npm run seed        # bodas de ejemplo
+npm start
+```
+
+Entra por subdominio: `http://mariaygabriel.localhost:4200`. El catálogo del
+sistema visual está en `http://localhost:4200/dev/ds`.
+
+Requiere **Node ≥ 22.22.3 y npm ≥ 11**. Ver `CLAUDE.md`.
+
 ## Stack
 
 Angular 20 · Firebase (Firestore, Auth, Storage, Cloud Functions, App Check) ·

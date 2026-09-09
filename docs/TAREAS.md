@@ -11,7 +11,7 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 31 / 46**
+**Progreso F0: 32 / 46**
 
 ---
 
@@ -52,6 +52,7 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.3.3` Lectura de `slugs/{slug}` y de la proyección pública, tras un puerto que permite probar la lógica sin emulador
 - [~] `F0.3.4` La web pública recibe el tenant resuelto por la ruta. El contexto compartido llega con el panel
 - [ ] `F0.3.5` Fallback por ruta `nupcialis.com/<slug>` para local y plan B
+- [x] `F0.3.5b` Semilla del emulador: cuatro bodas, una por estado, con la de cuarentena incluida para poder comprobar a mano que se comporta como inexistente
 - [x] `F0.3.6` Cinco estados con su pantalla propia: publicada, no publicada, archivada, no encontrada y error
 - [ ] `F0.3.7` Configurar el hosting con wildcard `*.nupcialis.com` en `dev`
 
@@ -141,6 +142,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-09 | Semilla del emulador y ciclo de trabajo en local documentado. `nupcialis.com` comprado en Hostalia.                                                                                                                                                                                                                                   |
 | 2026-09-08 | Tenant resuelto de punta a punta, con 51 tests. Nueva decisión D-19: los adaptadores de datos van en ficheros `*.firestore.ts`, porque meterlos todos en `core/firebase` no escala.                                                                                                                                                   |
 | 2026-09-08 | Arrancado F0.3: slug y resolución de tenant como funciones puras, 43 tests en verde. Los tests cazaron una rama muerta en mi código (la comprobación de punycode, inalcanzable) y una suposición falsa en mi propio test.                                                                                                             |
 | 2026-09-08 | Tablas ordenables como directiva, sin componente de tabla. Comparador con reglas de español: sin `localeCompare('es')`, "Álvarez" se va detrás de "Zurita". Los nombres tipados de iconos cazaron dos que faltaban en el set.                                                                                                         |
