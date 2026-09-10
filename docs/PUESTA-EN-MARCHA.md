@@ -46,12 +46,12 @@ importa mucho y se acepta mantener el Worker.
 
 ## Bloque 0 · Decisiones que bloquean
 
-| ID | Decisión | Bloquea | Quién |
-|---|---|---|---|
-| D-15 | Dominio definitivo | Bloque 1 | ✅ `nupcialis.com` |
-| D-12 | Familia de iconos base | F0.2 | ✅ Phosphor |
+| ID   | Decisión                         | Bloquea    | Quién                    |
+| ---- | -------------------------------- | ---------- | ------------------------ |
+| D-15 | Dominio definitivo               | Bloque 1   | ✅ `nupcialis.com`       |
+| D-12 | Familia de iconos base           | F0.2       | ✅ Phosphor              |
 | D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | ✅ Subdominio de la boda |
-| D-03 | Editor de texto enriquecido | F1 | ✅ Jodit con `ngx-jodit` |
+| D-03 | Editor de texto enriquecido      | F1         | ✅ Jodit con `ngx-jodit` |
 
 **Ninguna decisión bloquea ya el arranque de F0.**
 
@@ -73,11 +73,44 @@ un subdominio de boda puede escribir cookies visibles en otro.
 
 Depende de D-15.
 
-- [ ] `B1.1` Decidir el dominio y comprarlo. **No en Cloudflare Registrar**, que obliga a sus nameservers y rompería el wildcard de Vercel. Registradores neutros: Porkbun, Namecheap, Dynadot. O directamente en Vercel, que además regala el primer año con Pro.
-- [ ] `B1.2` Comprar defensivamente la variante obvia (`.es` si se va a `.com`, o al revés). Son 15 € al año contra el disgusto de que alguien la registre después.
+- [x] `B1.1` **`nupcialis.com` comprado en Hostalia el 09/09/2026.** 0,59 € el primer
+      año; **la renovación son 12,99 € + IVA**, unos 15,7 €.
+- [ ] `B1.1a` Activar **renovación automática**. Perder el dominio por un descuido
+      de quince euros sería un desastre desproporcionado.
+- [ ] `B1.1b` Comprobar y activar la **privacidad WHOIS** del `.com`. Sin ella, tu
+      nombre y tu dirección quedan en un registro público que rastrean los
+      spammers.
+- [ ] `B1.2` Registrar `nupcialis.es`, que en Hostalia es **gratis el primer año**
+      y 6,99 € + IVA después. Los `.es` no publican datos de particulares, así que
+      ahí no hace falta privacidad.
+
+> **Por qué Hostalia y no Porkbun.** La recomendación original era "no compres el
+> dominio en tu proveedor de hosting", y el hosting aquí es Vercel; Hostalia es
+> solo el registrador, así que el acoplamiento que preocupaba no aplica.
+> Verificado el 09/09/2026 lo único que era un "no" técnico: **Hostalia permite
+> cambiar los servidores DNS a nameservers externos desde su panel**, sin
+> restricciones ni coste, que es lo que exige el wildcard de Vercel. La
+> diferencia de precio frente a un registrador especialista son tres o cuatro
+> euros al año.
+
 - [ ] `B1.3` Crear cuenta de Vercel y contratar **Pro**.
-- [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel.
-- [ ] `B1.5` Crear cuenta de Google Cloud con facturación activada. Firebase necesita **plan Blaze** para Cloud Functions; el nivel gratuito sigue aplicándose, pero hace falta tarjeta.
+- [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel desde el panel de
+      Hostalia: `ns1.vercel-dns.com` y `ns2.vercel-dns.com`. **La propagación
+      tarda entre 24 y 48 horas**: no te asustes si a los diez minutos no va.
+- [ ] `B1.5` Cuenta de Google para Firebase. **Recomendación: usa tu Gmail actual**,
+      no crees uno vacío. Lo que de verdad da separación no es la cuenta, es esto:
+  - [ ] `B1.5a` **Cuenta de facturación propia** para Nupcialis, separada de la de
+        tus proyectos antiguos. Es lo que impide que una función en bucle aquí
+        toque el presupuesto de otra cosa, y lo que te deja ver el coste real del
+        producto aislado.
+  - [ ] `B1.5b` **Un segundo propietario** en los tres proyectos: otra cuenta de
+        Google que controles. Perder el acceso a la cuenta personal es el modo de
+        fallo que más se subestima y del que peor se sale.
+  - [ ] `B1.5c` Verificación en dos pasos con códigos de recuperación guardados
+        fuera del móvil.
+  - [ ] `B1.5d` Reservar pronto los IDs `nupcialis-dev`, `nupcialis-staging` y
+        `nupcialis-prod`: los identificadores de proyecto son únicos a nivel
+        mundial y no se pueden cambiar después. Firebase necesita **plan Blaze** para Cloud Functions; el nivel gratuito sigue aplicándose, pero hace falta tarjeta.
 - [ ] `B1.6` Decidir el correo de la organización (`hola@`, `soporte@`) — hace falta para el registrador, para Firebase y para las notificaciones.
 
 **Coste recurrente estimado:** Vercel Pro ~20 $/mes, dominio 10-40 €/año, Firebase
@@ -86,11 +119,16 @@ Fuera de esto, el `.com` aparcado si se decide negociarlo.
 
 ## Bloque 2 · Repositorio — **G** crea, **C** configura
 
-- [ ] `B2.1` **G**: crear el repositorio en GitHub (privado) y pasarme la URL.
-- [ ] `B2.2` **C**: añadir el remoto y subir el trabajo hecho.
+- [x] `B2.1` **G**: repositorio creado en `github.com/gabramsua/nupcialis`.
+- [x] `B2.1b` **G**: **el repositorio se queda público**, decidido el 08/09/2026,
+      de momento y de forma consciente. No hay secretos commiteados. Si algún día
+      se cierra, recordar que el historial ya es público: lo que se subió, subido
+      está.
+- [x] ~~`B2.1c`~~ _(contexto original de la decisión)_: **el repositorio es público.** Decidir si es lo que quieres: hoy cualquiera lee `REQUISITOS.md` entero, con el modelo de negocio, la estrategia de dominio, los planes de precio y el razonamiento de seguridad. No hay secretos commiteados —lo he comprobado—, así que no es una fuga, pero sí es tu plan de producto a la vista. Se cambia en Settings → General → Danger Zone.
+- [x] `B2.2` **C**: remoto añadido. **G** hace los push.
 - [ ] `B2.3` **G**: protección de rama en `main` — sin push directo, revisión antes de fusionar.
 - [ ] `B2.4` **C**: plantilla de pull request con recordatorio de las siete reglas de oro.
-- [ ] `B2.5` **C**: workflow de GitHub Actions con lint, build, tests unitarios y **tests de reglas** como bloqueantes.
+- [x] `B2.5` **C**: workflow de GitHub Actions con lint, formato, tests unitarios, build y batería de reglas, en todas las ramas.
 - [ ] `B2.6` **G**: dar de alta los secretos de Actions (tokens de Firebase y Vercel).
 - [ ] `B2.7` **C**: `.env.example` documentando cada variable, sin valores reales.
 
@@ -119,7 +157,13 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
 ## Bloque 5 · Entorno local — **G**
 
-- [ ] `B5.1` Node LTS (20 o 22).
+- [ ] `B5.1` **Node 22.22.3 o superior** (o 24.15+, o 26+). Angular 22 lo exige y
+      con Node 20 el CLI ni arranca. En Windows: `winget install OpenJS.NodeJS.LTS`,
+      o `fnm`/`nvm-windows` si quieres varias versiones a la vez.
+- [ ] `B5.1b` **npm 11 o superior**, después de instalar Node: `npm i -g npm@11`.
+      Node trae npm 10 de serie, y con npm 10 la instalación de este proyecto
+      falla con un error críptico (`edgesOut`) al resolver un peer de Vitest.
+      Hay que repetirlo cada vez que se cambia de versión de Node.
 - [ ] `B5.2` `npm i -g @angular/cli firebase-tools`.
 - [ ] `B5.3` `firebase login` y comprobar acceso a los tres proyectos.
 - [ ] `B5.4` `gh` autenticado, si quieres que yo pueda crear ramas y PRs.
@@ -130,9 +174,9 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
 Pruebas cortas para no construir sobre una suposición. Ninguna pasa de medio día.
 
-- [x] `S-1` **Dominios autorizados de Firebase Auth.** *Hecho 08/09/2026.* No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
-- [x] `S-2` **Comparativa de familias de iconos.** *Hecho 08/09/2026.* Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
-- [x] `S-3` **Editor de texto enriquecido.** *Cerrado por decisión 08/09/2026:* Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
+- [x] `S-1` **Dominios autorizados de Firebase Auth.** _Hecho 08/09/2026._ No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
+- [x] `S-2` **Comparativa de familias de iconos.** _Hecho 08/09/2026._ Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
+- [x] `S-3` **Editor de texto enriquecido.** _Cerrado por decisión 08/09/2026:_ Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
 - [ ] `S-4` **Wildcard en Vercel de punta a punta.** Desplegar una página mínima y comprobar que tres subdominios inventados resuelven con certificado válido, y cuánto tarda uno nuevo la primera vez.
 - [ ] `S-5` **Coste de la galería.** Estimar almacenamiento y transferencia de una boda de 150 invitados subiendo fotos, para fijar las cuotas por plan.
 

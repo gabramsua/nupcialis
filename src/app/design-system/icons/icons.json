@@ -1,0 +1,560 @@
+{
+  "_comentario": [
+    "Set curado. Ver docs/REQUISITOS.md §9.1.",
+    "",
+    "Nada de librería completa: un selector de 1.500 iconos con lupas, servidores",
+    "y carritos de la compra se usa peor que noventa bien escogidos. Si falta un",
+    "concepto, se añade aquí; no se importa un icono suelto por su cuenta.",
+    "",
+    "'surfaces' decide en qué sprite entra cada uno. La misma disciplina que con",
+    "los chunks de JavaScript: un invitado que abre la web desde el móvil no debe",
+    "descargarse los iconos del panel de presupuesto."
+  ],
+  "categorias": {
+    "momentos": {
+      "titulo": "Momentos del día",
+      "iconos": [
+        {
+          "id": "church",
+          "etiqueta": "Ceremonia",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "champagne",
+          "etiqueta": "Brindis",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "fork-knife",
+          "etiqueta": "Banquete",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "cake",
+          "etiqueta": "Tarta",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "disco-ball",
+          "etiqueta": "Baile",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "music-notes",
+          "etiqueta": "Música",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "confetti",
+          "etiqueta": "Fiesta",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "balloon",
+          "etiqueta": "Globos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "flower",
+          "etiqueta": "Flores",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "camera",
+          "etiqueta": "Fotos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "video-camera",
+          "etiqueta": "Vídeo",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "moon-stars",
+          "etiqueta": "Recena",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "sun",
+          "etiqueta": "Exterior",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "tent",
+          "etiqueta": "Carpa",
+          "surfaces": ["public", "panel"]
+        }
+      ]
+    },
+    "logistica": {
+      "titulo": "Cómo llegar y dónde dormir",
+      "iconos": [
+        {
+          "id": "bus",
+          "etiqueta": "Autobús",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "car",
+          "etiqueta": "Coche",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "taxi",
+          "etiqueta": "Taxi",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "train",
+          "etiqueta": "Tren",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "airplane",
+          "etiqueta": "Avión",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "car-simple",
+          "etiqueta": "Parking",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "bed",
+          "etiqueta": "Alojamiento",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "map-pin",
+          "etiqueta": "Ubicación",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "navigation-arrow",
+          "etiqueta": "Cómo llegar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "wheelchair",
+          "etiqueta": "Accesibilidad",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "clock",
+          "etiqueta": "Hora",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "calendar",
+          "etiqueta": "Fecha",
+          "surfaces": ["public", "panel"]
+        }
+      ]
+    },
+    "personas": {
+      "titulo": "Personas y roles",
+      "iconos": [
+        {
+          "id": "users",
+          "etiqueta": "Grupo",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "user",
+          "etiqueta": "Invitado",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "user-plus",
+          "etiqueta": "Acompañante",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "baby",
+          "etiqueta": "Niños",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "heart",
+          "etiqueta": "Pareja",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "diamond",
+          "etiqueta": "Anillos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "dress",
+          "etiqueta": "Vestido",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "t-shirt",
+          "etiqueta": "Dress code",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "crown-simple",
+          "etiqueta": "Padrinos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "hand-heart",
+          "etiqueta": "Testigos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "steering-wheel",
+          "etiqueta": "Chófer",
+          "surfaces": ["public", "panel"]
+        }
+      ]
+    },
+    "comida": {
+      "titulo": "Menú y alergias",
+      "iconos": [
+        {
+          "id": "leaf",
+          "etiqueta": "Vegetariano",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "plant",
+          "etiqueta": "Vegano",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "grains",
+          "etiqueta": "Sin gluten",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "fish",
+          "etiqueta": "Pescado",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "cow",
+          "etiqueta": "Carne",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "first-aid",
+          "etiqueta": "Alergias",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "chef-hat",
+          "etiqueta": "Catering",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "wine",
+          "etiqueta": "Barra libre",
+          "surfaces": ["public", "panel"]
+        }
+      ]
+    },
+    "estado": {
+      "titulo": "Estado",
+      "iconos": [
+        {
+          "id": "check-circle",
+          "etiqueta": "Confirmado",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "x-circle",
+          "etiqueta": "No asiste",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "clock-countdown",
+          "etiqueta": "Pendiente",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "warning",
+          "etiqueta": "Atención",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "info",
+          "etiqueta": "Información",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "prohibit",
+          "etiqueta": "Bloqueado",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "eye",
+          "etiqueta": "Visible",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "eye-slash",
+          "etiqueta": "Oculto",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "lock-simple",
+          "etiqueta": "Privado",
+          "surfaces": ["panel"]
+        }
+      ]
+    },
+    "regalos": {
+      "titulo": "Regalos y dinero",
+      "iconos": [
+        {
+          "id": "gift",
+          "etiqueta": "Regalo",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "currency-eur",
+          "etiqueta": "Aportación",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "credit-card",
+          "etiqueta": "Tarjeta",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "bank",
+          "etiqueta": "Transferencia",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "device-mobile",
+          "etiqueta": "Bizum",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "money",
+          "etiqueta": "Efectivo",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "hand-coins",
+          "etiqueta": "Recibido",
+          "surfaces": ["panel"]
+        }
+      ]
+    },
+    "gestion": {
+      "titulo": "Gestión de la pareja",
+      "iconos": [
+        {
+          "id": "list-checks",
+          "etiqueta": "Checklist",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "chart-bar",
+          "etiqueta": "Presupuesto",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "chart-pie-slice",
+          "etiqueta": "Reparto",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "briefcase",
+          "etiqueta": "Proveedores",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "file-text",
+          "etiqueta": "Contrato",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "table",
+          "etiqueta": "Mesas",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "seat",
+          "etiqueta": "Asiento",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "envelope",
+          "etiqueta": "Invitación",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "whatsapp-logo",
+          "etiqueta": "WhatsApp",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "share-network",
+          "etiqueta": "Compartir",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "download-simple",
+          "etiqueta": "Exportar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "upload-simple",
+          "etiqueta": "Importar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "gear",
+          "etiqueta": "Configuración",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "palette",
+          "etiqueta": "Diseño",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "sliders-horizontal",
+          "etiqueta": "Módulos",
+          "surfaces": ["panel"]
+        }
+      ]
+    },
+    "interfaz": {
+      "titulo": "Interfaz",
+      "iconos": [
+        {
+          "id": "plus",
+          "etiqueta": "Añadir",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "pencil-simple",
+          "etiqueta": "Editar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "trash",
+          "etiqueta": "Eliminar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "magnifying-glass",
+          "etiqueta": "Buscar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "funnel",
+          "etiqueta": "Filtrar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "dots-three",
+          "etiqueta": "Más acciones",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "caret-up",
+          "etiqueta": "Orden ascendente",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "caret-up-down",
+          "etiqueta": "Ordenar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "caret-down",
+          "etiqueta": "Desplegar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "caret-right",
+          "etiqueta": "Siguiente",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "caret-left",
+          "etiqueta": "Anterior",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "x",
+          "etiqueta": "Cerrar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "check",
+          "etiqueta": "Aceptar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "arrow-left",
+          "etiqueta": "Volver",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "list",
+          "etiqueta": "Menú",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "dots-six-vertical",
+          "etiqueta": "Arrastrar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "spinner-gap",
+          "etiqueta": "Cargando",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "bell",
+          "etiqueta": "Avisos",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "star",
+          "etiqueta": "Destacado",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "question",
+          "etiqueta": "Preguntas frecuentes",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "game-controller",
+          "etiqueta": "Quiz",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "trophy",
+          "etiqueta": "Ranking",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "images",
+          "etiqueta": "Galería",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "note-pencil",
+          "etiqueta": "Libro de firmas",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "playlist",
+          "etiqueta": "Playlist",
+          "surfaces": ["public", "panel"]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+.np-input {
+  inline-size: 100%;
+  min-block-size: var(--np-tap-target);
+  padding: var(--np-space-2) var(--np-space-3);
+  border: 1px solid var(--np-surface-border);
+  border-radius: var(--np-radius-md);
+  background: var(--np-surface-surface);
+  color: var(--np-surface-text);
+  font: inherit;
+  font-size: var(--np-text-base);
+
+  &:focus-visible {
+    outline: 2px solid var(--np-info-solid);
+    outline-offset: 1px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--np-declined-border);
+  }
+}
+
+textarea.np-input {
+  min-block-size: 6rem;
+  resize: vertical;
+}

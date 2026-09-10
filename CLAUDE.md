@@ -7,27 +7,27 @@ SaaS multi-tenant de organización de bodas. Cada pareja tiene su web pública e
 
 Lee siempre, en este orden:
 
-| Documento | Para qué |
-|---|---|
-| `docs/REQUISITOS.md` | La verdad del producto. Modelo de datos, módulos, reglas de negocio. |
-| `docs/PLAN-IMPLEMENTACION.md` | En qué fase estamos y qué entra en ella. |
-| `docs/TAREAS.md` | Qué hay que hacer ahora. Se actualiza en cada sesión. |
-| `docs/PENDIENTES.md` | Decisiones abiertas. **No las resuelvas por tu cuenta: pregunta.** |
+| Documento                     | Para qué                                                             |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `docs/REQUISITOS.md`          | La verdad del producto. Modelo de datos, módulos, reglas de negocio. |
+| `docs/PLAN-IMPLEMENTACION.md` | En qué fase estamos y qué entra en ella.                             |
+| `docs/TAREAS.md`              | Qué hay que hacer ahora. Se actualiza en cada sesión.                |
+| `docs/PENDIENTES.md`          | Decisiones abiertas. **No las resuelvas por tu cuenta: pregunta.**   |
 
 Si algo que vas a implementar contradice `docs/REQUISITOS.md`, para y dilo. No
 improvises una tercera versión.
 
 ## Stack
 
-- **Angular 20+**, componentes standalone, signals, `ChangeDetectionStrategy.OnPush`.
+- **Angular 22**, **zoneless**, componentes standalone, signals, `ChangeDetectionStrategy.OnPush`.
 - **Firebase**: Firestore (una sola base multi-tenant), Auth, Storage, Cloud Functions v2, App Check.
-- **AngularFire** para el acceso desde el cliente.
+- **SDK modular de Firebase v12 directamente**, sin AngularFire: no existe versión compatible con Angular 22. Los servicios de `core/firebase` envuelven el SDK y son el único sitio donde se importa `firebase/*`.
 - **Hosting del frontal**: plataforma con dominio wildcard `*.nupcialis.com` (Cloudflare Pages o Vercel). **No Firebase Hosting**: limita a 20 subdominios por dominio apex.
 - **Mapas**: Leaflet o MapLibre sobre OpenStreetMap. Enlaces profundos a Google Maps para navegar. Sin clave de Google.
 - **Iconos**: Phosphor (MIT). Solo el set curado, compilado en sprite propio. `regular` = inactivo, `fill` = activo.
 - **Editor de texto enriquecido**: Jodit con `ngx-jodit`, barra acotada y saneado en servidor.
 - **i18n**: toda cadena visible en ficheros de traducción desde el primer commit. Español por defecto.
-- **Tests**: Jasmine/Karma para unidad, `@firebase/rules-unit-testing` contra el emulador para las reglas.
+- **Tests**: **Vitest** para unidad, `@firebase/rules-unit-testing` contra el emulador para las reglas.
 
 ## Las ocho reglas de oro
 
@@ -64,6 +64,12 @@ Cada módulo del panel se carga con `loadComponent` diferido. **El bundle de la 
 pública no puede arrastrar código del panel**: el invitado abre el enlace desde
 WhatsApp con datos móviles.
 
+**Los servicios de Firebase se proveen por ruta, dentro de ficheros de rutas
+diferidos** (`features/*/`*.routes.ts`), nunca en `app.config.ts`ni en`app.routes.ts`. Proveerlos arriba metía 122 kB comprimidos de SDK en el
+arranque. Medido: 189,7 kB con todo arriba frente a 76,3 kB con el reparto por
+rutas. Si añades un servicio de Firebase, va en su propio fichero de
+`core/firebase` y se provee en la ruta que lo usa.
+
 ## Convenciones Angular
 
 - Componentes standalone. No pongas `standalone: true`: es el valor por defecto.
@@ -88,17 +94,58 @@ Ver `docs/REQUISITOS.md` §9.1. Lo mínimo que hay que respetar:
 - Iconos, solo del set curado. Si falta uno, se añade al set; no se importa suelto de otra librería.
 - El panel se diseña primero para móvil.
 
+## Requisitos de entorno
+
+**Node ≥ 22.22.3 y npm ≥ 11.** Angular 22 rechaza Node 20 y 21 directamente; los
+tramos válidos son 22.22.3+, 24.15+ y 26+. Al cambiar de versión de Node hay que
+volver a instalar npm 11 (`npm i -g npm@11`) y regenerar `node_modules`, porque
+los binarios nativos se compilan contra la versión de Node con la que se
+instalaron. Con npm 10 la instalación falla con un error
+críptico (`Cannot read properties of null (reading 'edgesOut')`) al resolver un
+peer opcional de Vitest. Si te pasa: `npm install -g npm@11`.
+
+`firebase-tools` se instala **global**, no como dependencia del proyecto: arrastra
+módulos nativos enormes y multiplica el tiempo de instalación de todo el equipo.
+
 ## Comandos
 
 ```bash
 npm start                      # ng serve
 npm run build
-npm test                       # unidad
-npm run test:rules             # tests de reglas contra el emulador
+npm test                       # unidad (Vitest)
+npm run test:rules             # batería de aislamiento contra el emulador
+npm run typecheck:rules        # solo tipos, sin emulador
 firebase emulators:start       # Firestore, Auth, Functions, Storage
 npm run deploy:rules
 npm run deploy:functions
 ```
+
+### Ciclo de trabajo en local
+
+Tres terminales, o dos si no vas a tocar los datos:
+
+```bash
+npm run emulators   # Firestore, Auth, Storage y Functions
+npm run seed        # cuatro bodas de ejemplo, una por estado
+npm start           # la aplicación
+```
+
+Y entra por **subdominio**, no por `localhost` a secas: los navegadores resuelven
+`*.localhost` solos, sin tocar el fichero hosts.
+
+| URL                            | Qué debe salir                               |
+| ------------------------------ | -------------------------------------------- |
+| `mariaygabriel.localhost:4200` | La boda publicada                            |
+| `anayjuan.localhost:4200`      | En borrador, todavía no publicada            |
+| `lolaymanu.localhost:4200`     | Archivada                                    |
+| `pepeypepa.localhost:4200`     | **No encontrada**, porque está en cuarentena |
+| `noexiste.localhost:4200`      | No encontrada                                |
+| `localhost:4200`               | La landing                                   |
+| `localhost:4200/dev/ds`        | El catálogo del sistema visual               |
+
+`pepeypepa` merece atención: está en cuarentena y **tiene que comportarse como
+inexistente**. Si algún día empieza a decir "archivada", se ha roto algo que
+importa: estaría confirmando a un desconocido que esa boda existió.
 
 Trabaja siempre contra los emuladores. **Nunca ejecutes scripts ni pruebas contra el
 proyecto de producción.**

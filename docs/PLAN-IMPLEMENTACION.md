@@ -1,8 +1,8 @@
 # Nupcialis — Plan de implementación
 
 Documento de ejecución. Qué se construye, en qué orden y cuándo se considera
-terminado. El *qué* y el *por qué* están en `REQUISITOS.md`; aquí está el *cómo* y
-el *cuándo*.
+terminado. El _qué_ y el _por qué_ están en `REQUISITOS.md`; aquí está el _cómo_ y
+el _cuándo_.
 
 **Estado actual: F0 sin empezar.**
 
@@ -24,6 +24,7 @@ Objetivo: dar de alta una boda desde el panel de superadmin y entrar a su panel
 vacío, con el aislamiento demostrado por tests.
 
 ### F0.1 Proyecto y entornos
+
 - Inicializar Angular con enrutado, SCSS y configuración estricta de TypeScript.
 - Tres proyectos de Firebase: `dev`, `staging`, `prod`, en región europea.
 - Configuración por entorno sin credenciales en el repositorio.
@@ -31,6 +32,7 @@ vacío, con el aislamiento demostrado por tests.
 - Prettier, ESLint y hooks de pre-commit.
 
 ### F0.2 Sistema visual
+
 - Tokens de color: paleta semántica fija del panel y estructura de la paleta de marca por boda.
 - Paleta categórica de 12-16 colores con contraste verificado sobre fondo claro y oscuro.
 - Set curado de 80-100 iconos, agrupados por categoría, con componente `<sq-icon>` y buscador.
@@ -42,6 +44,7 @@ vacío, con el aislamiento demostrado por tests.
 > Requiere decidir la familia de iconos base (`PENDIENTES.md` D-12).
 
 ### F0.3 Multi-tenant
+
 - Resolución de tenant por `hostname` con extracción y validación de slug.
 - Índice `slugs/{slug}` y comprobación de reservados.
 - Servicio de contexto de boda accesible en toda la aplicación.
@@ -49,6 +52,7 @@ vacío, con el aislamiento demostrado por tests.
 - Estados `draft`, `active` y `archived`, con su comportamiento en la web pública.
 
 ### F0.4 Autenticación
+
 - Firebase Auth con email y contraseña, y Google.
 - Custom claims `weddingId` y `role`, asignados por Cloud Function.
 - Dos cuentas de owner por boda sobre `ownerUids`.
@@ -57,6 +61,7 @@ vacío, con el aislamiento demostrado por tests.
 - App Check en cliente, Firestore, Storage y Functions.
 
 ### F0.5 Reglas de seguridad y su batería de tests
+
 - `firestore.rules` completo, denegando por defecto, con `guests` y `photos` cerradas.
 - `storage.rules` con límites de tamaño y tipo MIME.
 - Tests con `@firebase/rules-unit-testing`:
@@ -68,12 +73,14 @@ vacío, con el aislamiento demostrado por tests.
 - Integración en CI: si los tests de reglas fallan, no se despliega.
 
 ### F0.6 Provisioning
+
 - `provisionWedding`: transacción de slug y documento, creación de cuentas, claims y semillas.
 - Semillas: preguntas de fábrica del RSVP, banco de ejemplo del quiz, plantilla de checklist con fechas relativas, FAQ de fábrica, grupo por defecto de audiencia pública.
 - `syncPublicProjection` y `recomputeCounters` como triggers.
 - Log de auditoría.
 
 ### F0.7 Esqueletos de panel
+
 - `panel-shell` con navegación por módulos, mostrando solo los activos.
 - `admin-shell` de superadmin con listado de bodas, alta y registro de accesos de los novios.
 - Resumen inicial del panel de la pareja, todavía sin datos reales.
@@ -157,9 +164,9 @@ y cierra los agradecimientos desde el panel.
 
 ## Riesgos de ejecución
 
-| Riesgo | Señal temprana | Respuesta |
-|---|---|---|
-| F0 se alarga y no se ve producto | Más de tres semanas sin una pantalla real | Recortar el design system al mínimo útil, no los tests de reglas |
-| El alcance crece dentro de una fase | Aparecen tareas nuevas en `TAREAS.md` sin salir de F1 | Van a `PENDIENTES.md` y se planifican en la fase que toque |
-| Las reglas se quedan sin tests | Un PR de modelo de datos sin fichero de test | Bloqueo en CI, no en revisión manual |
-| El bundle público engorda | Más de 200 KB de JS comprimido | Presupuesto de tamaño en CI que falla el build |
+| Riesgo                              | Señal temprana                                        | Respuesta                                                        |
+| ----------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| F0 se alarga y no se ve producto    | Más de tres semanas sin una pantalla real             | Recortar el design system al mínimo útil, no los tests de reglas |
+| El alcance crece dentro de una fase | Aparecen tareas nuevas en `TAREAS.md` sin salir de F1 | Van a `PENDIENTES.md` y se planifican en la fase que toque       |
+| Las reglas se quedan sin tests      | Un PR de modelo de datos sin fichero de test          | Bloqueo en CI, no en revisión manual                             |
+| El bundle público engorda           | Más de 200 KB de JS comprimido                        | Presupuesto de tamaño en CI que falla el build                   |

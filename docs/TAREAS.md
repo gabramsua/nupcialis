@@ -11,48 +11,49 @@ están en `PUESTA-EN-MARCHA.md`: cuentas, dominio, Firebase, hosting y spikes.
 F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 **Fase de desarrollo: F0 — Fundaciones**
-**Progreso F0: 1 / 46**
+**Progreso F0: 32 / 46**
 
 ---
 
 ## F0.1 · Proyecto y entornos
 
-- [ ] `F0.1.1` Inicializar proyecto Angular con enrutado, SCSS y TypeScript estricto
-- [ ] `F0.1.2` Configurar Prettier, ESLint y hooks de pre-commit
+- [x] `F0.1.1` Proyecto Angular 22.1.7: enrutado, SCSS, estricto, **zoneless**, Vitest. Compila en 59,6 kB comprimidos
+- [x] `F0.1.2` Prettier, ESLint (angular-eslint 22) con regla que prohíbe importar `firebase/*` fuera de `core/firebase`, husky y lint-staged
 - [ ] `F0.1.3` Crear los tres proyectos de Firebase (`dev`, `staging`, `prod`) en región europea
-- [ ] `F0.1.4` Configuración por entorno sin credenciales en el repositorio
-- [ ] `F0.1.5` Instalar y configurar AngularFire
+- [x] `F0.1.4` `src/environments` con los tres entornos y `fileReplacements` en angular.json. Valores de Firebase pendientes de crear los proyectos
+- [x] `F0.1.5` Capa `core/firebase` sobre el SDK modular v12, repartida por rutas (D-17, D-18)
 - [ ] `F0.1.6` Levantar emuladores de Firestore, Auth, Functions y Storage
-- [ ] `F0.1.7` Estructura de carpetas de `CLAUDE.md` con ficheros índice
-- [ ] `F0.1.8` Infraestructura de i18n con español como idioma base
-- [ ] `F0.1.9` CI: lint, build, tests unitarios y tests de reglas
-- [ ] `F0.1.10` Presupuesto de tamaño de bundle que falla el build al superar 200 KB comprimidos
+- [x] `F0.1.7` Estructura de carpetas con READMEs de intención en core, design-system, features y tests/rules
+- [x] `F0.1.8` i18n en runtime con Transloco y `public/i18n/es.json`. Descartado el i18n nativo: compila un bundle por idioma
+- [x] `F0.1.9` CI en GitHub Actions: lint, formato, tests unitarios, build de producción y batería de reglas contra el emulador, en dos jobs
+- [x] `F0.1.10` Budgets en angular.json a 600 kB de aviso y 800 kB de error en bruto. Estado actual: 76,3 kB comprimidos
 
 ## F0.2 · Sistema visual
 
 > `F0.2.1` está bloqueada por **D-12** (familia de iconos base).
 
 - [x] `F0.2.1` Familia de iconos base: **Phosphor** (MIT), elegida con el spike S-2
-- [ ] `F0.2.2` Tokens de la paleta semántica fija del panel
-- [ ] `F0.2.3` Estructura de la paleta de marca por boda, con variables CSS por tenant
-- [ ] `F0.2.4` Paleta categórica de 12-16 colores con contraste verificado en claro y oscuro
-- [ ] `F0.2.5` Escala tipográfica y de espaciado
-- [ ] `F0.2.6` Set curado de 80-100 iconos de Phosphor, agrupados por categoría, compilados en sprite SVG propio
-- [ ] `F0.2.12` Convención de pesos como estado: `regular` inactivo, `fill` activo o seleccionado
-- [ ] `F0.2.7` Componente `<sq-icon>` con búsqueda y selector para el panel
-- [ ] `F0.2.8` Componentes base: botón, campo, tarjeta, chip de estado, tabla, modal, aviso, estado vacío
-- [ ] `F0.2.9` Chip de estado con la regla color + icono + texto aplicada por construcción
-- [ ] `F0.2.10` Catálogo del design system en `/dev/ds`, fuera de producción
-- [ ] `F0.2.11` Verificación automática de contraste sobre todas las combinaciones ofrecidas
+- [x] `F0.2.2` Paleta semántica fija: confirmado, pendiente, rechazado, atención e informativo, cada una con `fg`, `bg`, `border` y `solid` en claro y oscuro, y con su icono asociado
+- [!] `F0.2.3` Paleta de marca por boda — _se hace con F0.3, cuando exista el contexto de tenant del que colgar las variables_
+- [x] `F0.2.4` Paleta categórica de 13 tonos equiespaciados en LCh, generados y no elegidos a ojo. ΔE mínimo 19,1 en claro y 20,0 en oscuro
+- [x] `F0.2.5` Escala tipográfica fluida y espaciado en base 4, con área de pulsación mínima de 44 px
+- [x] `F0.2.6` 99 iconos de Phosphor en 8 categorías, compilados en **dos** sprites: 73 para la web pública, 99 para el panel
+- [x] `F0.2.12` Pesos como estado: `regular` inactivo, `fill` activo, ambos en el sprite
+- [x] `F0.2.7` Componente `<np-icon>`, con nombres tipados: un icono mal escrito no compila. Falta el selector visual del panel
+- [x] `F0.2.8` Componentes base: chip de estado, botón, campo con su control, tarjeta, aviso, estado vacío, diálogo, tabla y **ordenación de tablas** con comparador de español
+- [x] `F0.2.9` `<np-status-chip>`: `label` es obligatorio y el icono lo decide el mapa generado desde `palette.json`. No se puede pintar un estado sin texto
+- [x] `F0.2.10` Catálogo en `/dev/ds` con paleta, chips, los 99 iconos y la escala tipográfica, y conmutador de tema claro/oscuro
+- [x] `F0.2.11` `tools/tokens.mjs`: 74 comprobaciones de contraste más la distancia perceptual entre categóricos. Bloqueante en CI, junto con la comprobación de que el SCSS generado está al día
 
 ## F0.3 · Multi-tenant
 
-- [ ] `F0.3.1` Servicio de resolución de tenant por `hostname`
-- [ ] `F0.3.2` Normalización y validación de slug, con lista de reservados
-- [ ] `F0.3.3` Índice `slugs/{slug}` y su lectura pública
-- [ ] `F0.3.4` Servicio de contexto de boda accesible en toda la aplicación
+- [x] `F0.3.1` `resolverTenant()` puro y enchufado a la aplicación con un resolver de ruta
+- [x] `F0.3.2` `normalizarSlug` y `validarSlug` con 29 casos, y 60 reservados en tres familias: superficies, infraestructura y palabras que dan pie a suplantación
+- [x] `F0.3.3` Lectura de `slugs/{slug}` y de la proyección pública, tras un puerto que permite probar la lógica sin emulador
+- [~] `F0.3.4` La web pública recibe el tenant resuelto por la ruta. El contexto compartido llega con el panel
 - [ ] `F0.3.5` Fallback por ruta `nupcialis.com/<slug>` para local y plan B
-- [ ] `F0.3.6` Estados `draft`, `active` y `archived` con su efecto en la web pública
+- [x] `F0.3.5b` Semilla del emulador: cuatro bodas, una por estado, con la de cuarentena incluida para poder comprobar a mano que se comporta como inexistente
+- [x] `F0.3.6` Cinco estados con su pantalla propia: publicada, no publicada, archivada, no encontrada y error
 - [ ] `F0.3.7` Configurar el hosting con wildcard `*.nupcialis.com` en `dev`
 
 ## F0.4 · Autenticación
@@ -68,15 +69,15 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 ## F0.5 · Reglas de seguridad y sus tests
 
-- [ ] `F0.5.1` `firestore.rules` completo, denegando por defecto
-- [ ] `F0.5.2` `storage.rules` con límites de tamaño y tipos MIME
+- [x] `F0.5.1` `firestore.rules` completo, denegando por defecto, con `guests` y `photos` cerradas
+- [x] `F0.5.2` `storage.rules` con límites de tamaño y tipos MIME
 - [ ] `F0.5.3` `firestore.indexes.json` con los índices previstos
-- [ ] `F0.5.4` Test: el owner de A no accede a nada de B, colección por colección
-- [ ] `F0.5.5` Test: un invitado no puede leer la lista de invitados
-- [ ] `F0.5.6` Test: un anónimo solo lee `slugs` y `public/site`
-- [ ] `F0.5.7` Test: la pareja no puede escribir campos de sistema
-- [ ] `F0.5.8` Test: `giftsReceived` inaccesible salvo para el owner de esa boda
-- [ ] `F0.5.9` Integrar la batería en CI como bloqueante del despliegue
+- [x] `F0.5.4` 14 colecciones × 4 casos, más el documento de la boda. Verde en CI
+- [x] `F0.5.5` Junto con photos, quizResults, giftsReceived y guestAccessLog. Verde en CI
+- [x] `F0.5.6` Verde en CI
+- [x] `F0.5.7` Incluido el caso de colar un campo de sistema junto a uno legítimo. Verde en CI
+- [x] `F0.5.8` Verde en CI
+- [x] `F0.5.9` Job `reglas` en CI, bloqueante
 
 ## F0.6 · Provisioning
 
@@ -113,19 +114,45 @@ Se detallarán al cerrar la fase anterior. El alcance de cada una está en
 
 ---
 
+## Bloqueadas por el entorno
+
+_(ninguna)_
+
+- [!] `F0.5.V` **Ejecutar la batería de reglas.** _Primer intento fallido: el push
+  fue a una rama y el workflow solo disparaba en `main` y en pull requests, así
+  que no llegó a correr. Corregido para que dispare en cualquier rama._ Los tests están escritos y pasan
+  la comprobación de tipos, pero **no se han ejecutado nunca**. El emulador de
+  Firestore descarga su JAR de `storage.googleapis.com`, y ese host está
+  bloqueado por la política de egreso tanto en el contenedor como en la máquina
+  de Gabriel. Se desbloquea solo: en el primer push, el job `reglas` del CI los
+  ejecuta en GitHub Actions, que sí tiene salida libre. Hasta entonces, la
+  batería es una promesa, no una garantía.
+
 ## Surgidas durante el desarrollo
 
 Tareas que no estaban en el plan. Al cerrar cada fase se revisan y se colocan
 donde toque.
 
-*(vacío)*
+_(vacío)_
 
 ---
 
 ## Registro de sesiones
 
-| Fecha | Qué se hizo |
-|---|---|
-| 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado. |
-| 2026-09-08 | Cambio de nombre a **Nupcialis** (`nupcialis.com`, libre). Cerradas D-03, D-12, D-15 y D-16. Spikes S-1, S-2 y S-3 resueltos. Dos riesgos nuevos en §11: tope no documentado de dominios autorizados y aislamiento de cookies entre subdominios. |
-| 2026-09-07 | `PUESTA-EN-MARCHA.md`. Cloudflare Pages descartado (sin wildcard). Vercel elegido. `nupcialis.com` resulta estar registrado y aparcado: nueva decisión D-15. Riesgo detectado en los dominios autorizados de Firebase Auth: nueva decisión D-16 y spike S-1. |
+| Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                          |
+| 2026-09-09 | Semilla del emulador y ciclo de trabajo en local documentado. `nupcialis.com` comprado en Hostalia.                                                                                                                                                                                                                                   |
+| 2026-09-08 | Tenant resuelto de punta a punta, con 51 tests. Nueva decisión D-19: los adaptadores de datos van en ficheros `*.firestore.ts`, porque meterlos todos en `core/firebase` no escala.                                                                                                                                                   |
+| 2026-09-08 | Arrancado F0.3: slug y resolución de tenant como funciones puras, 43 tests en verde. Los tests cazaron una rama muerta en mi código (la comprobación de punycode, inalcanzable) y una suposición falsa en mi propio test.                                                                                                             |
+| 2026-09-08 | Tablas ordenables como directiva, sin componente de tabla. Comparador con reglas de español: sin `localeCompare('es')`, "Álvarez" se va detrás de "Zurita". Los nombres tipados de iconos cazaron dos que faltaban en el set.                                                                                                         |
+| 2026-09-08 | Componentes base terminados. F0.2 cerrado salvo la paleta de marca por boda, que espera al contexto de tenant. `<np-field>` usaba `::ng-deep`, obsoleto y capaz de escaparse a todo el árbol; cambiado por la directiva `npInput`.                                                                                                    |
+| 2026-09-08 | Escala tipográfica y de espaciado, `<np-status-chip>` y catálogo del sistema visual en `/dev/ds`. El mapa de estado a icono se genera desde `palette.json`, así que ningún módulo puede decidir que en su pantalla "confirmado" es otro icono.                                                                                        |
+| 2026-09-08 | Sprites de iconos con nombres tipados y `<np-icon>`. Dos sprites, público y panel, con la misma disciplina de reparto que los chunks de JS. Añadido `.nvmrc`.                                                                                                                                                                         |
+| 2026-09-08 | Arrancado F0.2. Paleta en `palette.json` como fuente única, con generador y verificador de contraste. Primer intento de regla para los categóricos era erróneo —pedía separación de luminancia, imposible con 13 tonos— y se cambió por distancia perceptual ΔE en CIELAB. Los colores se generan equiespaciados en LCh, no a ojo.    |
+| 2026-09-08 | **CI run #1: el job `reglas` pasa.** Los ~90 casos de aislamiento verdes contra el emulador real. El job `calidad` falló solo por formato: 13 ficheros anteriores a la instalación de husky nunca habían pasado por Prettier. Corregido.                                                                                              |
+| 2026-09-08 | Batería de aislamiento escrita: 4 ficheros, ~90 casos entre las 14 colecciones parametrizadas y los casos sueltos. CI en GitHub Actions con job de reglas bloqueante. No he podido ejecutarla: el JAR del emulador vive en un host bloqueado por la política de egreso. La ejecuta el CI en el primer push.                           |
+| 2026-09-08 | F0.1 casi cerrado: ESLint, husky, estructura, entornos, i18n en runtime, `firestore.rules` y `storage.rules`, config de emuladores y capa `core/firebase`. Build, lint y tests en verde. Hallazgo gordo: el SDK de Firebase costaba 122 kB comprimidos en el arranque; repartido por rutas el inicial baja de 189,7 a 76,3 kB (D-18). |
+| 2026-09-08 | F0.1 arrancado: andamiaje Angular 22 zoneless, compila y cabe de sobra en el presupuesto. Descubierto que AngularFire no soporta Angular 22 (D-17): se usa el SDK modular directo. Node ≥ 22.22.3 y npm ≥ 11 como requisito; `firebase-tools` pasa a instalación global.                                                              |
+| 2026-09-08 | Cambio de nombre a **Nupcialis** (`nupcialis.com`, libre). Cerradas D-03, D-12, D-15 y D-16. Spikes S-1, S-2 y S-3 resueltos. Dos riesgos nuevos en §11: tope no documentado de dominios autorizados y aislamiento de cookies entre subdominios.                                                                                      |
+| 2026-09-07 | `PUESTA-EN-MARCHA.md`. Cloudflare Pages descartado (sin wildcard). Vercel elegido. `nupcialis.com` resulta estar registrado y aparcado: nueva decisión D-15. Riesgo detectado en los dominios autorizados de Firebase Auth: nueva decisión D-16 y spike S-1.                                                                          |

@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  # En todas las ramas, no solo en main: si el CI solo corre al fusionar, se
+  # entera del problema quien menos puede arreglarlo y cuando ya es tarde.
+  push:
+  pull_request:
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # npm 10 revienta instalando este proyecto con un error críptico
+      # (edgesOut) al resolver un peer opcional de Vitest.
+      - name: Fijar npm 11
+        run: npm install -g npm@11
+
+      - run: npm ci
+
+      - name: Contraste de la paleta
+        run: npm run tokens:check
+
+      - name: La paleta generada está al día
+        run: |
+          npm run tokens
+          git diff --exit-code -- src/app/design-system/tokens/
+
+      - name: Los iconos generados están al día
+        run: |
+          npm run icons
+          git diff --exit-code -- public/icons src/app/design-system/icons/icon-name.generated.ts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formato
+        run: npm run format:check
+
+      - name: Tests unitarios
+        run: npm test -- --watch=false
+
+      - name: Build de producción
+        run: npm run build -- --configuration production
+
+  reglas:
+    # Bloqueante a propósito: la batería de aislamiento multi-tenant es lo que
+    # sustituye al aislamiento por bases de datos separadas. Si no pasa, no se
+    # despliega. Ver docs/REQUISITOS.md §6.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm install -g npm@11
+      - run: npm ci
+
+      # No es dependencia del proyecto: arrastra módulos nativos enormes y
+      # multiplicaría el tiempo de instalación de todo el equipo.
+      - name: Instalar firebase-tools
+        run: npm install -g firebase-tools@15
+
+      - name: Comprobar tipos de la batería de reglas
+        run: npx tsc -p tsconfig.rules.json
+
+      - name: Tests de reglas contra el emulador
+        run: npm run test:rules

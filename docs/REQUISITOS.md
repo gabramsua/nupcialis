@@ -3,7 +3,7 @@
 **Producto:** plataforma SaaS multi-tenant de organización de bodas, operada por los propios novios.
 **Dominio:** `nupcialis.com`, con una web por boda en `<slug>.nupcialis.com`.
 **Fecha del documento:** 2026-09-07
-**Estado:** requisitos cerrados para Fase 1–4. Las decisiones marcadas como *pendientes* no bloquean el arranque.
+**Estado:** requisitos cerrados para Fase 1–4. Las decisiones marcadas como _pendientes_ no bloquean el arranque.
 
 ---
 
@@ -19,12 +19,12 @@ El principio rector del sistema es que **la intervención humana del operador se
 
 ### 1.1 Actores
 
-| Actor | Descripción | Acceso |
-|---|---|---|
-| **Superadmin** | El operador de la plataforma (Gabriel). Da de alta bodas, ve el estado global, resuelve incidencias. | Panel de superadmin en `admin.nupcialis.com` |
-| **Pareja (owner)** | Los dos miembros de la pareja. Cada uno con su propia cuenta, ambas sobre la misma boda. | Panel en `<slug>.nupcialis.com/panel` |
-| **Invitado** | Persona invitada a la boda. Puede ser identificada o anónima según el modo de acceso configurado. | Web pública en `<slug>.nupcialis.com` |
-| **Visitante anónimo** | Cualquiera con la URL, cuando el modo de acceso es abierto. | Web pública, solo lectura de contenido público |
+| Actor                 | Descripción                                                                                          | Acceso                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **Superadmin**        | El operador de la plataforma (Gabriel). Da de alta bodas, ve el estado global, resuelve incidencias. | Panel de superadmin en `admin.nupcialis.com`   |
+| **Pareja (owner)**    | Los dos miembros de la pareja. Cada uno con su propia cuenta, ambas sobre la misma boda.             | Panel en `<slug>.nupcialis.com/panel`          |
+| **Invitado**          | Persona invitada a la boda. Puede ser identificada o anónima según el modo de acceso configurado.    | Web pública en `<slug>.nupcialis.com`          |
+| **Visitante anónimo** | Cualquiera con la URL, cuando el modo de acceso es abierto.                                          | Web pública, solo lectura de contenido público |
 
 ---
 
@@ -32,25 +32,25 @@ El principio rector del sistema es que **la intervención humana del operador se
 
 ### 2.1 Decisiones cerradas
 
-| Área | Decisión |
-|---|---|
-| Frontal | Angular (última versión estable), SPA, componentes standalone y signals |
-| Datos | **Una sola base de datos Firestore** multi-tenant, raíz `weddings/{weddingId}` |
-| Aislamiento | Reglas de seguridad de Firestore + custom claims en el token, **no** bases separadas |
-| Autenticación | Firebase Auth (email/contraseña y Google para la pareja; custom tokens para invitados) |
-| Ficheros | Firebase Storage, particionado por `weddings/{weddingId}/...` |
-| Lógica de servidor | Cloud Functions for Firebase, solo como pegamento. **Sin backend con framework.** |
-| Hosting del frontal | Plataforma con soporte de **dominio wildcard `*.nupcialis.com`** (Cloudflare Pages o Vercel) |
-| Alta de bodas | Manual por el superadmin en Fase 1; self-service con pago en Fase 5 |
-| i18n | Infraestructura de traducción desde el primer día, arrancando solo con español |
-| Protección | Firebase App Check obligatorio en Firestore, Storage y Functions |
-| Mapas | Mapa interactivo con Leaflet/MapLibre sobre OpenStreetMap; navegación por enlace profundo a Google Maps |
+| Área                  | Decisión                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Frontal               | Angular 22, SPA **zoneless**, componentes standalone y signals                                                       |
+| Datos                 | **Una sola base de datos Firestore** multi-tenant, raíz `weddings/{weddingId}`                                       |
+| Aislamiento           | Reglas de seguridad de Firestore + custom claims en el token, **no** bases separadas                                 |
+| Autenticación         | Firebase Auth (email/contraseña y Google para la pareja; custom tokens para invitados)                               |
+| Ficheros              | Firebase Storage, particionado por `weddings/{weddingId}/...`                                                        |
+| Lógica de servidor    | Cloud Functions for Firebase, solo como pegamento. **Sin backend con framework.**                                    |
+| Hosting del frontal   | Plataforma con soporte de **dominio wildcard `*.nupcialis.com`** (Cloudflare Pages o Vercel)                         |
+| Alta de bodas         | Manual por el superadmin en Fase 1; self-service con pago en Fase 5                                                  |
+| i18n                  | Infraestructura de traducción desde el primer día, arrancando solo con español                                       |
+| Protección            | Firebase App Check obligatorio en Firestore, Storage y Functions                                                     |
+| Mapas                 | Mapa interactivo con Leaflet/MapLibre sobre OpenStreetMap; navegación por enlace profundo a Google Maps              |
 | Edición de contenidos | Secciones prediseñadas editadas sobre vista previa en vivo, con texto enriquecido acotado. **Sin maquetador libre.** |
-| Formularios | El RSVP se construye a partir de preguntas configurables por la pareja, no de campos fijos |
+| Formularios           | El RSVP se construye a partir de preguntas configurables por la pareja, no de campos fijos                           |
 
 ### 2.2 Decisiones rechazadas y por qué
 
-**Una base de datos por boda.** Descartado. Firestore admite 100 bases de datos por proyecto (ampliable solo por petición a soporte), lo que impone un techo de crecimiento con fricción administrativa. Firestore no degrada por volumen de datos: es horizontal y su límite relevante es ~1 escritura por segundo *por documento*, no por base. En cambio, cada base adicional multiplica el coste operativo permanente: reglas, índices, copias de seguridad y migraciones de esquema se ejecutan N veces. El aislamiento buscado se obtiene con reglas de seguridad verificables mediante tests automatizados sobre el emulador.
+**Una base de datos por boda.** Descartado. Firestore admite 100 bases de datos por proyecto (ampliable solo por petición a soporte), lo que impone un techo de crecimiento con fricción administrativa. Firestore no degrada por volumen de datos: es horizontal y su límite relevante es ~1 escritura por segundo _por documento_, no por base. En cambio, cada base adicional multiplica el coste operativo permanente: reglas, índices, copias de seguridad y migraciones de esquema se ejecutan N veces. El aislamiento buscado se obtiene con reglas de seguridad verificables mediante tests automatizados sobre el emulador.
 
 **Firebase Hosting para los subdominios.** Descartado. Firebase Hosting limita a **20 subdominios por dominio apex** por restricciones de emisión de certificados SSL, y exige dar de alta cada dominio manualmente — justo la intervención humana que el producto quiere eliminar. El frontal se sirve desde una plataforma con wildcard; Firestore, Auth, Storage y Functions siguen siendo de Firebase. No están acoplados.
 
@@ -62,6 +62,7 @@ El principio rector del sistema es que **la intervención humana del operador se
 4. Carga la proyección pública de la boda y arranca con ese tenant en contexto.
 
 Reglas del slug:
+
 - Minúsculas, dígitos y guiones. Sin acentos ni `ñ` (se normalizan: `maríaygabriel` → `mariaygabriel`).
 - Entre 3 y 40 caracteres.
 - Unicidad garantizada por transacción sobre la colección `slugs`.
@@ -74,12 +75,12 @@ Entornos: `*.dev.nupcialis.com` para desarrollo y `*.staging.nupcialis.com` para
 
 Un único proyecto Angular que sirve tres experiencias, resueltas por el host y la ruta:
 
-| Superficie | URL | Contenido |
-|---|---|---|
-| Web pública de la boda | `<slug>.nupcialis.com/` | Plantilla configurada por la pareja, módulos públicos activos |
-| Panel de la pareja | `<slug>.nupcialis.com/panel` | Configuración y herramientas de gestión, requiere sesión de owner |
-| Panel de superadmin | `admin.nupcialis.com` | Alta y supervisión de bodas, requiere claim de superadmin |
-| Landing comercial | `nupcialis.com` y `www.nupcialis.com` | Página de venta del producto |
+| Superficie             | URL                                   | Contenido                                                         |
+| ---------------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| Web pública de la boda | `<slug>.nupcialis.com/`               | Plantilla configurada por la pareja, módulos públicos activos     |
+| Panel de la pareja     | `<slug>.nupcialis.com/panel`          | Configuración y herramientas de gestión, requiere sesión de owner |
+| Panel de superadmin    | `admin.nupcialis.com`                 | Alta y supervisión de bodas, requiere claim de superadmin         |
+| Landing comercial      | `nupcialis.com` y `www.nupcialis.com` | Página de venta del producto                                      |
 
 El bundle del panel se carga de forma diferida: un invitado que abre la web de la boda no debe descargar el código de administración.
 
@@ -111,9 +112,10 @@ El modo de acceso lo elige la pareja en la configuración de su boda. Es una pro
 
 **Modo C — Teléfono completo.** El invitado escribe su número de móvil y se contrasta contra la lista de invitados.
 
-**Requisito de seguridad innegociable para los modos B y C:** la verificación se resuelve **íntegramente en una Cloud Function** que devuelve un *custom token* de Firebase con claims `{ weddingId, guestId, role: 'guest' }`. El cliente **nunca** consulta teléfonos ni nombres contra Firestore, porque una regla que permita esa consulta permite descargar la lista de invitados completa.
+**Requisito de seguridad innegociable para los modos B y C:** la verificación se resuelve **íntegramente en una Cloud Function** que devuelve un _custom token_ de Firebase con claims `{ weddingId, guestId, role: 'guest' }`. El cliente **nunca** consulta teléfonos ni nombres contra Firestore, porque una regla que permita esa consulta permite descargar la lista de invitados completa.
 
 Controles sobre la función de acceso de invitados:
+
 - App Check obligatorio.
 - Límite de intentos por IP y por boda (por ejemplo, 10 intentos en 15 minutos), con retardo creciente.
 - Respuesta genérica en caso de fallo: no se distingue entre "ese invitado no existe" y "los dígitos no coinciden", para evitar enumeración.
@@ -123,7 +125,7 @@ Controles sobre la función de acceso de invitados:
 
 **Acompañantes con acceso propio.** Cuando la pareja lo permite, un invitado puede añadir acompañantes desde su propia sesión, y esos acompañantes **acceden a la web con identidad propia**. No son un campo del titular: son invitados de pleno derecho, con su sesión, su mesa, su menú, su respuesta al formulario y su contador de accesos. Consecuencias: en los modos B y C el titular debe aportar el teléfono del acompañante para que este pueda identificarse, y el acompañante **hereda los grupos del titular**, incluido el grupo de audiencia restringida de la galería si lo hubiera. Ver §5.5.
 
-**Riesgo aceptado y documentado:** los modos B y C son *identificación*, no autenticación fuerte. Quien conozca el nombre y el teléfono de un invitado puede suplantarlo. Es proporcionado al contexto (una boda), pero debe constar en la política de privacidad que se presenta a la pareja.
+**Riesgo aceptado y documentado:** los modos B y C son _identificación_, no autenticación fuerte. Quien conozca el nombre y el teléfono de un invitado puede suplantarlo. Es proporcionado al contexto (una boda), pero debe constar en la política de privacidad que se presenta a la pareja.
 
 ---
 
@@ -134,6 +136,7 @@ Operación atómica, ejecutada por una Cloud Function `provisionWedding` invocad
 Entrada: nombres de la pareja, slug deseado, fecha de la boda, emails de las dos cuentas, plan contratado.
 
 Pasos:
+
 1. Validar y normalizar el slug; comprobar que no está reservado.
 2. En una **transacción**: crear `slugs/{slug}` y el documento `weddings/{weddingId}`. Si el slug ya existe, la operación falla completa y se propone una alternativa.
 3. Sembrar la configuración por defecto: plantilla, paleta, módulos activos según el plan, modo de acceso `open`.
@@ -166,12 +169,14 @@ slugs/{slug}
   weddingId: string
   status: 'active' | 'quarantined'
 ```
+
 Lectura pública, escritura solo desde Cloud Functions. Es el único documento que un visitante anónimo puede leer antes de resolver el tenant.
 
 ```
 auditLog/{entryId}
   actorUid, actorRole, action, weddingId, payload, createdAt
 ```
+
 Solo superadmin. Recoge tanto las acciones del superadmin como los **accesos de los novios al panel**.
 
 ### 5.2 Documento de la boda
@@ -409,6 +414,7 @@ El dress code no tiene colección propia: vive en `modules.dressCode.config`, co
 ### 5.11 Índices
 
 Declarados en `firestore.indexes.json`. Los previsibles:
+
 - `guests` por `rsvpStatus` + `fullName`, por `tableId` + `fullName`, por `groupIds` (array-contains) + `fullName`, por `invitedById`
 - `photos` por `status` + `audienceGroupId` + `createdAt`
 - `quizResults` por `points` desc + `elapsedMs` asc, y por `guestId` + `playedAt`
@@ -493,25 +499,25 @@ match /weddings/{wid} {
 
 Solo como pegamento. Todas con App Check activado.
 
-| Función | Tipo | Responsabilidad |
-|---|---|---|
-| `provisionWedding` | callable (superadmin) | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo) |
-| `setUserClaims` | callable (superadmin) | Asignar o revocar `weddingId` y `role` |
-| `authorizeWeddingDomain` | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch |
-| `guestLogin` | callable (público) | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`** |
-| `addCompanion` | callable (guest) | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'` |
-| `submitRsvp` | callable (guest) | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores |
-| `listPhotos` | callable (guest) | Devolver solo las fotos que ese invitado puede ver según su grupo |
-| `uploadPhoto` | callable (guest) | Asignar `audienceGroupId` según el grupo del que sube, aplicar política de moderación |
-| `deletePhoto` | callable (guest/owner) | Borrado propio; los novios pueden borrar cualquiera |
-| `submitQuizResult` | callable (guest) | Corregir el cuestionario **en servidor** y guardar la puntuación |
-| `logOwnerAccess` | trigger / callable | Registrar en `auditLog` cada entrada de un novio al panel |
-| `syncPublicProjection` | trigger Firestore | Mantener `public/site` al día |
-| `recomputeCounters` | trigger Firestore | Mantener `counters` |
-| `onPhotoUploaded` | trigger Storage | Miniatura, validación de MIME y tamaño |
-| `sanitizeRichContent` | trigger Firestore | Limpiar el HTML de los contenidos editados por la pareja antes de publicarlos |
-| `exportGuests` | callable (owner) | XLSX de invitados con menús, alergias y mesas |
-| `archiveWeddings` / `scheduledBackup` | programadas | Ciclo de vida y copias |
+| Función                               | Tipo                                  | Responsabilidad                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provisionWedding`                    | callable (superadmin)                 | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo)                                                    |
+| `setUserClaims`                       | callable (superadmin)                 | Asignar o revocar `weddingId` y `role`                                                                                                                            |
+| `authorizeWeddingDomain`              | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch |
+| `guestLogin`                          | callable (público)                    | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`**                                              |
+| `addCompanion`                        | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                             |
+| `submitRsvp`                          | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                      |
+| `listPhotos`                          | callable (guest)                      | Devolver solo las fotos que ese invitado puede ver según su grupo                                                                                                 |
+| `uploadPhoto`                         | callable (guest)                      | Asignar `audienceGroupId` según el grupo del que sube, aplicar política de moderación                                                                             |
+| `deletePhoto`                         | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera                                                                                                               |
+| `submitQuizResult`                    | callable (guest)                      | Corregir el cuestionario **en servidor** y guardar la puntuación                                                                                                  |
+| `logOwnerAccess`                      | trigger / callable                    | Registrar en `auditLog` cada entrada de un novio al panel                                                                                                         |
+| `syncPublicProjection`                | trigger Firestore                     | Mantener `public/site` al día                                                                                                                                     |
+| `recomputeCounters`                   | trigger Firestore                     | Mantener `counters`                                                                                                                                               |
+| `onPhotoUploaded`                     | trigger Storage                       | Miniatura, validación de MIME y tamaño                                                                                                                            |
+| `sanitizeRichContent`                 | trigger Firestore                     | Limpiar el HTML de los contenidos editados por la pareja antes de publicarlos                                                                                     |
+| `exportGuests`                        | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                     |
+| `archiveWeddings` / `scheduledBackup` | programadas                           | Ciclo de vida y copias                                                                                                                                            |
 
 **Nota sobre `submitQuizResult`:** la corrección tiene que ocurrir en servidor. Si el cliente envía "he sacado 300 puntos", cualquiera gana el ranking desde la consola del navegador. El cliente envía las respuestas elegidas; la función las compara con `correctAnswer` y calcula la puntuación. El prototipo actual corrige en cliente y escribe el ranking directamente; esto es una mejora consciente sobre él.
 
@@ -593,7 +599,8 @@ La visibilidad es **asimétrica y deliberada**: quien pertenece a un grupo restr
 **Restricción de modelo:** un invitado puede pertenecer a varios grupos, pero **a lo sumo a uno restringido**. La validación va en el momento de asignar grupos. Sin ella, el destino de una foto sería ambiguo.
 
 Además:
-- **Moderación opcional** por interruptor: publicación inmediata o cola de aprobación. Es independiente de las audiencias: una cosa es *quién puede verla* y otra *si está aprobada*.
+
+- **Moderación opcional** por interruptor: publicación inmediata o cola de aprobación. Es independiente de las audiencias: una cosa es _quién puede verla_ y otra _si está aprobada_.
 - La pareja lo ve absolutamente todo, de todos los grupos, y puede borrar cualquier foto.
 - Miniaturas en servidor, WebP con `srcset`, límite de tamaño por fichero y cuota por boda.
 - Descarga masiva en ZIP para la pareja.
@@ -607,13 +614,14 @@ Además:
 - Lista de ubicaciones bajo el mapa, ordenable, para quien prefiera leer.
 - Las ubicaciones se enlazan con los eventos del timeline (§8.10), de modo que la agenda del día sabe dónde ocurre cada cosa.
 
-**Elección técnica.** Recomendación: **Leaflet o MapLibre con teselas de OpenStreetMap** para el mapa interactivo, y **enlaces profundos a Google Maps** para la navegación. Motivo: no requiere clave de API ni facturación, no hay coste por carga de mapa, y el invitado acaba igualmente en Google Maps cuando pulsa "Cómo llegar", que es lo que realmente pide el requisito. La alternativa —Maps JavaScript API— exige clave con facturación activada, se paga por carga y obliga a restringir por *referrer*; con subdominios wildcard la restricción tendría que ser `*.nupcialis.com/*`, que es tan amplia que protege poco. Si se decide usarla igualmente, la clave debe vivir en configuración de servidor y no en el bundle.
+**Elección técnica.** Recomendación: **Leaflet o MapLibre con teselas de OpenStreetMap** para el mapa interactivo, y **enlaces profundos a Google Maps** para la navegación. Motivo: no requiere clave de API ni facturación, no hay coste por carga de mapa, y el invitado acaba igualmente en Google Maps cuando pulsa "Cómo llegar", que es lo que realmente pide el requisito. La alternativa —Maps JavaScript API— exige clave con facturación activada, se paga por carga y obliga a restringir por _referrer_; con subdominios wildcard la restricción tendría que ser `*.nupcialis.com/*`, que es tan amplia que protege poco. Si se decide usarla igualmente, la clave debe vivir en configuración de servidor y no en el bundle.
 
 ### 8.7 Quiz de la boda
 
 Se replica el juego del prototipo `wedding-quiz` y se convierte en módulo multi-tenant.
 
 **Mecánica heredada del prototipo:**
+
 - Preguntas de respuesta única con **una correcta y tres falsas**, presentadas en orden aleatorio.
 - **Tres niveles de dificultad** que valen 10, 20 y 30 puntos, representados con estrellas.
 - Cada partida toma **N preguntas al azar** del banco (10 por defecto, configurable).
@@ -622,12 +630,14 @@ Se replica el juego del prototipo `wedding-quiz` y se convierte en módulo multi
 - Pantalla final con puntuación y posición en el ranking.
 
 **Añadidos respecto al prototipo:**
+
 - **Corrección en servidor** (§7). El prototipo corrige y puntúa en cliente y escribe el ranking directamente contra Firestore; en un producto vendido eso permite falsear la puntuación desde la consola del navegador.
 - **Identificación del jugador por su sesión de invitado**, no escribiendo el nombre. El ranking muestra el mote.
 - Configurable por la pareja: número de preguntas por partida, tamaño del ranking, si se permite repetir partida y si el ranking es visible para los invitados.
 - Pista opcional por pregunta.
 
 **Gestión en el panel privado:**
+
 - Alta, edición, duplicado, activación y borrado de preguntas, con la correcta y las tres falsas y el nivel de dificultad.
 - Importación de un banco de preguntas desde CSV y **banco de ejemplo sembrado al crear la boda**, para que la pareja tenga de dónde partir.
 - Vista previa de la partida tal como la verá el invitado.
@@ -768,6 +778,7 @@ Módulo completo e independiente, además de la pregunta del RSVP.
 ### 8.16 Presupuesto y proveedores
 
 **Presupuesto**
+
 - Partidas con categoría, concepto, coste estimado, coste real, vencimiento y estado de pago.
 - Totales por categoría, desviación entre estimado y real, y calendario de pagos pendientes.
 - Presupuesto objetivo global con aviso al superarse.
@@ -775,6 +786,7 @@ Módulo completo e independiente, además de la pregunta del RSVP.
 - Exportación a XLSX.
 
 **Proveedores**
+
 ```
 weddings/{weddingId}/vendors/{id}
   name, category, contactName, phone, email, website
@@ -786,6 +798,7 @@ weddings/{weddingId}/vendors/{id}
   notes
   color, icon
 ```
+
 - Ficha por proveedor con contacto pulsable, presupuesto, precio acordado, contratos en PDF y registro de pagos y señales.
 - Comparativa de candidatos por categoría, para decidir entre los tres fotógrafos a los que se pidió presupuesto.
 - **Asignación a tareas del checklist** (§8.17): una tarea puede colgar de un proveedor, y la ficha del proveedor muestra sus tareas abiertas. Es lo que convierte la lista de proveedores en una herramienta de seguimiento y no en una agenda de teléfonos.
@@ -833,13 +846,13 @@ Pediste que todo sea extremadamente visual e intuitivo por colores. Eso solo fun
 
 **Vocabulario semántico fijo:**
 
-| Significado | Se usa en |
-|---|---|
-| Confirmado / hecho / pagado | RSVP, checklist, presupuesto, proveedores, agradecimientos |
-| Pendiente / sin respuesta | RSVP, tareas abiertas, regalos sin agradecer |
-| Rechazado / descartado / vencido | RSVP declinado, tareas vencidas, proveedores descartados |
-| Atención / requiere revisión | Mesa fuera de mínimo o máximo, presupuesto desviado, fotos en moderación |
-| Informativo / neutro | Notas, elementos desactivados |
+| Significado                      | Se usa en                                                                |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| Confirmado / hecho / pagado      | RSVP, checklist, presupuesto, proveedores, agradecimientos               |
+| Pendiente / sin respuesta        | RSVP, tareas abiertas, regalos sin agradecer                             |
+| Rechazado / descartado / vencido | RSVP declinado, tareas vencidas, proveedores descartados                 |
+| Atención / requiere revisión     | Mesa fuera de mínimo o máximo, presupuesto desviado, fotos en moderación |
+| Informativo / neutro             | Notas, elementos desactivados                                            |
 
 **Regla innegociable: el color nunca viaja solo.** Todo estado se comunica con **color + icono + texto**. Un punto verde sin más no es información: es un punto verde. Además de ser lo correcto en accesibilidad (WCAG 2.1, criterio 1.4.1), es lo práctico — alrededor del 8% de los hombres tiene alguna deficiencia en la visión del color, así que en una boda de 150 invitados hay varias personas que no distinguen tu verde de tu rojo. Y la pareja consulta el panel en el móvil, a veces al sol.
 
@@ -881,7 +894,7 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 - Base legal, finalidad y plazo de conservación documentados y visibles para el invitado en el formulario de RSVP.
 - Las alergias e intolerancias se tratan con la cautela de un dato de salud: visibles solo para la pareja y para la exportación al catering.
 - Derecho de supresión: un invitado puede solicitar la eliminación de sus datos; la pareja dispone de un botón para ello.
-- **Retención:** los datos de una boda se conservan hasta *(pendiente, ver sección 12)* meses después de la fecha, tras los cuales la boda se archiva y después se purga, previo aviso a la pareja.
+- **Retención:** los datos de una boda se conservan hasta _(pendiente, ver sección 12)_ meses después de la fecha, tras los cuales la boda se archiva y después se purga, previo aviso a la pareja.
 - Todos los datos residen en región **europea** (`eur3` o `europe-west1`).
 - **Datos de terceros aportados por invitados:** cuando un invitado añade a un acompañante está facilitando el nombre y el teléfono de otra persona. El formulario debe informarlo expresamente y el aviso de privacidad debe cubrir esa finalidad.
 - **Registro de accesos:** se guardan accesos de invitados (con IP y agente), accesos de los novios al panel y acciones del superadmin. Son datos personales con su propio plazo de conservación, que debe ser más corto que el del resto: 12 meses como referencia.
@@ -911,14 +924,14 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 
 ## 10. Fases de entrega
 
-| Fase | Contenido | Resultado |
-|---|---|---|
-| **F0 — Fundaciones** | Proyecto Angular, resolución de tenant por hostname, Firebase configurado, auth de la pareja, reglas de seguridad con su batería de tests, `provisionWedding`, panel de superadmin mínimo con registro de accesos, esqueleto del panel | Se puede dar de alta una boda y entrar a su panel vacío |
-| **F1 — Núcleo vendible** | Web pública con plantillas y edición sobre vista previa, invitados con grupos e importación, acompañantes con acceso propio, RSVP con formulario dinámico, los tres modos de acceso, contadores de acceso, compartir por WhatsApp | **Una boda real puede usarse de principio a fin.** Es el mínimo comercializable |
+| Fase                                                | Contenido                                                                                                                                                                                                                                          | Resultado                                                                                                                                         |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F0 — Fundaciones**                                | Proyecto Angular, resolución de tenant por hostname, Firebase configurado, auth de la pareja, reglas de seguridad con su batería de tests, `provisionWedding`, panel de superadmin mínimo con registro de accesos, esqueleto del panel             | Se puede dar de alta una boda y entrar a su panel vacío                                                                                           |
+| **F1 — Núcleo vendible**                            | Web pública con plantillas y edición sobre vista previa, invitados con grupos e importación, acompañantes con acceso propio, RSVP con formulario dinámico, los tres modos de acceso, contadores de acceso, compartir por WhatsApp                  | **Una boda real puede usarse de principio a fin.** Es el mínimo comercializable                                                                   |
 | **F2 — Banquete, ubicaciones y contenidos del día** | Mesas con arrastrar y soltar con mínimos y máximos, mapa interactivo con marcadores y cómo llegar, timeline con iconos y colores, **preguntas frecuentes**, **alojamientos**, **dress code**, **personas importantes**, exportaciones a XLSX y PDF | El invitado tiene resuelto todo lo que pregunta antes de una boda: dónde es, cómo llego, dónde duermo, cómo voy vestido y a qué hora es cada cosa |
-| **F3 — Participación de invitados** | Galería con audiencias por grupo y moderación, **quiz** con gestión, ranking y partidas por invitado, **playlist colaborativa** con votos, libro de firmas, lista de regalos y aportación | Diferenciación frente a la competencia. El quiz y la galería por grupos son los dos módulos que nadie más tiene |
-| **F4 — Gestión interna de la pareja** | Presupuesto, proveedores con tareas asignadas, checklist, **regalos recibidos y agradecimientos** | La pareja organiza toda la boda dentro de la herramienta, y la semana siguiente también |
-| **F5 — Escala comercial** | Alta self-service con pago, WhatsApp Business API, plano real de finca | Crecimiento sin intervención del operador |
+| **F3 — Participación de invitados**                 | Galería con audiencias por grupo y moderación, **quiz** con gestión, ranking y partidas por invitado, **playlist colaborativa** con votos, libro de firmas, lista de regalos y aportación                                                          | Diferenciación frente a la competencia. El quiz y la galería por grupos son los dos módulos que nadie más tiene                                   |
+| **F4 — Gestión interna de la pareja**               | Presupuesto, proveedores con tareas asignadas, checklist, **regalos recibidos y agradecimientos**                                                                                                                                                  | La pareja organiza toda la boda dentro de la herramienta, y la semana siguiente también                                                           |
+| **F5 — Escala comercial**                           | Alta self-service con pago, WhatsApp Business API, plano real de finca                                                                                                                                                                             | Crecimiento sin intervención del operador                                                                                                         |
 
 **Notas sobre el orden.**
 
@@ -930,23 +943,23 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 
 ## 11. Riesgos
 
-| Riesgo | Impacto | Mitigación |
-|---|---|---|
-| Un fallo en las reglas de seguridad expone datos entre bodas | Crítico, reputacional | Batería de tests de aislamiento como requisito de release; revisión de reglas en cada PR que toque el modelo |
-| Fuerza bruta sobre los últimos 4 dígitos del teléfono | Medio | Límite de intentos, App Check, respuestas genéricas, log de accesos |
-| Coste de almacenamiento disparado por la galería | Medio | Cuotas por plan, compresión en subida, límites de tamaño en reglas |
-| Alcance del MVP demasiado ancho (los cuatro grupos de módulos entran) | Alto, en plazo | Las fases F1–F4 secuencian la entrega; F1 ya es vendible por sí sola |
-| Tope no documentado de dominios autorizados en Firebase Auth | Alto si se alcanza: rompe el alta de bodas nuevas | La API no publica límite. Contar los dominios dados de alta, avisar al superadmin en 500 y tener listo el plan B: mover el panel a `app.nupcialis.com` y resolver la boda por el claim |
-| Cookie de un subdominio de boda visible en otro | Medio | Cookies de sesión sin atributo `Domain`, prefijo `__Host-`, `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`. Valorar entrada en la Public Suffix List |
-| Dependencia del wildcard del proveedor de hosting | Bajo | El modelo de datos no depende del subdominio; el fallback de rutas `nupcialis.com/<slug>` funciona sin migración |
-| Fuga del plano de mesas o notas privadas a invitados | Alto | `notes` y datos de gestión nunca entran en la proyección pública |
-| Una foto de un grupo restringido llega a quien no debe | Alto, es una promesa explícita al invitado | `photos` cerrada en reglas; la visibilidad la resuelve siempre `listPhotos`; test de aislamiento por grupo en la batería de reglas |
-| Puntuaciones de quiz falseadas desde la consola | Bajo, pero arruina el juego | Corrección y puntuación en servidor; `quizResults` no admite escritura desde cliente |
-| XSS almacenado a través del editor de contenidos | Alto: lo verían todos los invitados | Saneado en servidor antes de publicar, barra de edición acotada, sin HTML libre |
-| El panel de regalos recibidos se filtra | Crítico, reputacional | Colección privada, fuera de la proyección pública, sin exportaciones compartidas; test de aislamiento propio |
-| Cada módulo inventa sus colores e iconos | Medio, pero destruye la promesa de producto | Sistema visual construido en F0 como infraestructura, no por módulo |
-| Un invitado añade acompañantes sin límite | Medio | Cupo por titular validado en `addCompanion` contando los ya creados, no confiando en el cliente |
-| El teléfono de un acompañante lo aporta un tercero | Medio, RGPD | Aviso expreso en el formulario y finalidad recogida en la política de privacidad |
+| Riesgo                                                                | Impacto                                           | Mitigación                                                                                                                                                                             |
+| --------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Un fallo en las reglas de seguridad expone datos entre bodas          | Crítico, reputacional                             | Batería de tests de aislamiento como requisito de release; revisión de reglas en cada PR que toque el modelo                                                                           |
+| Fuerza bruta sobre los últimos 4 dígitos del teléfono                 | Medio                                             | Límite de intentos, App Check, respuestas genéricas, log de accesos                                                                                                                    |
+| Coste de almacenamiento disparado por la galería                      | Medio                                             | Cuotas por plan, compresión en subida, límites de tamaño en reglas                                                                                                                     |
+| Alcance del MVP demasiado ancho (los cuatro grupos de módulos entran) | Alto, en plazo                                    | Las fases F1–F4 secuencian la entrega; F1 ya es vendible por sí sola                                                                                                                   |
+| Tope no documentado de dominios autorizados en Firebase Auth          | Alto si se alcanza: rompe el alta de bodas nuevas | La API no publica límite. Contar los dominios dados de alta, avisar al superadmin en 500 y tener listo el plan B: mover el panel a `app.nupcialis.com` y resolver la boda por el claim |
+| Cookie de un subdominio de boda visible en otro                       | Medio                                             | Cookies de sesión sin atributo `Domain`, prefijo `__Host-`, `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`. Valorar entrada en la Public Suffix List                          |
+| Dependencia del wildcard del proveedor de hosting                     | Bajo                                              | El modelo de datos no depende del subdominio; el fallback de rutas `nupcialis.com/<slug>` funciona sin migración                                                                       |
+| Fuga del plano de mesas o notas privadas a invitados                  | Alto                                              | `notes` y datos de gestión nunca entran en la proyección pública                                                                                                                       |
+| Una foto de un grupo restringido llega a quien no debe                | Alto, es una promesa explícita al invitado        | `photos` cerrada en reglas; la visibilidad la resuelve siempre `listPhotos`; test de aislamiento por grupo en la batería de reglas                                                     |
+| Puntuaciones de quiz falseadas desde la consola                       | Bajo, pero arruina el juego                       | Corrección y puntuación en servidor; `quizResults` no admite escritura desde cliente                                                                                                   |
+| XSS almacenado a través del editor de contenidos                      | Alto: lo verían todos los invitados               | Saneado en servidor antes de publicar, barra de edición acotada, sin HTML libre                                                                                                        |
+| El panel de regalos recibidos se filtra                               | Crítico, reputacional                             | Colección privada, fuera de la proyección pública, sin exportaciones compartidas; test de aislamiento propio                                                                           |
+| Cada módulo inventa sus colores e iconos                              | Medio, pero destruye la promesa de producto       | Sistema visual construido en F0 como infraestructura, no por módulo                                                                                                                    |
+| Un invitado añade acompañantes sin límite                             | Medio                                             | Cupo por titular validado en `addCompanion` contando los ya creados, no confiando en el cliente                                                                                        |
+| El teléfono de un acompañante lo aporta un tercero                    | Medio, RGPD                                       | Aviso expreso en el formulario y finalidad recogida en la política de privacidad                                                                                                       |
 
 ---
 
@@ -957,7 +970,7 @@ Ninguna bloquea el arranque del desarrollo.
 1. **Ciclo de vida post-boda.** Cuánto tiempo permanece viva la web y los datos tras la fecha, si se ofrece renovación y cuándo se purga. Afecta a retención RGPD y a coste. Los registros de acceso deberían purgarse antes que el resto.
 2. **Precio y planes.** Qué módulos entran en `basic` y cuáles en `premium`. El campo `plan` ya está en el modelo. Candidatos naturales a premium: quiz, galería con audiencias, mapa.
 3. **Librería del editor de texto enriquecido.** Jodit es MIT y sirve, pero su wrapper oficial de Angular está sin mantenimiento activo y la versión que manejabas (4.7.6) va varias menores por detrás de la actual. Para una barra tan acotada puede pesar de más. Pendiente de una prueba comparativa rápida contra una alternativa ligera antes de fijarlo.
-4. **Confirmar la librería de mapas.** La recomendación es Leaflet o MapLibre sobre OpenStreetMap para evitar clave y facturación de Google. Si prefieres el aspecto de Google Maps, hay que asumir clave con facturación y restricción por *referrer* poco estrecha por el wildcard.
+4. **Confirmar la librería de mapas.** La recomendación es Leaflet o MapLibre sobre OpenStreetMap para evitar clave y facturación de Google. Si prefieres el aspecto de Google Maps, hay que asumir clave con facturación y restricción por _referrer_ poco estrecha por el wildcard.
 5. **Email transaccional.** Hoy fuera de alcance: la comunicación se hace compartiendo el enlace por WhatsApp manualmente, y solo se usan los correos propios de Firebase Auth. Si se quieren recordatorios automáticos a quienes no han confirmado, hará falta proveedor de email.
 6. **WhatsApp Business API.** No descartado. Coste por mensaje, plantillas aprobadas por Meta y alta como empresa. Previsto para F5.
 7. **Dominio propio de la pareja** (`mariaygabriel.com`). Técnicamente posible, pero reintroduce trabajo manual de certificados. Evaluar como extra de pago.
