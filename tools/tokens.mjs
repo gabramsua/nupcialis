@@ -173,6 +173,11 @@ ${bloque('dark')}
  * pantallas —que es justo lo que se prometió en §9.1— se rompería sin que
  * nadie lo notara.
  */
+/** Comillas simples, como el resto del proyecto. JSON.stringify pone dobles. */
+function comillas(texto) {
+  return `'${texto.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
 function semanticTs() {
   const entradas = Object.entries(paleta.semantic).filter(([k]) => !k.startsWith('_'));
   return `// GENERADO por tools/tokens.mjs — no editar a mano.
@@ -191,7 +196,7 @@ ${entradas.map(([k, v]) => `  ${k}: '${v.icon}',`).join('\n')}
 
 /** Para qué sirve cada estado, por si alguien duda al elegir. */
 export const NP_STATUS_MEANING: Record<NpStatus, string> = {
-${entradas.map(([k, v]) => `  ${k}: ${JSON.stringify(v.significado)},`).join('\n')}
+${entradas.map(([k, v]) => `  ${k}: ${comillas(v.significado)},`).join('\n')}
 };
 `;
 }

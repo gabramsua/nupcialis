@@ -4,7 +4,12 @@
 import type { NpIconName } from '../icons/icon-name.generated';
 
 /** Los cinco estados del vocabulario semántico. Ver docs/REQUISITOS.md §9.1. */
-export type NpStatus = 'confirmed' | 'pending' | 'declined' | 'attention' | 'info';
+export type NpStatus =
+  | 'confirmed'
+  | 'pending'
+  | 'declined'
+  | 'attention'
+  | 'info';
 
 /** Icono de cada estado. El color nunca viaja solo: esto es la otra mitad. */
 export const NP_STATUS_ICON: Record<NpStatus, NpIconName> = {
