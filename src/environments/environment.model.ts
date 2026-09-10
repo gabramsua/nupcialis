@@ -19,6 +19,16 @@ export interface AppEnvironment {
     readonly storageBucket: string;
     readonly messagingSenderId: string;
     readonly appId: string;
+    /**
+     * Solo existe si el proyecto tiene Google Analytics activado, y solo lo usa
+     * Analytics. Opcional a propósito: pegar aquí la configuración tal cual la
+     * da la consola de Firebase tiene que funcionar, esté o no Analytics.
+     *
+     * No lo usamos todavía. Si algún día se activa Analytics habrá que decidir
+     * antes qué se mide y con qué base legal, porque los invitados no han
+     * aceptado nada (REQUISITOS §9.4).
+     */
+    readonly measurementId?: string;
   };
   /** Clave de sitio de reCAPTCHA Enterprise para App Check. */
   readonly appCheckSiteKey: string | null;
