@@ -46,8 +46,11 @@ export const syncPublicProjection = onDocumentWritten(
 );
 
 function igual(actual: Record<string, unknown>, nueva: object): boolean {
-  const { updatedAt: _ignorado, ...resto } = actual;
-  return JSON.stringify(normalizar(resto)) === JSON.stringify(normalizar(nueva));
+  // `updatedAt` lo pone el servidor en cada escritura, así que compararlo diría
+  // "ha cambiado" siempre. Se quita de la copia, no del documento.
+  const sinFecha = { ...actual };
+  delete sinFecha['updatedAt'];
+  return JSON.stringify(normalizar(sinFecha)) === JSON.stringify(normalizar(nueva));
 }
 
 /**
