@@ -5,26 +5,32 @@ tropieza con una de estas, se para y se pregunta.
 
 Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 
-| ID   | Decisión                                                                   | Bloquea                          | Estado                                                 |
-| ---- | -------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------ |
-| D-01 | Ciclo de vida post-boda: cuánto vive la web y los datos, renovación, purga | F5, RGPD                         | abierta                                                |
-| D-02 | Precio y planes: qué módulos son `basic` y cuáles `premium`                | F5                               | abierta                                                |
-| D-03 | Librería del editor de texto enriquecido                                   | F1                               | **decidida 2026-09-08: Jodit con `ngx-jodit`**         |
-| D-04 | Confirmar librería de mapas (Leaflet/MapLibre frente a Google Maps)        | F2                               | abierta                                                |
-| D-05 | Email transaccional: proveedor y si entra en el producto                   | F5                               | abierta                                                |
-| D-06 | WhatsApp Business API                                                      | F5                               | abierta                                                |
-| D-07 | Dominio propio de la pareja                                                | —                                | abierta                                                |
-| D-08 | PWA e instalación en el móvil del invitado                                 | —                                | abierta                                                |
-| D-09 | Comportamiento de los módulos con identidad en modo de acceso abierto      | F3                               | abierta                                                |
-| D-10 | Plano real de la finca                                                     | F5                               | abierta                                                |
-| D-11 | Repeticiones del quiz: valor por defecto y qué muestra el ranking          | F3                               | abierta                                                |
-| D-12 | Familia de iconos base                                                     | **F0**                           | **decidida 2026-09-08: Phosphor**                      |
-| D-13 | Reserva de regalos sin identidad en modo abierto                           | F3                               | abierta                                                |
-| D-14 | Consentimiento para publicar fotos de terceros en Personas importantes     | F2, RGPD                         | abierta                                                |
-| D-15 | Dominio definitivo: `nupcialis.com` está registrado y aparcado             | **Bloque 1 de puesta en marcha** | abierta                                                |
-| D-16 | Dónde vive el panel de la pareja                                           | F0.3, F0.4                       | **decidida 2026-09-08: subdominio de la boda**         |
-| D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo              | F0.1                             | **decidida 2026-09-08: SDK modular directo**           |
-| D-18 | Cómo se cargan los servicios de Firebase                                   | F0.1                             | **decidida 2026-09-08: por ruta, en chunks diferidos** |
+| ID   | Decisión                                                                   | Bloquea                          | Estado                                                       |
+| ---- | -------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------ |
+| D-01 | Ciclo de vida post-boda: cuánto vive la web y los datos, renovación, purga | F5, RGPD                         | abierta                                                      |
+| D-02 | Precio y planes: qué módulos son `basic` y cuáles `premium`                | F5                               | abierta                                                      |
+| D-03 | Librería del editor de texto enriquecido                                   | F1                               | **decidida 2026-09-08: Jodit con `ngx-jodit`**               |
+| D-04 | Confirmar librería de mapas (Leaflet/MapLibre frente a Google Maps)        | F2                               | abierta                                                      |
+| D-05 | Email transaccional: proveedor y si entra en el producto                   | F5                               | abierta                                                      |
+| D-06 | WhatsApp Business API                                                      | F5                               | abierta                                                      |
+| D-07 | Dominio propio de la pareja                                                | —                                | abierta                                                      |
+| D-08 | PWA e instalación en el móvil del invitado                                 | —                                | abierta                                                      |
+| D-09 | Comportamiento de los módulos con identidad en modo de acceso abierto      | F3                               | abierta                                                      |
+| D-10 | Plano real de la finca                                                     | F5                               | abierta                                                      |
+| D-11 | Repeticiones del quiz: valor por defecto y qué muestra el ranking          | F3                               | abierta                                                      |
+| D-12 | Familia de iconos base                                                     | **F0**                           | **decidida 2026-09-08: Phosphor**                            |
+| D-13 | Reserva de regalos sin identidad en modo abierto                           | F3                               | abierta                                                      |
+| D-14 | Consentimiento para publicar fotos de terceros en Personas importantes     | F2, RGPD                         | abierta                                                      |
+| D-15 | Dominio definitivo                                                         | **Bloque 1 de puesta en marcha** | **decidida 2026-09-08: `nupcialis.com`, comprado**           |
+| D-16 | Dónde vive el panel de la pareja                                           | F0.3, F0.4                       | **decidida 2026-09-08: subdominio de la boda**               |
+| D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo              | F0.1                             | **decidida 2026-09-08: SDK modular directo**                 |
+| D-18 | Cómo se cargan los servicios de Firebase                                   | F0.1                             | **decidida 2026-09-08: por ruta, en chunks diferidos**       |
+| D-19 | Dónde se importa el SDK de Firestore                                       | F0.3                             | **decidida 2026-09-08: en ficheros `*.firestore.ts`**        |
+| D-20 | Maquetación de la web pública según el plan                                | F0.6, F1                         | **decidida 2026-09-10: básico onepage, extendido multipage** |
+| D-21 | Qué determina el precio                                                    | F5                               | **decidida 2026-09-10: el plan, no los módulos**             |
+| D-22 | Borrador a nivel de módulo                                                 | F0.6, F1                         | **decidida 2026-09-10: `hidden` · `soon` · `visible`**       |
+| D-23 | Dónde se configuran planes y precios                                       | F0.7                             | **decidida 2026-09-10: editables desde el superadmin**       |
+| D-24 | Cinco decisiones tomadas al implementar el alta                            | F0.6                             | **pendiente de validar**                                     |
 
 ---
 
@@ -277,3 +283,91 @@ Además, un `.firestore.ts` tiene un trabajo concreto: **es la frontera de
 confianza**. Lo que llega de la base es `unknown` hasta que ahí se comprueba su
 forma. Hacer un `as` y seguir es cómodo hasta el día en que un documento
 antiguo no tiene un campo.
+
+### D-20 · Plan básico en onepage, extendido en multipage — **DECIDIDA 2026-09-10 (Gabriel)**
+
+Decisión de producto, no técnica, y es final: el plan **básico** sirve la web
+como **una sola página** con las secciones apiladas; el **extendido**, como
+**varias rutas**.
+
+De ahí sale una consecuencia que no es negociable y conviene tener escrita: la
+**galería** y el **quiz** solo existen en el plan extendido (`SOLO_EXTENDIDO` en
+`functions/src/dominio/planes.ts`). No es un arancel comercial: las dos piden
+ruta propia, y no se pueden meter trescientas fotos ni un juego interactivo
+dentro de un scroll continuo sin arruinar la página para todos los demás.
+
+El resto de módulos sí se pueden activar en el básico.
+
+`layout` se deriva del plan y se guarda en el documento de la boda para que la
+proyección pública no tenga que conocer los planes.
+
+### D-21 · El precio va por plan, no por módulos — **DECIDIDA 2026-09-10 (Gabriel)**
+
+Una pareja del plan básico puede activar todos los módulos que le quepan; paga
+lo mismo. Se descarta el modelo de "cada módulo suma", que obliga a la pareja a
+hacer cuentas mientras monta su boda y convierte cada activación en una decisión
+de dinero.
+
+Referencias aproximadas, pendientes de cerrar en D-02: **55 €** el básico,
+**115 €** el extendido, pago único.
+
+### D-22 · Visibilidad por módulo: `hidden`, `soon`, `visible` — **DECIDIDA 2026-09-10 (Gabriel)**
+
+El concepto de borrador se extiende de la boda a cada módulo. Un módulo activo
+puede estar:
+
+| Estado    | Qué ve el invitado                       |
+| --------- | ---------------------------------------- |
+| `hidden`  | Nada. El módulo no existe para él.       |
+| `soon`    | La sección, anunciada como "muy pronto". |
+| `visible` | El módulo completo.                      |
+
+Es lo que permite publicar la web meses antes de tener el menú decidido: los
+invitados quieren la fecha y el sitio **ya**, y el resto puede esperar sin que la
+web parezca abandonada.
+
+Al crear una boda, todo lo que no está activo nace en `hidden`, nunca en `soon`:
+una boda recién creada no debe anunciar seis secciones que quizá nunca lleguen.
+Eso lo decide la pareja.
+
+### D-23 · Planes y precios editables desde el superadmin — **DECIDIDA 2026-09-10 (Gabriel)**
+
+Qué módulos trae cada plan y cuánto cuesta cada plan tienen que poder cambiarse
+**sin desplegar**. Hoy viven en código (`functions/src/dominio/planes.ts`) porque
+no hay panel todavía; en F0.7 pasan a documentos `plans/{planId}` y ese código se
+queda como los valores con los que se siembra la colección.
+
+Hasta entonces, cambiar un plan es un despliegue. Conviene no prometer otra cosa.
+
+### D-24 · Decisiones tomadas al implementar el alta — **PENDIENTES DE VALIDAR**
+
+Cinco cosas que hubo que decidir para que `provisionWedding` existiera y que no
+estaban en los requisitos. Ninguna es irreversible, pero todas son visibles para
+la pareja:
+
+**a) La boda nace en `draft`, también si ha pagado.** La web no se publica hasta
+que la pareja la da por buena. La alternativa —nacer publicada— significa que
+una boda vacía, con las FAQ sin responder, es visible desde el minuto uno para
+cualquiera que acierte el subdominio.
+
+**b) El enlace de acceso se le devuelve al superadmin, no se envía por correo.**
+No hay proveedor de email todavía (D-05). `provisionWedding` genera el enlace de
+"establece tu contraseña" y lo devuelve en la respuesta para que el superadmin lo
+reparta. Cuando haya correo, lo manda la función y el campo desaparece de la
+respuesta. Mientras tanto: **ese enlace da acceso al panel de la boda**; no se
+reenvía por canales que no controlemos.
+
+**c) Se admite un solo email para la pareja.** Hay parejas que comparten
+dirección, y obligarles a inventarse una segunda es peor que permitirlo. Lo que
+no se admite es la misma dos veces.
+
+**d) Las preguntas de fábrica del quiz nacen desactivadas.** Se siembran cinco
+con la forma correcta pero sin respuestas, porque solo la pareja sabe dónde se
+conocieron. Activas, un invitado jugaría a un quiz imposible de acertar y se
+llevaría la impresión de que la web está rota.
+
+**e) Si falla el alta del subdominio en Auth, la boda se crea igual.** Queda con
+`setup.authDomain: 'pending'`, la respuesta trae un aviso y hay una función para
+reintentarlo. La alternativa era tumbar el alta entera por un 503 del Identity
+Toolkit. Lo que **no** se hace es seguir en silencio: ese es exactamente el fallo
+que describe la regla 8 de `CLAUDE.md`.

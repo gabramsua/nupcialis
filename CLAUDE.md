@@ -115,10 +115,19 @@ npm run build
 npm test                       # unidad (Vitest)
 npm run test:rules             # batería de aislamiento contra el emulador
 npm run typecheck:rules        # solo tipos, sin emulador
-firebase emulators:start       # Firestore, Auth, Functions, Storage
+npm run functions:install      # instala el paquete de functions (es aparte)
+npm run functions:build        # tsc de functions; el emulador carga lib/, no src/
+npm run functions:test         # tests de dominio de las funciones
+npm run emulators              # compila functions y levanta todos los emuladores
 npm run deploy:rules
 npm run deploy:functions
 ```
+
+`functions/` es un **paquete npm aparte**, con su propio `package.json` y su
+propio `tsc`. Un `npm ci` en la raíz no lo instala, y el emulador de funciones
+carga el compilado: si `lib/` no existe, el emulador de Functions no arranca y
+el de Extensions se cae detrás con un error que no menciona ninguna de las dos
+cosas. Por eso `npm run emulators` compila primero.
 
 ### Ciclo de trabajo en local
 

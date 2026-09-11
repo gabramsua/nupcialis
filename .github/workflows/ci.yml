@@ -80,3 +80,18 @@ jobs:
 
       - name: Tests de reglas contra el emulador
         run: npm run test:rules
+
+    funciones:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-node@v4
+          with:
+            node-version: 22
+        - run: npm install -g npm@11
+        - name: Instalar
+          run: npm --prefix functions ci
+        - name: Compilar
+          run: npm --prefix functions run build
+        - name: Tests de dominio
+          run: npm --prefix functions test

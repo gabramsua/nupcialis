@@ -1,8 +1,6 @@
 {
   "projects": {
-    "default": "nupcialis-dev",
-    "dev": "nupcialis-dev",
-    "staging": "nupcialis-staging",
-    "prod": "nupcialis-prod"
+    "default": "nupcialis-2220d",
+    "dev": "nupcialis-2220d"
   }
 }
