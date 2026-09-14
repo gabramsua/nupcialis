@@ -83,6 +83,10 @@ vacío, con el aislamiento demostrado por tests.
 
 - `panel-shell` con navegación por módulos, mostrando solo los activos.
 - `admin-shell` de superadmin con listado de bodas, alta y registro de accesos de los novios.
+- **Datos de cobro por boda desde el primer alta**: plan, importe cobrado, método,
+  fecha y proveedor si lo hubiera. Aunque la bandeja de solicitudes sea de F5,
+  registrar qué se cobró por cada boda hace falta desde la primera venta, y
+  añadirlo después obliga a rellenar a mano lo ya vendido (D-25, D-26).
 - Resumen inicial del panel de la pareja, todavía sin datos reales.
 
 **Terminado cuando:** se da de alta una boda desde superadmin, entran las dos cuentas
@@ -152,13 +156,34 @@ y cierra los agradecimientos desde el panel.
 
 ---
 
-## F5 — Escala comercial
+## F5 — Comercialización
 
-- Alta self-service con Stripe y webhook que invoca `provisionWedding`.
-- Planes `basic` y `premium` con módulos por plan.
+Ya no hay self-service: sin alta de autónomo no hay pasarela de pago, así que la
+activación la hace una persona (D-25). Lo que se automatiza es todo lo que rodea
+a esa persona.
+
+- Landing comercial en `nupcialis.com` con los dos planes y sus precios.
+- **Formulario público de solicitud** (`createWeddingRequest`): valida el slug,
+  calcula el precio con la tarifa que corresponda y congela el importe. Es, junto
+  a `guestLogin`, la única escritura pública del sistema: App Check y límite por
+  IP obligatorios.
+- Pantalla de confirmación con la referencia y **el número de Bizum, que no
+  aparece en ninguna otra parte de la web**.
+- **Enlaces de proveedor** (`/alta?ref=CODIGO`): el mismo formulario, etiquetado.
+  Sin cuentas, sin rol nuevo, sin acceso a nada (D-26).
+- **Aviso por Telegram** al superadmin cuando entra una solicitud. El token vive
+  en Secret Manager, nunca en el repositorio.
+- **Bandeja de solicitudes** en el panel de superadmin, con búsqueda por importe y
+  por nombre, no solo por referencia: nadie escribe bien el concepto de un Bizum.
+- **Liquidación por proveedor**: saldo pendiente y cierre de varias solicitudes de
+  una vez.
+- `purgeOldRequests`: las solicitudes que nunca cuajan se borran a los seis meses.
 - WhatsApp Business API para invitaciones y recordatorios.
 - Plano real de finca como extra.
-- Landing comercial en `nupcialis.com`.
+
+**Nada de esto bloquea la primera venta.** Con `provisionWedding` y el panel de
+superadmin de F0.7 ya se puede dar de alta una boda cobrada por Bizum; F5 es lo
+que evita llevarlo en una libreta a partir de la tercera.
 
 ---
 

@@ -31,6 +31,8 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-22 | Borrador a nivel de módulo                                                 | F0.6, F1                         | **decidida 2026-09-10: `hidden` · `soon` · `visible`**       |
 | D-23 | Dónde se configuran planes y precios                                       | F0.7                             | **decidida 2026-09-10: editables desde el superadmin**       |
 | D-24 | Cinco decisiones tomadas al implementar el alta                            | F0.6                             | **pendiente de validar**                                     |
+| D-25 | Cómo se cobra sin pasarela de pago                                         | F5, landing                      | **decidida 2026-09-14: Bizum y activación manual**           |
+| D-26 | Proveedores que comercializan la web y liquidan aparte                     | F5                               | **decidida 2026-09-14: tarifa mayorista, sin acceso**        |
 
 ---
 
@@ -371,3 +373,88 @@ llevaría la impresión de que la web está rota.
 reintentarlo. La alternativa era tumbar el alta entera por un 503 del Identity
 Toolkit. Lo que **no** se hace es seguir en silencio: ese es exactamente el fallo
 que describe la regla 8 de `CLAUDE.md`.
+
+### D-25 · Sin pasarela de pago: cobro por Bizum y activación manual — **DECIDIDA 2026-09-14 (Gabriel)**
+
+No hay alta de autónomo, así que no se puede montar un cobro recurrente. El
+dinero entra por **Bizum** y la boda la activa una persona desde el panel de
+superadmin. Stripe sale del plan; el _self-service_ de la fase 5 se queda en
+formulario de solicitud más activación manual.
+
+Esto **no rompe nada de lo construido**: F0 ya asumía que `provisionWedding` lo
+invoca el superadmin, no un webhook. Lo que se añade es la pieza que faltaba —la
+solicitud— entre "una pareja quiere contratar" y "Gabriel da de alta la boda".
+
+Lo que se decidió al detalle:
+
+| Cuestión                       | Decisión                                                            |
+| ------------------------------ | ------------------------------------------------------------------- |
+| Slug entre solicitud y pago    | **No se reserva.** Se revalida al activar y se ofrecen alternativas |
+| Datos fiscales en la solicitud | **No se piden** de momento                                          |
+| Aviso de solicitud nueva       | **Telegram** al móvil del superadmin                                |
+| Medios de cobro                | **Solo Bizum** (más el efectivo que liquidan los proveedores, D-26) |
+| Precio                         | **Congelado** en el momento de crear la solicitud                   |
+| Solicitudes que nunca cuajan   | **Purga a los seis meses**                                          |
+
+Consecuencias que hay que respetar al implementar:
+
+- El **número de Bizum no se publica en la web**: solo aparece en la pantalla de
+  confirmación, después de enviar la solicitud. Un móvil personal en una landing
+  es spam y suplantación garantizados.
+- El **token del bot de Telegram es un secreto** y este repositorio es público:
+  va en Secret Manager. No añade requisitos nuevos, porque desplegar cualquier
+  Cloud Function ya exige el plan Blaze.
+- **Conciliar es manual por definición.** Sin API del banco, nadie cruza un
+  ingreso con una solicitud. El panel deja marcar cobrada una solicitud aunque la
+  referencia no cuadre, y busca por importe y por nombre.
+- `createWeddingRequest` es, junto a `guestLogin`, **la única escritura pública
+  del sistema**. App Check y límite por IP no son opcionales ahí.
+
+**Reversible:** el día que haya alta de autónomo, la pasarela se enchufa al mismo
+flujo. La solicitud ya existe; solo cambia quién marca `paymentStatus: 'paid'`.
+
+**Aviso, porque no es asesoramiento fiscal:** la obligación de declarar un ingreso
+no depende del medio de cobro, y el alta censal en Hacienda es un trámite distinto
+del alta en el RETA. Hay que contrastarlo con un gestor. La consecuencia de
+producto es una: si hay que facturar, harán falta datos fiscales en la solicitud,
+y hoy se ha decidido no pedirlos.
+
+### D-26 · Proveedores comercializadores — **DECIDIDA 2026-09-14 (Gabriel)**
+
+Una tienda de invitaciones, un fotógrafo o una finca pueden vender la web junto
+con su propio producto: contratan ellos, cobran ellos a la pareja y liquidan con
+nosotros aparte, en efectivo.
+
+No es una variante de cobro: es un **actor nuevo**, y obliga al cambio de fondo
+que ordena §4.1 — **el estado del servicio y el del cobro son dos ejes
+independientes**. Una boda activa con el cobro pendiente pasa a ser un estado
+normal del negocio.
+
+| Cuestión                       | Decisión                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| Quién se lleva el descuento    | **El proveedor: tarifa mayorista.** Lo que él cobre a la pareja no se guarda |
+| ¿Activar antes de que liquide? | **Sí.** La pareja no espera a una liquidación entre terceros                 |
+| ¿El proveedor ve sus bodas?    | **No ve nada.** Ni cuenta, ni panel, ni listado                              |
+
+Cómo funciona sin construir un rol nuevo: el proveedor recibe un enlace con su
+código (`/alta?ref=CODIGO`) que lleva al mismo formulario público y etiqueta la
+solicitud. **El código es una etiqueta, no una credencial.** Cero superficie de
+autenticación nueva.
+
+Tres cosas que no se negocian:
+
+- **Sin acceso a la boda.** Dentro están los teléfonos y las alergias de
+  trescientos invitados. Si la pareja quiere ayuda, que le den acceso ellos.
+- **El proveedor aporta datos de terceros.** Mismo problema que el acompañante de
+  §5.5: el formulario advierte que debe haber informado a la pareja, y la
+  finalidad consta en el aviso de privacidad.
+- **El enlace de acceso va al email de la pareja**, nunca al proveedor. Es una
+  credencial de la boda; al proveedor se le dice "ya está, avísales".
+
+Lo que de verdad ahorra trabajo es la vista de saldo: _"Invitaciones Pepe: 3 bodas
+activas, 165 € pendientes de liquidar"_, con un botón que cierra las tres de
+golpe. Sin eso, esto se acaba llevando en una libreta.
+
+El riesgo de impago se asume y tiene freno: `partners/{id}.active: false` corta
+las altas nuevas de ese proveedor sin tocar las bodas ya entregadas, que son de
+las parejas y no suyas.

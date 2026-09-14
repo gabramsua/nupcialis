@@ -129,9 +129,68 @@ Controles sobre la función de acceso de invitados:
 
 ---
 
-## 4. Provisioning: alta de una boda
+## 4. Contratación, cobro y alta de una boda
 
-Operación atómica, ejecutada por una Cloud Function `provisionWedding` invocada por el superadmin (Fase 1) o por el webhook de pago (Fase 5).
+### 4.1 Cómo se contrata y cómo se cobra
+
+**No hay pasarela de pago, y no la va a haber a corto plazo.** No es una decisión
+técnica: sin alta de autónomo no se puede montar un cobro recurrente, así que el
+dinero entra por **Bizum** o a través de un **proveedor comercializador**, y la
+activación la hace una persona. Todo lo demás alrededor de esa frase está
+automatizado. Ver D-25 y D-26.
+
+De ahí sale la regla que ordena todo este apartado: **el estado del servicio y el
+estado del cobro son dos ejes independientes.**
+
+| Eje      | Estados                                 | Quién lo sufre  |
+| -------- | --------------------------------------- | --------------- |
+| Servicio | `solicitada` → `activa`, o `descartada` | La pareja       |
+| Cobro    | `pendiente` → `cobrado`                 | La contabilidad |
+
+Mezclarlos parece más simple y es un error: con un proveedor que liquida a fin de
+mes, **una boda activa con el cobro pendiente es un estado normal del negocio**,
+no una incidencia. Si el alta dependiera del cobro, una pareja que contrata el
+día 2 esperaría cuatro semanas por una liquidación entre terceros de la que no
+sabe nada.
+
+**Dos orígenes.**
+
+- **Directo.** La pareja rellena la solicitud, paga por Bizum y el superadmin
+  activa. El número de Bizum **no aparece en la web pública**: se muestra solo en
+  la pantalla de confirmación, después de enviar la solicitud, para no publicar un
+  móvil personal a merced de cualquier rastreador.
+- **Por proveedor.** Una tienda de invitaciones, un fotógrafo o una finca venden
+  la web junto con su propio producto. Entran por un enlace con su código
+  (`/alta?ref=CODIGO`), cobran ellos a la pareja y liquidan con nosotros aparte.
+  **Tarifa mayorista:** al proveedor se le factura menos que a la pareja directa, y
+  lo que él le cobre a la pareja es asunto suyo y no se guarda.
+
+**Conciliar un Bizum es manual por definición.** No hay API del banco, así que
+nadie puede cruzar un ingreso con una solicitud. Se genera una referencia corta y
+dictable, pero el panel asume que la gente escribirá "boda" en el concepto: se
+puede marcar una solicitud como cobrada aunque la referencia no cuadre, y se busca
+por importe y por nombre, no solo por código.
+
+**El proveedor no tiene acceso a nada.** Ni cuenta, ni panel, ni vista de sus
+bodas. Dentro de una boda están los teléfonos y las alergias de trescientas
+personas; si la pareja quiere que les eche una mano, que le den acceso ellos. El
+código de referencia es una etiqueta en la solicitud, no una credencial.
+
+**El proveedor aporta datos de terceros.** Nombres y emails de una pareja que no
+ha rellenado nada. Es el mismo problema del acompañante de §5.5: el formulario
+debe advertir expresamente que el proveedor tiene que haber informado a la pareja,
+y la finalidad debe constar en el aviso de privacidad.
+
+**El enlace de acceso va siempre al email de la pareja**, aunque el alta la haya
+pedido el proveedor. Al proveedor se le dice "ya está, avísales". Un enlace de
+"establece tu contraseña" es una credencial de la boda: no viaja por un tercero.
+
+**El precio se congela en la solicitud.** Si mañana suben las tarifas, quien pidió
+ayer paga lo de ayer.
+
+### 4.2 El alta
+
+Operación atómica, ejecutada por una Cloud Function `provisionWedding` invocada por el superadmin desde la ficha de una solicitud.
 
 Entrada: nombres de la pareja, slug deseado, fecha de la boda, emails de las dos cuentas, plan contratado.
 
@@ -154,7 +213,18 @@ paso 6 existe.
 
 **Original:** El registro wildcard `*.nupcialis.com` ya cubre cualquier subdominio nuevo, y el certificado wildcard también. Este es el motivo de la decisión de hosting de la sección 2.2.
 
-Estados de una boda: `draft` → `active` → `archived`. Una boda en `draft` no es visible públicamente aunque su slug resuelva.
+### 4.3 Estados de una boda
+
+`draft` → `active` → `archived`. Una boda en `draft` no es visible públicamente
+aunque su slug resuelva.
+
+**El slug no se reserva** entre la solicitud y el alta: la solicitud guarda el
+slug _deseado_ y se vuelve a validar al activar. Si para entonces se lo han
+llevado, el panel ofrece las alternativas en el momento (`mariaygabriel-2027`,
+`mariaygabriel-boda`) en vez de fallar y dejar a una pareja pagada sin dirección.
+Reservarlo exigiría un estado con caducidad, su liberador programado y la
+disciplina de que un slug reservado se comporte como inexistente; con el volumen
+previsto no compensa. Ver D-25.
 
 ---
 
@@ -178,6 +248,50 @@ auditLog/{entryId}
 ```
 
 Solo superadmin. Recoge tanto las acciones del superadmin como los **accesos de los novios al panel**.
+
+```
+weddingRequests/{requestId}
+  origin: 'couple' | 'partner'
+  partnerId: string | null        // solo si origin = 'partner'
+  coupleNames: { partnerA, partnerB }
+  emails: string[]                // 1 o 2
+  contactPhone: string | null
+  weddingDate: Timestamp
+  desiredSlug: string             // deseado, NO reservado
+  plan: 'basic' | 'extended'
+  amountDue: number               // congelado al crear; tarifa mayorista si viene de partner
+  paymentRef: string              // referencia corta y dictable
+  serviceStatus: 'requested' | 'active' | 'discarded'
+  paymentStatus: 'pending' | 'paid'
+  paymentMethod: 'bizum' | 'partner_cash' | null
+  paidAt: Timestamp | null
+  paymentNote: string             // lo que de verdad venía en el concepto
+  weddingId: string | null        // una vez activada
+  notes: string
+  createdAt, updatedAt
+```
+
+Solo superadmin. **La crea una Cloud Function, nunca el cliente**: si las reglas
+permitieran escribir aquí desde el navegador, cualquiera llena la bandeja de
+basura en una tarde. App Check obligatorio y límite por IP.
+
+Las solicitudes que se quedan en `requested` o `discarded` **se purgan a los seis
+meses**: son datos personales de gente que no llegó a ser cliente.
+
+```
+partners/{partnerId}
+  name: string                    // 'Invitaciones Pepe'
+  code: string                    // el del enlace /alta?ref=CODIGO
+  contactName, email, phone
+  wholesalePrice: { basic: number, extended: number }
+  active: bool
+  createdAt
+```
+
+Los **proveedores comercializadores**, que no tienen nada que ver con los
+proveedores de una boda concreta (`weddings/{id}/vendors`, §8.16): estos venden
+Nupcialis, aquellos los contrata la pareja para su boda. Solo superadmin, sin
+cuenta ni acceso propio. Ver §4.1.
 
 ### 5.2 Documento de la boda
 
@@ -501,6 +615,11 @@ Solo como pegamento. Todas con App Check activado.
 
 | Función                               | Tipo                                  | Responsabilidad                                                                                                                                                   |
 | ------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createWeddingRequest`                | callable (público)                    | Crear una solicitud desde el formulario de contratación. App Check y límite por IP: es la única escritura pública del sistema junto a `guestLogin`                |
+| `activateRequest`                     | callable (superadmin)                 | Revalidar el slug de una solicitud y lanzar `provisionWedding` con sus datos. Si el slug se ha ocupado, devuelve alternativas en vez de fallar                    |
+| `settleRequests`                      | callable (superadmin)                 | Marcar como cobradas una o varias solicitudes. Con un proveedor, cierra su liquidación de golpe                                                                   |
+| `notifyNewRequest`                    | trigger Firestore                     | Aviso por Telegram al superadmin cuando entra una solicitud. El token del bot vive en Secret Manager, **nunca en el repositorio, que es público**                 |
+| `purgeOldRequests`                    | programada                            | Borrar a los seis meses las solicitudes que nunca llegaron a boda                                                                                                 |
 | `provisionWedding`                    | callable (superadmin)                 | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo)                                                    |
 | `setUserClaims`                       | callable (superadmin)                 | Asignar o revocar `weddingId` y `role`                                                                                                                            |
 | `authorizeWeddingDomain`              | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch |
@@ -931,7 +1050,7 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 | **F2 — Banquete, ubicaciones y contenidos del día** | Mesas con arrastrar y soltar con mínimos y máximos, mapa interactivo con marcadores y cómo llegar, timeline con iconos y colores, **preguntas frecuentes**, **alojamientos**, **dress code**, **personas importantes**, exportaciones a XLSX y PDF | El invitado tiene resuelto todo lo que pregunta antes de una boda: dónde es, cómo llego, dónde duermo, cómo voy vestido y a qué hora es cada cosa |
 | **F3 — Participación de invitados**                 | Galería con audiencias por grupo y moderación, **quiz** con gestión, ranking y partidas por invitado, **playlist colaborativa** con votos, libro de firmas, lista de regalos y aportación                                                          | Diferenciación frente a la competencia. El quiz y la galería por grupos son los dos módulos que nadie más tiene                                   |
 | **F4 — Gestión interna de la pareja**               | Presupuesto, proveedores con tareas asignadas, checklist, **regalos recibidos y agradecimientos**                                                                                                                                                  | La pareja organiza toda la boda dentro de la herramienta, y la semana siguiente también                                                           |
-| **F5 — Escala comercial**                           | Alta self-service con pago, WhatsApp Business API, plano real de finca                                                                                                                                                                             | Crecimiento sin intervención del operador                                                                                                         |
+| **F5 — Escala comercial**                           | Formulario público de solicitud, enlaces de proveedor, aviso por Telegram, liquidación por proveedor, WhatsApp Business API, plano real de finca                                                                                                   | El alta deja de empezar por un WhatsApp. **La activación sigue siendo manual**: sin pasarela no hay self-service (D-25)                           |
 
 **Notas sobre el orden.**
 
@@ -943,23 +1062,26 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 
 ## 11. Riesgos
 
-| Riesgo                                                                | Impacto                                           | Mitigación                                                                                                                                                                             |
-| --------------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Un fallo en las reglas de seguridad expone datos entre bodas          | Crítico, reputacional                             | Batería de tests de aislamiento como requisito de release; revisión de reglas en cada PR que toque el modelo                                                                           |
-| Fuerza bruta sobre los últimos 4 dígitos del teléfono                 | Medio                                             | Límite de intentos, App Check, respuestas genéricas, log de accesos                                                                                                                    |
-| Coste de almacenamiento disparado por la galería                      | Medio                                             | Cuotas por plan, compresión en subida, límites de tamaño en reglas                                                                                                                     |
-| Alcance del MVP demasiado ancho (los cuatro grupos de módulos entran) | Alto, en plazo                                    | Las fases F1–F4 secuencian la entrega; F1 ya es vendible por sí sola                                                                                                                   |
-| Tope no documentado de dominios autorizados en Firebase Auth          | Alto si se alcanza: rompe el alta de bodas nuevas | La API no publica límite. Contar los dominios dados de alta, avisar al superadmin en 500 y tener listo el plan B: mover el panel a `app.nupcialis.com` y resolver la boda por el claim |
-| Cookie de un subdominio de boda visible en otro                       | Medio                                             | Cookies de sesión sin atributo `Domain`, prefijo `__Host-`, `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`. Valorar entrada en la Public Suffix List                          |
-| Dependencia del wildcard del proveedor de hosting                     | Bajo                                              | El modelo de datos no depende del subdominio; el fallback de rutas `nupcialis.com/<slug>` funciona sin migración                                                                       |
-| Fuga del plano de mesas o notas privadas a invitados                  | Alto                                              | `notes` y datos de gestión nunca entran en la proyección pública                                                                                                                       |
-| Una foto de un grupo restringido llega a quien no debe                | Alto, es una promesa explícita al invitado        | `photos` cerrada en reglas; la visibilidad la resuelve siempre `listPhotos`; test de aislamiento por grupo en la batería de reglas                                                     |
-| Puntuaciones de quiz falseadas desde la consola                       | Bajo, pero arruina el juego                       | Corrección y puntuación en servidor; `quizResults` no admite escritura desde cliente                                                                                                   |
-| XSS almacenado a través del editor de contenidos                      | Alto: lo verían todos los invitados               | Saneado en servidor antes de publicar, barra de edición acotada, sin HTML libre                                                                                                        |
-| El panel de regalos recibidos se filtra                               | Crítico, reputacional                             | Colección privada, fuera de la proyección pública, sin exportaciones compartidas; test de aislamiento propio                                                                           |
-| Cada módulo inventa sus colores e iconos                              | Medio, pero destruye la promesa de producto       | Sistema visual construido en F0 como infraestructura, no por módulo                                                                                                                    |
-| Un invitado añade acompañantes sin límite                             | Medio                                             | Cupo por titular validado en `addCompanion` contando los ya creados, no confiando en el cliente                                                                                        |
-| El teléfono de un acompañante lo aporta un tercero                    | Medio, RGPD                                       | Aviso expreso en el formulario y finalidad recogida en la política de privacidad                                                                                                       |
+| Riesgo                                                                | Impacto                                           | Mitigación                                                                                                                                                                                 |
+| --------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Un fallo en las reglas de seguridad expone datos entre bodas          | Crítico, reputacional                             | Batería de tests de aislamiento como requisito de release; revisión de reglas en cada PR que toque el modelo                                                                               |
+| Fuerza bruta sobre los últimos 4 dígitos del teléfono                 | Medio                                             | Límite de intentos, App Check, respuestas genéricas, log de accesos                                                                                                                        |
+| Coste de almacenamiento disparado por la galería                      | Medio                                             | Cuotas por plan, compresión en subida, límites de tamaño en reglas                                                                                                                         |
+| Alcance del MVP demasiado ancho (los cuatro grupos de módulos entran) | Alto, en plazo                                    | Las fases F1–F4 secuencian la entrega; F1 ya es vendible por sí sola                                                                                                                       |
+| Tope no documentado de dominios autorizados en Firebase Auth          | Alto si se alcanza: rompe el alta de bodas nuevas | La API no publica límite. Contar los dominios dados de alta, avisar al superadmin en 500 y tener listo el plan B: mover el panel a `app.nupcialis.com` y resolver la boda por el claim     |
+| Un proveedor no liquida lo que ha vendido                             | Medio, económico                                  | La boda se activa antes de cobrar por decisión consciente (D-26). Vista de saldo por proveedor, y `active: false` en el proveedor corta las altas nuevas sin tocar las bodas ya entregadas |
+| Cobrar por Bizum con número personal publicado                        | Medio, privacidad del operador                    | El número no aparece en la web pública, solo en la pantalla de confirmación tras enviar la solicitud                                                                                       |
+| Un ingreso sin referencia reconocible                                 | Bajo, operativo                                   | El panel permite marcar cobrada una solicitud sin que cuadre la referencia, y busca por importe y nombre                                                                                   |
+| Cookie de un subdominio de boda visible en otro                       | Medio                                             | Cookies de sesión sin atributo `Domain`, prefijo `__Host-`, `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`. Valorar entrada en la Public Suffix List                              |
+| Dependencia del wildcard del proveedor de hosting                     | Bajo                                              | El modelo de datos no depende del subdominio; el fallback de rutas `nupcialis.com/<slug>` funciona sin migración                                                                           |
+| Fuga del plano de mesas o notas privadas a invitados                  | Alto                                              | `notes` y datos de gestión nunca entran en la proyección pública                                                                                                                           |
+| Una foto de un grupo restringido llega a quien no debe                | Alto, es una promesa explícita al invitado        | `photos` cerrada en reglas; la visibilidad la resuelve siempre `listPhotos`; test de aislamiento por grupo en la batería de reglas                                                         |
+| Puntuaciones de quiz falseadas desde la consola                       | Bajo, pero arruina el juego                       | Corrección y puntuación en servidor; `quizResults` no admite escritura desde cliente                                                                                                       |
+| XSS almacenado a través del editor de contenidos                      | Alto: lo verían todos los invitados               | Saneado en servidor antes de publicar, barra de edición acotada, sin HTML libre                                                                                                            |
+| El panel de regalos recibidos se filtra                               | Crítico, reputacional                             | Colección privada, fuera de la proyección pública, sin exportaciones compartidas; test de aislamiento propio                                                                               |
+| Cada módulo inventa sus colores e iconos                              | Medio, pero destruye la promesa de producto       | Sistema visual construido en F0 como infraestructura, no por módulo                                                                                                                        |
+| Un invitado añade acompañantes sin límite                             | Medio                                             | Cupo por titular validado en `addCompanion` contando los ya creados, no confiando en el cliente                                                                                            |
+| El teléfono de un acompañante lo aporta un tercero                    | Medio, RGPD                                       | Aviso expreso en el formulario y finalidad recogida en la política de privacidad                                                                                                           |
 
 ---
 

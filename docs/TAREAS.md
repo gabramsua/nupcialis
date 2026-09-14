@@ -108,6 +108,13 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [ ] `F0.7.4` Vista de registro de accesos de los novios
 - [ ] `F0.7.5` Resumen inicial del panel de la pareja
 - [ ] `F0.7.6` Carga diferida verificada: el bundle público no arrastra código del panel
+- [ ] `F0.7.7` **Datos de cobro en el alta de boda**: plan, importe cobrado, método
+      (`bizum` o `partner_cash`), fecha y proveedor. Hace falta desde la primera
+      venta; si se deja para F5 hay que rellenar a mano lo ya vendido. Ver D-25.
+- [ ] `F0.7.8` Colección `partners` y su alta desde el panel, con tarifa mayorista
+      por plan e interruptor `active`. Sin cuenta ni acceso para el proveedor.
+- [ ] `F0.7.9` Vista de saldo por proveedor: bodas activas y pendiente de liquidar,
+      con cierre de varias de una vez.
 
 ---
 
@@ -143,7 +150,18 @@ _(ninguna)_
 Tareas que no estaban en el plan. Al cerrar cada fase se revisan y se colocan
 donde toque.
 
-_(vacío)_
+- [ ] **Bandeja de solicitudes y cobro manual (F5).** Cambio de regla de negocio
+      del 14/09: no hay pasarela de pago (D-25) y aparecen los proveedores
+      comercializadores (D-26). Trae `weddingRequests`, `createWeddingRequest`,
+      `activateRequest`, `settleRequests`, el aviso por Telegram y
+      `purgeOldRequests`. **No bloquea la primera venta**: con `provisionWedding`
+      y el panel de F0.7 ya se puede dar de alta una boda cobrada por Bizum.
+- [ ] **Reglas de aislamiento de `weddingRequests` y `partners`**, con su batería.
+      Son colecciones raíz nuevas y solo el superadmin puede leerlas; la escritura,
+      solo desde Cloud Function. Sin test, no se mergea.
+- [ ] **Lint de `functions/` en el CI.** Hoy `ng lint` solo mira `src/**`, así que
+      el paquete de funciones lo revisa únicamente el hook de pre-commit. Si
+      alguien comitea con `--no-verify`, nadie más lo mira.
 
 ---
 
@@ -152,6 +170,7 @@ _(vacío)_
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-09-14 | Cambio de regla de negocio: sin pasarela de pago (D-25) y proveedores que comercializan y liquidan aparte (D-26). Lo de fondo no es el medio de cobro, es que **el estado del servicio y el del cobro pasan a ser dos ejes independientes**: una boda activa con el cobro pendiente es un estado normal del negocio, no una incidencia. Reescritos §4, §5.1, §7, §10 y §11 de REQUISITOS, y la fase 5 del plan. No se toca código: F0 ya asumía alta manual por superadmin.                                      |
 | 2026-09-11 | F0.6 entera: paquete `functions/`, `provisionWedding` con transacción y semillas, `setUserClaims`, `authorizeWeddingDomain`, los dos triggers y el log de auditoría. 86 tests de dominio. Cuatro decisiones de negocio que solo estaban en el chat pasan a D-20…D-23, y cinco que he tomado yo al implementar quedan en D-24 esperando validación. Arreglado `firebase.json` (faltaba el bloque `functions`, que era lo que rompía `npm run emulators`) y `.firebaserc`, que apuntaba a un proyecto inexistente. |
 | 2026-09-09 | Semilla del emulador y ciclo de trabajo en local documentado. `nupcialis.com` comprado en Hostalia.                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 2026-09-08 | Tenant resuelto de punta a punta, con 51 tests. Nueva decisión D-19: los adaptadores de datos van en ficheros `*.firestore.ts`, porque meterlos todos en `core/firebase` no escala.                                                                                                                                                                                                                                                                                                                              |
