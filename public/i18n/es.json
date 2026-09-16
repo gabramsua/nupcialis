@@ -1,0 +1,199 @@
+{
+  "app": {
+    "name": "Nupcialis",
+    "tagline": "Vuestra boda, organizada"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar",
+    "loading": "Cargando…",
+    "empty": "Todavía no hay nada aquí",
+    "error": "Algo ha ido mal",
+    "retry": "Reintentar"
+  },
+  "publico": {
+    "pareja": "{{partnerA}} y {{partnerB}}",
+    "nosCasamos": "Nos casamos",
+    "dias": "días",
+    "horas": "horas",
+    "minutos": "minutos",
+    "noPublicada": {
+      "titulo": "Esta boda todavía no está publicada",
+      "descripcion": "Los novios están preparándola. Vuelve a intentarlo con el enlace que te envíen."
+    },
+    "archivada": {
+      "titulo": "Esta boda ya pasó",
+      "descripcion": "La web se archivó tras la celebración y su contenido ya no está disponible."
+    },
+    "error": {
+      "titulo": "No hemos podido cargar la boda",
+      "descripcion": "Puede ser un problema de conexión. Inténtalo de nuevo en un momento."
+    },
+    "noEncontrada": {
+      "titulo": "No encontramos esta boda",
+      "descripcion": "Revisa el enlace que te han enviado: puede que falte alguna letra."
+    }
+  },
+  "panel": {
+    "navegacion": "Secciones de vuestra boda",
+    "resumen": "Resumen",
+    "salir": "Salir",
+    "error": "No hemos podido cargar vuestra boda",
+    "ocultos": "Tenéis {{n}} secciones activas que los invitados todavía no ven.",
+    "estado": {
+      "draft": "Sin publicar",
+      "active": "Publicada",
+      "archived": "Archivada"
+    },
+    "visibilidad": {
+      "hidden": "Oculta",
+      "soon": "Muy pronto"
+    },
+    "sinBoda": {
+      "titulo": "Vuestra sesión no está asociada a ninguna boda",
+      "descripcion": "Escríbenos y lo arreglamos: es cosa nuestra, no vuestra."
+    },
+    "resumenPendiente": {
+      "titulo": "Aquí veréis cómo va todo",
+      "descripcion": "Confirmaciones, tareas próximas y lo que necesita vuestra atención."
+    },
+    "diseno": {
+      "titulo": "Diseño",
+      "plantilla": {
+        "titulo": "El diseño de vuestra web",
+        "ayuda": "Elegid una plantilla. Podéis cambiarla cuando queráis, también después de publicar.",
+        "nota": "El cambio se ve en vuestra web en unos segundos.",
+        "fallo": "No se ha podido cambiar la plantilla"
+      }
+    },
+    "modulo": {
+      "publicSite": "Vuestra web",
+      "rsvp": "Confirmaciones",
+      "guests": "Invitados",
+      "tables": "Mesas",
+      "map": "Cómo llegar",
+      "gallery": "Galería",
+      "quiz": "Juego",
+      "gifts": "Regalos",
+      "playlist": "Música",
+      "guestbook": "Libro de firmas",
+      "timeline": "El día",
+      "faqs": "Preguntas frecuentes",
+      "accommodation": "Alojamiento",
+      "dressCode": "Código de vestimenta",
+      "weddingParty": "Personas importantes",
+      "budget": "Presupuesto",
+      "vendors": "Proveedores",
+      "checklist": "Tareas"
+    },
+    "datos": {
+      "titulo": "Datos de la boda",
+      "ayuda": "La fecha la fijamos al crear vuestra web. La hora la ponéis vosotros cuando la tengáis decidida.",
+      "fecha": "Fecha",
+      "sinFecha": "Sin fecha",
+      "hora": "Hora de la ceremonia",
+      "horaPista": "Se usa para la cuenta atrás de vuestra web.",
+      "horaIlegible": "Esa hora no se entiende. Escríbela como 17:00.",
+      "sinHoraAviso": "Sin hora, la cuenta atrás de la web enseña solo los días que faltan.",
+      "quitarHora": "Quitar la hora",
+      "guardado": "Guardado",
+      "fallo": "No se ha podido guardar"
+    }
+  },
+  "superadmin": {
+    "titulo": "Superadmin",
+    "sinPermiso": {
+      "titulo": "Esta cuenta no tiene permiso de superadmin",
+      "descripcion": "Has entrado bien, pero al token le falta el claim. Se concede a mano, nunca desde una pantalla: ver docs/PUESTA-EN-MARCHA.md. Si acabas de concederlo, sal y vuelve a entrar para que el token se renueve.",
+      "salir": "Salir de esta cuenta"
+    },
+    "bodas": {
+      "titulo": "Bodas",
+      "ninguna": "Todavía no hay ninguna boda",
+      "ningunaDescripcion": "Da de alta la primera con el formulario de la derecha.",
+      "cargando": "Cargando las bodas…",
+      "error": "No se han podido cargar las bodas",
+      "incidencias": "{{n}} con el subdominio sin autorizar",
+      "columna": {
+        "pareja": "Pareja",
+        "direccion": "Dirección",
+        "fecha": "Fecha",
+        "plan": "Plan",
+        "estado": "Estado",
+        "invitados": "Invitados",
+        "acciones": "Acciones"
+      },
+      "sinFecha": "Sin fecha",
+      "confirmadosDeTotal": "{{confirmados}} de {{total}}",
+      "dominioPendiente": "Subdominio sin autorizar en Auth",
+      "dominioPendienteAyuda": "El acceso con Google falla en esta boda hasta que se reintente.",
+      "reintentarDominio": "Reintentar",
+      "publicar": "Publicar",
+      "despublicar": "Volver a borrador",
+      "archivar": "Archivar",
+      "reactivar": "Reactivar",
+      "verWeb": "Ver la web",
+      "confirmarPublicar": "Se va a publicar {{slug}}.nupcialis.com. Cualquiera con la dirección podrá verla. ¿Seguimos?",
+      "confirmarDespublicar": "Quien abra {{slug}}.nupcialis.com dejará de ver la web. ¿Seguimos?",
+      "confirmarArchivar": "Archivar {{slug}}.nupcialis.com. La web deja de verse y la boda sale de la lista activa. ¿Seguimos?",
+      "noPublicable": "Le faltan datos para publicarse",
+      "motivo": {
+        "sin-nombres": "Faltan los nombres de la pareja. La portada saldría con una inicial suelta.",
+        "sin-fecha": "Falta la fecha de la boda, y con ella la cuenta atrás.",
+        "sin-slug": "Falta la dirección de la web."
+      },
+      "estadoCambiado": "{{slug}} ahora está {{estado}}"
+    },
+    "estado": {
+      "draft": "En borrador",
+      "active": "Publicada",
+      "archived": "Archivada"
+    },
+    "plan": {
+      "basic": "Básico",
+      "extended": "Extendido"
+    },
+    "alta": {
+      "titulo": "Dar de alta una boda",
+      "creada": "Creada {{slug}}.nupcialis.com",
+      "creadaDescripcion": "La boda nace en borrador. La pareja decide cuándo se publica.",
+      "avisoTitulo": "Revisa esto antes de darla por buena",
+      "otra": "Dar de alta otra",
+      "enlaces": "Enlaces de acceso",
+      "enlacesAviso": "Solo se muestran ahora. Dan acceso al panel de la boda: mándalos por un canal privado y no los guardes en ningún sitio compartido.",
+      "sinEnlace": "No se pudo generar. La pareja puede entrar con «he olvidado mi contraseña».",
+      "falloTitulo": "No se ha podido dar de alta",
+      "slugOcupado": "Esa dirección ya está ocupada por otra boda.",
+      "alternativas": "Direcciones libres parecidas:",
+      "camposInvalidos": "Revisa estos campos: {{campos}}.",
+      "sinPermiso": "Tu sesión no tiene permiso para dar de alta bodas.",
+      "sinVerificar": "La función ha rechazado la llamada por falta de verificación (401). Tu sesión y tus permisos están bien: lo que falta es App Check. Revisa `appCheckSiteKey` en el entorno y el token de depuración para localhost, en docs/PUESTA-EN-MARCHA.md.",
+      "nombreA": "Nombre de uno",
+      "nombreB": "Nombre del otro",
+      "direccion": "Dirección de la web",
+      "direccionPista": "Se normaliza sola: «María y Gabriel» → maria-y-gabriel",
+      "fecha": "Fecha de la boda",
+      "fechaIlegible": "Esa fecha no se entiende.",
+      "fechaPasada": "La boda no puede ser en el pasado. ¿Has escrito bien el año?",
+      "emailA": "Email de la pareja",
+      "emailAPista": "Si comparten dirección, con una basta.",
+      "emailB": "Segundo email",
+      "emailBPista": "Opcional.",
+      "plan": "Plan contratado",
+      "planBasico": "Básico · una sola página",
+      "planExtendido": "Extendido · varias páginas, con galería y juego",
+      "crear": "Crear la boda"
+    }
+  },
+  "rsvp": {
+    "status": {
+      "confirmed": "Confirmado",
+      "declined": "No asiste",
+      "pending": "Sin respuesta"
+    }
+  }
+}

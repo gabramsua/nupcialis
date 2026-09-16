@@ -1,0 +1,72 @@
+.np-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--np-space-2);
+  min-block-size: var(--np-tap-target);
+  padding-inline: var(--np-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--np-radius-md);
+  font: inherit;
+  font-size: var(--np-text-sm);
+  font-weight: var(--np-weight-medium);
+  line-height: var(--np-leading-tight);
+  text-decoration: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--np-info-solid);
+    outline-offset: 2px;
+  }
+
+  &[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &[data-size='sm'] {
+    min-block-size: 2rem;
+    padding-inline: var(--np-space-3);
+    font-size: var(--np-text-xs);
+  }
+
+  &[data-variant='primary'] {
+    border-color: var(--np-confirmed-solid);
+    background: var(--np-confirmed-solid);
+    color: #fff;
+  }
+
+  &[data-variant='secondary'] {
+    border-color: var(--np-surface-border);
+    background: var(--np-surface-surface);
+    color: var(--np-surface-text);
+  }
+
+  &[data-variant='ghost'] {
+    background: transparent;
+    color: var(--np-surface-text);
+  }
+
+  &[data-variant='danger'] {
+    border-color: var(--np-declined-border);
+    background: var(--np-declined-bg);
+    color: var(--np-declined-fg);
+  }
+
+  &[data-loading] np-icon:first-child {
+    animation: np-spin 0.9s linear infinite;
+  }
+}
+
+@keyframes np-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+// Quien prefiera no ver animaciones, no las ve.
+@media (prefers-reduced-motion: reduce) {
+  .np-button[data-loading] np-icon:first-child {
+    animation: none;
+  }
+}

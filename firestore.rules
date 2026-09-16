@@ -1,0 +1,146 @@
+rules_version = '2';
+
+// Nupcialis — aislamiento multi-tenant.
+//
+// Esta es la pieza que sustituye al aislamiento por bases de datos separadas.
+// Toda regla nueva llega acompañada de su test en tests/rules/. Sin test, no se
+// mergea. Ver docs/REQUISITOS.md §6.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // El weddingId sale SIEMPRE del custom claim del token, nunca de un campo
+    // del documento ni de la URL, que el cliente sí puede falsear.
+    function isOwner(wid) {
+      return signedIn()
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'owner';
+    }
+
+    function isGuestOf(wid) {
+      return signedIn()
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'guest';
+    }
+
+    function isSuperadmin() {
+      return signedIn() && request.auth.token.superadmin == true;
+    }
+
+    // Campos que mueve el servidor y la pareja no puede tocar.
+    function noSystemFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt']);
+    }
+
+    // ---------- colecciones raíz ----------
+
+    // Único documento legible por un anónimo antes de resolver el tenant.
+    match /slugs/{slug} {
+      allow read: if true;
+      allow write: if false;             // solo Admin SDK
+    }
+
+    match /auditLog/{entryId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // ---------- una boda ----------
+
+    match /weddings/{wid} {
+      allow read: if isOwner(wid) || isSuperadmin();
+      allow update: if isOwner(wid) && noSystemFields();
+      allow create, delete: if false;    // solo provisionWedding
+
+      // Proyección pública: lo único que ve un visitante anónimo.
+      match /public/{docId} {
+        allow read: if true;
+        allow write: if false;           // lo escribe syncPublicProjection
+      }
+
+      // ---- cerradas al cliente, siempre por Cloud Function ----
+      //
+      // guests: si se pudiera consultar, cualquiera se descarga la lista de
+      // invitados con sus teléfonos.
+      // photos: la visibilidad depende del grupo de quien pregunta, y eso solo
+      // se evalúa con garantías en servidor.
+      match /guests/{guestId}  { allow read, write: if false; }
+      match /photos/{photoId}  { allow read, write: if false; }
+
+      // ---- privado de la pareja ----
+      //
+      // Importes de dinero asociados a personas con nombre y apellidos. Es el
+      // dato más sensible del producto.
+      match /giftsReceived/{id} {
+        allow read, write: if isOwner(wid);
+      }
+
+      match /guestAccessLog/{id} {
+        allow read: if isOwner(wid);
+        allow write: if false;           // lo escribe guestLogin
+      }
+
+      match /budgetItems/{id}    { allow read, write: if isOwner(wid); }
+      match /vendors/{id}        { allow read, write: if isOwner(wid); }
+      match /checklistItems/{id} { allow read, write: if isOwner(wid); }
+
+      // ---- lectura para invitados, escritura solo de la pareja ----
+
+      match /guestGroups/{id}    { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /tables/{id}         { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /locations/{id}      { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /faqs/{id}           { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /accommodations/{id} { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /weddingParty/{id}   { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /timelineEvents/{id} { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /formQuestions/{id}  { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      match /gifts/{id}          { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+
+      // ---- quiz ----
+      //
+      // Las puntuaciones las escribe submitQuizResult tras corregir en
+      // servidor. Si el cliente pudiera escribir aquí, cualquiera se pone
+      // primero en el ranking desde la consola del navegador.
+      match /quizQuestions/{id} {
+        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow write: if isOwner(wid);
+      }
+      match /quizResults/{id} {
+        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow write: if false;
+      }
+
+      // ---- contenidos moderados de invitados ----
+
+      match /playlistSuggestions/{id} {
+        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow write: if isOwner(wid);    // el alta del invitado pasa por función
+      }
+      match /guestbookEntries/{id} {
+        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow write: if isOwner(wid);
+      }
+    }
+
+    // ---------- denegar por defecto ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
