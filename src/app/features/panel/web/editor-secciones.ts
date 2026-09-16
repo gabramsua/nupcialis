@@ -99,6 +99,24 @@ import { BodaStore } from '../boda.store';
           </button>
         </div>
 
+        <!--
+          El buscador va con las secciones y no en «Datos de la boda» porque es
+          una decisión sobre la web, y porque se entiende mejor justo al lado de
+          lo que se está publicando.
+        -->
+        <label class="es__buscadores">
+          <input
+            type="checkbox"
+            [checked]="store.boda()?.indexable"
+            [disabled]="cambiandoIndex()"
+            (change)="cambiarIndexable($event)"
+          />
+          <span>
+            <strong>{{ t('panel.secciones.buscadores') }}</strong>
+            <small>{{ t('panel.secciones.buscadoresAyuda') }}</small>
+          </span>
+        </label>
+
         <div class="es__cuerpo" [attr.data-vista]="vista()">
           <div class="es__lista">
             @for (seccion of secciones(); track seccion.id; let primera = $first, ultima = $last) {
@@ -250,6 +268,30 @@ import { BodaStore } from '../boda.store';
       color: var(--np-surface-text);
       font-weight: var(--np-weight-medium);
     }
+    .es__buscadores {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--np-space-3);
+      padding: var(--np-space-3) var(--np-space-4);
+      border: 1px solid var(--np-surface-border);
+      border-radius: var(--np-radius-lg);
+      background: var(--np-surface-surface);
+      cursor: pointer;
+    }
+    .es__buscadores input {
+      inline-size: 1.15rem;
+      block-size: 1.15rem;
+      margin-block-start: 0.15rem;
+      flex: none;
+    }
+    .es__buscadores span {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+    }
+    .es__buscadores small {
+      color: var(--np-surface-text-muted);
+    }
     .es__cuerpo {
       display: grid;
       gap: var(--np-space-4);
@@ -368,6 +410,7 @@ export class EditorSecciones {
 
   protected readonly vista = signal<'editar' | 'previa'>('editar');
   protected readonly guardando = signal(false);
+  protected readonly cambiandoIndex = signal(false);
   protected readonly fallo = signal(false);
 
   /** Copia de trabajo. Lo guardado vive en el store; esto es el borrador. */
@@ -459,6 +502,14 @@ export class EditorSecciones {
       const porId = new Map(lista.map((seccion) => [seccion.id, seccion]));
       return movidas.map((m) => ({ ...porId.get(m.id)!, order: m.order }));
     });
+  }
+
+  protected async cambiarIndexable(evento: Event): Promise<void> {
+    const quiere = (evento.target as HTMLInputElement).checked;
+    this.cambiandoIndex.set(true);
+    const ok = await this.store.guardarIndexable(quiere);
+    this.cambiandoIndex.set(false);
+    this.fallo.set(!ok);
   }
 
   protected async guardar(): Promise<void> {

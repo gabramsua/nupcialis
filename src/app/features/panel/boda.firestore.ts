@@ -33,6 +33,8 @@ export interface FuenteBoda {
   guardarPaleta(weddingId: string, colores: ColoresPaleta | null): Promise<void>;
   /** Ruta y URL de la foto de portada, o las dos a `null` para quitarla. */
   guardarPortada(weddingId: string, path: string | null, url: string | null): Promise<void>;
+  /** Salir o no en buscadores. */
+  guardarIndexable(weddingId: string, indexable: boolean): Promise<void>;
 }
 
 export function crearFuenteBodaFirestore(): FuenteBoda {
@@ -72,6 +74,10 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
         'theme.heroImagePath': path,
         'theme.heroImageUrl': url,
       });
+    },
+
+    async guardarIndexable(weddingId: string, indexable: boolean): Promise<void> {
+      await updateDoc(doc(db, 'weddings', weddingId), { indexable });
     },
 
     async guardarSecciones(weddingId: string, secciones: readonly Seccion[]): Promise<void> {
@@ -146,6 +152,7 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
     weddingTime: typeof datos['weddingTime'] === 'string' ? datos['weddingTime'] : null,
     timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
     templateId: typeof tema['templateId'] === 'string' ? tema['templateId'] : '',
+    indexable: datos['indexable'] === true,
     palette: paleta(tema['palette']),
     heroImagePath: typeof tema['heroImagePath'] === 'string' ? tema['heroImagePath'] : null,
     heroImageUrl: typeof tema['heroImageUrl'] === 'string' ? tema['heroImageUrl'] : null,

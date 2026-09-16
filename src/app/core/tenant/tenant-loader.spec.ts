@@ -10,6 +10,7 @@ const SITIO: SitioPublico = {
   weddingTime: '17:00',
   timezone: 'Europe/Madrid',
   locale: 'es',
+  indexable: false,
   secciones: [],
 };
 

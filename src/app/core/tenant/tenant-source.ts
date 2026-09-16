@@ -64,6 +64,8 @@ export interface SitioPublico {
   readonly weddingTime: string | null;
   /** Zona de la boda, que es la que manda en la cuenta atrás. */
   readonly timezone: string;
+  /** Si la pareja ha pedido salir en buscadores. Por defecto, no. */
+  readonly indexable: boolean;
   /** Secciones de la web, tal como las publica la proyección. */
   readonly secciones: readonly Seccion[];
   readonly locale: string;

@@ -152,7 +152,9 @@
         "lugar": "Lugar",
         "direccion": "Dirección",
         "nota": "Nota"
-      }
+      },
+      "buscadores": "Que nuestra web salga en Google",
+      "buscadoresAyuda": "Desactivado, solo llega quien tenga vuestro enlace. Es lo normal en una boda: la dirección se reparte, no se busca."
     }
   },
   "superadmin": {

@@ -130,6 +130,10 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `PL.8` **Foto de portada**: subida a Storage con reducción en el navegador,
       velo sobre la foto para que los nombres se lean, y borrado del fichero
       viejo **después** de apuntar al nuevo.
+- [x] `PL.9` **`noindex` por defecto con interruptor** en el panel. La etiqueta
+      va en el HTML servido, no la pone el arranque.
+- [x] `PL.10` **Humo del panel**: las siete pantallas se montan, con datos y sin
+      ellos. Ninguna se había ejecutado nunca: la guarda lo impedía.
 - [ ] `PL.7c` Reordenar **arrastrando**, que es lo que pide REQUISITOS §8.1. Hoy
       son botones de subir y bajar: accesibles y buenos en móvil, pero no es lo
       acordado. Ver D-29.

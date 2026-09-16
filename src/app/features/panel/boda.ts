@@ -66,6 +66,7 @@ export interface BodaDelPanel {
    * la web se ve con los colores de la Arena vieja.
    */
   readonly palette: ColoresPaleta | null;
+  readonly indexable: boolean;
   readonly heroImagePath: string | null;
   readonly heroImageUrl: string | null;
   /** Secciones de la web pública, ya saneadas y en orden. */

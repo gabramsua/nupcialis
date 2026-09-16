@@ -365,6 +365,7 @@ weddings/{weddingId}/public/site
   guestAccessMode
   publicModules: { gallery, gifts, playlist, guestbook, timeline, rsvp, map, quiz }
   content: { sections: [...] }
+  indexable: bool             // false por defecto; ver §8.1
 ```
 
 Es el **único** documento de la boda legible sin autenticación. Existe para que la regla de lectura pública no exponga contadores, plan ni configuración interna. La mantiene sincronizada un trigger cuando cambia la boda.
@@ -699,7 +700,17 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
 
 - Secciones activables y reordenables: portada con cuenta atrás, nuestra historia, ceremonia, banquete, cómo llegar, alojamiento, dress code, preguntas frecuentes, contacto.
 - Estados borrador y publicado, con vista previa.
-- `noindex` por defecto, con interruptor.
+- **`noindex` por defecto, con interruptor.** La etiqueta viene **en el HTML
+  servido**, no la pone la aplicación al arrancar: si dependiera del JavaScript,
+  un rastreador que no lo ejecute —o que lea la página antes de que arranque—
+  indexaría una boda que no quería salir en Google. El fallo seguro es no
+  aparecer. La boda que sí quiera aparecer lo dice, y entonces el código
+  **quita** la etiqueta.
+
+  Se indexa solo si la boda está **publicada** y el interruptor está puesto. Una
+  boda en borrador no se indexa aunque el interruptor esté encendido de antes, y
+  una archivada tampoco: lo último que quiere una pareja es que su boda del año
+  pasado siga saliendo la primera al buscar sus nombres.
 
 **Modelo de edición .** Se descarta construir un maquetador libre tipo WordPress y se adopta un modelo intermedio:
 

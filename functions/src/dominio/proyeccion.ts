@@ -59,6 +59,7 @@ export interface BodaParaProyectar {
     Record<Modulo, { readonly enabled?: unknown; readonly visibility?: unknown }>
   >;
   readonly content?: unknown;
+  readonly indexable?: unknown;
 }
 
 export interface ProyeccionPublica {
@@ -80,6 +81,8 @@ export interface ProyeccionPublica {
   };
   readonly publicModules: Record<string, Visibilidad>;
   readonly content: { readonly sections: readonly Seccion[] };
+  /** Si la pareja quiere salir en buscadores. Por defecto, no. Ver §8.1. */
+  readonly indexable: boolean;
 }
 
 /** Campos del documento de la boda que jamás pueden aparecer en la proyección. */
@@ -171,5 +174,8 @@ export function proyeccionPublica(boda: BodaParaProyectar): ProyeccionPublica {
     // —no es campo de sistema— y esto acaba en el único documento que puede
     // leer un anónimo. Se reconstruye con lista blanca, igual que el resto.
     content: { sections: sanearSecciones(secciones(boda.content)) },
+    // Solo `true` cuenta como sí. Cualquier otra cosa —ausente, corrupta, una
+    // cadena 'true'— deja la boda fuera de Google, que es el fallo seguro.
+    indexable: boda.indexable === true,
   };
 }

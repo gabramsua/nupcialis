@@ -62,6 +62,7 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
         locale: typeof datos['locale'] === 'string' ? datos['locale'] : 'es',
         theme: tema(datos['theme']),
+        indexable: datos['indexable'] === true,
         // Se vuelve a sanear en el cliente aunque el servidor ya lo haya hecho.
         // No es desconfianza del servidor: es que este documento puede haber
         // sido escrito por una versión anterior de la función, y una web de

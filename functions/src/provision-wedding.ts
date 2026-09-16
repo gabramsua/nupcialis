@@ -259,6 +259,8 @@ function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
     // pinta en rojo mientras no esté en 'ok'.
     setup: { authDomain: 'pending' as const },
     content: { sections: SECCIONES_INICIALES },
+    // Nadie sale en Google sin decirlo. Ver REQUISITOS §8.1.
+    indexable: false,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };

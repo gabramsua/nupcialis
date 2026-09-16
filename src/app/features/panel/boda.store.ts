@@ -114,6 +114,21 @@ export class BodaStore {
     }
   }
 
+  /** Decide si la boda sale en buscadores. */
+  async guardarIndexable(indexable: boolean): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarIndexable(boda.weddingId, indexable);
+      this._boda.set({ ...boda, indexable });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
   /** Guarda las secciones de la web pública. */
   async guardarSecciones(secciones: readonly Seccion[]): Promise<boolean> {
     const boda = this._boda();

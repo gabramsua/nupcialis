@@ -1,10 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <title>Nupcialis</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      Ninguna boda se indexa por defecto, y la etiqueta viene ya en el HTML
+      servido en vez de ponerla la aplicación al arrancar. Es deliberado: si
+      dependiera del JavaScript, un rastreador que no lo ejecute —o que lea la
+      página antes de que arranque— indexaría una boda que no quería salir en
+      Google. El fallo seguro es no aparecer; la que sí quiera aparecer lo dice,
+      y entonces `Indexacion` quita esta etiqueta. Ver REQUISITOS §8.1.
+    -->
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
   </head>
   <body>

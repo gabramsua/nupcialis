@@ -18,6 +18,7 @@ import { cargarPlantilla } from '../../features/public-site/plantillas/cargador'
 import { Fuentes } from '../../features/public-site/plantillas/fuentes';
 import type { DatosPortada } from '../../features/public-site/plantillas/portada';
 import { NpEmptyState } from '../../design-system/components/empty-state/empty-state';
+import { Indexacion, debeIndexarse } from '../../core/seo/indexacion';
 
 /**
  * Envoltorio de la web pública de la boda.
@@ -123,6 +124,7 @@ import { NpEmptyState } from '../../design-system/components/empty-state/empty-s
 })
 export class PublicShell {
   private readonly fuentes = inject(Fuentes);
+  private readonly indexacion = inject(Indexacion);
 
   /** Lo resuelve `tenantResolver` antes de que esto se monte. */
   readonly tenant = input.required<ResultadoTenant>();
@@ -182,6 +184,15 @@ export class PublicShell {
   });
 
   constructor() {
+    // Quitar el `noindex` es lo único que se hace aquí: la etiqueta ya viene en
+    // el HTML servido, así que el estado por defecto no depende de que este
+    // código llegue a ejecutarse. Ver `index.html` y REQUISITOS §8.1.
+    effect(() => {
+      const t = this.tenant();
+      if (t.tipo !== 'ok') return;
+      this.indexacion.aplicar(debeIndexarse(t.sitio.status, t.sitio.indexable));
+    });
+
     effect(() => {
       if (this.tenant().tipo !== 'ok') return;
 
