@@ -36,6 +36,10 @@
     "noEncontrada": {
       "titulo": "No encontramos esta boda",
       "descripcion": "Revisa el enlace que te han enviado: puede que falte alguna letra."
+    },
+    "seccion": {
+      "hora": "Hora",
+      "lugar": "Lugar"
     }
   },
   "panel": {
@@ -68,6 +72,27 @@
         "ayuda": "Elegid una plantilla. Podéis cambiarla cuando queráis, también después de publicar.",
         "nota": "El cambio se ve en vuestra web en unos segundos.",
         "fallo": "No se ha podido cambiar la plantilla"
+      },
+      "paleta": {
+        "titulo": "Vuestros colores",
+        "ayuda": "Todas se leen bien en un móvil al sol. Si no elegís ninguna, se usan los colores de la plantilla.",
+        "quitar": "Quitar la paleta",
+        "sinPaleta": "Ahora mismo mandan los colores de la plantilla.",
+        "personalizada": "Vuestros colores no son los de ninguna paleta del catálogo. Elegid una para cambiarlos.",
+        "fallo": "No se ha podido guardar la paleta"
+      },
+      "portada": {
+        "titulo": "Foto de portada",
+        "ayuda": "La primera imagen que ve quien abre vuestra web. Se reduce sola antes de subirse.",
+        "subir": "Subir una foto",
+        "cambiar": "Cambiar la foto",
+        "quitar": "Quitar la foto",
+        "sinFoto": "Todavía no habéis puesto ninguna",
+        "alt": "Vuestra foto de portada",
+        "subiendo": "Subiendo la foto…",
+        "consejo": "Mirad cómo quedan vuestros nombres encima: sobre una foto muy clara pueden costar de leer.",
+        "demasiadoGrande": "Esa foto pesa más de 10 MB. Prueba con otra o redúcela antes.",
+        "fallo": "No se ha podido guardar la foto"
       }
     },
     "modulo": {
@@ -102,6 +127,32 @@
       "quitarHora": "Quitar la hora",
       "guardado": "Guardado",
       "fallo": "No se ha podido guardar"
+    },
+    "secciones": {
+      "titulo": "Vuestra web",
+      "ayuda": "Encended las secciones que queráis y rellenadlas. A la derecha veis cómo va quedando.",
+      "pestanaEditar": "Editar",
+      "pestanaPrevia": "Vista previa",
+      "mostrar": "Mostrar",
+      "ocultar": "Ocultar",
+      "siempre": "Siempre visible",
+      "subir": "Subir esta sección",
+      "bajar": "Bajar esta sección",
+      "sinGuardar": "Hay cambios sin guardar. La web de vuestros invitados todavía no los tiene.",
+      "fallo": "No se han podido guardar los cambios",
+      "tipo": {
+        "portada": "Portada",
+        "texto": "Texto",
+        "evento": "Evento"
+      },
+      "campo": {
+        "titulo": "Título",
+        "texto": "Texto",
+        "hora": "Hora",
+        "lugar": "Lugar",
+        "direccion": "Dirección",
+        "nota": "Nota"
+      }
     }
   },
   "superadmin": {

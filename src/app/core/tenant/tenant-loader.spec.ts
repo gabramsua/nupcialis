@@ -5,11 +5,12 @@ import { EntradaSlug, FuenteTenant, SitioPublico } from './tenant-source';
 const SITIO: SitioPublico = {
   status: 'active',
   coupleNames: { partnerA: 'María', partnerB: 'Gabriel' },
-  theme: { templateId: 'clasica', palette: null, heroImagePath: null },
+  theme: { templateId: 'clasica', palette: null, heroImagePath: null, heroImageUrl: null },
   weddingDate: new Date('2027-06-12'),
   weddingTime: '17:00',
   timezone: 'Europe/Madrid',
   locale: 'es',
+  secciones: [],
 };
 
 function fuente(

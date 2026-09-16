@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "ng build",
-    "deploy:functions": "firebase deploy --only functions",
+    "deploy:functions": "node tools/desplegar-functions.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "emulators": "npm run functions:build && firebase emulators:start",
     "format": "prettier --write \"**/*.{ts,html,scss,json,md}\"",

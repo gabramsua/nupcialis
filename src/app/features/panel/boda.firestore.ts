@@ -13,6 +13,8 @@ import { inject } from '@angular/core';
 import { Timestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 import { FIRESTORE } from '../../core/firebase/firestore.providers';
+import { CLAVES_PALETA, type ColoresPaleta } from '../public-site/paletas/paletas';
+import { sanearSecciones, type Seccion } from '../public-site/secciones/secciones';
 import {
   MODULOS,
   type BodaDelPanel,
@@ -26,6 +28,11 @@ export interface FuenteBoda {
   cambiarPlantilla(weddingId: string, templateId: string): Promise<void>;
   /** `'17:00'`, o `null` para dejarla sin fijar. */
   guardarHora(weddingId: string, weddingTime: string | null): Promise<void>;
+  guardarSecciones(weddingId: string, secciones: readonly Seccion[]): Promise<void>;
+  /** `null` quita la paleta y devuelve la boda a los colores de su plantilla. */
+  guardarPaleta(weddingId: string, colores: ColoresPaleta | null): Promise<void>;
+  /** Ruta y URL de la foto de portada, o las dos a `null` para quitarla. */
+  guardarPortada(weddingId: string, path: string | null, url: string | null): Promise<void>;
 }
 
 export function crearFuenteBodaFirestore(): FuenteBoda {
@@ -49,7 +56,58 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
       // directamente, sin pasar por una función. Las reglas ya lo permiten.
       await updateDoc(doc(db, 'weddings', weddingId), { weddingTime });
     },
+
+    async guardarPaleta(weddingId: string, colores: ColoresPaleta | null): Promise<void> {
+      // Ruta anidada: escribir `theme` entero se llevaría por delante la
+      // plantilla elegida y la foto de portada.
+      await updateDoc(doc(db, 'weddings', weddingId), { 'theme.palette': colores });
+    },
+
+    async guardarPortada(
+      weddingId: string,
+      path: string | null,
+      url: string | null,
+    ): Promise<void> {
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        'theme.heroImagePath': path,
+        'theme.heroImageUrl': url,
+      });
+    },
+
+    async guardarSecciones(weddingId: string, secciones: readonly Seccion[]): Promise<void> {
+      // Ruta anidada: `content` puede llegar a tener más cosas que `sections`,
+      // y escribir el objeto entero se las llevaría por delante.
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        // Se sanea también al salir. El servidor lo repetirá antes de publicar,
+        // pero guardar basura en el documento de la boda y limpiarla después
+        // deja a la pareja viendo en su panel algo distinto de lo que se
+        // publica, que es la peor forma de descubrir un fallo.
+        'content.sections': sanearSecciones(secciones) as Seccion[],
+      });
+    },
   };
+}
+
+/**
+ * La paleta, solo si está completa.
+ *
+ * Misma regla que en la web pública: o están los seis colores o no hay paleta.
+ * Media paleta mezcla tres colores de la pareja con tres de la plantilla.
+ */
+function paleta(valor: unknown): ColoresPaleta | null {
+  if (valor === null || typeof valor !== 'object') return null;
+  const p = valor as Record<string, unknown>;
+
+  const completa = CLAVES_PALETA.every((c) => typeof p[c] === 'string' && p[c] !== '');
+  if (!completa) return null;
+
+  return Object.fromEntries(CLAVES_PALETA.map((c) => [c, p[c]])) as unknown as ColoresPaleta;
+}
+
+/** El array de secciones dentro de `content`, sin suponer que exista. */
+function seccionesDe(valor: unknown): unknown {
+  if (valor === null || typeof valor !== 'object') return null;
+  return (valor as Record<string, unknown>)['sections'];
 }
 
 function visibilidad(valor: unknown): Visibilidad {
@@ -88,6 +146,10 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
     weddingTime: typeof datos['weddingTime'] === 'string' ? datos['weddingTime'] : null,
     timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
     templateId: typeof tema['templateId'] === 'string' ? tema['templateId'] : '',
+    palette: paleta(tema['palette']),
+    heroImagePath: typeof tema['heroImagePath'] === 'string' ? tema['heroImagePath'] : null,
+    heroImageUrl: typeof tema['heroImageUrl'] === 'string' ? tema['heroImageUrl'] : null,
+    secciones: sanearSecciones(seccionesDe(datos['content'])),
     modulos: modulos(datos['modules']),
   };
 }

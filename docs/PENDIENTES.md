@@ -527,3 +527,42 @@ se contaba hasta las 00:00 UTC, las dos de la madrugada en Madrid.
 **Queda abierto:** la pareja tampoco puede cambiar el **día** desde su panel.
 Mover la fecha arrastra las fechas de toda la checklist, así que merece su propia
 pantalla con su aviso. Hoy, cambiar el día es cosa del superadmin.
+
+### D-29 · Secciones: qué se implementó y qué se dejó fuera — **PENDIENTE DE VALIDAR**
+
+REQUISITOS §8.1 enumera nueve secciones: portada, nuestra historia, ceremonia,
+banquete, cómo llegar, alojamiento, dress code, preguntas frecuentes y contacto.
+Se han implementado **tres tipos**, no nueve secciones:
+
+| Tipo      | Campos                               | Cubre                      |
+| --------- | ------------------------------------ | -------------------------- |
+| `portada` | ninguno: usa nombres, fecha y foto   | Portada                    |
+| `texto`   | título, texto                        | Nuestra historia, contacto |
+| `evento`  | título, hora, lugar, dirección, nota | Ceremonia, banquete        |
+
+**Por qué tipos y no secciones con nombre.** Las otras cuatro —cómo llegar,
+alojamiento, dress code y preguntas frecuentes— no son contenido suelto: son la
+cara pública de módulos que todavía no existen (mapa, alojamientos, dress code,
+FAQ, todos en F2). Inventarles ahora un tipo con campos propios sería crear un
+sitio donde escribir la dirección del hotel que luego habría que migrar al
+módulo. Cuando esos módulos existan, cada uno traerá su tipo de sección, que
+leerá **sus** datos en vez de tener los suyos.
+
+Mientras tanto, una pareja que quiera anunciar el dress code puede hacerlo con
+una sección de texto. No es lo definitivo; es mejor que nada y no crea deuda.
+
+**Reordenar es con botones, no arrastrando.** Los requisitos piden arrastre.
+Los botones de subir y bajar funcionan con teclado y con lector de pantalla, y
+en un móvil son bastante más fiables que un arrastre. Propuesta: que el arrastre
+llegue **además**, no en lugar de (tarea PL.7c). Si prefieres arrastre ya, dilo.
+
+**Todo es texto plano.** El editor de texto enriquecido espera a
+`sanitizeRichContent` (regla 5). Publicar HTML sin sanear a trescientos
+invitados es un XSS almacenado, y ese saneado es trabajo de servidor.
+
+**Hallazgo de seguridad, ya corregido.** La proyección pública copiaba `content`
+tal cual desde el documento de la boda. `content` **no** es campo de sistema: lo
+escribe la pareja desde su panel, y la proyección es el único documento que lee
+un anónimo. Cualquier cosa metida ahí —por la pareja o por quien le robara la
+sesión— se publicaba sin mirar. Ahora se reconstruye por lista blanca, campo a
+campo, igual que el resto de la proyección.

@@ -39,6 +39,7 @@ import { validarAlta, sugerirSlugs, type DatosAlta, type EntradaAlta } from './d
 import { dominioDeBoda } from './dominio/dominios';
 import { layoutDePlan, modulosIniciales } from './dominio/planes';
 import { proyeccionPublica, type BodaParaProyectar } from './dominio/proyeccion';
+import { SECCIONES_INICIALES } from './dominio/secciones';
 import { CONTADORES_VACIOS } from './dominio/contadores';
 import {
   CHECKLIST_PLANTILLA,
@@ -250,13 +251,14 @@ function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
       palette: null,
       fonts: null,
       heroImagePath: null,
+      heroImageUrl: null,
     },
     modules: modulosIniciales(datos.plan),
     counters: { ...CONTADORES_VACIOS, photosPending: 0 },
     // Lo que queda por cuadrar fuera de Firestore. El panel de superadmin lo
     // pinta en rojo mientras no esté en 'ok'.
     setup: { authDomain: 'pending' as const },
-    content: { sections: [] },
+    content: { sections: SECCIONES_INICIALES },
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };

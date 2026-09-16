@@ -13,6 +13,7 @@
  */
 
 import { MODULOS, type Modulo, type Visibilidad } from './planes';
+import { sanearSecciones, type Seccion } from './secciones';
 
 /** Módulos que tienen presencia en la web pública. */
 export const MODULOS_PUBLICOS: readonly Modulo[] = [
@@ -39,6 +40,7 @@ export interface TemaBoda {
   readonly palette?: unknown;
   readonly fonts?: unknown;
   readonly heroImagePath?: unknown;
+  readonly heroImageUrl?: unknown;
 }
 
 /** Lo que esta función necesita del documento de la boda. Nada más. */
@@ -74,9 +76,10 @@ export interface ProyeccionPublica {
     readonly palette: unknown;
     readonly fonts: unknown;
     readonly heroImagePath: string | null;
+    readonly heroImageUrl: string | null;
   };
   readonly publicModules: Record<string, Visibilidad>;
-  readonly content: unknown;
+  readonly content: { readonly sections: readonly Seccion[] };
 }
 
 /** Campos del documento de la boda que jamás pueden aparecer en la proyección. */
@@ -89,6 +92,12 @@ export const PROHIBIDOS_EN_PUBLICO: readonly string[] = [
   'stripeCustomerId',
   'modules',
 ];
+
+/** El array de secciones de dentro de `content`, sin suponer que exista. */
+function secciones(content: unknown): unknown {
+  if (content === null || typeof content !== 'object') return null;
+  return (content as Record<string, unknown>)['sections'];
+}
 
 function cadena(valor: unknown, porDefecto: string): string {
   return typeof valor === 'string' && valor.trim() !== '' ? valor : porDefecto;
@@ -153,8 +162,14 @@ export function proyeccionPublica(boda: BodaParaProyectar): ProyeccionPublica {
       palette: tema.palette ?? null,
       fonts: tema.fonts ?? null,
       heroImagePath: typeof tema.heroImagePath === 'string' ? tema.heroImagePath : null,
+      // La URL viaja resuelta para que la web pública no cargue el SDK de
+      // Storage solo para averiguarla.
+      heroImageUrl: typeof tema.heroImageUrl === 'string' ? tema.heroImageUrl : null,
     },
     publicModules: modulosPublicos(boda.modules),
-    content: boda.content ?? { sections: [] },
+    // **No se copia `content` tal cual.** Lo escribe la pareja desde su panel
+    // —no es campo de sistema— y esto acaba en el único documento que puede
+    // leer un anónimo. Se reconstruye con lista blanca, igual que el resto.
+    content: { sections: sanearSecciones(secciones(boda.content)) },
   };
 }

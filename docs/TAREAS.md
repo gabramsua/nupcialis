@@ -119,6 +119,20 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.7.3c` **Hora de la ceremonia en el panel de la pareja** («Datos de la
       boda»), y cuenta atrás calculada con día + hora + zona. Antes contaba hasta
       las 00:00 UTC, que en Madrid son las dos de la madrugada. Ver D-28.
+- [x] `PL.7` **Secciones de la web pública**: modelo compartido, semillas, saneado
+      por lista blanca en la proyección y las dos plantillas pintándolas.
+- [x] `PL.7b` **Editor de secciones con vista previa en vivo** en el panel de la
+      pareja: encender, apagar, reordenar y rellenar, con la plantilla real al
+      lado. Pestañas en móvil, dos columnas a partir de 64rem.
+- [x] `PL.6` **Selector de paleta**: catálogo cerrado de ocho paletas, cada una
+      con su test de contraste WCAG AA. Cuál está elegida se deduce comparando
+      los colores, no se guarda un id que pueda divergir.
+- [x] `PL.8` **Foto de portada**: subida a Storage con reducción en el navegador,
+      velo sobre la foto para que los nombres se lean, y borrado del fichero
+      viejo **después** de apuntar al nuevo.
+- [ ] `PL.7c` Reordenar **arrastrando**, que es lo que pide REQUISITOS §8.1. Hoy
+      son botones de subir y bajar: accesibles y buenos en móvil, pero no es lo
+      acordado. Ver D-29.
 - [ ] `F0.7.4` Vista de registro de accesos de los novios
 - [ ] `F0.7.5` Resumen inicial del panel de la pareja
 - [ ] `F0.7.6` Carga diferida verificada: el bundle público no arrastra código del panel

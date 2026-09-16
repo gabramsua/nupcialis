@@ -3,7 +3,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../../design-system/icons/icon';
 import { fechaLarga } from '../../../../shared/fecha';
-import { cuentaAtras, type DatosPortada } from '../portada';
+import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
 
 /**
  * Plantilla «Clásica»: papel claro, serifa y mucho aire.
@@ -19,7 +19,11 @@ import { cuentaAtras, type DatosPortada } from '../portada';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-      <main class="clasica">
+      <main
+        class="clasica"
+        [class.clasica--con-foto]="datos().heroImageUrl"
+        [style.--foto]="foto()"
+      >
         <div class="clasica__texto">
           <p class="clasica__antetitulo">
             <np-icon name="diamond" weight="fill" />
@@ -64,6 +68,47 @@ import { cuentaAtras, type DatosPortada } from '../portada';
           }
         </div>
       </main>
+
+      @for (seccion of secciones(); track seccion.id) {
+        <section class="clasica__seccion">
+          @if (seccion.fields['titulo']; as titulo) {
+            <h2 class="clasica__titulo">{{ titulo }}</h2>
+          }
+
+          @switch (seccion.type) {
+            @case ('texto') {
+              <!-- Los saltos que escribió la pareja se respetan con CSS, sin
+                   admitir una sola etiqueta: esto es texto plano hasta que
+                   exista el saneado en servidor (regla 5). -->
+              <p class="clasica__parrafo">{{ seccion.fields['texto'] }}</p>
+            }
+            @case ('evento') {
+              <dl class="clasica__evento">
+                @if (seccion.fields['hora']) {
+                  <div>
+                    <dt><np-icon name="clock" />{{ t('publico.seccion.hora') }}</dt>
+                    <dd>{{ seccion.fields['hora'] }}</dd>
+                  </div>
+                }
+                @if (seccion.fields['lugar']) {
+                  <div>
+                    <dt><np-icon name="map-pin" />{{ t('publico.seccion.lugar') }}</dt>
+                    <dd>
+                      {{ seccion.fields['lugar'] }}
+                      @if (seccion.fields['direccion']; as direccion) {
+                        <span class="clasica__direccion">{{ direccion }}</span>
+                      }
+                    </dd>
+                  </div>
+                }
+              </dl>
+              @if (seccion.fields['nota']; as nota) {
+                <p class="clasica__parrafo">{{ nota }}</p>
+              }
+            }
+          }
+        </section>
+      }
     </ng-container>
   `,
   styles: `
@@ -87,6 +132,29 @@ import { cuentaAtras, type DatosPortada } from '../portada';
       color: var(--texto);
       font-family: var(--palo);
       text-align: center;
+    }
+    /*
+      Con foto, la portada cambia de reglas: texto claro sobre la imagen, y un
+      velo por encima. El velo no es estética, es legibilidad — una foto de
+      playa a mediodía deja unos nombres blancos invisibles, y eso no lo puede
+      saber el código. El fondo se queda en scroll a propósito: fijarlo va a
+      tirones en iOS, que es medio público de la boda.
+    */
+    .clasica--con-foto {
+      position: relative;
+      background-image: linear-gradient(rgb(0 0 0 / 45%), rgb(0 0 0 / 55%)), var(--foto);
+      background-position: center;
+      background-size: cover;
+      color: #ffffff;
+    }
+    .clasica--con-foto .clasica__antetitulo,
+    .clasica--con-foto .clasica__fecha,
+    .clasica--con-foto .clasica__unidad {
+      color: rgb(255 255 255 / 85%);
+    }
+    .clasica--con-foto .clasica__casilla {
+      border-color: rgb(255 255 255 / 35%);
+      background: rgb(255 255 255 / 12%);
     }
     .clasica__texto {
       display: flex;
@@ -162,6 +230,66 @@ import { cuentaAtras, type DatosPortada } from '../portada';
       text-transform: uppercase;
       color: color-mix(in srgb, var(--texto) 60%, transparent);
     }
+    /* Primero móvil: una columna con aire, y el ancho se limita en ch para que
+       la línea no pase de unos 70 caracteres en pantallas grandes. */
+    .clasica__seccion {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-4);
+      max-inline-size: 62ch;
+      margin-inline: auto;
+      padding: var(--np-space-6) var(--np-space-5);
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: var(--palo);
+    }
+    .clasica__titulo {
+      margin: 0;
+      font-family: var(--serifa);
+      font-size: var(--np-text-2xl);
+      font-weight: 500;
+      text-align: center;
+      text-wrap: balance;
+    }
+    .clasica__parrafo {
+      margin: 0;
+      white-space: pre-line;
+      line-height: 1.7;
+      color: color-mix(in srgb, var(--texto) 85%, transparent);
+    }
+    .clasica__evento {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-3);
+      margin: 0;
+      padding: var(--np-space-4);
+      border: 1px solid var(--borde);
+      border-radius: var(--np-radius-lg);
+      background: var(--superficie);
+    }
+    .clasica__evento dt {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      font-size: var(--np-text-xs);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--texto) 60%, transparent);
+    }
+    .clasica__evento dt np-icon {
+      color: var(--acento);
+      --np-icon-size: 1em;
+    }
+    .clasica__evento dd {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+      margin: var(--np-space-1) 0 0;
+    }
+    .clasica__direccion {
+      font-size: var(--np-text-sm);
+      color: color-mix(in srgb, var(--texto) 65%, transparent);
+    }
   `,
 })
 export class PlantillaClasica {
@@ -175,6 +303,16 @@ export class PlantillaClasica {
    * que es dentro de nueve meses.
    */
   protected readonly faltan = computed(() => cuentaAtras(this.datos(), new Date()));
+
+  /** La foto, lista para meter en `background-image`. */
+  protected readonly foto = computed(() => {
+    const url = this.datos().heroImageUrl;
+    // Las comillas y los paréntesis se escapan: la URL viene de Storage, pero
+    // una URL con `)` cerraría el `url()` y dejaría CSS colgando.
+    return url ? `url("${url.replace(/["\\)]/g, encodeURIComponent)}")` : null;
+  });
+
+  protected readonly secciones = computed(() => seccionesVisibles(this.datos()));
 
   protected readonly fecha = computed(() =>
     fechaLarga(this.datos().weddingDate, this.datos().locale),

@@ -9,6 +9,7 @@
 
 import type { NombresPareja } from '../../../core/tenant/tenant-source';
 import { instanteDeBoda } from '../../../shared/zona-horaria';
+import type { Seccion } from '../secciones/secciones';
 
 export interface DatosPortada {
   readonly nombres: NombresPareja;
@@ -19,6 +20,21 @@ export interface DatosPortada {
   /** Zona de la boda, no la del invitado: `'Europe/Madrid'`. */
   readonly timezone: string;
   readonly locale: string;
+  /** Foto de portada, ya resuelta a URL. `null` si no han subido ninguna. */
+  readonly heroImageUrl: string | null;
+  /** Las secciones de esta boda, ya saneadas y en orden. */
+  readonly secciones: readonly Seccion[];
+}
+
+/**
+ * Las secciones que la plantilla tiene que pintar debajo de la portada.
+ *
+ * La portada se queda fuera porque cada plantilla la dibuja a su manera y no es
+ * una sección más: es *la* plantilla. Y las apagadas no llegan aquí, para que
+ * ninguna plantilla tenga que acordarse de mirar `enabled`.
+ */
+export function seccionesVisibles(datos: DatosPortada): readonly Seccion[] {
+  return datos.secciones.filter((seccion) => seccion.enabled && seccion.type !== 'portada');
 }
 
 /**

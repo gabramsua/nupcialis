@@ -11,6 +11,8 @@ function datos(parcial: Partial<DatosPortada>): DatosPortada {
     weddingTime: '17:00',
     timezone: 'Europe/Madrid',
     locale: 'es',
+    heroImageUrl: null,
+    secciones: [],
     ...parcial,
   };
 }

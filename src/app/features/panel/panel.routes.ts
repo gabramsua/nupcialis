@@ -42,9 +42,12 @@ export const panelRoutes: Routes = [
             loadComponent: () => import('./datos/datos-boda').then((m) => m.DatosBoda),
           },
           {
+            path: 'web',
+            loadComponent: () => import('./web/editor-secciones').then((m) => m.EditorSecciones),
+          },
+          {
             path: 'diseno',
-            loadComponent: () =>
-              import('./diseno/selector-plantilla').then((m) => m.SelectorPlantilla),
+            loadComponent: () => import('./diseno/diseno').then((m) => m.Diseno),
           },
           {
             path: '',

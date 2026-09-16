@@ -312,7 +312,8 @@ weddings/{weddingId}
     templateId: string
     palette: { primary, secondary, background, surface, text, accent }
     fonts: { heading: string, body: string }
-    heroImagePath: string | null
+    heroImagePath: string | null   // ruta en Storage, para poder borrarla
+    heroImageUrl: string | null    // URL ya resuelta, para no cargar el SDK
   }
   modules: {
     publicSite:  { enabled, config }
@@ -682,6 +683,20 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
   boda con tres de la plantilla, que es peor que ninguno.
 
 - Tokens de diseño: paleta (6 colores), pareja de tipografías, imagen de portada.
+
+  El **catálogo de paletas es cerrado**, por el mismo motivo que el de
+  plantillas: seis selectores de color sueltos producen texto gris claro sobre
+  fondo beige con una fiabilidad asombrosa, y esa web la abre un invitado de pie
+  en la calle. Cada paleta pasa un test de contraste (WCAG AA, §9.3) antes de
+  entrar en el catálogo; la que no lo pase no se mergea.
+
+  De la **imagen de portada** se guardan dos cosas: `heroImagePath`, para poder
+  borrar el fichero, y `heroImageUrl`, la URL de descarga ya resuelta. La
+  segunda existe para que la web pública no tenga que cargar el SDK de Storage
+  solo para averiguar una URL que ya se conocía al subir. Se reduce en el
+  navegador antes de subirla: sale del móvil con 4000 px y seis megas, y la
+  descarga cada invitado para verla en una pantalla de teléfono.
+
 - Secciones activables y reordenables: portada con cuenta atrás, nuestra historia, ceremonia, banquete, cómo llegar, alojamiento, dress code, preguntas frecuentes, contacto.
 - Estados borrador y publicado, con vista previa.
 - `noindex` por defecto, con interruptor.

@@ -50,6 +50,24 @@ describe.each(PLANTILLAS)('plantilla %s', (_nombre, Plantilla) => {
       weddingTime: '17:00',
       timezone: 'Europe/Madrid',
       locale: 'es',
+      heroImageUrl: null,
+      secciones: [
+        { id: 'portada', type: 'portada', enabled: true, order: 0, fields: {} },
+        {
+          id: 'historia',
+          type: 'texto',
+          enabled: true,
+          order: 1,
+          fields: { titulo: 'Nuestra historia', texto: 'Nos conocimos en Cádiz.' },
+        },
+        {
+          id: 'apagada',
+          type: 'texto',
+          enabled: false,
+          order: 2,
+          fields: { titulo: 'No debería salir', texto: '' },
+        },
+      ],
     });
     fixture.detectChanges();
 
@@ -59,5 +77,9 @@ describe.each(PLANTILLAS)('plantilla %s', (_nombre, Plantilla) => {
     // Lo que no se veía: la fecha y la cuenta atrás.
     expect(texto).toContain('días');
     expect(texto).toMatch(/\d{4}/);
+    // Las secciones encendidas se pintan; las apagadas no llegan a la página.
+    expect(texto).toContain('Nuestra historia');
+    expect(texto).toContain('Nos conocimos en Cádiz.');
+    expect(texto).not.toContain('No debería salir');
   });
 });

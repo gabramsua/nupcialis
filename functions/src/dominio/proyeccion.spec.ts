@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { SECCIONES_INICIALES } from './secciones';
+
 import { modulosIniciales } from './planes';
 import {
   MODULOS_PUBLICOS,
@@ -87,7 +89,10 @@ describe('proyeccionPublica', () => {
     expect(publico.status).toBe('draft');
     expect(publico.coupleNames).toEqual({ partnerA: '', partnerB: '' });
     expect(publico.theme.heroImagePath).toBeNull();
-    expect(publico.content).toEqual({ sections: [] });
+    // Una boda sin `content` no se publica vacía: se publica con las secciones
+    // iniciales. Una web en blanco es peor que una con la portada y poco más,
+    // y el invitado ya está delante con el enlace abierto.
+    expect(publico.content.sections).toEqual(SECCIONES_INICIALES);
   });
 });
 

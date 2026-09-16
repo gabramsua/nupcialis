@@ -3,7 +3,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../../design-system/icons/icon';
 import { fechaLarga } from '../../../../shared/fecha';
-import { cuentaAtras, type DatosPortada } from '../portada';
+import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
 
 /**
  * Plantilla «Botánica»: portada oscura a sangre, tipografía de mucho contraste.
@@ -18,7 +18,11 @@ import { cuentaAtras, type DatosPortada } from '../portada';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-      <main class="botanica">
+      <main
+        class="botanica"
+        [class.botanica--con-foto]="datos().heroImageUrl"
+        [style.--foto]="foto()"
+      >
         <np-icon name="leaf" class="botanica__hoja" />
 
         <h1 class="botanica__nombres">
@@ -55,6 +59,46 @@ import { cuentaAtras, type DatosPortada } from '../portada';
           </div>
         }
       </main>
+
+      @for (seccion of secciones(); track seccion.id) {
+        <section class="botanica__seccion">
+          @if (seccion.fields['titulo']; as titulo) {
+            <h2 class="botanica__titulo">{{ titulo }}</h2>
+          }
+
+          @switch (seccion.type) {
+            @case ('texto') {
+              <!-- Texto plano con los saltos respetados. Ninguna etiqueta entra
+                   aquí hasta que exista el saneado en servidor (regla 5). -->
+              <p class="botanica__parrafo">{{ seccion.fields['texto'] }}</p>
+            }
+            @case ('evento') {
+              <dl class="botanica__evento">
+                @if (seccion.fields['hora']) {
+                  <div>
+                    <dt>{{ t('publico.seccion.hora') }}</dt>
+                    <dd>{{ seccion.fields['hora'] }}</dd>
+                  </div>
+                }
+                @if (seccion.fields['lugar']) {
+                  <div>
+                    <dt>{{ t('publico.seccion.lugar') }}</dt>
+                    <dd>
+                      {{ seccion.fields['lugar'] }}
+                      @if (seccion.fields['direccion']; as direccion) {
+                        <span class="botanica__direccion">{{ direccion }}</span>
+                      }
+                    </dd>
+                  </div>
+                }
+              </dl>
+              @if (seccion.fields['nota']; as nota) {
+                <p class="botanica__parrafo">{{ nota }}</p>
+              }
+            }
+          }
+        </section>
+      }
     </ng-container>
   `,
   styles: `
@@ -118,6 +162,65 @@ import { cuentaAtras, type DatosPortada } from '../portada';
       font-size: var(--np-text-2xl);
       line-height: 1;
     }
+    /* Primero móvil: una columna, con la medida de línea acotada en ch. */
+    /* La botánica ya es oscura: el velo solo asegura el contraste del texto
+       claro sobre fotos claras. Ver el comentario de la clásica. */
+    .botanica--con-foto {
+      background-image: linear-gradient(rgb(12 30 22 / 55%), rgb(12 30 22 / 70%)), var(--foto);
+      background-position: center;
+      background-size: cover;
+    }
+    .botanica__seccion {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-4);
+      max-inline-size: 62ch;
+      margin-inline: auto;
+      padding: var(--np-space-6) var(--np-space-5);
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: var(--palo);
+      text-align: center;
+    }
+    .botanica__titulo {
+      margin: 0;
+      font-family: var(--serifa);
+      font-size: var(--np-text-2xl);
+      font-weight: 400;
+      color: var(--acento);
+      text-wrap: balance;
+    }
+    .botanica__parrafo {
+      margin: 0;
+      white-space: pre-line;
+      line-height: 1.8;
+      color: color-mix(in srgb, var(--texto) 88%, transparent);
+    }
+    .botanica__evento {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-4);
+      margin: 0;
+      padding-block: var(--np-space-4);
+      border-block: 1px solid color-mix(in srgb, var(--texto) 22%, transparent);
+    }
+    .botanica__evento dt {
+      font-size: var(--np-text-xs);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--texto) 70%, transparent);
+    }
+    .botanica__evento dd {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+      margin: var(--np-space-1) 0 0;
+      font-size: var(--np-text-lg);
+    }
+    .botanica__direccion {
+      font-size: var(--np-text-sm);
+      color: color-mix(in srgb, var(--texto) 68%, transparent);
+    }
     .botanica__unidad {
       font-size: var(--np-text-xs);
       letter-spacing: 0.2em;
@@ -128,6 +231,13 @@ import { cuentaAtras, type DatosPortada } from '../portada';
 })
 export class PlantillaBotanica {
   readonly datos = input.required<DatosPortada>();
+
+  protected readonly foto = computed(() => {
+    const url = this.datos().heroImageUrl;
+    return url ? `url("${url.replace(/["\\)]/g, encodeURIComponent)}")` : null;
+  });
+
+  protected readonly secciones = computed(() => seccionesVisibles(this.datos()));
 
   protected readonly fecha = computed(() =>
     fechaLarga(this.datos().weddingDate, this.datos().locale),

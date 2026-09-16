@@ -1,3 +1,5 @@
+import type { Seccion } from '../../features/public-site/secciones/secciones';
+
 /**
  * Puerto de datos del tenant.
  *
@@ -42,6 +44,8 @@ export interface TemaPublico {
   readonly templateId: string;
   readonly palette: PaletaMarca | null;
   readonly heroImagePath: string | null;
+  /** URL de descarga ya resuelta. Ver `core/firebase/portada.storage.ts`. */
+  readonly heroImageUrl: string | null;
 }
 
 /** La proyección pública: lo único legible sin autenticación. */
@@ -60,6 +64,8 @@ export interface SitioPublico {
   readonly weddingTime: string | null;
   /** Zona de la boda, que es la que manda en la cuenta atrás. */
   readonly timezone: string;
+  /** Secciones de la web, tal como las publica la proyección. */
+  readonly secciones: readonly Seccion[];
   readonly locale: string;
   readonly theme: TemaPublico;
 }

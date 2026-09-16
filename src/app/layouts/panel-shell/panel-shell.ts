@@ -91,6 +91,14 @@ import { NpIcon } from '../../design-system/icons/icon';
               </a>
               <a
                 class="np-panel__enlace"
+                routerLink="/panel/web"
+                routerLinkActive="np-panel__enlace--activo"
+              >
+                <np-icon name="eye" />
+                {{ t('panel.secciones.titulo') }}
+              </a>
+              <a
+                class="np-panel__enlace"
                 routerLink="/panel/diseno"
                 routerLinkActive="np-panel__enlace--activo"
               >

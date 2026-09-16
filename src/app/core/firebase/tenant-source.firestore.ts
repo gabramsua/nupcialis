@@ -8,6 +8,7 @@ import {
   SitioPublico,
   TemaPublico,
 } from '../tenant/tenant-source';
+import { sanearSecciones } from '../../features/public-site/secciones/secciones';
 import { FIRESTORE } from './firestore.providers';
 
 /**
@@ -61,6 +62,11 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
         locale: typeof datos['locale'] === 'string' ? datos['locale'] : 'es',
         theme: tema(datos['theme']),
+        // Se vuelve a sanear en el cliente aunque el servidor ya lo haya hecho.
+        // No es desconfianza del servidor: es que este documento puede haber
+        // sido escrito por una versión anterior de la función, y una web de
+        // boda no puede romperse por un despliegue a medias.
+        secciones: sanearSecciones(secciones(datos['content'])),
       };
     },
   };
@@ -73,6 +79,12 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
  * se queda vacío y la web sigue mostrando la fecha, que es lo que el invitado
  * ha venido a ver.
  */
+/** El array de secciones dentro de `content`, sin suponer que exista. */
+function secciones(valor: unknown): unknown {
+  if (valor === null || typeof valor !== 'object') return null;
+  return (valor as Record<string, unknown>)['sections'];
+}
+
 function nombres(valor: unknown): NombresPareja {
   const par = typeof valor === 'object' && valor !== null ? (valor as Record<string, unknown>) : {};
   return {
@@ -94,6 +106,7 @@ function tema(valor: unknown): TemaPublico {
     templateId: typeof t['templateId'] === 'string' ? t['templateId'] : '',
     palette: paleta(t['palette']),
     heroImagePath: typeof t['heroImagePath'] === 'string' ? t['heroImagePath'] : null,
+    heroImageUrl: typeof t['heroImageUrl'] === 'string' ? t['heroImageUrl'] : null,
   };
 }
 

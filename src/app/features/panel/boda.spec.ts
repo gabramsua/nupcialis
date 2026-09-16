@@ -12,6 +12,10 @@ function boda(modulos: BodaDelPanel['modulos']): BodaDelPanel {
     weddingTime: null,
     timezone: 'Europe/Madrid',
     templateId: 'clasica',
+    palette: null,
+    heroImagePath: null,
+    heroImageUrl: null,
+    secciones: [],
     modulos,
   };
 }

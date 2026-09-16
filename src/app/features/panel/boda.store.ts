@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { SessionStore } from '../../core/auth/session.store';
+import type { ColoresPaleta } from '../public-site/paletas/paletas';
+import type { Seccion } from '../public-site/secciones/secciones';
 import { menuDeModulos, modulosNoVisibles, type BodaDelPanel } from './boda';
 import { crearFuenteBodaFirestore } from './boda.firestore';
 
@@ -75,6 +77,51 @@ export class BodaStore {
     try {
       await this.fuente.cambiarPlantilla(boda.weddingId, templateId);
       this._boda.set({ ...boda, templateId });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /** Elige la paleta, o la quita con `null`. */
+  async guardarPaleta(colores: ColoresPaleta | null): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarPaleta(boda.weddingId, colores);
+      this._boda.set({ ...boda, palette: colores });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /** Fija o quita la foto de portada. */
+  async guardarPortada(path: string | null, url: string | null): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarPortada(boda.weddingId, path, url);
+      this._boda.set({ ...boda, heroImagePath: path, heroImageUrl: url });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /** Guarda las secciones de la web pública. */
+  async guardarSecciones(secciones: readonly Seccion[]): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarSecciones(boda.weddingId, secciones);
+      this._boda.set({ ...boda, secciones });
       return true;
     } catch (error) {
       this._error.set(error instanceof Error ? error.message : String(error));

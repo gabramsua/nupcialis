@@ -8,6 +8,8 @@
  */
 
 import type { NpIconName } from '../../design-system/icons/icon-name.generated';
+import type { ColoresPaleta } from '../public-site/paletas/paletas';
+import type { Seccion } from '../public-site/secciones/secciones';
 
 export const MODULOS = [
   'publicSite',
@@ -55,6 +57,19 @@ export interface BodaDelPanel {
   readonly weddingTime: string | null;
   readonly timezone: string;
   readonly templateId: string;
+  /**
+   * Los seis colores de la pareja, o `null` si aún no ha elegido paleta.
+   *
+   * No se guarda el id del catálogo: se guardan los colores, y cuál está
+   * elegida se deduce comparando. Guardar las dos cosas las deja divergir el
+   * día que se retoque una paleta, y entonces el panel diría «Arena» mientras
+   * la web se ve con los colores de la Arena vieja.
+   */
+  readonly palette: ColoresPaleta | null;
+  readonly heroImagePath: string | null;
+  readonly heroImageUrl: string | null;
+  /** Secciones de la web pública, ya saneadas y en orden. */
+  readonly secciones: readonly Seccion[];
   readonly modulos: Readonly<Partial<Record<Modulo, ConfigModulo>>>;
 }
 

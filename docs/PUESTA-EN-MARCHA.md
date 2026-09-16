@@ -263,6 +263,47 @@ y el acceso se quedaba colgado sin decir nada. Ya está puesta la cabecera
 **En producción hay que servir esa misma cabecera** (en Vercel, `headers` de
 `vercel.json`), o el acceso con Google fallará igual para las parejas.
 
+### «Cannot determine backend specification. Timeout after 10000»
+
+Si `npm run deploy:functions` muere con esto:
+
+```
+Error: User code failed to load. Cannot determine backend specification.
+Timeout after 10000.
+```
+
+**No es que el código falle.** Antes de desplegar, la CLI carga
+`functions/lib/index.js` en un proceso aparte para averiguar qué funciones hay,
+y le da diez segundos. Cargar `firebase-admin` y `firebase-functions` son
+cientos de ficheros, y justo antes la CLI ha hecho un `npm ci` que los ha dejado
+todos fríos: en Windows, con el antivirus escaneando cada uno la primera vez que
+se lee, pasar de diez segundos es lo normal. En Linux el mismo `index.js` carga
+en menos de un segundo.
+
+Ya está resuelto en el repositorio: `npm run deploy:functions` pasa por
+`tools/desplegar-functions.mjs`, que sube `FUNCTIONS_DISCOVERY_TIMEOUT` a 120
+segundos. Si te lo encuentras con la CLI a pelo:
+
+```bash
+FUNCTIONS_DISCOVERY_TIMEOUT=120 firebase deploy --only functions
+```
+
+**Si aun con 120 segundos falla, entonces sí es el código.** Significa que algo
+en el ámbito global de alguna función hace trabajo pesado o llamadas de red al
+cargarse, y eso se arregla moviéndolo a `onInit()`, no subiendo el número. Para
+verlo, lo que enseña el error de verdad es:
+
+```bash
+firebase deploy --only functions --debug
+```
+
+Y para comprobar que el problema no es nuestro, esto tiene que cargar rápido y
+sin lanzar:
+
+```bash
+node -e "require('./functions/lib/index.js')"
+```
+
 ### App Check: el 401 de `provisionWedding`
 
 Si el alta responde **401 Unauthorized**, no es tu sesión ni tus claims: es App

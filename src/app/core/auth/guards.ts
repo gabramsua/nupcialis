@@ -15,17 +15,38 @@ import { SessionStore } from './session.store';
  * Firestore no le dejan leer nada. Esto evita enseñar un panel que no va a
  * poder cargar datos, y llevar a cada uno donde le corresponde.
  */
+/**
+ * Todo lo que necesita inyección, resuelto de una vez.
+ *
+ * **Se llama antes del primer `await` y no hay excepciones.** `inject()` solo
+ * funciona dentro del contexto de inyección, y ese contexto se pierde en cuanto
+ * la función cede el control: al volver del `await`, un `inject()` lanza
+ * `NG0203`. Estaba pasando —la fuente de tenant se creaba después de esperar a
+ * la sesión— y el panel de la pareja no llegaba a abrirse nunca, con un error
+ * que no menciona ni el panel ni la sesión.
+ *
+ * Agrupar las dependencias aquí es lo que hace visible la regla: si alguien
+ * añade una inyección, la añade en este sitio, que está antes del `await` por
+ * construcción.
+ */
+function dependenciasDelPanel() {
+  return {
+    router: inject(Router),
+    store: inject(SessionStore),
+    hostname: inject(DOCUMENT).location.hostname,
+    fuenteTenant: crearFuenteTenantFirestore(),
+  };
+}
+
 export const guardaPanel: CanActivateFn = async () => {
-  const router = inject(Router);
-  const store = inject(SessionStore);
-  const { hostname } = inject(DOCUMENT).location;
+  const { router, store, hostname, fuenteTenant } = dependenciasDelPanel();
 
   const sesion = await store.esperar();
 
   const destino = resolverTenant(hostname, environment.rootDomain);
   const boda =
     destino.superficie === 'boda' && destino.slug
-      ? await cargarTenant(destino.slug, crearFuenteTenantFirestore())
+      ? await cargarTenant(destino.slug, fuenteTenant)
       : null;
 
   const weddingId = boda?.tipo === 'ok' ? boda.weddingId : null;

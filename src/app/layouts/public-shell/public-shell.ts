@@ -143,6 +143,8 @@ export class PublicShell {
         weddingTime: null,
         timezone: 'Europe/Madrid',
         locale: 'es',
+        heroImageUrl: null,
+        secciones: [],
       };
     }
     return {
@@ -151,6 +153,8 @@ export class PublicShell {
       weddingTime: t.sitio.weddingTime,
       timezone: t.sitio.timezone,
       locale: t.sitio.locale,
+      heroImageUrl: t.sitio.theme.heroImageUrl,
+      secciones: t.sitio.secciones,
     };
   });
 
