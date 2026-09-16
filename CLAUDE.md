@@ -119,6 +119,9 @@ npm run functions:install      # instala el paquete de functions (es aparte)
 npm run functions:build        # tsc de functions; el emulador carga lib/, no src/
 npm run functions:test         # tests de dominio de las funciones
 npm run emulators              # compila functions y levanta todos los emuladores
+npm run seed                   # cuatro bodas de ejemplo, vía provisionWedding
+npm run probar:alta            # prueba de extremo a extremo del alta (F0.6.V)
+npm run start:real             # la app contra el proyecto REAL, sin emuladores
 npm run deploy:rules
 npm run deploy:functions
 ```
@@ -144,7 +147,8 @@ Y entra por **subdominio**, no por `localhost` a secas: los navegadores resuelve
 
 | URL                            | Qué debe salir                               |
 | ------------------------------ | -------------------------------------------- |
-| `mariaygabriel.localhost:4200` | La boda publicada                            |
+| `mariaygabriel.localhost:4200` | La boda publicada, plantilla **Clásica**     |
+| `sofiayleo.localhost:4200`     | La boda publicada, plantilla **Botánica**    |
 | `anayjuan.localhost:4200`      | En borrador, todavía no publicada            |
 | `lolaymanu.localhost:4200`     | Archivada                                    |
 | `pepeypepa.localhost:4200`     | **No encontrada**, porque está en cuarentena |
@@ -158,6 +162,24 @@ importa: estaría confirmando a un desconocido que esa boda existió.
 
 Trabaja siempre contra los emuladores. **Nunca ejecutes scripts ni pruebas contra el
 proyecto de producción.**
+
+### Cuándo sí se usa el proyecto real
+
+Hay una excepción y está acotada: **el alta del subdominio en los dominios
+autorizados de Firebase Auth no se puede probar en el emulador**, porque el
+emulador de Auth no implementa ese API. Eso, y solo eso, obliga a ir al proyecto
+real (`npm run start:real`, ver `docs/PUESTA-EN-MARCHA.md` bloque 7).
+
+Para el día a día siguen los emuladores, y no es ceremonia:
+
+- Cada alta real consume un **dominio autorizado**, y ese es justamente el
+  recurso cuyo límite Firebase no documenta (§11 de REQUISITOS).
+- Las bodas de prueba llevan invitados inventados con teléfonos y alergias. En
+  cuanto haya una boda real al lado, eso es un problema de datos personales.
+- Un trigger que se llama a sí mismo cuesta dinero de verdad en Blaze. En el
+  emulador cuesta un Ctrl+C.
+- Los emuladores se reinician y se llevan la basura. Producción no.
+- El ciclo es instantáneo; desplegar una función son minutos.
 
 ## Git
 

@@ -1,51 +1,33 @@
 #!/usr/bin/env node
 /**
- * Siembra bodas de ejemplo en el emulador de Firestore.
+ * Siembra bodas de ejemplo en los emuladores.
  *
- * Contra la API REST del emulador, sin firebase-admin. Ese paquete arrastra
- * medio Google Cloud SDK para escribir seis documentos, y ya nos costó seis
- * minutos de instalación con firebase-tools.
+ * Cambio importante respecto a la primera versión: **ya no escribe los
+ * documentos a mano, llama a `provisionWedding`**. Escribirlos a mano obligaba a
+ * mantener aquí una copia del modelo de datos, y esa copia se quedó obsoleta en
+ * cuanto el alta empezó a sembrar módulos, layout y proyección. Peor: unos datos
+ * de ejemplo que no se parecen a los de verdad esconden justo los fallos que uno
+ * quiere encontrar en local.
  *
- *   npm run emulators          en una terminal
- *   npm run seed               en otra
- *   npm run seed -- --dry-run  imprime lo que escribiría, sin emulador
+ * Efecto secundario útil: sembrar es ahora una prueba del alta.
  *
- * Es idempotente: se puede lanzar las veces que haga falta.
+ *   npm run emulators     en una terminal
+ *   npm run seed          en otra
+ *
+ * Es idempotente: si una boda ya existe, se reutiliza y solo se ajusta su estado.
  */
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { projects } = JSON.parse(readFileSync(join(raiz, '.firebaserc'), 'utf8'));
-const PROYECTO = projects.default;
-const HOST = process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080';
-const BASE = `http://${HOST}/v1/projects/${PROYECTO}/databases/(default)/documents`;
+import {
+  comprobarEmuladores,
+  cuentaConClaims,
+  escribirDoc,
+  esperarA,
+  leerDoc,
+  llamarFuncion,
+} from './emulador.mjs';
 
-const seco = process.argv.includes('--dry-run');
-
-// --- conversión al formato de valores de Firestore -------------------------
-
-function valor(v) {
-  if (v === null) return { nullValue: null };
-  if (typeof v === 'string') return { stringValue: v };
-  if (typeof v === 'boolean') return { booleanValue: v };
-  if (typeof v === 'number') {
-    return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-  }
-  if (v instanceof Date) return { timestampValue: v.toISOString() };
-  if (Array.isArray(v)) return { arrayValue: { values: v.map(valor) } };
-  if (typeof v === 'object') return { mapValue: { fields: campos(v) } };
-  throw new Error(`Tipo no soportado: ${typeof v}`);
-}
-
-function campos(obj) {
-  return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, valor(v)]));
-}
-
-// --- los datos -------------------------------------------------------------
-
-const FECHA = new Date('2027-06-12T11:30:00.000Z');
+/** Nueve meses vista: siempre futura, aunque este fichero envejezca. */
+const FECHA_BODA = new Date(Date.now() + 275 * 86_400_000);
 
 /**
  * Una boda por estado, para poder recorrer las cinco pantallas a mano.
@@ -54,107 +36,138 @@ const FECHA = new Date('2027-06-12T11:30:00.000Z');
 const BODAS = [
   {
     slug: 'mariaygabriel',
-    slugStatus: 'active',
-    weddingId: 'boda-maria-gabriel',
+    partnerA: 'María',
+    partnerB: 'Gabriel',
+    plan: 'extended',
     status: 'active',
-    coupleNames: 'María y Gabriel',
-    nota: 'publicada — la pantalla normal',
+    slugStatus: 'active',
+    plantilla: 'clasica',
+    nota: 'publicada con la plantilla Clásica',
+  },
+  {
+    slug: 'sofiayleo',
+    partnerA: 'Sofía',
+    partnerB: 'Leo',
+    plan: 'extended',
+    status: 'active',
+    slugStatus: 'active',
+    plantilla: 'botanica',
+    nota: 'publicada con la plantilla Botánica — la misma boda, otro diseño',
   },
   {
     slug: 'anayjuan',
-    slugStatus: 'active',
-    weddingId: 'boda-ana-juan',
+    partnerA: 'Ana',
+    partnerB: 'Juan',
+    plan: 'basic',
     status: 'draft',
-    coupleNames: 'Ana y Juan',
+    slugStatus: 'active',
     nota: 'en borrador — los novios aún no la han publicado',
   },
   {
     slug: 'lolaymanu',
-    slugStatus: 'active',
-    weddingId: 'boda-lola-manu',
+    partnerA: 'Lola',
+    partnerB: 'Manu',
+    plan: 'basic',
     status: 'archived',
-    coupleNames: 'Lola y Manu',
+    slugStatus: 'active',
+    // El alta rechaza fechas pasadas, con razón. Para una boda archivada la
+    // fecha se retrasa después, que es lo que habría ocurrido con el tiempo.
+    fechaPasada: true,
     nota: 'archivada — la boda ya pasó',
   },
   {
     slug: 'pepeypepa',
-    slugStatus: 'quarantined',
-    weddingId: 'boda-pepe-pepa',
+    partnerA: 'Pepe',
+    partnerB: 'Pepa',
+    plan: 'basic',
     status: 'active',
-    coupleNames: 'Pepe y Pepa',
+    slugStatus: 'quarantined',
     nota: 'en cuarentena — debe comportarse como INEXISTENTE, no como archivada',
   },
 ];
 
-// --- escritura -------------------------------------------------------------
+async function bodaExistente(slug) {
+  const entrada = await leerDoc(`slugs/${slug}`);
+  return entrada?.weddingId ?? null;
+}
 
-async function escribir(ruta, datos) {
-  const url = `${BASE}/${ruta}`;
-  if (seco) {
-    console.log(`\nPATCH ${ruta}`);
-    console.log(JSON.stringify({ fields: campos(datos) }, null, 2));
-    return;
+async function darDeAlta(boda, idToken) {
+  const yaEstaba = await bodaExistente(boda.slug);
+  if (yaEstaba) return { weddingId: yaEstaba, nueva: false };
+
+  const alta = await llamarFuncion(
+    'provisionWedding',
+    {
+      slug: boda.slug,
+      partnerA: boda.partnerA,
+      partnerB: boda.partnerB,
+      weddingDate: FECHA_BODA.toISOString(),
+      emails: [`${boda.slug}@ejemplo.test`],
+      plan: boda.plan,
+    },
+    idToken,
+  );
+
+  if (!alta.ok) {
+    throw new Error(`No se pudo dar de alta ${boda.slug}: ${JSON.stringify(alta.error)}`);
   }
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
-    body: JSON.stringify({ fields: campos(datos) }),
-  });
-  if (!res.ok) {
-    throw new Error(`${res.status} al escribir ${ruta}: ${await res.text()}`);
-  }
+  return { weddingId: alta.resultado.weddingId, nueva: true };
 }
 
 async function main() {
-  if (!seco) {
-    try {
-      await fetch(`http://${HOST}/`);
-    } catch {
-      console.error(
-        `\nNo hay emulador escuchando en ${HOST}.\n` +
-          `Arráncalo con "npm run emulators" en otra terminal.\n`,
-      );
-      process.exit(1);
-    }
-  }
+  await comprobarEmuladores();
+
+  // El alta exige superadmin. Esta cuenta solo existe en el emulador.
+  const jefe = await cuentaConClaims('superadmin@ejemplo.test', 'superadmin', {
+    superadmin: true,
+  });
 
   for (const boda of BODAS) {
-    await escribir(`slugs/${boda.slug}`, {
-      weddingId: boda.weddingId,
-      status: boda.slugStatus,
+    const { weddingId, nueva } = await darDeAlta(boda, jefe.idToken);
+
+    // El alta deja toda boda en `draft`, que es lo correcto (D-24a). Los otros
+    // estados se fuerzan aquí porque son precisamente lo que queremos mirar.
+    const ajustes = { status: boda.status };
+    if (boda.fechaPasada) ajustes.weddingDate = new Date(Date.now() - 30 * 86_400_000);
+    // El alta siembra siempre la clásica; aquí se cambia para poder ver las dos
+    // plantillas del catálogo una al lado de la otra.
+    if (boda.plantilla) ajustes['theme.templateId'] = boda.plantilla;
+    await escribirDoc(`weddings/${weddingId}`, ajustes);
+
+    if (boda.slugStatus !== 'active') {
+      await escribirDoc(`slugs/${boda.slug}`, { status: boda.slugStatus });
+    }
+
+    // Sin esta espera, `npm start` puede pillar la proyección a medio
+    // actualizar y enseñar una pantalla que no toca.
+    //
+    // Se comprueba el estado **y los nombres**. Comprobar solo el estado dejó
+    // pasar el fallo del `updateMask`: la proyección decía `active` mientras la
+    // boda se había quedado sin nombres ni fecha, y la portada salía con un
+    // rombo y una "y" suelta. Una semilla que no mira lo que ha sembrado no
+    // sirve de nada.
+    await esperarA(`la proyección de ${boda.slug}`, async () => {
+      const sitio = await leerDoc(`weddings/${weddingId}/public/site`);
+      const completa =
+        sitio?.status === boda.status &&
+        sitio?.coupleNames?.partnerA === boda.partnerA &&
+        sitio?.coupleNames?.partnerB === boda.partnerB &&
+        Boolean(sitio?.weddingDate);
+      return completa ? sitio : null;
     });
 
-    await escribir(`weddings/${boda.weddingId}`, {
-      slug: boda.slug,
-      status: boda.status,
-      plan: 'basic',
-      couple: { partnerA: boda.coupleNames.split(' y ')[0], partnerB: boda.coupleNames.split(' y ')[1] },
-      weddingDate: FECHA,
-      timezone: 'Europe/Madrid',
-      locale: 'es',
-      ownerUids: [],
-      guestAccessMode: 'open',
-      counters: { guestsTotal: 0, guestsConfirmed: 0, guestsDeclined: 0, guestsPending: 0 },
-    });
-
-    await escribir(`weddings/${boda.weddingId}/public/site`, {
-      status: boda.status,
-      coupleNames: boda.coupleNames,
-      weddingDate: FECHA,
-      locale: 'es',
-    });
+    console.log(`  ${nueva ? 'alta' : 'ya estaba'}: ${boda.slug} → ${weddingId}`);
   }
-
-  if (seco) return;
 
   console.log('\nSembrado. Abre en el navegador:\n');
   for (const boda of BODAS) {
     console.log(`  http://${boda.slug}.localhost:4200`.padEnd(46) + `→ ${boda.nota}`);
   }
-  console.log('  http://noexiste.localhost:4200'.padEnd(46) + '→ no encontrada\n');
+  console.log('  http://noexiste.localhost:4200'.padEnd(46) + '→ no encontrada');
+  console.log('  http://localhost:4200/dev/ds'.padEnd(46) + '→ el catálogo del sistema visual\n');
 }
 
 main().catch((e) => {
-  console.error(e.message);
+  console.error(`\n${e.message}\n`);
   process.exit(1);
 });

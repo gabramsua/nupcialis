@@ -53,6 +53,9 @@ export const guardaSuperadmin: CanActivateFn = async () => {
     case 'sin-sesion':
       return router.createUrlTree(['/superadmin/acceso']);
     default:
-      return router.createUrlTree(['/']);
+      // A una pantalla que lo explica, no a la raíz: el acceso funcionó y lo
+      // que falta es el claim. Mandar a la raíz dejaba un «no encontramos esta
+      // boda» que no tiene nada que ver y hace perder media hora.
+      return router.createUrlTree(['/superadmin/sin-permiso']);
   }
 };

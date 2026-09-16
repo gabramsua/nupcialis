@@ -6,6 +6,7 @@ import { provideFirestore } from '../../core/firebase/firestore.providers';
 import { provideFirebaseFunctions } from '../../core/firebase/functions.providers';
 import { provideFirebaseStorage } from '../../core/firebase/storage.providers';
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
+import { BodaStore } from './boda.store';
 
 export const panelRoutes: Routes = [
   {
@@ -17,6 +18,7 @@ export const panelRoutes: Routes = [
       provideFirebaseAuth(),
       provideFirebaseStorage(),
       provideAuth(),
+      BodaStore,
     ],
     children: [
       {
@@ -32,6 +34,17 @@ export const panelRoutes: Routes = [
         canActivate: [guardaPanel],
         loadComponent: () =>
           import('../../layouts/panel-shell/panel-shell').then((m) => m.PanelShell),
+        children: [
+          {
+            path: 'diseno',
+            loadComponent: () =>
+              import('./diseno/selector-plantilla').then((m) => m.SelectorPlantilla),
+          },
+          {
+            path: '',
+            loadComponent: () => import('./resumen/resumen').then((m) => m.PanelResumen),
+          },
+        ],
       },
     ],
   },

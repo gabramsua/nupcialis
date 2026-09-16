@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { provideAlta } from '../../core/alta/alta.providers';
 import { provideAuth } from '../../core/auth/auth.providers';
 import { guardaSuperadmin } from '../../core/auth/guards';
 import { provideFirebaseAuth } from '../../core/firebase/auth.providers';
@@ -15,11 +16,16 @@ export const superadminRoutes: Routes = [
       provideFirebaseFunctions(),
       provideFirebaseAuth(),
       provideAuth(),
+      provideAlta(),
     ],
     children: [
       {
         path: 'acceso',
         loadComponent: () => import('../panel/login/login').then((m) => m.Login),
+      },
+      {
+        path: 'sin-permiso',
+        loadComponent: () => import('./acceso/sin-permiso').then((m) => m.SuperadminSinPermiso),
       },
       {
         path: '',

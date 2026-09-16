@@ -649,6 +649,24 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
 ### 8.1 Web pública y edición de contenidos
 
 - Selección entre **varias plantillas prediseñadas**. La pareja elige plantilla y configura; no maqueta desde cero.
+
+  El catálogo es **cerrado y vive en código** (`features/public-site/plantillas`):
+  cada plantilla es un componente con su diseño entero y su tipografía, y
+  `theme.templateId` guarda cuál usa la boda. Cada una viaja en su propio trozo
+  de JavaScript y **solo se descarga la elegida**, tipografías incluidas: con
+  doce plantillas en el catálogo, cargarlas todas metería once diseños que esa
+  boda no usa en el bundle que abre el invitado desde WhatsApp.
+
+  Un `templateId` que ya no existe en el catálogo —una plantilla retirada— cae a
+  la clásica. Feo, pero el invitado ya está delante con el enlace abierto: una
+  página en blanco es mucho peor.
+
+  Los colores de la pareja llegan como variables CSS `--np-marca-*` y cada
+  plantilla los usa con su propia reserva, así que una boda que aún no ha
+  elegido paleta se ve con los colores de su plantilla y no a medio pintar. La
+  paleta se aplica **entera o nada**: media paleta mezcla tres colores de la
+  boda con tres de la plantilla, que es peor que ninguno.
+
 - Tokens de diseño: paleta (6 colores), pareja de tipografías, imagen de portada.
 - Secciones activables y reordenables: portada con cuenta atrás, nuestra historia, ceremonia, banquete, cómo llegar, alojamiento, dress code, preguntas frecuentes, contacto.
 - Estados borrador y publicado, con vista previa.

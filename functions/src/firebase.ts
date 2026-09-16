@@ -23,6 +23,25 @@ export const DOMINIO_BASE = process.env['NUPCIALIS_DOMINIO'] ?? 'nupcialis.com';
 /** Subdominio del panel de superadmin. */
 export const DOMINIO_ADMIN = `admin.${DOMINIO_BASE}`;
 
+/**
+ * ¿Estamos dentro del emulador de funciones?
+ *
+ * El runtime la pone a 'true'; en producción no existe. Es la forma estándar de
+ * distinguirlo y no depende de ninguna configuración nuestra que se pueda
+ * olvidar.
+ */
+export const EN_EMULADOR = process.env['FUNCTIONS_EMULATOR'] === 'true';
+
+/**
+ * App Check: obligatorio en producción, desactivado en el emulador.
+ *
+ * Exigirlo en local obligaría a generar un token de depuración en el navegador
+ * para cada prueba, y dejaría los scripts de `tools/` sin forma de llamar a una
+ * función. En producción `FUNCTIONS_EMULATOR` no existe, así que esto vale
+ * `true` y se exige.
+ */
+export const EXIGIR_APP_CHECK = !EN_EMULADOR;
+
 export function app() {
   return getApps().length > 0 ? getApps()[0]! : initializeApp();
 }

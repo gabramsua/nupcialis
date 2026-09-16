@@ -49,7 +49,7 @@ import {
   fechaLimiteTarea,
   tareasAplicables,
 } from './dominio/semillas';
-import { DOMINIO_BASE, REGION, auth, db } from './firebase';
+import { DOMINIO_BASE, EXIGIR_APP_CHECK, REGION, auth, db } from './firebase';
 import { auditar } from './infra/auditoria';
 import { autorizarDominio } from './infra/identity-toolkit';
 import { exigirSuperadmin } from './infra/permisos';
@@ -78,7 +78,7 @@ export interface RespuestaAlta {
 }
 
 export const provisionWedding = onCall<Partial<EntradaAlta>, Promise<RespuestaAlta>>(
-  { region: REGION, enforceAppCheck: true },
+  { region: REGION, enforceAppCheck: EXIGIR_APP_CHECK },
   async (peticion) => {
     const superadmin = exigirSuperadmin(peticion);
     const hoy = new Date();

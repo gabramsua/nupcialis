@@ -1,6 +1,13 @@
 import { inject } from '@angular/core';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
-import { EntradaSlug, FuenteTenant, SitioPublico } from '../tenant/tenant-source';
+import {
+  EntradaSlug,
+  FuenteTenant,
+  NombresPareja,
+  PaletaMarca,
+  SitioPublico,
+  TemaPublico,
+} from '../tenant/tenant-source';
 import { FIRESTORE } from './firestore.providers';
 
 /**
@@ -44,11 +51,62 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         // Igual que arriba: si el estado no se reconoce, se queda en borrador.
         // Ante la duda, una web de boda no se publica sola.
         status: status === 'active' || status === 'archived' ? status : 'draft',
-        coupleNames: typeof datos['coupleNames'] === 'string' ? datos['coupleNames'] : '',
+        coupleNames: nombres(datos['coupleNames']),
         weddingDate:
           datos['weddingDate'] instanceof Timestamp ? datos['weddingDate'].toDate() : null,
         locale: typeof datos['locale'] === 'string' ? datos['locale'] : 'es',
+        theme: tema(datos['theme']),
       };
     },
   };
+}
+
+/**
+ * Los nombres de la pareja, tal como los escribe `syncPublicProjection`.
+ *
+ * Un documento a medio escribir no puede tumbar la portada: si falta un nombre
+ * se queda vacío y la web sigue mostrando la fecha, que es lo que el invitado
+ * ha venido a ver.
+ */
+function nombres(valor: unknown): NombresPareja {
+  const par = typeof valor === 'object' && valor !== null ? (valor as Record<string, unknown>) : {};
+  return {
+    partnerA: typeof par['partnerA'] === 'string' ? par['partnerA'] : '',
+    partnerB: typeof par['partnerB'] === 'string' ? par['partnerB'] : '',
+  };
+}
+
+/**
+ * El tema de la boda.
+ *
+ * Un `templateId` desconocido no se corrige aquí: se deja pasar tal cual y lo
+ * resuelve el catálogo de plantillas, que es quien sabe cuáles existen. Esta
+ * capa comprueba formas, no reglas de negocio.
+ */
+function tema(valor: unknown): TemaPublico {
+  const t = valor !== null && typeof valor === 'object' ? (valor as Record<string, unknown>) : {};
+  return {
+    templateId: typeof t['templateId'] === 'string' ? t['templateId'] : '',
+    palette: paleta(t['palette']),
+    heroImagePath: typeof t['heroImagePath'] === 'string' ? t['heroImagePath'] : null,
+  };
+}
+
+const CLAVES_PALETA = ['primary', 'secondary', 'background', 'surface', 'text', 'accent'] as const;
+
+/**
+ * La paleta solo vale si está completa.
+ *
+ * Media paleta produce una portada a medio pintar, con tres colores de la
+ * pareja y tres de la plantilla, que es peor que la plantilla entera. O están
+ * los seis o no hay paleta.
+ */
+function paleta(valor: unknown): PaletaMarca | null {
+  if (valor === null || typeof valor !== 'object') return null;
+  const p = valor as Record<string, unknown>;
+
+  const completa = CLAVES_PALETA.every((clave) => typeof p[clave] === 'string' && p[clave] !== '');
+  if (!completa) return null;
+
+  return Object.fromEntries(CLAVES_PALETA.map((c) => [c, p[c]])) as unknown as PaletaMarca;
 }

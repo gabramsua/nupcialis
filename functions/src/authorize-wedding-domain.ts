@@ -13,13 +13,13 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { dominioDeBoda } from './dominio/dominios';
-import { DOMINIO_BASE, REGION, db } from './firebase';
+import { DOMINIO_BASE, EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { auditar } from './infra/auditoria';
 import { autorizarDominio, hayEmuladorDeAuth } from './infra/identity-toolkit';
 import { exigirSuperadmin } from './infra/permisos';
 
 export const authorizeWeddingDomain = onCall<{ weddingId?: string }>(
-  { region: REGION, enforceAppCheck: true },
+  { region: REGION, enforceAppCheck: EXIGIR_APP_CHECK },
   async (peticion) => {
     const superadmin = exigirSuperadmin(peticion);
 

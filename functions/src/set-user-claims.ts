@@ -10,7 +10,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { normalizarEmail } from './dominio/alta';
-import { REGION, auth, db } from './firebase';
+import { EXIGIR_APP_CHECK, REGION, auth, db } from './firebase';
 import { auditar } from './infra/auditoria';
 import { exigirSuperadmin } from './infra/permisos';
 
@@ -21,7 +21,7 @@ export interface EntradaClaims {
 }
 
 export const setUserClaims = onCall<Partial<EntradaClaims>>(
-  { region: REGION, enforceAppCheck: true },
+  { region: REGION, enforceAppCheck: EXIGIR_APP_CHECK },
   async (peticion) => {
     const superadmin = exigirSuperadmin(peticion);
 

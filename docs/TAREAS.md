@@ -91,10 +91,13 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.6.5` Trigger `recomputeCounters`
 - [x] `F0.6.6` Log de auditoría de las acciones de superadmin
 - [x] `F0.6.9` `setUserClaims`: asignar y revocar acceso a una boda
-- [ ] `F0.6.V` **Verificación de extremo a extremo del alta contra el emulador.** Las 86
-      pruebas de `functions/` son de dominio puro: ninguna ha ejecutado todavía la
-      transacción real, ni la creación de cuentas, ni los triggers. Hasta que se
-      dé de alta una boda con los emuladores levantados, el alta es una promesa.
+- [~] `F0.6.V` **Verificación de extremo a extremo del alta contra el emulador.**
+  Escrita en `tools/probar-alta.mjs` (`npm run probar:alta`): permisos, alta,
+  semillas, proyección, los dos triggers, slug repetido y validación de
+  entrada. **Ejecutada solo a medias**: en el contenedor se pudieron levantar
+  Auth y Functions —y ahí pasan los pasos de permisos y validación— pero no
+  Firestore, cuyo JAR vive en un host bloqueado por la política de egreso.
+  Los pasos que tocan datos los tiene que correr Gabriel en su máquina.
 - [ ] `F0.6.X` Alta real contra el proyecto de Firebase para comprobar el
       Identity Toolkit. **El emulador de Auth no implementa los dominios
       autorizados**, así que esta parte no se puede probar en local por
@@ -102,9 +105,12 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 ## F0.7 · Esqueletos de panel
 
-- [ ] `F0.7.1` `panel-shell` con navegación por módulos activos
-- [ ] `F0.7.2` `admin-shell` de superadmin con listado de bodas
-- [ ] `F0.7.3` Formulario de alta de boda que invoca `provisionWedding`
+- [x] `F0.7.1` `panel-shell` con navegación por módulos activos, con la visibilidad
+      de cada uno a la vista y diseñado primero para móvil
+- [x] `F0.7.2` `admin-shell` de superadmin con listado de bodas, ordenable y con
+      el aviso de subdominio sin autorizar pegado a la fila que lo sufre
+- [x] `F0.7.3` Formulario de alta de boda que invoca `provisionWedding`, con
+      validación de slug y fecha en cliente y alternativas si el slug está cogido
 - [ ] `F0.7.4` Vista de registro de accesos de los novios
 - [ ] `F0.7.5` Resumen inicial del panel de la pareja
 - [ ] `F0.7.6` Carga diferida verificada: el bundle público no arrastra código del panel
@@ -115,6 +121,37 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
       por plan e interruptor `active`. Sin cuenta ni acceso para el proveedor.
 - [ ] `F0.7.9` Vista de saldo por proveedor: bodas activas y pendiente de liquidar,
       con cierre de varias de una vez.
+
+---
+
+## Cerrar el alta contra Firebase de verdad
+
+Antes que plantillas, paletas y resúmenes. Ver `PUESTA-EN-MARCHA.md` bloque 7.
+
+- [x] `RE.1` Entorno para levantar la app contra el proyecto real (`npm run start:real`)
+- [x] `RE.2` Script para conceder el claim de superadmin, con las protecciones de la clave
+- [ ] `RE.3` **Activar Blaze.** Bloquea todo lo demás: sin él no hay funciones desplegadas — **G**
+- [ ] `RE.4` `npm run deploy:rules` y `npm run deploy:functions` — **G**
+- [ ] `RE.5` Alta real de una boda desde `/superadmin` contra el proyecto — **G**
+- [ ] `RE.6` Comprobar el subdominio en Authentication → Authorized domains (cierra `F0.6.X`) — **G**
+- [ ] `RE.7` Proyecto de Firebase aparte para producción, antes de la primera pareja que pague
+- [ ] `RE.8` **Servir `Cross-Origin-Opener-Policy: same-origin-allow-popups` en producción**
+      (`headers` de `vercel.json`). Sin esa cabecera el acceso con Google se queda
+      colgado sin dar error, igual que pasaba en local.
+
+---
+
+## Surgido de F0.7 · Catálogo de plantillas
+
+- [x] `PL.1` Catálogo de plantillas en código, con id, nombre, descripción y sus tipografías
+- [x] `PL.2` Dos primeras plantillas: **Clásica** y **Botánica**, cada una en su propio chunk
+- [x] `PL.3` La paleta de marca de la boda llega como variables CSS `--np-marca-*`
+- [x] `PL.4` Solo se descarga la tipografía de la plantilla elegida
+- [x] `PL.5` Selector de plantilla en el panel, con miniatura viva de cada una
+- [ ] `PL.6` Selector de paleta de marca, de la paleta categórica y sin hexadecimal libre
+- [ ] `PL.8` Test de aislamiento: la pareja puede escribir `theme` y sigue sin poder
+      tocar los campos de sistema. El panel ya escribe ahí; la batería no lo cubre.
+- [ ] `PL.7` Secciones de la portada más allá de nombres, fecha y cuenta atrás
 
 ---
 
@@ -170,6 +207,8 @@ donde toque.
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-09-16 | Primer contacto con Firebase de verdad, y dos fallos que solo aparecen ahí. El acceso con Google se colgaba por la política de ventanas emergentes del servidor de desarrollo (`RE.8`: hay que servir esa cabecera también en producción). Y entrar sin el claim de superadmin mandaba a la raíz, que contestaba «no encontramos esta boda»: el dominio raíz se confundía con una boda inexistente, así que `nupcialis.com` habría dicho eso mismo a quien fuera a ver qué vendemos.                             |
+| 2026-09-14 | Preparado el salto a Firebase de verdad, que era lo que tocaba antes que seguir con paletas: `npm run start:real` levanta la app contra el proyecto sin emuladores, y `functions/tools/dar-superadmin.mjs` concede el claim que ninguna pantalla otorga. El script se niega a arrancar si la clave de cuenta de servicio está dentro del repositorio, que es público. A partir de ahí todo depende de activar Blaze.                                                                                             | \n  | 2026-09-14 | Panel de la pareja y selector de plantilla. La navegación la dibujan los módulos activos de esa boda, no una lista fija: un módulo apagado no sale en gris con un candado, no sale. Cada entrada enseña su visibilidad, que es lo que explica por qué la web parece vacía con ocho módulos encendidos. El selector dibuja cada plantilla con sus colores y su letra de verdad, no con una captura que envejece. Arreglado además el `theme.templateId` de la semilla, que borraba la plantilla en vez de cambiarla. 118 tests. | \n  | 2026-09-14 | Catálogo de plantillas. Las dos portadas del boceto no eran dos direcciones a elegir: son las dos primeras **plantillas** del catálogo, que es lo que `theme.templateId` dice desde el primer día. Cada una viaja en su propio chunk —1,5 y 1,3 kB comprimidos— y solo se descarga la de esa boda, tipografías incluidas. La paleta de la pareja entra como variables CSS con reserva por plantilla, así que una boda sin paleta elegida se ve bien igual. 109 tests. | \n  | 2026-09-14 | F0.7.2 y F0.7.3: el superadmin deja de ser un `<h1>`. Listado de bodas ordenable y alta por formulario, así que dar de alta una boda ya no pasa por un script. El listado ordena por urgencia, no por fecha de alta: primero las bodas con el subdominio sin autorizar, con su botón de reintentar en la propia fila. Los enlaces de acceso se enseñan una sola vez y con su advertencia. 95 tests. | \n  | 2026-09-14 | Prueba de extremo a extremo del alta (`npm run probar:alta`) y semilla reescrita para que **llame a `provisionWedding`** en vez de escribir documentos a mano: mantener aquí una copia del modelo ya se había quedado obsoleta. Cazado un desajuste real que F0.6 había introducido: la proyección escribe `coupleNames` como objeto y la web pública lo leía como cadena, así que la portada habría salido sin nombres. De paso, la conjunción "y" pasa a los ficheros de traducción, donde debía estar. App Check deja de exigirse dentro del emulador. |
 | 2026-09-14 | Cambio de regla de negocio: sin pasarela de pago (D-25) y proveedores que comercializan y liquidan aparte (D-26). Lo de fondo no es el medio de cobro, es que **el estado del servicio y el del cobro pasan a ser dos ejes independientes**: una boda activa con el cobro pendiente es un estado normal del negocio, no una incidencia. Reescritos §4, §5.1, §7, §10 y §11 de REQUISITOS, y la fase 5 del plan. No se toca código: F0 ya asumía alta manual por superadmin.                                      |
 | 2026-09-11 | F0.6 entera: paquete `functions/`, `provisionWedding` con transacción y semillas, `setUserClaims`, `authorizeWeddingDomain`, los dos triggers y el log de auditoría. 86 tests de dominio. Cuatro decisiones de negocio que solo estaban en el chat pasan a D-20…D-23, y cinco que he tomado yo al implementar quedan en D-24 esperando validación. Arreglado `firebase.json` (faltaba el bloque `functions`, que era lo que rompía `npm run emulators`) y `.firebaserc`, que apuntaba a un proyecto inexistente. |
 | 2026-09-09 | Semilla del emulador y ciclo de trabajo en local documentado. `nupcialis.com` comprado en Hostalia.                                                                                                                                                                                                                                                                                                                                                                                                              |

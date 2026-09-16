@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cargarTenant } from './tenant-loader';
+import { cargarTenant, type ResultadoTenant } from './tenant-loader';
 import { EntradaSlug, FuenteTenant, SitioPublico } from './tenant-source';
 
 const SITIO: SitioPublico = {
   status: 'active',
-  coupleNames: 'María y Gabriel',
+  coupleNames: { partnerA: 'María', partnerB: 'Gabriel' },
+  theme: { templateId: 'clasica', palette: null, heroImagePath: null },
   weddingDate: new Date('2027-06-12'),
   locale: 'es',
 };
@@ -97,5 +98,15 @@ describe('cargarTenant', () => {
     // "no encontrada", no.
     const r = await cargarTenant('mariaygabriel', fuente(SLUGS, { w1: SITIO }, true));
     expect(r.tipo).toBe('error');
+  });
+});
+
+describe('la landing no es una boda que falta', () => {
+  // Confundirlas hacía que `nupcialis.com` —la página que vende el producto—
+  // contestara «no encontramos esta boda». Lo resuelve `tenantResolver`, pero
+  // el tipo tiene que existir para que no haya dónde volver a mezclarlas.
+  it('el resultado de landing es un tipo propio', () => {
+    const landing: ResultadoTenant = { tipo: 'landing' };
+    expect(landing.tipo).not.toBe('no-encontrada');
   });
 });

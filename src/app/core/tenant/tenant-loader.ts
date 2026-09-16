@@ -17,6 +17,14 @@ export type ResultadoTenant =
     }
   /** El slug no existe: enlace mal tecleado, o boda que nunca existió. */
   | { readonly tipo: 'no-encontrada' }
+  /**
+   * El host no es una boda: es el dominio raíz.
+   *
+   * Es un caso distinto de «no encontrada» y confundirlos tiene consecuencias:
+   * quien entra en `nupcialis.com` a ver qué vendemos no puede encontrarse un
+   * «no encontramos esta boda», que es lo que pasaba.
+   */
+  | { readonly tipo: 'landing' }
   /** Existe pero está en borrador: la pareja aún no la ha publicado. */
   | { readonly tipo: 'no-publicada' }
   /** Pasó el plazo de conservación y se archivó. */

@@ -78,6 +78,17 @@
                   "with": "src/environments/environment.staging.ts"
                 }
               ]
+            },
+            "real": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.real.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -93,9 +104,17 @@
             },
             "staging": {
               "buildTarget": "nupcialis:build:staging"
+            },
+            "real": {
+              "buildTarget": "nupcialis:build:real"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "headers": {
+              "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+            }
+          }
         },
         "test": {
           "builder": "@angular/build:unit-test"

@@ -202,3 +202,72 @@ hasta que haya algo que desplegar.
 
 **Se puede empezar F0.1 hoy mismo** con emuladores, sin dominio, sin Vercel y sin
 proyectos de Firebase creados. Solo hace falta el repositorio.
+
+---
+
+## Bloque 7 · Cerrar el alta de bodas contra Firebase de verdad — **G**, con dos herramientas mías
+
+El alta ya no pasa por un script: está el formulario del panel de superadmin. Lo
+que **no** ha pasado nunca es por Firebase de verdad, y hay una parte que **no se
+puede probar en el emulador ni queriendo**: el emulador de Auth no implementa los
+dominios autorizados, así que el paso 6 de `provisionWedding` —la regla 8— se
+salta en local. Que funcione en el emulador no demuestra nada sobre él.
+
+El orden es este, y el primer punto lo bloquea todo.
+
+1. **Activar el plan Blaze.** Sin él no se despliega ninguna Cloud Function, y
+   sin funciones no hay alta. Pendiente de la verificación de los datos de pago.
+   Nada de lo que sigue se puede hacer antes.
+2. `npm run deploy:rules` — esto sí funciona hoy, sin Blaze.
+3. `npm run deploy:functions`.
+4. **Concederte el superadmin.** El claim no lo otorga ninguna pantalla del
+   producto a propósito, así que va a mano:
+
+   ```bash
+   # descarga la clave de cuenta de servicio y guárdala FUERA del repositorio
+   export GOOGLE_APPLICATION_CREDENTIALS=/ruta/fuera/del/repo/clave.json
+   node functions/tools/dar-superadmin.mjs tu-correo@ejemplo.com
+   ```
+
+   Si la cuenta todavía no existe en el proyecto, añade `--crear` y el script la
+   crea y devuelve un enlace para que pongas la contraseña. La alternativa es
+   levantar la app con `npm run start:real`, entrar en
+   `localhost:4200/superadmin/acceso` y pulsar «Entrar con Google»: eso también
+   crea la cuenta, y `localhost` ya está en los dominios autorizados de fábrica.
+
+   El script se niega a arrancar si la clave está dentro del repositorio:
+   es público, y esa clave abre el proyecto entero sin caducidad ni segundo
+   factor. **Bórrala al terminar.**
+
+5. **Levantar la aplicación contra el proyecto real**, sin emuladores:
+
+   ```bash
+   npm run start:real
+   ```
+
+   Entra por `localhost:4200/superadmin` y da de alta una boda desde el
+   formulario. Con eso queda probado de verdad el camino entero: transacción del
+   slug, semillas, cuentas de Auth, claims y **el alta del subdominio en los
+   dominios autorizados**.
+
+6. **Comprobar en la consola de Firebase** que el subdominio de esa boda aparece
+   en Authentication → Settings → Authorized domains. Ese es el único punto que
+   cierra F0.6.X.
+
+**Si el acceso con Google abre la ventana y la cierra sin entrar**, mira la
+consola: `Cross-Origin-Opener-Policy policy would block the window.closed call`.
+El servidor de desarrollo servía una política que impide a la página leer si la
+ventana emergente se ha cerrado, que es justo como lo detecta el SDK de Firebase,
+y el acceso se quedaba colgado sin decir nada. Ya está puesta la cabecera
+`same-origin-allow-popups` en `angular.json`; basta con reiniciar `ng serve`.
+**En producción hay que servir esa misma cabecera** (en Vercel, `headers` de
+`vercel.json`), o el acceso con Google fallará igual para las parejas.
+
+**Dos cosas que van a chirriar en el paso 5 y son esperables.** El acceso con
+contraseña funciona desde `<slug>.localhost`, pero el de Google no: ese host no
+está en los dominios autorizados. Es la regla 8 vista de cerca. Y App Check está
+sin activar en ese entorno, así que si las funciones invocables exigen App Check
+hay que usar un token de depuración (`functions/README.md`).
+
+**Esto no sustituye a los emuladores.** Ver la nota de `CLAUDE.md`: el entorno
+real es para cerrar lo que el emulador no alcanza, no para trabajar a diario.
