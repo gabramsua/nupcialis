@@ -155,6 +155,64 @@
       },
       "buscadores": "Que nuestra web salga en Google",
       "buscadoresAyuda": "Desactivado, solo llega quien tenga vuestro enlace. Es lo normal en una boda: la dirección se reparte, no se busca."
+    },
+    "invitados": {
+      "titulo": "Invitados",
+      "ayuda": "Vuestra lista. De momento se añaden de uno en uno; la importación desde un fichero llega después.",
+      "anadir": "Añadir invitado",
+      "editar": "Editar invitado",
+      "cargando": "Cargando la lista…",
+      "errorCargar": "No se ha podido cargar la lista",
+      "ninguno": "Todavía no hay invitados",
+      "ningunoDescripcion": "Añadid el primero con el botón de arriba.",
+      "sinResultados": "Ningún invitado coincide con esa búsqueda",
+      "buscar": "Buscar por nombre o teléfono",
+      "total": "En la lista",
+      "confirmados": "Confirmados",
+      "pendientes": "Sin contestar",
+      "sinEntrar": "No han entrado",
+      "noHaEntrado": "No ha entrado nunca",
+      "esAcompanante": "Acompañante",
+      "rsvp": {
+        "pending": "Sin contestar",
+        "confirmed": "Confirmado",
+        "declined": "No viene"
+      },
+      "noGuardado": "No se ha podido guardar",
+      "noBorrado": "No se ha podido borrar",
+      "crearIgualmente": "Añadirlo de todas formas",
+      "duplicado": {
+        "telefono": "Ya hay un invitado con ese teléfono.",
+        "nombre": "Ya hay un invitado con ese nombre. Si son dos personas distintas, añadidlo igualmente."
+      },
+      "invalido": {
+        "fullName": {
+          "ausente": "Hace falta el nombre.",
+          "demasiado-largo": "Ese nombre es demasiado largo."
+        },
+        "phone": {
+          "no-es-telefono": "Ese teléfono no se entiende. Escríbelo como 666123456 o +34666123456."
+        },
+        "email": {
+          "no-es-email": "Ese correo no se entiende."
+        },
+        "maxCompanions": {
+          "fuera-de-rango": "El cupo de acompañantes va de 0 a 10."
+        }
+      },
+      "confirmarBorrado": "Se va a borrar a {{nombre}} de la lista. ¿Seguimos?",
+      "traeAcompanantes": "Trae {{n}} acompañante(s). Bórralos a ellos primero, o se quedarían invitados a una boda a la que ya no los trae nadie.",
+      "campo": {
+        "nombre": "Nombre y apellidos",
+        "telefono": "Teléfono",
+        "telefonoPista": "Hace falta para que pueda entrar en la web. Se puede dejar para después.",
+        "email": "Correo",
+        "acompanantes": "Acompañantes que puede traer",
+        "acompanantesPista": "0 si no puede añadir a nadie.",
+        "notas": "Notas",
+        "notasPista": "Privadas vuestras. El invitado no las ve."
+      },
+      "sinPermiso": "Tu sesión no tiene permiso sobre esta boda. Sal y vuelve a entrar con la cuenta de la pareja."
     }
   },
   "superadmin": {

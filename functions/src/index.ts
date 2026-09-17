@@ -11,6 +11,7 @@
  */
 
 export { authorizeWeddingDomain } from './authorize-wedding-domain';
+export { deleteGuest, listGuests, upsertGuest } from './guests';
 export { provisionWedding } from './provision-wedding';
 export { recomputeCounters } from './recompute-counters';
 export { setUserClaims } from './set-user-claims';

@@ -134,6 +134,21 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
       va en el HTML servido, no la pone el arranque.
 - [x] `PL.10` **Humo del panel**: las siete pantallas se montan, con datos y sin
       ellos. Ninguna se había ejecutado nunca: la guarda lo impedía.
+
+## F1 · Invitados
+
+- [x] `F1.1` **Lista de invitados**: dominio (normalización de nombre y teléfono,
+      duplicados), `listGuests`, `upsertGuest` y `deleteGuest`, y la pantalla del
+      panel con alta manual, búsqueda y resumen. Todo por función invocable: la
+      colección está cerrada a lectura directa (regla 2).
+- [ ] `F1.2` **Importación CSV/Excel** con previsualización, mapeo de columnas y
+      duplicados por teléfono (§8.3). Sin esto, doscientos invitados se teclean
+      a mano.
+- [ ] `F1.3` Grupos de invitados y asignación, con aviso de los restringidos
+- [ ] `F1.4` Enlace por invitado y compartir por WhatsApp
+- [ ] `F1.5` Acompañantes añadidos por el invitado (`addCompanion`)
+- [ ] `F1.6` Exportación a XLSX para el catering
+
 - [ ] `PL.7c` Reordenar **arrastrando**, que es lo que pide REQUISITOS §8.1. Hoy
       son botones de subir y bajar: accesibles y buenos en móvil, pero no es lo
       acordado. Ver D-29.

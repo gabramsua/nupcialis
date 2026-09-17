@@ -4,6 +4,7 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 import { describe, expect, it } from 'vitest';
 
 import { FIREBASE_STORAGE } from '../../core/firebase/storage.providers';
+import { PUERTA_INVITADOS, type PuertaInvitados } from '../../core/invitados/invitados-gateway';
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
 import { SECCIONES_INICIALES } from '../public-site/secciones/secciones';
 import type { BodaDelPanel } from './boda';
@@ -13,6 +14,7 @@ import { Diseno } from './diseno/diseno';
 import { SelectorPaleta } from './diseno/selector-paleta';
 import { SelectorPortada } from './diseno/selector-portada';
 import { SelectorPlantilla } from './diseno/selector-plantilla';
+import { Invitados } from './invitados/invitados';
 import { PanelResumen } from './resumen/resumen';
 import { EditorSecciones } from './web/editor-secciones';
 
@@ -45,6 +47,19 @@ const BODA: BodaDelPanel = {
   heroImageUrl: null,
   secciones: SECCIONES_INICIALES,
   modulos: { publicSite: { enabled: true, visibility: 'visible' } },
+};
+
+/** Una puerta de invitados que no llama a ninguna función. */
+const PUERTA_FALSA: PuertaInvitados = {
+  async listar() {
+    return { ok: true as const, invitados: [] };
+  },
+  async guardar() {
+    return { ok: true, id: 'i1', creado: true };
+  },
+  async borrar() {
+    return { ok: true };
+  },
 };
 
 /** Un store de mentira: estas pruebas no tocan Firestore ni sesión. */
@@ -93,6 +108,7 @@ function montar(componente: Type<unknown>) {
       // `SelectorPortada` crea su almacén en un inicializador de campo, así que
       // el token tiene que existir aunque no se use.
       { provide: FIREBASE_STORAGE, useValue: {} },
+      { provide: PUERTA_INVITADOS, useValue: PUERTA_FALSA },
     ],
   });
 
@@ -109,6 +125,7 @@ const PANTALLAS: readonly [string, Type<unknown>][] = [
   ['selector de paleta', SelectorPaleta],
   ['selector de portada', SelectorPortada],
   ['editor de secciones', EditorSecciones],
+  ['invitados', Invitados],
 ];
 
 describe.each(PANTALLAS)('la pantalla de %s', (_nombre, Pantalla) => {
@@ -146,6 +163,7 @@ describe('con la boda todavía sin cargar', () => {
         provideIconSprite('panel'),
         { provide: BodaStore, useClass: StoreVacio },
         { provide: FIREBASE_STORAGE, useValue: {} },
+        { provide: PUERTA_INVITADOS, useValue: PUERTA_FALSA },
       ],
     });
 

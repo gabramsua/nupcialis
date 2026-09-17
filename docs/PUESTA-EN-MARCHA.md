@@ -343,8 +343,30 @@ Tres pasos, una vez:
    en desarrollo la aplicación activa sola el proveedor de depuración. Arranca
    `npm run start:real`, abre la consola del navegador y busca una línea con un
    UUID: es el token. Regístralo en **App Check → Apps → tu app → los tres puntos
-   → Administrar tokens de depuración**. Solo vale para ese navegador, y se puede
-   revocar cuando quieras.
+   → Administrar tokens de depuración**.
+
+   **Un token por origen, y esto muerde.** El SDK lo guarda en el almacenamiento
+   del navegador, que está separado por origen: `mms.localhost` no comparte nada
+   con `localhost` ni con `otraboda.localhost`. Cada subdominio con el que
+   pruebes genera el suyo, y sin registrar responde **401** en toda llamada a una
+   función — que es como se ve: «No se ha podido cargar la lista».
+
+   Para no ir a la consola una vez por boda de prueba, **reutiliza un token**:
+   abre el subdominio nuevo con el parámetro y se queda guardado ahí.
+
+   ```
+   http://mms.localhost:4200/panel?appcheck=TU-UUID-REGISTRADO
+   ```
+
+   **El parámetro se queda en la barra hasta que navegues a otro sitio.** Se
+   intentó quitarlo por código y el router de Angular lo devuelve: reescribe la
+   URL desde su propio estado en cuanto termina la navegación inicial. No
+   compensa pelearse con eso por estética — hace falta una vez por subdominio y
+   a partir de ahí se navega sin él. Para olvidarlo:
+   `localStorage.removeItem('np-appcheck-debug-token')`.
+
+   **El token no va en el repositorio**, ni siquiera en `environment.real.ts`:
+   salta App Check entero y este repositorio es público.
 
 Después de eso, recarga y el alta debería pasar.
 

@@ -41,6 +41,70 @@ import { EMULATORS, FIREBASE_APP } from './firebase.providers';
 
 let yaInicializado = false;
 
+const CLAVE_GUARDADA = 'np-appcheck-debug-token';
+
+/**
+ * El token de depuración de este origen.
+ *
+ * **El problema que resuelve.** El SDK, con `true`, genera un token aleatorio y
+ * lo guarda en el almacenamiento del navegador, que está separado por origen:
+ * `mms.localhost` no comparte nada con `localhost` ni con `otraboda.localhost`.
+ * Cada subdominio con el que se pruebe genera el suyo, y hay que registrar cada
+ * uno a mano en la consola de Firebase o responde 401. Con una boda de prueba
+ * por semana, eso es una visita a la consola por semana.
+ *
+ * Así que se admite **fijarlo por la URL**: `?appcheck=<uuid>` lo guarda para
+ * ese origen y no hace falta volver a ponerlo. Se registra **un** token en
+ * Firebase y se reparte por los subdominios con el parámetro.
+ *
+ * No va en el código ni en el fichero de entorno a propósito: un token de
+ * depuración **salta App Check entero**, y este repositorio es público.
+ * Devolver `true` cuando no hay ninguno guardado mantiene el comportamiento de
+ * siempre para quien no quiera complicarse.
+ */
+function tokenDeDepuracion(): string | true {
+  let guardado: string | null;
+
+  try {
+    const url = new URL(self.location.href);
+    const puesto = url.searchParams.get('appcheck');
+    if (puesto) {
+      localStorage.setItem(CLAVE_GUARDADA, puesto);
+
+      // **El parámetro se queda en la barra**, y es a propósito. Se intentó
+      // quitarlo con `history.replaceState`: esto corre mientras el router
+      // resuelve la ruta, y en cuanto termina, él reescribe la URL desde su
+      // propio estado y lo devuelve. Con un `setTimeout` tampoco: la navegación
+      // inicial termina después. Pelearse con el router por estética no
+      // compensa, y esto es un token de desarrollo en `localhost`: hace falta
+      // una vez por subdominio y a partir de ahí se navega sin él.
+    }
+    guardado = localStorage.getItem(CLAVE_GUARDADA);
+  } catch {
+    // Almacenamiento bloqueado (ventana privada, cookies de terceros). Se cae
+    // al token automático, que sigue funcionando en este origen.
+    return true;
+  }
+
+  if (guardado) {
+    console.info(
+      `[App Check] Usando el token de depuración fijado para ${self.location.origin}.\n` +
+        `Para cambiarlo: añade ?appcheck=<uuid> a la URL. Para quitarlo:\n` +
+        `localStorage.removeItem('${CLAVE_GUARDADA}')`,
+    );
+    return guardado;
+  }
+
+  console.info(
+    `[App Check] Modo depuración en ${self.location.origin}.\n` +
+      'Firebase imprime debajo un token nuevo que vale SOLO para este origen.\n' +
+      'Regístralo en Firebase → App Check → Apps → tu app → Administrar tokens\n' +
+      'de depuración. Si ya tienes uno registrado, es más rápido reutilizarlo:\n' +
+      `abre esta misma página con ?appcheck=<uuid> y se queda guardado aquí.`,
+  );
+  return true;
+}
+
 export function provideAppCheck(): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideEnvironmentInitializer(() => {
@@ -64,10 +128,10 @@ export function provideAppCheck(): EnvironmentProviders {
 
       // Token de depuración en desarrollo. Sin esto, App Check con reCAPTCHA
       // rechaza `localhost`: no es un dominio que Google pueda verificar, y la
-      // clave de producción no admite añadirlo. La consola imprime un token que
-      // hay que registrar una vez en Firebase.
+      // clave de producción no admite añadirlo.
       if (!environment.production) {
-        (self as unknown as Record<string, unknown>)['FIREBASE_APPCHECK_DEBUG_TOKEN'] = true;
+        (self as unknown as Record<string, unknown>)['FIREBASE_APPCHECK_DEBUG_TOKEN'] =
+          tokenDeDepuracion();
       }
 
       initializeAppCheck(app, {

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { provideAuth } from '../../core/auth/auth.providers';
+import { provideInvitados } from '../../core/invitados/invitados.providers';
 import { guardaPanel } from '../../core/auth/guards';
 import { provideFirebaseAuth } from '../../core/firebase/auth.providers';
 import { provideFirestore } from '../../core/firebase/firestore.providers';
@@ -20,6 +21,7 @@ export const panelRoutes: Routes = [
       provideFirebaseAuth(),
       provideFirebaseStorage(),
       provideAuth(),
+      provideInvitados(),
       BodaStore,
     ],
     children: [
@@ -37,6 +39,12 @@ export const panelRoutes: Routes = [
         loadComponent: () =>
           import('../../layouts/panel-shell/panel-shell').then((m) => m.PanelShell),
         children: [
+          {
+            // La ruta se llama como el módulo: el menú del panel enlaza a
+            // `/panel/<modulo>` y lo dibujan los módulos activos de la boda.
+            path: 'guests',
+            loadComponent: () => import('./invitados/invitados').then((m) => m.Invitados),
+          },
           {
             path: 'datos',
             loadComponent: () => import('./datos/datos-boda').then((m) => m.DatosBoda),
