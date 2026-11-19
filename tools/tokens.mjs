@@ -51,7 +51,9 @@ function comprobar(descripcion, color, fondo, minimo) {
   const ok = ratio >= minimo;
   comprobaciones.push({ descripcion, ratio, minimo, ok });
   if (!ok) {
-    fallos.push(`${descripcion}: ${ratio.toFixed(2)}:1, hace falta ${minimo}:1 (${color} sobre ${fondo})`);
+    fallos.push(
+      `${descripcion}: ${ratio.toFixed(2)}:1, hace falta ${minimo}:1 (${color} sobre ${fondo})`,
+    );
   }
 }
 
@@ -74,7 +76,12 @@ for (const modo of ['light', 'dark']) {
   }
 
   for (const cat of paleta.categorical.colores) {
-    comprobar(`[${modo}] categórico ${cat.id} sobre superficie`, cat[modo], sup.surface, MIN_INTERFAZ);
+    comprobar(
+      `[${modo}] categórico ${cat.id} sobre superficie`,
+      cat[modo],
+      sup.surface,
+      MIN_INTERFAZ,
+    );
   }
 }
 
@@ -129,7 +136,9 @@ function scss() {
   const bloque = (modo) => {
     const sup = paleta.surface[modo];
     const out = [
-      ...Object.entries(sup).map(([k, v]) => linea(`surface-${k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}`, v)),
+      ...Object.entries(sup).map(([k, v]) =>
+        linea(`surface-${k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}`, v),
+      ),
     ];
     for (const [nombre, def] of Object.entries(paleta.semantic)) {
       if (nombre.startsWith('_')) continue;
@@ -198,6 +207,21 @@ ${entradas.map(([k, v]) => `  ${k}: '${v.icon}',`).join('\n')}
 export const NP_STATUS_MEANING: Record<NpStatus, string> = {
 ${entradas.map(([k, v]) => `  ${k}: ${comillas(v.significado)},`).join('\n')}
 };
+
+/**
+ * Colores de categoría: grupos de invitados, categorías de gasto, hitos.
+ *
+ * Se guarda el **id**, nunca el hexadecimal: el color real sale de la variable
+ * \`--np-cat-<id>\`, que cambia sola entre modo claro y oscuro. Un hexadecimal
+ * guardado en el documento se vería igual en los dos, y en uno de ellos mal.
+ */
+export type NpCategoria =
+${paleta.categorical.colores.map((c) => `  | '${c.id}'`).join('\n')};
+
+/** En el orden de la paleta, que es el del círculo cromático. */
+export const NP_CATEGORIAS: readonly { readonly id: NpCategoria; readonly nombre: string }[] = [
+${paleta.categorical.colores.map((c) => `  { id: '${c.id}', nombre: ${comillas(c.nombre)} },`).join('\n')}
+];
 `;
 }
 

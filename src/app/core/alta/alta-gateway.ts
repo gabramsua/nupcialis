@@ -4,7 +4,7 @@ import { InjectionToken } from '@angular/core';
  * Puerto del alta de bodas.
  *
  * Del otro lado hay una Cloud Function invocable. De este lado, una interfaz de
- * cuatro métodos que se puede doblar en un test sin emulador ni red, que es lo
+ * cuatro métodos que se puede doblar en un test sin red, que es lo
  * que permite probar la pantalla del superadmin —la parte que de verdad se
  * equivoca— sin levantar medio Firebase.
  */
@@ -53,7 +53,7 @@ export type FalloAlta =
    * La llamada llegó sin credencial válida.
    *
    * En la práctica es casi siempre App Check: la función lo exige fuera del
-   * emulador y el navegador no mandó token. Confundirlo con «no tienes permiso»
+   * App Check y el navegador no mandó token. Confundirlo con «no tienes permiso»
    * manda a buscar el fallo al sitio equivocado — a los claims, que están
    * bien— y cuesta media tarde.
    */

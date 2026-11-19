@@ -34,9 +34,14 @@ describe('mover', () => {
       'ceremonia',
       'historia',
       'banquete',
+      'cronologia',
+      'preguntas',
+      'alojamientos',
+      'dress-code',
+      'quiz',
       'contacto',
     ]);
-    expect(salida.map((s) => s.order)).toEqual([0, 1, 2, 3, 4]);
+    expect(salida.map((s) => s.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it('sube una sección', () => {
@@ -45,6 +50,11 @@ describe('mover', () => {
       'historia',
       'banquete',
       'ceremonia',
+      'cronologia',
+      'preguntas',
+      'alojamientos',
+      'dress-code',
+      'quiz',
       'contacto',
     ]);
   });

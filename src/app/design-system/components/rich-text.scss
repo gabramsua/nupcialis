@@ -1,0 +1,50 @@
+// Texto enriquecido: lo que la pareja escribe con la barra de formato y la web
+// pública pinta como HTML.
+//
+// Vive aquí y no en cada plantilla por dos motivos: las reglas son las mismas
+// para las doce plantillas del catálogo —lo que cambia es el color y la
+// tipografía, que ya heredan—, y los estilos de un componente tienen un
+// presupuesto de 4 kB que esto se comía a base de repetirse.
+//
+// Las etiquetas son las de la lista blanca del servidor (`dominio/html.ts`):
+// párrafos, negritas, cursivas, listas, dos niveles de título, cita y enlaces.
+.np-rico {
+  line-height: 1.7;
+
+  > :first-child {
+    margin-block-start: 0;
+  }
+
+  > :last-child {
+    margin-block-end: 0;
+  }
+
+  p,
+  ul,
+  ol {
+    margin-block: 0 1em;
+  }
+
+  ul,
+  ol {
+    padding-inline-start: 1.25em;
+  }
+
+  h3,
+  h4 {
+    margin-block: 1.5em 0.5em;
+    font-weight: var(--np-weight-medium);
+  }
+
+  blockquote {
+    margin-inline: 0;
+    padding-inline-start: 1em;
+    border-inline-start: 2px solid currentColor;
+    opacity: 0.85;
+  }
+
+  // El color del enlace lo pone la plantilla: aquí no se inventa ninguno.
+  a {
+    color: inherit;
+  }
+}

@@ -1,4 +1,9 @@
+import type { ModoAcceso } from '../acceso/acceso';
 import type { Seccion } from '../../features/public-site/secciones/secciones';
+import type { FaqPublica } from '../../features/public-site/faqs/faqs';
+import type { HitoPublico } from '../../features/public-site/cronologia/cronologia';
+import type { AlojamientoPublico } from '../../features/public-site/alojamientos/alojamientos';
+import type { DressCodePublico } from '../../features/public-site/dress-code/dress-code';
 
 /**
  * Puerto de datos del tenant.
@@ -6,7 +11,7 @@ import type { Seccion } from '../../features/public-site/secciones/secciones';
  * La lógica de resolución no habla con Firestore: habla con esto. Dos motivos,
  * y el segundo importa más que el primero:
  *
- * 1. Se puede probar sin emulador ni navegador, con un doble de tres líneas.
+ * 1. Se puede probar sin red ni navegador, con un doble de tres líneas.
  * 2. Deja explícito **qué** necesita saber la aplicación para resolver una boda.
  *    Con el SDK metido dentro, esa frontera se difumina y acaba habiendo
  *    consultas a Firestore repartidas por media aplicación.
@@ -49,6 +54,8 @@ export interface TemaPublico {
 }
 
 /** La proyección pública: lo único legible sin autenticación. */
+export type VisibilidadModulo = 'hidden' | 'soon' | 'visible';
+
 export interface SitioPublico {
   readonly status: 'draft' | 'active' | 'archived';
   /**
@@ -66,8 +73,40 @@ export interface SitioPublico {
   readonly timezone: string;
   /** Si la pareja ha pedido salir en buscadores. Por defecto, no. */
   readonly indexable: boolean;
+  /**
+   * Cómo entra un invitado (§3.3). Viaja en la proyección pública a propósito:
+   * la web tiene que saber si pedir identificación **antes** de pintar nada, y
+   * preguntarlo a una función costaría una espera en cada visita.
+   *
+   * Que sea público no filtra nada: dice qué formulario sale, no quién está
+   * invitado.
+   */
+  readonly guestAccessMode: ModoAcceso;
   /** Secciones de la web, tal como las publica la proyección. */
   readonly secciones: readonly Seccion[];
+  /**
+   * Las preguntas frecuentes publicables (§8.9).
+   *
+   * Vienen en la proyección y no de su colección: en una boda abierta no hay
+   * sesión de invitado con la que leer nada, y una pregunta a medio escribir
+   * no tiene por qué estar al alcance de una consulta directa.
+   */
+  readonly faqs: readonly FaqPublica[];
+  /** La cronología del día, solo lo visible para invitados (§8.13). */
+  readonly cronologia: readonly HitoPublico[];
+  /** Los alojamientos para los invitados de fuera (§8.10). */
+  readonly alojamientos: readonly AlojamientoPublico[];
+  /** El dress code (§8.11). Vacío si el módulo está apagado. */
+  readonly dressCode: DressCodePublico;
+  /**
+   * Qué módulos están a la vista, tal y como los publica la proyección.
+   *
+   * Solo la **visibilidad**, nunca la configuración: ahí van datos internos —el
+   * email del catering, el importe del presupuesto— y esto lo lee cualquiera
+   * con el enlace. Lo que la web necesita saber es si enseñar la entrada al
+   * formulario de confirmación, no cuándo termina el plazo.
+   */
+  readonly modulos: Readonly<Record<string, VisibilidadModulo>>;
   readonly locale: string;
   readonly theme: TemaPublico;
 }

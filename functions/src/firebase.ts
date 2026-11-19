@@ -24,23 +24,15 @@ export const DOMINIO_BASE = process.env['NUPCIALIS_DOMINIO'] ?? 'nupcialis.com';
 export const DOMINIO_ADMIN = `admin.${DOMINIO_BASE}`;
 
 /**
- * ¿Estamos dentro del emulador de funciones?
+ * App Check: obligatorio, siempre.
  *
- * El runtime la pone a 'true'; en producción no existe. Es la forma estándar de
- * distinguirlo y no depende de ninguna configuración nuestra que se pueda
- * olvidar.
+ * Antes se desactivaba dentro del emulador. Ya no hay emulador (D-33), así que
+ * tampoco hay un interruptor que se pueda quedar apagado por descuido: todo
+ * cliente que llame a una invocable manda su token, también en local. Para
+ * trabajar desde `localhost` hace falta un token de depuración registrado; está
+ * en `docs/PUESTA-EN-MARCHA.md`, bloque 7.
  */
-export const EN_EMULADOR = process.env['FUNCTIONS_EMULATOR'] === 'true';
-
-/**
- * App Check: obligatorio en producción, desactivado en el emulador.
- *
- * Exigirlo en local obligaría a generar un token de depuración en el navegador
- * para cada prueba, y dejaría los scripts de `tools/` sin forma de llamar a una
- * función. En producción `FUNCTIONS_EMULATOR` no existe, así que esto vale
- * `true` y se exige.
- */
-export const EXIGIR_APP_CHECK = !EN_EMULADOR;
+export const EXIGIR_APP_CHECK = true;
 
 export function app() {
   return getApps().length > 0 ? getApps()[0]! : initializeApp();

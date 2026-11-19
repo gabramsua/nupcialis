@@ -7,9 +7,17 @@
  */
 
 import type { NpIconName } from '../../../design-system/icons/icon-name.generated';
-import { CAMPOS_POR_TIPO, type TipoSeccion } from './secciones';
+import { CAMPOS_POR_TIPO, esCampoRico, type TipoSeccion } from './secciones';
 
-export type TipoCampo = 'texto' | 'parrafo' | 'hora';
+/**
+ * `rico` es el editor de texto enriquecido; el resto son controles de HTML.
+ *
+ * Cuál le toca a cada campo no se decide aquí a mano: sale de `CAMPOS_RICOS`,
+ * que es la lista que comparten el cliente y el servidor. Así no puede pasar
+ * que el panel ofrezca formato en un campo que el servidor publica como texto
+ * plano, ni al contrario.
+ */
+export type TipoCampo = 'texto' | 'parrafo' | 'hora' | 'rico';
 
 export interface CampoEditable {
   readonly nombre: string;
@@ -40,7 +48,7 @@ function campos(tipo: TipoSeccion): readonly CampoEditable[] {
   // campo a `CAMPOS_POR_TIPO`, aparece en el editor sin tocar este fichero.
   return Object.entries(CAMPOS_POR_TIPO[tipo]).map(([nombre, maximo]) => ({
     nombre,
-    control: CONTROLES[nombre] ?? 'texto',
+    control: esCampoRico(tipo, nombre) ? 'rico' : (CONTROLES[nombre] ?? 'texto'),
     etiqueta: `panel.secciones.campo.${nombre}`,
     maximo,
   }));
@@ -50,6 +58,18 @@ export const TIPOS_EDITABLES: Record<TipoSeccion, TipoEditable> = {
   portada: { tipo: 'portada', icono: 'images', campos: campos('portada') },
   texto: { tipo: 'texto', icono: 'note-pencil', campos: campos('texto') },
   evento: { tipo: 'evento', icono: 'champagne', campos: campos('evento') },
+  // Las preguntas no se escriben en la sección: viven en su propia pantalla
+  // (§8.9). Aquí solo se les pone el título y se decide dónde van.
+  preguntas: { tipo: 'preguntas', icono: 'question', campos: campos('preguntas') },
+  // La cronología se escribe en su pantalla (§8.13); aquí va su título.
+  cronologia: { tipo: 'cronologia', icono: 'clock', campos: campos('cronologia') },
+  // Los alojamientos se escriben en su pantalla (§8.10); aquí va su título.
+  alojamientos: { tipo: 'alojamientos', icono: 'bed', campos: campos('alojamientos') },
+  // El dress code se escribe en su pantalla (§8.11); aquí va su título.
+  dressCode: { tipo: 'dressCode', icono: 't-shirt', campos: campos('dressCode') },
+  // El quiz vive en su propia página; aquí solo se decide si hay cartel y qué
+  // pone (§8.7).
+  quiz: { tipo: 'quiz', icono: 'game-controller', campos: campos('quiz') },
 };
 
 /**

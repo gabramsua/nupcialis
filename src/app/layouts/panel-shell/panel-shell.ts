@@ -109,19 +109,28 @@ import { NpIcon } from '../../design-system/icons/icon';
               <hr class="np-panel__separador" />
 
               @for (entrada of boda.menu(); track entrada.modulo) {
+                <!--
+                  Un módulo sin pantalla todavía no se enlaza: antes llevaba a
+                  una página en blanco. Se queda en el menú, porque la pareja
+                  lo tiene contratado y encendido, diciendo que llega pronto.
+                -->
                 <a
                   class="np-panel__enlace"
-                  [routerLink]="['/panel', entrada.modulo]"
+                  [class.np-panel__enlace--sinPantalla]="!entrada.ruta"
+                  [routerLink]="entrada.ruta"
                   routerLinkActive="np-panel__enlace--activo"
                 >
                   <np-icon [name]="entrada.icono" />
                   <span class="np-panel__nombre">{{ t('panel.modulo.' + entrada.modulo) }}</span>
+                  @if (!entrada.ruta) {
+                    <np-status-chip status="pending" [label]="t('panel.enCamino')" />
+                  }
                   <!--
                     La visibilidad se ve en el menú a propósito: sin esto, la
                     pareja no entiende por qué su web parece vacía si tiene ocho
                     módulos encendidos.
                   -->
-                  @if (entrada.visibilidad !== 'visible') {
+                  @if (entrada.ruta && entrada.visibilidad !== 'visible') {
                     <np-status-chip
                       status="pending"
                       [label]="t('panel.visibilidad.' + entrada.visibilidad)"
@@ -188,6 +197,12 @@ import { NpIcon } from '../../design-system/icons/icon';
       gap: var(--np-space-2);
       overflow-x: auto;
       padding-block-end: var(--np-space-2);
+    }
+    /* Sin pantalla todavía: se ve apagado y no responde al dedo, pero se
+       lee. Esconderlo haría pensar que el módulo no está contratado. */
+    .np-panel__enlace--sinPantalla {
+      opacity: 0.6;
+      pointer-events: none;
     }
     .np-panel__enlace {
       display: inline-flex;

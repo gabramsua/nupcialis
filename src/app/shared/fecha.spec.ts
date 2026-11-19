@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { fechaLarga, fechaMedia } from './fecha';
+import { fechaLarga, fechaMedia, horaCorta } from './fecha';
 
 const BODA = new Date('2027-06-12T10:00:00Z');
 
@@ -40,5 +40,16 @@ describe('fechaMedia', () => {
     const texto = fechaMedia(BODA, 'es');
     expect(texto).toContain('junio');
     expect(texto).not.toContain('sábado');
+  });
+});
+
+describe('horaCorta', () => {
+  it('da la hora del que mira, con dos cifras', () => {
+    expect(horaCorta(new Date(2026, 10, 13, 9, 5), 'es')).toBe('09:05');
+  });
+
+  it('sin fecha, vacío', () => {
+    expect(horaCorta(null, 'es')).toBe('');
+    expect(horaCorta(new Date('no es una fecha'), 'es')).toBe('');
   });
 });

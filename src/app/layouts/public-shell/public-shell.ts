@@ -1,4 +1,4 @@
-import { NgComponentOutlet } from '@angular/common';
+import { DOCUMENT, NgComponentOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,16 +9,27 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { ResultadoTenant } from '../../core/tenant/tenant-loader';
-import type { PaletaMarca } from '../../core/tenant/tenant-source';
+import { variablesDeMarca as colores } from '../../core/tenant/marca';
 import { plantillaDe } from '../../features/public-site/plantillas/catalogo';
 import { cargarPlantilla } from '../../features/public-site/plantillas/cargador';
 import { Fuentes } from '../../features/public-site/plantillas/fuentes';
 import type { DatosPortada } from '../../features/public-site/plantillas/portada';
 import { NpEmptyState } from '../../design-system/components/empty-state/empty-state';
+import { NpIcon } from '../../design-system/icons/icon';
 import { Indexacion, debeIndexarse } from '../../core/seo/indexacion';
+import {
+  PARAM_ENLACE,
+  nombreDelEnlace,
+  pideIdentificarse,
+  type ModoAcceso,
+} from '../../core/acceso/acceso';
+import { SesionInvitado } from '../../core/firebase/sesion-invitado';
+import { Entrar } from '../../features/public-site/acceso/entrar';
+import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-code';
 
 /**
  * Envoltorio de la web pública de la boda.
@@ -36,24 +47,78 @@ import { Indexacion, debeIndexarse } from '../../core/seo/indexacion';
  */
 @Component({
   selector: 'np-public-shell',
-  imports: [NgComponentOutlet, TranslocoDirective, NpEmptyState],
+  imports: [NgComponentOutlet, RouterLink, TranslocoDirective, NpEmptyState, NpIcon, Entrar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style]': 'variablesDeMarca()' },
   template: `
     <ng-container *transloco="let t">
       @switch (tenant().tipo) {
         @case ('ok') {
-          @if (plantilla(); as componente) {
+          <!--
+            La puerta va **delante de todo**, no dentro de la plantilla: en los
+            modos B y C no hay visitante anónimo (§1.1), así que ni los nombres
+            ni la fecha ni las secciones se pintan hasta saber quién es.
+
+            Y va en un bloque diferido: así Firebase Auth y este formulario viven en su
+            propio trozo, y una boda abierta —el modo por defecto— no descarga
+            ni un byte de todo esto.
+          -->
+          @if (hayQuePreguntar()) {
+            @defer (when hayQuePreguntar()) {
+              <np-entrar
+                [modo]="modo()"
+                [slug]="slug()"
+                [nombres]="nombresDeLaBoda()"
+                [nombrePrevio]="nombreDelEnlace"
+              />
+            }
+          } @else if (esperandoSesion()) {
+            <!--
+              Mientras Firebase dice si ya había sesión no se pinta nada. Un
+              parpadeo de formulario antes de entrar es peor que medio segundo
+              de fondo de marca, sobre todo al recargar.
+            -->
+          } @else if (plantilla(); as componente) {
             <ng-container
               *ngComponentOutlet="componente; inputs: { datos: datosPortada() }"
             ></ng-container>
+
+            <!--
+              Quién cree la web que eres, y cómo decir que no.
+              Hace falta más desde D-34: el enlace entra solo, así que quien
+              recibe uno reenviado está dentro como otra persona sin haber hecho
+              nada. Tiene que poder salir, y la pareja tiene que poder fiarse de
+              que quien confirmó era él.
+            -->
+            @if (sesion.identificado()) {
+              <p class="np-quien">
+                <np-icon name="user-circle" />
+                <span>
+                  {{
+                    sesion.nombre()
+                      ? t('publico.sesion.comoQuien', { nombre: sesion.nombre() })
+                      : t('publico.sesion.comoInvitado')
+                  }}
+                </span>
+                <button type="button" (click)="salir()">
+                  {{ t('publico.sesion.noEresTu') }}
+                </button>
+              </p>
+            }
+
+            <!--
+              La entrada al formulario de confirmación, pegada abajo.
+              Primero móvil: en el pulgar, no al final de la página después de
+              seis secciones. Y solo cuando sabemos quién es: sin identidad no
+              hay a quién apuntar la respuesta (ver D-09).
+            -->
+            @if (puedeConfirmar()) {
+              <a class="np-confirmar" routerLink="/confirmar">
+                <np-icon name="check-circle" weight="fill" />
+                {{ t('publico.confirmar.entrada') }}
+              </a>
+            }
           }
-          <!--
-            Mientras la plantilla llega no se pinta nada: un esqueleto gris
-            durante 150 ms parpadea más de lo que informa. El fondo de marca ya
-            está puesto en el host, así que la espera se ve como una pausa, no
-            como una página rota.
-          -->
         }
         @case ('landing') {
           <!--
@@ -120,16 +185,173 @@ import { Indexacion, debeIndexarse } from '../../core/seo/indexacion';
       margin: 0;
       color: var(--np-surface-text-muted);
     }
+    /* Discreta y arriba: es información, no una acción que haya que destacar.
+       Pero el «¿no eres tú?» tiene que ser pulsable con el pulgar. */
+    .np-quien {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      padding: var(--np-space-2) var(--np-space-4);
+      background: var(--np-marca-surface, var(--np-surface-surface));
+      color: var(--np-marca-text, var(--np-surface-text));
+      font-size: var(--np-text-sm);
+      opacity: 0.9;
+    }
+    .np-quien button {
+      min-block-size: var(--np-tap-target);
+      padding-inline: var(--np-space-2);
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: var(--np-text-sm);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    /* Pegada abajo y a lo ancho en el móvil; una pastilla centrada en cuanto
+       hay sitio. Con icono y texto: el color nunca viaja solo. */
+    .np-confirmar {
+      position: fixed;
+      inset-block-end: 0;
+      inset-inline: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--np-space-2);
+      min-block-size: 3.5rem;
+      padding: var(--np-space-3) var(--np-space-4);
+      padding-block-end: max(var(--np-space-3), env(safe-area-inset-bottom));
+      background: var(--np-marca-primary, var(--np-surface-text));
+      color: var(--np-marca-background, var(--np-surface-canvas));
+      font-weight: var(--np-weight-medium);
+      text-decoration: none;
+    }
+    @media (min-width: 48rem) {
+      .np-confirmar {
+        inset-inline: auto;
+        inset-block-end: var(--np-space-4);
+        inset-inline-end: var(--np-space-4);
+        border-radius: var(--np-radius-full);
+        box-shadow: var(--np-shadow-md, 0 2px 12px rgb(0 0 0 / 0.2));
+      }
+    }
   `,
 })
 export class PublicShell {
   private readonly fuentes = inject(Fuentes);
   private readonly indexacion = inject(Indexacion);
+  protected readonly sesion = inject(SesionInvitado);
+
+  /**
+   * El nombre que trae el enlace que le mandó la pareja (`?n=`).
+   *
+   * Se lee de `location` y no del router: aquí no hay ruta con parámetros, es
+   * la raíz de la boda, y el router reescribe la URL desde su propio estado en
+   * cuanto navega.
+   */
+  protected readonly nombreDelEnlace = nombreDelEnlace(inject(DOCUMENT).location.search);
+
+  private readonly documento = inject(DOCUMENT);
+
+  /** El token que trae el enlace de la pareja, si lo trae (D-34). */
+  private readonly tokenDelEnlace = new URLSearchParams(inject(DOCUMENT).location.search).get(
+    PARAM_ENLACE,
+  );
+
+  /**
+   * Abre la sesión del invitado: primero la que ya hubiera, y si no, el enlace.
+   *
+   * El orden importa. Quien ya se había identificado con sus cuatro dígitos no
+   * puede perder ese nivel por volver a abrir el enlace del WhatsApp —que es lo
+   * que hace todo el mundo—, así que un token de enlace no pisa una sesión que
+   * ya está verificada.
+   */
+  private async abrir(): Promise<void> {
+    await this.sesion.recuperar();
+
+    const token = this.tokenDelEnlace;
+    if (token === null) return;
+
+    // El token sale de la barra de direcciones en cuanto se usa: queda en el
+    // historial del móvil y en lo que se comparta desde el navegador, y no
+    // hace falta para nada más.
+    this.limpiarUrl();
+
+    if (this.sesion.verificado()) return;
+
+    await this.sesion.entrarConEnlace(this.slug(), token);
+  }
+
+  /**
+   * Cierra la sesión del invitado y vuelve a la puerta.
+   *
+   * Lo que no hace es recargar: al soltar la sesión, `hayQuePreguntar()` pasa a
+   * ser verdad y la puerta aparece sola. Y el token del enlace ya se ha
+   * limpiado de la URL, así que no vuelve a entrar con el mismo.
+   */
+  protected async salir(): Promise<void> {
+    await this.sesion.salir();
+  }
+
+  private limpiarUrl(): void {
+    const ventana = this.documento.defaultView;
+    const historial = ventana?.history;
+    if (!historial?.replaceState) return;
+
+    const url = new URL(this.documento.location.href);
+    url.searchParams.delete(PARAM_ENLACE);
+    historial.replaceState(historial.state, '', url.pathname + url.search + url.hash);
+  }
 
   /** Lo resuelve `tenantResolver` antes de que esto se monte. */
   readonly tenant = input.required<ResultadoTenant>();
 
+  /** Para que el efecto de abrir la sesión no se dispare dos veces. */
+  private entrando = false;
+
   protected readonly plantilla = signal<Type<unknown> | null>(null);
+
+  private readonly sitio = computed(() => {
+    const t = this.tenant();
+    return t.tipo === 'ok' ? t.sitio : null;
+  });
+
+  protected readonly modo = computed<ModoAcceso>(() => this.sitio()?.guestAccessMode ?? 'open');
+  protected readonly slug = computed(() => {
+    const t = this.tenant();
+    return t.tipo === 'ok' ? t.slug : '';
+  });
+
+  protected readonly nombresDeLaBoda = computed(() => {
+    const nombres = this.sitio()?.coupleNames;
+    return nombres ? [nombres.partnerA, nombres.partnerB].filter(Boolean).join(' & ') : '';
+  });
+
+  /**
+   * ¿Se le puede ofrecer el formulario de confirmación?
+   *
+   * Hacen falta las dos cosas: que la pareja tenga el módulo a la vista, y que
+   * sepamos quién es el que está mirando. En una boda abierta no lo sabemos, y
+   * una confirmación sin nombre no sirve para contar comensales ni para pedir
+   * un menú. Qué hacer ahí es D-09, y no lo decido yo.
+   */
+  protected readonly puedeConfirmar = computed(
+    () => this.sitio()?.modulos['rsvp'] === 'visible' && this.sesion.identificado(),
+  );
+
+  /** La boda pide identificarse y todavía no sabemos quién es. */
+  protected readonly hayQuePreguntar = computed(
+    () => pideIdentificarse(this.modo()) && this.sesion.resuelta() && !this.sesion.identificado(),
+  );
+
+  /** Pide identificarse y Firebase aún no ha contestado si había sesión. */
+  protected readonly esperandoSesion = computed(
+    () => pideIdentificarse(this.modo()) && !this.sesion.resuelta(),
+  );
 
   private readonly elegida = computed(() => {
     const t = this.tenant();
@@ -147,6 +369,10 @@ export class PublicShell {
         locale: 'es',
         heroImageUrl: null,
         secciones: [],
+        faqs: [],
+        cronologia: [],
+        alojamientos: [],
+        dressCode: DRESS_CODE_VACIO,
       };
     }
     return {
@@ -157,6 +383,10 @@ export class PublicShell {
       locale: t.sitio.locale,
       heroImageUrl: t.sitio.theme.heroImageUrl,
       secciones: t.sitio.secciones,
+      faqs: t.sitio.faqs,
+      cronologia: t.sitio.cronologia,
+      alojamientos: t.sitio.alojamientos,
+      dressCode: t.sitio.dressCode,
     };
   });
 
@@ -168,19 +398,9 @@ export class PublicShell {
    * blanco. Aquí no se inventa ningún color: o vienen los seis de la boda, o no
    * se pone ninguno (ver `tenant-source.firestore.ts`).
    */
-  protected readonly variablesDeMarca = computed<Record<string, string>>(() => {
+  protected readonly variablesDeMarca = computed(() => {
     const t = this.tenant();
-    const paleta: PaletaMarca | null = t.tipo === 'ok' ? t.sitio.theme.palette : null;
-    if (!paleta) return {} as Record<string, string>;
-
-    return {
-      '--np-marca-primary': paleta.primary,
-      '--np-marca-secondary': paleta.secondary,
-      '--np-marca-background': paleta.background,
-      '--np-marca-surface': paleta.surface,
-      '--np-marca-text': paleta.text,
-      '--np-marca-accent': paleta.accent,
-    };
+    return colores(t.tipo === 'ok' ? t.sitio.theme.palette : null);
   });
 
   constructor() {
@@ -199,6 +419,15 @@ export class PublicShell {
       const plantilla = this.elegida();
       this.fuentes.cargar(plantilla);
       void cargarPlantilla(plantilla.id).then((componente) => this.plantilla.set(componente));
+    });
+
+    // Solo si la boda pide identificarse. En una abierta esto no se llama
+    // nunca, y por eso Firebase Auth no llega a descargarse.
+    effect(() => {
+      if (!pideIdentificarse(this.modo()) || this.sesion.resuelta() || this.entrando) return;
+
+      this.entrando = true;
+      void this.abrir();
     });
   }
 }

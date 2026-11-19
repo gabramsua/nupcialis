@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { cuentaAtras, type DatosPortada } from './portada';
+import { DRESS_CODE_VACIO } from '../dress-code/dress-code';
 
 const AHORA = new Date('2026-09-16T12:00:00Z');
 
@@ -13,6 +14,10 @@ function datos(parcial: Partial<DatosPortada>): DatosPortada {
     locale: 'es',
     heroImageUrl: null,
     secciones: [],
+    faqs: [],
+    cronologia: [],
+    alojamientos: [],
+    dressCode: DRESS_CODE_VACIO,
     ...parcial,
   };
 }

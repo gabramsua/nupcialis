@@ -13,6 +13,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpIcon } from '../../../design-system/icons/icon';
+import { NpEditorRico } from './editor-rico';
 import { plantillaDe } from '../../public-site/plantillas/catalogo';
 import { cargarPlantilla } from '../../public-site/plantillas/cargador';
 import { Fuentes } from '../../public-site/plantillas/fuentes';
@@ -20,6 +21,13 @@ import type { DatosPortada } from '../../public-site/plantillas/portada';
 import { TIPOS_EDITABLES, mover } from '../../public-site/secciones/catalogo-secciones';
 import type { Seccion } from '../../public-site/secciones/secciones';
 import { BodaStore } from '../boda.store';
+import { DRESS_CODE_VACIO } from '../../public-site/dress-code/dress-code';
+import { FaqsStore } from '../faqs/faqs.store';
+import { CronologiaStore } from '../cronologia/cronologia.store';
+import { AlojamientosStore } from '../alojamientos/alojamientos.store';
+import { sanearFaqs } from '../../public-site/faqs/faqs';
+import { sanearCronologia } from '../../public-site/cronologia/cronologia';
+import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos';
 
 /**
  * Editor de la web pública: secciones a un lado, la web de verdad al otro.
@@ -39,7 +47,7 @@ import { BodaStore } from '../boda.store';
  */
 @Component({
   selector: 'np-editor-secciones',
-  imports: [NgComponentOutlet, TranslocoDirective, NpAlert, NpButton, NpIcon],
+  imports: [NgComponentOutlet, TranslocoDirective, NpAlert, NpButton, NpIcon, NpEditorRico],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -176,7 +184,35 @@ import { BodaStore } from '../boda.store';
                     <label [attr.for]="idCampo(seccion, campo.nombre)">
                       {{ t(campo.etiqueta) }}
                     </label>
-                    @if (campo.control === 'parrafo') {
+                    @if (campo.control === 'rico') {
+                      <!--
+                        El editor con formato, en su propio trozo de
+                        JavaScript: Jodit pesa medio megabyte y no puede caer
+                        en el arranque del panel. Se carga al desplegar la
+                        sección, que es cuando se va a usar.
+
+                        Si no llegara a cargarse —una red mala, un chunk que
+                        falla— queda el área de texto de siempre: la pareja
+                        escribe sin formato, pero escribe.
+                      -->
+                      @defer (on viewport) {
+                        <np-editor-rico
+                          [valor]="seccion.fields[campo.nombre] ?? ''"
+                          [maximo]="campo.maximo"
+                          (cambia)="escribirValor(seccion.id, campo.nombre, $event)"
+                        />
+                      } @placeholder {
+                        <p class="es__cargandoEditor">{{ t('panel.secciones.cargandoEditor') }}</p>
+                      } @error {
+                        <textarea
+                          rows="6"
+                          [id]="idCampo(seccion, campo.nombre)"
+                          [attr.maxlength]="campo.maximo"
+                          [value]="seccion.fields[campo.nombre] ?? ''"
+                          (input)="escribir(seccion.id, campo.nombre, $event)"
+                        ></textarea>
+                      }
+                    } @else if (campo.control === 'parrafo') {
                       <textarea
                         rows="4"
                         [id]="idCampo(seccion, campo.nombre)"
@@ -217,6 +253,11 @@ import { BodaStore } from '../boda.store';
       display: flex;
       flex-direction: column;
       gap: var(--np-space-4);
+    }
+    .es__cargandoEditor {
+      margin: 0;
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
     }
     .es__intro {
       display: flex;
@@ -406,6 +447,9 @@ import { BodaStore } from '../boda.store';
 })
 export class EditorSecciones {
   protected readonly store = inject(BodaStore);
+  private readonly faqs = inject(FaqsStore);
+  private readonly cronologia = inject(CronologiaStore);
+  private readonly alojamientos = inject(AlojamientosStore);
   private readonly fuentes = inject(Fuentes);
 
   protected readonly vista = signal<'editar' | 'previa'>('editar');
@@ -422,21 +466,45 @@ export class EditorSecciones {
     () => JSON.stringify(this.secciones()) !== JSON.stringify(this.store.boda()?.secciones ?? []),
   );
 
-  /** Lo que ve la vista previa: la boda real con las secciones del borrador. */
+  /**
+   * Lo que ve la vista previa: la boda real con las secciones del borrador.
+   *
+   * Las cuatro listas de contenido —preguntas, cronología, alojamientos y
+   * dress code— llegan **con sus datos de verdad**, no vacías. Antes salían
+   * con el hueco, y eso convertía la vista previa en algo que no se parecía a
+   * la web: la pareja encendía «Preguntas frecuentes», no veía nada y no tenía
+   * forma de saber si era que la sección no funcionaba o que no había
+   * preguntas. Lo que se pinta aquí es lo que publicaría el servidor, con el
+   * mismo saneado.
+   */
   protected readonly datosPrevia = computed<DatosPortada>(() => {
     const boda = this.store.boda();
     return {
-      nombres: { partnerA: '', partnerB: '' },
+      nombres: boda?.pareja ?? { partnerA: '', partnerB: '' },
       weddingDate: boda?.weddingDate ?? null,
       weddingTime: boda?.weddingTime ?? null,
       timezone: boda?.timezone ?? 'Europe/Madrid',
       locale: 'es',
       heroImageUrl: boda?.heroImageUrl ?? null,
       secciones: this.secciones(),
+      // Se pasan por el saneador del dominio, el mismo que usa la proyección:
+      // así lo que no se publicaría —una pregunta sin respuesta, un hito
+      // interno, una ficha sin nombre— tampoco se ve aquí.
+      faqs: sanearFaqs(this.faqs.faqs()),
+      cronologia: sanearCronologia(this.cronologia.hitos()),
+      alojamientos: sanearAlojamientos(this.alojamientos.alojamientos()),
+      dressCode: boda?.dressCode ?? DRESS_CODE_VACIO,
     };
   });
 
   constructor() {
+    // Las tres listas que viven en subcolecciones. Se cargan al abrir el
+    // editor porque la vista previa las necesita; son pequeñas y el editor es
+    // una pantalla a la que la pareja entra a mirar cómo va quedando.
+    void this.faqs.cargar();
+    void this.cronologia.cargar();
+    void this.alojamientos.cargar();
+
     // El borrador arranca de lo guardado, y se rehace si la boda se recarga.
     effect(() => {
       const boda = this.store.boda();
@@ -471,7 +539,11 @@ export class EditorSecciones {
   }
 
   protected escribir(id: string, campo: string, evento: Event): void {
-    const valor = (evento.target as HTMLInputElement | HTMLTextAreaElement).value;
+    this.escribirValor(id, campo, (evento.target as HTMLInputElement).value);
+  }
+
+  /** El editor con formato no da un evento del DOM: da la cadena ya hecha. */
+  protected escribirValor(id: string, campo: string, valor: string): void {
     this.secciones.update((lista) =>
       lista.map((seccion) =>
         seccion.id === id ? { ...seccion, fields: { ...seccion.fields, [campo]: valor } } : seccion,

@@ -7,7 +7,7 @@ import {
 import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check';
 
 import { environment } from '../../../environments/environment';
-import { EMULATORS, FIREBASE_APP } from './firebase.providers';
+import { FIREBASE_APP } from './firebase.providers';
 
 /**
  * App Check: demuestra que quien llama es nuestra aplicación y no un script.
@@ -109,19 +109,15 @@ export function provideAppCheck(): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideEnvironmentInitializer(() => {
       const app = inject(FIREBASE_APP);
-      const emuladores = inject(EMULATORS);
-
-      // El emulador no comprueba App Check, y las funciones tampoco lo exigen
-      // dentro de él (ver `EXIGIR_APP_CHECK` en functions/src/firebase.ts).
-      if (emuladores || yaInicializado) return;
+      if (yaInicializado) return;
 
       const clave = environment.appCheckSiteKey;
       if (!clave) {
         console.warn(
           '[App Check] Sin `appCheckSiteKey` en el entorno: no se inicializa.\n' +
             'Es la clave de reCAPTCHA Enterprise, distinta del `apiKey` y del\n' +
-            '`appId` de Firebase. Sin ella las Cloud Functions responden 401\n' +
-            'fuera del emulador. Ver docs/PUESTA-EN-MARCHA.md, bloque 7.',
+            '`appId` de Firebase. Sin ella las Cloud Functions responden 401.\n' +
+            'Ver docs/PUESTA-EN-MARCHA.md, bloque 7.',
         );
         return;
       }

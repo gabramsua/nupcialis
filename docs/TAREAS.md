@@ -1,5 +1,9 @@
 # Nupcialis — Tareas
 
+> **Lo que necesita a Gabriel está en `docs/PARA-GABRIEL.md`**: instalar
+> dependencias, desplegar, el CI, la batería de reglas, lo que hay que mirar en
+> el navegador y las decisiones abiertas. Aquí abajo queda el trabajo.
+
 Lista viva. Se amplía en cada sesión de trabajo.
 
 **Convención:** `[ ]` pendiente · `[~]` en curso · `[x]` hecha · `[!]` bloqueada
@@ -15,6 +19,75 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 
 ---
 
+## Lo siguiente, por valor para la pareja
+
+_Escrito el 2026-11-16, a petición de Gabriel. **Esta lista manda sobre el orden
+de las fases** mientras no se diga otra cosa._
+
+**La crítica, y tiene razón.** Las cuatro últimas entregas —preguntas
+frecuentes, cronología, alojamientos y dress code— son **módulos de contenido**:
+la pareja escribe en un formulario y el invitado lo lee. Salieron rápido porque
+las cuatro comparten el mismo patrón (dominio compartido, proyección pública,
+colección cerrada), pero ninguna es la razón por la que alguien paga por esto.
+Lo que vende son **la galería, el quiz y las mesas**, y las tres estaban detrás
+en el plan porque el plan las había puesto en F2 y F3.
+
+El plan se ordenó por dependencias técnicas —todo lo que necesita la web pública
+antes que lo que necesita participación— y eso dejó lo vistoso al final. Se
+reordena.
+
+### Por qué cuestan lo que cuestan
+
+Las tres grandes no son como las cuatro de contenido: cada una trae maquinaria
+que todavía no existe en el proyecto.
+
+| Módulo      | Lo que trae de nuevo                                                                                               | Riesgo                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| **Galería** | Subida a Storage desde el móvil, miniaturas, moderación, y **audiencia por grupo**: la foto que solo ve la familia | El coste de Storage y el aislamiento de lo restringido    |
+| **Quiz**    | Banco de preguntas, corrección **en servidor** (regla 4), ranking con desempate por tiempo                         | Poco: el prototipo existe y se porta                      |
+| **Mesas**   | Plano del banquete, arrastrar invitados, capacidad, incompatibilidades, y exportar para el catering                | El arrastre en un móvil de 360 px, que es donde se decide |
+
+### Orden propuesto
+
+1. **`F3.1` Galería (§8.8).** Es lo que miran los invitados al día siguiente y
+   lo que hace que la web siga viva después de la boda. Entrega en dos partes:
+   primero **ver** (la pareja sube, el invitado mira, con audiencia por grupo),
+   después **subir desde el móvil** con moderación. Necesita decidir: quién
+   puede subir, si las fotos salen publicadas o a cola de moderación, y el tope
+   por boda.
+2. **`F3.2` Quiz (§8.7).** El de mayor valor por hora de trabajo: el juego ya
+   está escrito en el prototipo `wedding-quiz` y lo que falta es volverlo
+   multi-tenant y corregir en servidor. **Bloqueado por `D-11`** (si se puede
+   repetir partida y qué enseña el ranking), que es una decisión de dos
+   minutos.
+3. **`F2.8` Mesas (§8.5).** La herramienta interna que de verdad ahorra horas a
+   la pareja. Arrastrar invitados a las mesas, avisos de capacidad y de grupos
+   separados, y la hoja para el catering. Es la más grande de las tres.
+4. **`F2.3` Mapa (§8.6).** **Bloqueado por `D-04`** (qué librería). Arrastra los
+   enlaces `locationId` de la cronología y de los alojamientos, que están
+   escritos a `null` esperándolo.
+5. **`F3.3` Regalos (§8.14).** Pequeña y con valor directo: cuenta, Bizum y la
+   lista de lo recibido, que **no sale nunca de la sesión de la pareja**
+   (regla 7).
+6. **`F3.4` Lista de reproducción y `F3.5` libro de firmas.** Las dos son
+   pequeñas y de participación; van después porque se disfrutan en la boda, no
+   antes.
+7. **`F2.6` Personas importantes (§8.12)** y lo que quede de contenido:
+   moodboard del dress code (`F2.5b`), contacto de referencia (`F2.1c`).
+
+### Lo que desbloquea más, si quieres adelantar trabajo
+
+Tres decisiones de un minuto cada una, por lo que abren:
+
+- **`D-11`** (quiz) → desbloquea entero el módulo con mejor relación
+  valor/esfuerzo.
+- **`D-09`** (módulos con identidad en una boda en modo abierto) → la galería y
+  el libro de firmas necesitan saber **quién** sube o escribe, y en una boda sin
+  puerta no hay sesión.
+- **`D-04`** (librería de mapas) → el mapa y los dos enlaces que lo esperan.
+
+---
+
 ## F0.1 · Proyecto y entornos
 
 - [x] `F0.1.1` Proyecto Angular 22.1.7: enrutado, SCSS, estricto, **zoneless**, Vitest. Compila en 59,6 kB comprimidos
@@ -22,7 +95,7 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [ ] `F0.1.3` Crear los tres proyectos de Firebase (`dev`, `staging`, `prod`) en región europea
 - [x] `F0.1.4` `src/environments` con los tres entornos y `fileReplacements` en angular.json. Valores de Firebase pendientes de crear los proyectos
 - [x] `F0.1.5` Capa `core/firebase` sobre el SDK modular v12, repartida por rutas (D-17, D-18)
-- [ ] `F0.1.6` Levantar emuladores de Firestore, Auth, Functions y Storage
+- [x] `F0.1.6` Levantar emuladores de Firestore, Auth, Functions y Storage
 - [x] `F0.1.7` Estructura de carpetas con READMEs de intención en core, design-system, features y tests/rules
 - [x] `F0.1.8` i18n en runtime con Transloco y `public/i18n/es.json`. Descartado el i18n nativo: compila un bundle por idioma
 - [x] `F0.1.9` CI en GitHub Actions: lint, formato, tests unitarios, build de producción y batería de reglas contra el emulador, en dos jobs
@@ -52,18 +125,18 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.3.3` Lectura de `slugs/{slug}` y de la proyección pública, tras un puerto que permite probar la lógica sin emulador
 - [~] `F0.3.4` La web pública recibe el tenant resuelto por la ruta. El contexto compartido llega con el panel
 - [ ] `F0.3.5` Fallback por ruta `nupcialis.com/<slug>` para local y plan B
-- [x] `F0.3.5b` Semilla del emulador: cuatro bodas, una por estado, con la de cuarentena incluida para poder comprobar a mano que se comporta como inexistente
+- [-] `F0.3.5b` ~~Semilla del emulador: cuatro bodas, una por estado.~~ Retirada con D-33 junto al emulador. Las bodas de prueba se dan de alta desde `/superadmin` y se quedan.
 - [x] `F0.3.6` Cinco estados con su pantalla propia: publicada, no publicada, archivada, no encontrada y error
 - [ ] `F0.3.7` Configurar el hosting con wildcard `*.nupcialis.com` en `dev`
 
 ## F0.4 · Autenticación
 
-- [ ] `F0.4.1` Firebase Auth con email y contraseña, y Google
-- [ ] `F0.4.2` Cloud Function `setUserClaims` con Admin SDK
-- [ ] `F0.4.3` Dos cuentas de owner por boda sobre `ownerUids`
-- [ ] `F0.4.4` Claim `superadmin` y lista blanca de UIDs
-- [ ] `F0.4.5` Guardas de ruta por rol y por tenant
-- [ ] `F0.4.6` App Check en cliente, Firestore, Storage y Functions
+- [x] `F0.4.1` Firebase Auth con email y contraseña, y Google
+- [x] `F0.4.2` Cloud Function `setUserClaims` con Admin SDK (ver `F0.6.9`)
+- [x] `F0.4.3` Dos cuentas de owner por boda sobre `ownerUids`
+- [x] `F0.4.4` Claim `superadmin` y lista blanca de UIDs (ver `RE.2`)
+- [x] `F0.4.5` Guardas de ruta por rol y por tenant
+- [x] `F0.4.6` App Check en cliente, Firestore, Storage y Functions
 - [ ] `F0.4.8` Endurecer cookies de sesión: sin atributo `Domain`, prefijo `__Host-`, `Secure`, `HttpOnly`, `Path=/` y validación de `Origin`
 - [ ] `F0.4.7` Registro de accesos de los novios en `auditLog`
 
@@ -91,13 +164,12 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `F0.6.5` Trigger `recomputeCounters`
 - [x] `F0.6.6` Log de auditoría de las acciones de superadmin
 - [x] `F0.6.9` `setUserClaims`: asignar y revocar acceso a una boda
-- [~] `F0.6.V` **Verificación de extremo a extremo del alta contra el emulador.**
-  Escrita en `tools/probar-alta.mjs` (`npm run probar:alta`): permisos, alta,
-  semillas, proyección, los dos triggers, slug repetido y validación de
-  entrada. **Ejecutada solo a medias**: en el contenedor se pudieron levantar
-  Auth y Functions —y ahí pasan los pasos de permisos y validación— pero no
-  Firestore, cuyo JAR vive en un host bloqueado por la política de egreso.
-  Los pasos que tocan datos los tiene que correr Gabriel en su máquina.
+- [-] `F0.6.V` ~~Verificación de extremo a extremo del alta contra el emulador.~~
+  **Retirada con D-33**: `tools/probar-alta.mjs` y `npm run probar:alta` vivían
+  del emulador y se han borrado con él. Lo que comprobaba —permisos, alta,
+  semillas, proyección, los dos triggers, slug repetido y validación— se cubre
+  ahora dando de alta una boda de verdad desde `/superadmin`, que es lo que
+  cierra `RE.5`.
 - [ ] `F0.6.X` Alta real contra el proyecto de Firebase para comprobar el
       Identity Toolkit. **El emulador de Auth no implementa los dominios
       autorizados**, así que esta parte no se puede probar en local por
@@ -135,26 +207,328 @@ F0.1 se puede empezar en paralelo, solo necesita el repositorio.
 - [x] `PL.10` **Humo del panel**: las siete pantallas se montan, con datos y sin
       ellos. Ninguna se había ejecutado nunca: la guarda lo impedía.
 
+## F3 — Participación de invitados
+
+- [x] `F3.2` **Quiz de la boda** (§8.7). Hecho el lado del invitado de punta a
+      punta: dominio compartido, `startQuiz` / `submitQuiz` / `listQuizRanking`
+      con la corrección **en servidor** (regla de oro 4), la pantalla de juego
+      —una pregunta por pantalla, sin volver atrás, correcciones de golpe al
+      final—, su página propia en `/quiz` para poder mandarla por WhatsApp, y
+      la sección «El juego de la boda» que lleva hasta ella desde la web.
+      **Falta el panel**: banco de preguntas, ranking con teléfono para la
+      pareja, quién ha jugado y vaciar el ranking (`F3.2b`).
+- [x] `F3.2b` El quiz en el **panel de la pareja**. Dos pantallas:
+  - `/panel/quiz`, el banco: alta, edición, duplicado y borrado. Dice **cuántas
+    se pueden jugar**, que no es cuántas hay —el servidor solo pregunta las
+    enteras— y avisa si no llegan para una partida, que es el fallo que si no se
+    avisa se descubre el día de la boda.
+  - `/panel/quiz/ranking`: el ranking **con el teléfono** (`D-11`), para
+    distinguir a dos que se llamen igual, y vaciarlo con confirmación. No lista
+    a los invitados que no han jugado.
+- [x] `F2.8c` Al sentar a alguien que viene acompañado, las mesas **preguntan**
+      si sientan también a los suyos, y si no caben ofrecen **ampliar la mesa**
+      o dejarlos fuera. El máximo sigue siendo un aviso (§8.4).
+- [ ] `F3.2c` Del quiz quedan fuera, apuntados: **importar el banco desde CSV**,
+      el **banco de ejemplo** sembrado al crear la boda, la **vista previa** de
+      la partida desde el panel y las **estadísticas** de preguntas más falladas
+      (§8.7). Ninguna bloquea jugar.
+- [ ] `F3.1` **Galería** (§8.5). La siguiente en el orden por valor.
+
+## F2 — Banquete, ubicaciones y día
+
+- [x] `F2.8` **Reparto de mesas** (§8.4), con arrastrar y soltar. Tantas mesas
+      como haga falta, redondas o rectangulares, con mínimo y máximo **que
+      vienen puestos y la pareja cambia**: una redonda nace de 8 a 12 y una
+      rectangular de 12 a 50. Dos formas de sentar a alguien —arrastrar la
+      ficha, o tocarla y tocar la mesa— porque arrastrar en un móvil a través
+      de una lista con scroll es una pelea, y el panel se diseña primero para
+      móvil. Avisos y no bloqueos: mesa corta, mesa pasada y **acompañante
+      separado de quien lo apuntó**, que es el error que se descubre cuando ya
+      están sentados. Borrar una mesa devuelve a los suyos a la lista de
+      pendientes en vez de perderlos.
+- [ ] `F2.8b` De las mesas quedan fuera, apuntadas: **colocar las mesas en el
+      lienzo** (el campo `position` está en el modelo y no se usa todavía),
+      **colorear por grupo** para ver mesas mal mezcladas, y las
+      **exportaciones** a PDF y XLSX (§8.4).
+
+- [x] `F2.1` **Preguntas frecuentes** (§8.9), de punta a punta: las semillas de
+      fábrica ya existían y no se veían. Ahora viajan en la proyección pública
+      —cerradas al invitado en las reglas, con su batería de aislamiento—, se
+      publican solo las que tienen pregunta **y** respuesta, y en la web son
+      `<details>` agrupados por categoría, con buscador a partir de diez. En el
+      panel, `/panel/faqs`: lista con el aviso de las que están sin contestar,
+      editor con formato para la respuesta, grupo con sugerencias de los ya
+      usados, icono del set, encender y apagar, reordenar y borrar.
+- [x] `F2.1b` Las cuatro listas de contenido, en la **vista previa** del editor
+      de la web. Salían con el hueco vacío —la pareja encendía «Preguntas
+      frecuentes», no veía nada y no sabía si estaba roto o vacío—; ahora llegan
+      con sus datos de verdad y **pasadas por el saneador de la proyección**, así
+      que lo que no se publicaría tampoco se ve: una pregunta sin respuesta, un
+      hito interno, un alojamiento apagado. De paso, la portada de la vista
+      previa ya enseña los nombres de la pareja, que estaban en blanco.
+- [x] `F2.7` **Página de muestra de la web pública** (`/dev/previa`, solo en
+      desarrollo, como el catálogo del sistema visual). Las dos plantillas con
+      una boda entera de muestra —secciones, preguntas, cronología,
+      alojamientos y dress code— y con el caso de **boda recién creada**, sin
+      Firebase y sin gastar un dominio autorizado de Auth. Mirándola a 360 px
+      aparecieron cuatro fallos que no veía ninguno de los 747 tests, porque
+      ninguno mira píxeles. Los cuatro, arreglados en la misma entrega:
+  - **`link-simple` y `lock-simple` no estaban en el sprite público.** El enlace
+    «Ver la web» de cada alojamiento y el candado de la pantalla de
+    verificación salían en blanco. Ahora `iconos-publicos.spec.ts` falla si se
+    usa en la web pública un icono que no está en su sprite.
+  - **El icono se iba solo a una línea** en la ficha de alojamiento: el plazo de
+    las habitaciones y el código de reserva.
+  - **Una sección de evento sin rellenar dibujaba una caja vacía** debajo de su
+    título.
+  - **Una boda sin nombres pintaba un «&» suelto** (clásica) o una «y» sola
+    (botánica) en mitad de la portada. Es el primer estado de todas las bodas.
+- [x] `F2.7b` **Lo mismo para el panel** (`/dev/panel`): las cuatro pantallas de
+      contenido con datos de muestra **que se pueden tocar**, porque los dobles
+      guardan en memoria. Dos arreglos salieron de mirarlas a 360 px:
+  - **Las dos paletas del dress code van plegadas.** Desplegadas son sesenta
+    filas: la pantalla medía 2.580 px en un móvil. El resumen enseña los colores
+    elegidos con su muestra y su nombre —que es la información que importa— y la
+    rejilla se abre cuando se va a tocar. 1.105 px.
+  - **Los avisos de hueco de la cronología saltaban en una boda normal.** Casi
+    ningún hito lleva hora de fin, y suponer que acaban en cuanto empiezan
+    convertía en «hueco» todo rato entre dos cosas: cuatro avisos en una agenda
+    corriente. Ahora un hueco solo cuenta si el hito dice cuándo acaba. Un aviso
+    que salta siempre no lo lee nadie.
+- [ ] `F2.1c` **Contacto de referencia** de las preguntas frecuentes (§8.9): un
+      teléfono y un WhatsApp pulsables, normalmente de la wedding planner y no
+      de los novios el día de la boda. Falta decidir dónde se configura: es un
+      dato de la boda, no de una pregunta.
+- [ ] `F2.1d` `linkTo`: que una pregunta enlace a otro módulo —la del bus a la
+      cronología, la del parking al mapa—. Está en el modelo y no en la
+      pantalla, porque los módulos a los que enlazaría todavía no existen.
+- [x] `F2.2` **Cronología del día** (§8.13), de punta a punta: hitos con hora,
+      hora de fin opcional, icono del set y color de la paleta; los **internos**
+      —el montaje, cuándo llega el fotógrafo— se quedan fuera de la proyección
+      pública, que es lo único que de verdad lo protege; avisos de **solapes y
+      huecos** con los nombres de los hitos, calculados también sobre lo
+      interno; y en la web, línea de tiempo vertical con la hora destacada.
+      Entiende que **la boda acaba de madrugada**: «04:00» va al final.
+- [ ] `F2.2b` Enlazar un hito con una **ubicación del mapa** (§8.13). El campo
+      `locationId` se escribe a `null`; espera a `F2.3`.
+- [x] `F2.4` **Alojamientos** (§8.10), de punta a punta: fichas con tipo,
+      precio por noche, distancia, teléfono, web, código de reserva,
+      habitaciones bloqueadas y plazo. Viajan en la proyección pública con la
+      colección cerrada al invitado, como las otras dos listas. En la web, el
+      recomendado primero, el plazo con su urgencia contada en días y los
+      enlaces de llamar y reservar. En el panel, `/panel/accommodation`: avisa
+      de lo que el invitado va a notar —ficha sin nombre que no se publica,
+      plazo vencido o a punto de vencer, habitaciones bloqueadas sin fecha, y
+      ficha sin teléfono ni web— y guarda el teléfono y la web ya normalizados
+      con las mismas funciones que usa el servidor.
+- [ ] `F2.4b` Enlazar un alojamiento con una **ubicación del mapa** (§8.10). El
+      campo `locationId` se escribe a `null`; espera a `F2.3`.
+- [x] `F2.5` **Dress code** (§8.11): descripción con texto enriquecido, paleta de
+      colores sugeridos y a evitar —ids de una lista cerrada de 30 con nombre,
+      ver `D-38`— y avisos prácticos. En la web, las muestras con su nombre al
+      lado y las de «evitar» tachadas; en el panel, `/panel/dress-code`, con
+      aviso del color que está en las dos listas y de la sección que saldría con
+      el título solo. Se publica desde `modules.dressCode.config`, construido
+      campo a campo: ninguna configuración de módulo se copia a la proyección.
+- [ ] `F2.5b` **Moodboard** del dress code (§8.11): imágenes de referencia en
+      Storage. Comparte la maquinaria de subida con la foto de portada.
+- [ ] `F2.5c` **Indicaciones por rol o por grupo** en el dress code (§8.11):
+      distinto para el cortejo que para el resto. Espera a `F2.6` (personas
+      importantes), que es donde viven los roles.
+- [ ] `F2.3` **Mapa y ubicaciones** (§8.6). **Bloqueado por `D-04`**: hay que
+      elegir librería de mapas antes de escribir una línea.
+
 ## F1 · Invitados
 
 - [x] `F1.1` **Lista de invitados**: dominio (normalización de nombre y teléfono,
       duplicados), `listGuests`, `upsertGuest` y `deleteGuest`, y la pantalla del
       panel con alta manual, búsqueda y resumen. Todo por función invocable: la
       colección está cerrada a lectura directa (regla 2).
-- [ ] `F1.2` **Importación CSV/Excel** con previsualización, mapeo de columnas y
-      duplicados por teléfono (§8.3). Sin esto, doscientos invitados se teclean
-      a mano.
-- [ ] `F1.3` Grupos de invitados y asignación, con aviso de los restringidos
-- [ ] `F1.4` Enlace por invitado y compartir por WhatsApp
-- [ ] `F1.5` Acompañantes añadidos por el invitado (`addCompanion`)
-- [ ] `F1.6` Exportación a XLSX para el catering
-
+- [x] `F1.2` **Importación**: plantilla descargable, subir un CSV o pegar las
+      celdas, reconocimiento y ajuste de columnas, previsualización y
+      `importGuests`. La previsualización **es la misma llamada** que la
+      importación con una bandera, para que lo que se ve antes de confirmar sea
+      exactamente lo que va a pasar. Falta `.xlsx`: se abre de nuevo en F1.6,
+      con la exportación, para no meter una librería de 400 kB por una pantalla.
+- [x] `F1.2b` **Aceptar `.xlsx` directamente al subir**, con la misma librería
+      que la exportación. Se lee la primera hoja, las fechas llegan legibles y
+      las filas vacías del final no cuentan.
+- [x] `F1.3` **Grupos de invitados**: pantalla de grupos (color de la paleta
+      categórica, lado, audiencia de fotos con candado), asignación en la ficha
+      del invitado con aviso antes de guardar si quedan dos restringidos, y
+      columnas «Grupos» y «De quién» en la importación, que crea los grupos
+      que falten. `upsertGroup` y `deleteGroup`; la escritura directa desde el
+      cliente queda cerrada en las reglas (D-31).
+- [x] `F1.3a` **Arreglo de paso**: editar un invitado le borraba el mote, lo
+      pasaba a adulto y lo sacaba de sus grupos, porque el formulario no
+      llevaba esos campos y `upsertGuest` sobrescribe lo que valida.
+- [x] `F1.3b2` **Filtrar por confirmación y por quién no ha entrado**: las
+      cifras de la cabecera son los filtros. La pareja mira «pendientes: 84» y
+      lo que quiere es ver esos 84.
+- [x] `F1.3b` **Filtrar la lista por grupo**: los grupos, en chips debajo de
+      las cifras, con cuántos hay en cada uno. Se cruza con la cifra que esté
+      puesta —«sin contestar» + «Primos» es la lista con la que se ponen a
+      llamar—, y el número de cada chip cuenta dentro de ese filtro para que no
+      haya dos cifras que se contradigan.
+- [x] `F1.3c` **Ordenar los grupos**: subir y bajar con botones —no
+      arrastrando, que es PL.7c y otra discusión (D-29)—, y el orden entero se
+      guarda de una vez con `reorderGroups`. El orden se ve antes de que
+      conteste el servidor y se deshace si falla. Importa porque esa lista es
+      la que se mira al dar de alta a cada invitado, y por orden de creación
+      «Familia» acababa la sexta.
+- [ ] `F1.3d` **Gabriel**: la batería nueva de `guestGroups` corre sola en el
+      job `reglas` del CI al hacer push. En el contenedor de Claude no se puede:
+      el emulador de Firestore se descarga de un dominio que su red no alcanza.
+- [x] `F1.3e` **El grupo de todos** (D-31): todo invitado nuevo entra en
+      «Invitados», por alta manual o importación. Ese grupo no se borra ni lleva
+      candado. Los invitados que ya existían no se tocan.
+- [x] `F1.7` **Acceso de invitados**: modo elegible en «Datos de la boda» (A
+      abierta, B nombre y cuatro dígitos, C teléfono); `guestLogin` con App
+      Check, límite de intentos por boda e IP con espera creciente y una sola
+      respuesta de fallo (regla 3); `loginCount`, primera y última entrada y
+      `guestAccessLog`; y la puerta en la web pública, en un trozo diferido que
+      una boda abierta no descarga. Ver D-32.
+- [x] `F1.7b` **Quién eres y cómo salir**: barra «Estás viendo esto como
+      <nombre>» con «¿No eres tú?» encima de la portada, que cierra la sesión y
+      devuelve la puerta sin recargar. El nombre viaja en el claim `nombre` del
+      token, así que aguanta la recarga. D-34 lo hizo necesario: con un enlace
+      que entra solo, quien recibe uno reenviado está dentro como otra persona.
+- [x] `F1.7c` / `F0.7.4` **Quién ha entrado**: registro de accesos para la
+      pareja en `/panel/guests/accesos`, por días, con quién entró, a qué hora,
+      cómo (enlace o sus datos) y desde qué aparato. Arriba, el aviso de
+      invitaciones que circulan: tres tipos de aparato distintos o más para el
+      mismo invitado (D-34). Ni la IP ni el `user-agent` entero salen del
+      servidor.
+- [x] `F1.8f` La pantalla de respuestas **no tenía ruta**: se enlazaba desde
+      «Preguntas» y llevaba a una página en blanco. Arreglado, y con guardia
+      permanente (`src/app/rutas-enlazadas.spec.ts`) que comprueba que todo
+      `routerLink` escrito a mano lleva a una ruta declarada.
+- [ ] `F1.9b` **Gabriel**: esta entrega añade **tres dependencias**: `jodit` y
+      `ngx-jodit` en la raíz y `sanitize-html` en `functions/`. Hace falta
+      `npm install` **y** `npm run functions:install` antes de arrancar, y
+      `npm run deploy:functions` para que el saneado llegue a la proyección.
+- [ ] `F1.5d` **Gabriel**: `npm run deploy:functions` lleva `setCompanionQuota`,
+      `listAccessLog` y `reorderGroups`, que son las últimas en entrar.
+- [ ] `F1.7d` **Gabriel**: `npm run deploy:rules` lleva ahora un índice nuevo
+      (`guests` por `normalizedName` + `phoneLast4`). Sin él, el modo B falla
+      con un error de índice la primera vez que alguien intenta entrar.
+- [x] `F1.4` **Enlace por invitado y compartir por WhatsApp**: enlace con el
+      nombre en `?n=` —y nada más: el secreto no viaja (D-34)—, plantilla de
+      mensaje de la boda con marcadores, retoque por persona, botones de
+      WhatsApp y de copiar, aviso a quien no tiene teléfono, y la puerta
+      pública trayendo el nombre ya escrito.
+- [x] `D-34` **Acceso mixto**: el enlace abre la web, los cuatro dígitos
+      autorizan. `guestLinkLogin`, `verifyGuest`, `getInviteLink`, dos niveles en
+      el claim, el paso de «confirma que eres tú» en el formulario y el botón de
+      cambiar el enlace en el panel. Decidido por Gabriel el 2026-11-12.
+- [ ] `D-34b` **Gabriel**: hay tres funciones nuevas (`guestLinkLogin`,
+      `verifyGuest`, `getInviteLink`), así que toca `npm run deploy:functions`.
+      Los enlaces que ya hayas mandado con `?n=` siguen funcionando.
+- [ ] `F1.4c` **Comprobar F1.4 en tu navegador.** Es lo que me pediste y esta vez
+      no he podido: a las 22:55 tu `npm start` no estaba levantado, así que
+      `mms.localhost:4200` daba página de error. Lo que sí está cubierto, con
+      pruebas que fallan si se rompe: el enlace no lleva el secreto, la puerta
+      trae el nombre escrito y deja los dígitos vacíos, el mensaje se rehace al
+      cambiar la plantilla. Lo que no he visto con mis ojos: cómo queda el modal
+      en 360 px y que WhatsApp abra de verdad desde tu móvil.
+- [ ] `F1.4b` «¿A quién le falta el enlace?»: la lista no distingue a quién ya
+      se le ha compartido. Se sabrá de verdad con los contadores de acceso
+      (`F1.7c`), no apuntando el clic.
+- [x] `F1.8` **Formulario de confirmación (RSVP)**: dominio del formulario
+      (visibilidad condicional, validación por tipo, `mapsTo` con lista blanca,
+      fecha límite), `getRsvpForm` y `submitRsvp`, la pantalla del invitado con
+      los ocho tipos de campo y la entrada desde la web. Las preguntas de
+      sistema quedan protegidas en las reglas. Ver D-35.
+- [x] `F1.8b` **Editor de preguntas en el panel** (`/panel/rsvp`): la lista con
+      lo que ya hay, encender y apagar en un toque, reetiquetar, reordenar,
+      añadir y borrar las que no son de sistema. Las opciones se escriben una
+      por línea. En lugar de un constructor de condiciones, una casilla:
+      «preguntar solo a quien confirme que viene», que es la única condición que
+      se da en una boda de verdad.
+- [x] `F1.8c` **Fecha límite configurable**, en esa misma pantalla y no en
+      «Datos de la boda»: es donde la pareja la busca.
+- [x] `F1.8f` **Aviso al cambiar el tipo de una pregunta contestada**: antes de
+      guardar se cuenta cuántos la han contestado y, si hay alguno, el botón
+      pasa a «Cambiar de todas formas» con el número delante. No se borra nada:
+      las respuestas viejas se siguen viendo tal cual en «Lo que han
+      contestado», que ya sabe enseñar valores que no están en las opciones.
+- [x] `F1.8d` **Lo que han contestado** (`/panel/rsvp/respuestas`): los menús y
+      los autobuses contados, y **los mensajes y las canciones leídos uno a uno
+      con quién los escribió**. Eso último no se veía en ninguna parte: vivía en
+      `rsvpAnswers` y no salía ni en la lista, ni en la ficha, ni en la
+      exportación.
+- [x] `F1.8g` **Lo escrito, en la hoja de cálculo**: tercera hoja
+      «Respuestas», una columna por pregunta de texto y solo las filas de quien
+      escribió algo. No va en la del catering. Se pide al pulsar exportar, no
+      al abrir la pantalla, y si falla esa llamada el fichero sale igual con
+      sus dos hojas de siempre.
+- [x] `F1.8h` **Del recuento a los nombres**: pulsar «vegano, 23» abre los
+      nombres de esos 23, debajo de la barra. Un número suelto no sirve para
+      hacer nada; con los nombres se avisa al catering o se mueve una mesa. Uno
+      abierto cada vez, y lo que está a cero no se puede abrir.
+- [ ] `F1.8e` **Gabriel**: `npm run deploy:functions` lleva dos funciones nuevas
+      (`getRsvpForm`, `submitRsvp`) y `npm run deploy:rules`, la regla que
+      protege las preguntas de sistema.
+- [x] `F1.5` **Acompañantes añadidos por el invitado**: dominio del cupo y de la
+      herencia, `addCompanion` y `deleteCompanion`, la sección en la web del
+      invitado, el interruptor en «Datos de la boda» y, en la lista del panel,
+      quién trae a quién.
+- [ ] `F1.5d` **Gabriel**: `.github/workflows/ci.yml` es el único fichero que no
+      te puedo escribir (el puente a tu disco lo protege, y me parece bien). El
+      cambio es un paso más en el job de functions, justo después de
+      «Compilar»: `- name: Lint` con `run: npm --prefix functions run lint`.
+      Está en mi commit; en tu copia hay que pegarlo a mano.
+- [x] `F1.5b` **Cupo de acompañantes en lote**: se le pone a todos los que se
+      estén viendo, aprovechando los filtros —«los amigos, uno cada uno» es
+      filtrar por ese grupo y elegir 1—. El botón dice a cuántos afecta antes
+      de pulsarlo; los acompañantes se omiten y bajar el cupo no echa a nadie.
+      Nueva invocable `setCompanionQuota`.
+- [x] `F1.5c` **Aviso de quién ha apuntado a quién**: encima de la lista, un
+      aviso con los nombres cuando los invitados han apuntado a alguien **en
+      los últimos siete días**, y un botón que deja la lista con ellos. La
+      cifra «Los han apuntado» se queda en la cabecera mientras haya alguno.
+      Una semana y no «desde tu última visita»: esa marca habría que escribirla
+      en cada entrada al panel y con dos novios uno pisa la del otro.
+- [x] `F1.6` **Exportación a XLSX**: dos hojas, la lista entera de la pareja y
+      una para el catering sin teléfonos ni notas. Se monta en el navegador y la
+      librería se carga al pulsar.
+- [ ] `F1.6b` **Gabriel**: esta entrega añade dos dependencias
+      (`write-excel-file` y `read-excel-file`), así que en tu copia hace falta
+      un `npm install` antes de `npm start`. Ver D-37.
+- [x] `F1.9` **Texto enriquecido en la web pública**, con Jodit en el panel y
+      el saneado en el servidor (regla de oro 5). Confirmado D-03 el
+      2026-11-13 y cerrada la contradicción con §12.3. - **El saneado vive en el servidor**, en `functions/src/dominio/html.ts`,
+      y se aplica en la proyección pública justo antes de publicar: lo que
+      decida el navegador de la pareja no protege a nadie. Lista blanca
+      corta: párrafos, negrita, cursiva, subrayado, tachado, listas, `h3`,
+      `h4`, cita y enlaces. Los enlaces salen con `target="_blank"` y
+      `rel="noopener noreferrer"`, y solo con `http`, `https`, `mailto` y
+      `tel`. - **Lo que ya estaba escrito en texto plano no se rompe**: si no trae ni
+      una etiqueta, los saltos de línea se convierten en párrafos. - **El editor se carga aparte**: Jodit pesa 600 kB y vive en su propio
+      chunk, detrás de un `@defer` en el editor de secciones. Si no cargara,
+      queda el área de texto de siempre. - **La barra del editor no ofrece nada que el servidor vaya a tirar**: lo
+      cruza `editor-rico.spec.ts` leyendo las dos listas. - Las reglas de estilo del texto enriquecido son globales
+      (`design-system/components/rich-text.scss`): son iguales para todas las
+      plantillas y así no se come el presupuesto de 4 kB por componente. - De camino: el cupo en lote y el filtro por grupos salen a sus propios
+      componentes, que es lo que devolvió a `invitados.ts` por debajo de ese
+      presupuesto.
 - [ ] `PL.7c` Reordenar **arrastrando**, que es lo que pide REQUISITOS §8.1. Hoy
       son botones de subir y bajar: accesibles y buenos en móvil, pero no es lo
       acordado. Ver D-29.
-- [ ] `F0.7.4` Vista de registro de accesos de los novios
-- [ ] `F0.7.5` Resumen inicial del panel de la pareja
-- [ ] `F0.7.6` Carga diferida verificada: el bundle público no arrastra código del panel
+- [x] `F0.7.4` Vista de registro de accesos de los novios — hecha con `F1.7c`
+- [x] `F0.7.5` **Resumen del panel**: cuenta atrás, cuántos han dicho que
+      vienen y cuántos han abierto la web —cada cifra lleva a su lista—, la
+      lista de lo que falta (calculada, no mantenida a mano) y los atajos a las
+      respuestas del formulario y a los invitados. De camino se arregló que el
+      menú enlazaba los dieciocho módulos del catálogo a `/panel/<modulo>`:
+      los que no tienen pantalla llevaban a una página en blanco y ahora salen
+      apagados con «En camino». Lo vigila `rutas-enlazadas.spec.ts`.
+- [x] `F0.7.6` **Carga diferida verificada**: `src/app/arranque-publico.spec.ts`
+      recorre los `import` alcanzables desde la raíz pública —sin seguir los
+      `import()` diferidos, que son justo lo que separa los chunks— y falla si
+      alguno llega al panel o al superadmin. Encontró uno de verdad: la
+      envoltura pública importaba `features/panel/invitados/invitacion` solo
+      para leer el nombre del enlace. Eso vive ahora en `core/acceso`.
 - [ ] `F0.7.7` **Datos de cobro en el alta de boda**: plan, importe cobrado, método
       (`bizum` o `partner_cash`), fecha y proveedor. Hace falta desde la primera
       venta; si se deja para F5 hay que rellenar a mano lo ya vendido. Ver D-25.
@@ -172,15 +546,15 @@ Antes que plantillas, paletas y resúmenes. Ver `PUESTA-EN-MARCHA.md` bloque 7.
 - [x] `RE.1` Entorno para levantar la app contra el proyecto real (`npm run start:real`)
 - [x] `RE.2` Script para conceder el claim de superadmin, con las protecciones de la clave
 - [x] `RE.3` **Activar Blaze.** Hecho el 2026-09-16
-- [ ] `RE.4` `npm run deploy:rules` y `npm run deploy:functions` — **G**
+- [x] `RE.4` `npm run deploy:rules` y `npm run deploy:functions` — **G**
       Vuelve a hacer falta: `setWeddingStatus` es una función nueva y hasta que
       no se despliegue, los botones de publicar responden `not-found`.
-- [ ] `RE.4b` **Configurar App Check en el cliente**: clave de **reCAPTCHA
+- [x] `RE.4b` **Configurar App Check en el cliente**: clave de **reCAPTCHA
       Enterprise** (de tipo web y basada en puntuación) en `appCheckSiteKey`, y
       token de depuración para `localhost`. No confundirla con el `apiKey` ni el
       `appId` de Firebase, que son otra cosa y ya están puestos. Sin esto toda
       invocable responde 401. Ver `PUESTA-EN-MARCHA.md` bloque 7 — **G**
-- [ ] `RE.5` Alta real de una boda desde `/superadmin` contra el proyecto — **G**
+- [x] `RE.5` Alta real de una boda desde `/superadmin` contra el proyecto (`mms`) — **G**
 - [ ] `RE.6` Comprobar el subdominio en Authentication → Authorized domains (cierra `F0.6.X`) — **G**
 - [ ] `RE.7` Proyecto de Firebase aparte para producción, antes de la primera pareja que pague
 - [ ] `RE.8` **Servir `Cross-Origin-Opener-Policy: same-origin-allow-popups` en producción**
@@ -196,10 +570,19 @@ Antes que plantillas, paletas y resúmenes. Ver `PUESTA-EN-MARCHA.md` bloque 7.
 - [x] `PL.3` La paleta de marca de la boda llega como variables CSS `--np-marca-*`
 - [x] `PL.4` Solo se descarga la tipografía de la plantilla elegida
 - [x] `PL.5` Selector de plantilla en el panel, con miniatura viva de cada una
-- [ ] `PL.6` Selector de paleta de marca, de la paleta categórica y sin hexadecimal libre
-- [ ] `PL.8` Test de aislamiento: la pareja puede escribir `theme` y sigue sin poder
-      tocar los campos de sistema. El panel ya escribe ahí; la batería no lo cubre.
-- [ ] `PL.7` Secciones de la portada más allá de nombres, fecha y cuenta atrás
+- [x] `PL.8` Test de aislamiento: la pareja **sí** puede escribir lo suyo
+      —`theme`, la paleta, la portada, `content.sections`, `guestAccessMode`,
+      `indexable`, la configuración de un módulo y el plazo del RSVP— y sigue sin
+      poder tocar los campos de sistema. Lo que estaba probado era solo la mitad
+      de abajo: si alguien endureciera la regla de más, el panel dejaría de
+      guardar y no había nada que lo dijera. Corre en el job `reglas` del CI.
+- [ ] `PL.9` **El interruptor de un módulo no debería ser de la pareja.** Decide
+      lo que entra en su plan y lo mueve el superadmin, pero hoy las reglas lo
+      dejan escribir (`modules.<x>.enabled` no es campo de sistema). Hay un test
+      en `campos-de-sistema.spec.ts` que lo documenta como deuda; al cerrarlo,
+      pasa de `assertSucceeds` a `assertFails`. Ojo al cerrarlo: la pareja **sí**
+      tiene que poder escribir `modules.<x>.config`, que es donde vive el
+      contenido del dress code y el plazo del RSVP.
 
 ---
 

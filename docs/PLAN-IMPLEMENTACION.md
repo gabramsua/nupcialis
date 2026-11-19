@@ -4,7 +4,70 @@ Documento de ejecución. Qué se construye, en qué orden y cuándo se considera
 terminado. El _qué_ y el _por qué_ están en `REQUISITOS.md`; aquí está el _cómo_ y
 el _cuándo_.
 
-**Estado actual: F0 sin empezar.**
+## Dónde estamos
+
+_Actualizado el 2026-11-16. Se revisa cada vez que se cierra un bloque._
+
+| Fase                                | Estado                  | Qué falta                                                                                    |
+| ----------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
+| **F0** Fundaciones                  | Hecha en lo que bloquea | Infraestructura de producción (tres proyectos, hosting wildcard) y datos de cobro en el alta |
+| **F1** Núcleo vendible              | **En curso**            | Ver el desglose de abajo                                                                     |
+| **F2** Banquete, ubicaciones y día  | **En curso**            | Mapa (bloqueado por `D-04`), mesas, dress code y las sueltas de `TAREAS.md`                  |
+| **F3** Participación de invitados   | Sin empezar             | Todo                                                                                         |
+| **F4** Gestión interna de la pareja | Sin empezar             | Todo                                                                                         |
+| **F5** Comercialización             | Sin empezar             | Todo. No bloquea la primera venta                                                            |
+
+**F1, bloque a bloque**, en el orden en que se van a hacer:
+
+| #   | Bloque                                                                         | Estado |
+| --- | ------------------------------------------------------------------------------ | ------ |
+| 1   | Web pública: plantillas, paleta, portada, secciones y edición con vista previa | Hecho  |
+| 2   | Lista de invitados: alta, búsqueda, resumen                                    | Hecho  |
+| 3   | Importación desde CSV o pegando, con plantilla y previsualización              | Hecho  |
+| 4   | Grupos, con candado para las fotos y el grupo de todos                         | Hecho  |
+| 5   | **Acceso de invitados**: modos A, B y C, `guestLogin`, contadores de acceso    | Hecho  |
+| 6   | Enlace por invitado y compartir por WhatsApp                                   | Hecho  |
+| 7   | Formulario de confirmación (RSVP) dinámico                                     | Hecho  |
+| 8   | Acompañantes añadidos por el invitado (`addCompanion`)                         | Hecho  |
+| 9   | Exportación a Excel para el catering                                           | Hecho  |
+| 10  | Texto enriquecido en la web pública, con saneado en servidor                   | Hecho  |
+
+El acceso va antes que el enlace por WhatsApp aunque en `TAREAS.md` apareciera
+después: el enlace lleva al invitado a una pantalla donde tiene que poder
+entrar, y el RSVP y los acompañantes necesitan saber quién es.
+
+**Los nueve bloques están cerrados**, y encima de ellos ya están hechas las
+tareas sueltas que les faltaban: filtrar por grupo y ordenar los grupos, el
+cupo de acompañantes en lote, el aviso de a quién han apuntado los invitados,
+«Quién ha entrado» (el registro de accesos), las respuestas del formulario en
+el panel y en la hoja de cálculo, y los dos niveles de sesión de D-34 con su
+«¿no eres tú?» en la web del invitado.
+
+**Los diez bloques están cerrados**, el décimo el 2026-11-13 al confirmarse
+D-03. Lo único que queda de F1 es la **comprobación en el navegador** con una
+boda de prueba: cargar cien invitados, mandarles el enlace, entrar como
+invitado, confirmar con acompañantes y exportar para el catering. Es lo que
+convierte «los tests pasan» en «F1 está terminada», y no lo puedo hacer yo.
+
+**F1 está terminada cuando** una pareja de prueba carga 100 invitados, los invita
+por WhatsApp, ellos entran, confirman con acompañantes y la pareja exporta la
+lista para el catering.
+
+**F2 está empezada** mientras esa comprobación espera, porque no depende de
+ella. Hechos los cuatro módulos de contenido del plan básico que salían «En camino»
+en el menú de la pareja: **preguntas frecuentes** (`F2.1`), **cronología del
+día** (`F2.2`), **alojamientos** (`F2.4`) y **dress code** (`F2.5`). Los tres
+primeros con el mismo patrón —dominio compartido en copia literal entre
+funciones y cliente, lo publicable viajando en la proyección pública y la
+colección cerrada al invitado en las reglas, con su batería de aislamiento—; el
+dress code es la excepción porque no es una lista: vive en
+`modules.dressCode.config` y lo que se publica se construye campo a campo,
+porque ninguna configuración de módulo se copia a la proyección.
+
+Del dress code faltan a propósito el **moodboard** (`F2.5b`) y las indicaciones
+por rol o grupo (`F2.5c`), apuntadas en `D-38`. El **mapa** (`F2.3`) está
+bloqueado por `D-04` y arrastra los enlaces `locationId` de la cronología y de
+los alojamientos.
 
 ---
 

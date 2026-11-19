@@ -1,10 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
+import type { ModoAcceso } from '../../core/acceso/acceso';
 import { SessionStore } from '../../core/auth/session.store';
 import type { ColoresPaleta } from '../public-site/paletas/paletas';
 import type { Seccion } from '../public-site/secciones/secciones';
 import { menuDeModulos, modulosNoVisibles, type BodaDelPanel } from './boda';
 import { crearFuenteBodaFirestore } from './boda.firestore';
+import type { DressCodeParaGuardar } from './boda.firestore';
+import { sanearDressCode } from '../public-site/dress-code/dress-code';
 
 type Estado = 'cargando' | 'lista' | 'sin-boda' | 'error';
 
@@ -129,6 +132,30 @@ export class BodaStore {
     }
   }
 
+  /**
+   * Guarda el dress code (§8.11).
+   *
+   * Lo que se escribe son **ids** de la lista cerrada de colores, no
+   * hexadecimales: así ni el panel ni la web pueden acabar pintando un color
+   * que no tenga nombre.
+   */
+  async guardarDressCode(dress: DressCodeParaGuardar): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarDressCode(boda.weddingId, dress);
+      this._boda.set({
+        ...boda,
+        dressCode: sanearDressCode({ ...dress }),
+      });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
   /** Guarda las secciones de la web pública. */
   async guardarSecciones(secciones: readonly Seccion[]): Promise<boolean> {
     const boda = this._boda();
@@ -145,6 +172,62 @@ export class BodaStore {
   }
 
   /** Fija o borra la hora de la ceremonia. */
+  async guardarMensajeInvitacion(inviteMessage: string): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarMensajeInvitacion(boda.weddingId, inviteMessage);
+      this._boda.set({ ...boda, inviteMessage });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  async guardarAcompanantes(allowGuestAddedCompanions: boolean): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarAcompanantes(boda.weddingId, allowGuestAddedCompanions);
+      this._boda.set({ ...boda, allowGuestAddedCompanions });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  async guardarFechaLimite(rsvpDeadline: Date | null): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarFechaLimite(boda.weddingId, rsvpDeadline);
+      this._boda.set({ ...boda, rsvpDeadline });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  async guardarModoAcceso(guestAccessMode: ModoAcceso): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda || boda.guestAccessMode === guestAccessMode) return true;
+
+    try {
+      await this.fuente.guardarModoAcceso(boda.weddingId, guestAccessMode);
+      this._boda.set({ ...boda, guestAccessMode });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
   async guardarHora(weddingTime: string | null): Promise<boolean> {
     const boda = this._boda();
     if (!boda) return false;

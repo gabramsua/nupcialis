@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cargarTenant, type ResultadoTenant } from './tenant-loader';
 import { EntradaSlug, FuenteTenant, SitioPublico } from './tenant-source';
+import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-code';
 
 const SITIO: SitioPublico = {
   status: 'active',
@@ -11,7 +12,13 @@ const SITIO: SitioPublico = {
   timezone: 'Europe/Madrid',
   locale: 'es',
   indexable: false,
+  guestAccessMode: 'open',
   secciones: [],
+  faqs: [],
+  cronologia: [],
+  alojamientos: [],
+  dressCode: DRESS_CODE_VACIO,
+  modulos: { rsvp: 'visible' },
 };
 
 function fuente(

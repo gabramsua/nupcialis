@@ -10,13 +10,15 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only functions,firestore,auth",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
   },
   "dependencies": {
+    "@types/sanitize-html": "^2.16.2",
     "firebase-admin": "^14.4.0",
-    "firebase-functions": "^7.3.2"
+    "firebase-functions": "^7.3.2",
+    "sanitize-html": "^2.18.2"
   },
   "devDependencies": {
     "typescript": "~5.9.2",

@@ -2,8 +2,20 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../../design-system/icons/icon';
+import { NpFaqsPublicas } from '../../faqs/faqs-publicas';
+import { NpCronologiaPublica } from '../../cronologia/cronologia-publica';
+import { NpAlojamientosPublicos } from '../../alojamientos/alojamientos-publicos';
+import { NpDressCodePublico } from '../../dress-code/dress-code-publico';
+import { NpQuizLlamada } from '../../quiz/quiz-llamada';
 import { fechaLarga } from '../../../../shared/fecha';
-import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
+import {
+  cuentaAtras,
+  elNombreQueHaya,
+  hayNombres,
+  losDosNombres,
+  seccionesVisibles,
+  type DatosPortada,
+} from '../portada';
 
 /**
  * Plantilla «Clásica»: papel claro, serifa y mucho aire.
@@ -15,7 +27,15 @@ import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
  */
 @Component({
   selector: 'np-plantilla-clasica',
-  imports: [TranslocoDirective, NpIcon],
+  imports: [
+    TranslocoDirective,
+    NpIcon,
+    NpFaqsPublicas,
+    NpCronologiaPublica,
+    NpAlojamientosPublicos,
+    NpDressCodePublico,
+    NpQuizLlamada,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -30,11 +50,17 @@ import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
             {{ t('publico.nosCasamos') }}
           </p>
 
-          <h1 class="clasica__nombres">
-            <span>{{ datos().nombres.partnerA }}</span>
-            <span class="clasica__amperson">&amp;</span>
-            <span>{{ datos().nombres.partnerB }}</span>
-          </h1>
+          @if (hayNombres()) {
+            <h1 class="clasica__nombres">
+              @if (losDos()) {
+                <span>{{ datos().nombres.partnerA }}</span>
+                <span class="clasica__amperson">&amp;</span>
+                <span>{{ datos().nombres.partnerB }}</span>
+              } @else {
+                <span>{{ unNombre() }}</span>
+              }
+            </h1>
+          }
 
           @if (fecha(); as escrita) {
             <p class="clasica__fecha">
@@ -77,31 +103,57 @@ import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
 
           @switch (seccion.type) {
             @case ('texto') {
-              <!-- Los saltos que escribió la pareja se respetan con CSS, sin
-                   admitir una sola etiqueta: esto es texto plano hasta que
-                   exista el saneado en servidor (regla 5). -->
-              <p class="clasica__parrafo">{{ seccion.fields['texto'] }}</p>
+              <!--
+                HTML, y no texto plano: lo que la pareja escribe con la barra
+                de formato llega ya **saneado desde el servidor** (regla de oro
+                5, en dominio/html.ts de las funciones). Angular lo vuelve a
+                sanear al pintarlo, que es la segunda red y no estorba.
+              -->
+              <div class="np-rico clasica__rico" [innerHTML]="seccion.fields['texto']"></div>
+            }
+            @case ('preguntas') {
+              <np-faqs-publicas [faqs]="datos().faqs" />
+            }
+            @case ('cronologia') {
+              <np-cronologia-publica [cronologia]="datos().cronologia" />
+            }
+            @case ('alojamientos') {
+              <np-alojamientos-publicos [alojamientos]="datos().alojamientos" />
+            }
+            @case ('dressCode') {
+              <np-dress-code-publico [dressCode]="datos().dressCode" />
+            }
+            @case ('quiz') {
+              <np-quiz-llamada />
             }
             @case ('evento') {
-              <dl class="clasica__evento">
-                @if (seccion.fields['hora']) {
-                  <div>
-                    <dt><np-icon name="clock" />{{ t('publico.seccion.hora') }}</dt>
-                    <dd>{{ seccion.fields['hora'] }}</dd>
-                  </div>
-                }
-                @if (seccion.fields['lugar']) {
-                  <div>
-                    <dt><np-icon name="map-pin" />{{ t('publico.seccion.lugar') }}</dt>
-                    <dd>
-                      {{ seccion.fields['lugar'] }}
-                      @if (seccion.fields['direccion']; as direccion) {
-                        <span class="clasica__direccion">{{ direccion }}</span>
-                      }
-                    </dd>
-                  </div>
-                }
-              </dl>
+              <!--
+                El marco solo se pinta si hay algo dentro. Una sección de
+                evento recién encendida y sin rellenar dibujaba una caja vacía
+                debajo del título, que parece un fallo de la web y no una
+                sección a medio escribir.
+              -->
+              @if (seccion.fields['hora'] || seccion.fields['lugar']) {
+                <dl class="clasica__evento">
+                  @if (seccion.fields['hora']) {
+                    <div>
+                      <dt><np-icon name="clock" />{{ t('publico.seccion.hora') }}</dt>
+                      <dd>{{ seccion.fields['hora'] }}</dd>
+                    </div>
+                  }
+                  @if (seccion.fields['lugar']) {
+                    <div>
+                      <dt><np-icon name="map-pin" />{{ t('publico.seccion.lugar') }}</dt>
+                      <dd>
+                        {{ seccion.fields['lugar'] }}
+                        @if (seccion.fields['direccion']; as direccion) {
+                          <span class="clasica__direccion">{{ direccion }}</span>
+                        }
+                      </dd>
+                    </div>
+                  }
+                </dl>
+              }
               @if (seccion.fields['nota']; as nota) {
                 <p class="clasica__parrafo">{{ nota }}</p>
               }
@@ -251,6 +303,12 @@ import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
       text-align: center;
       text-wrap: balance;
     }
+    /* El color y poco más: las reglas del texto enriquecido son globales
+       (design-system/components/rich-text.scss), porque son las mismas para
+       todas las plantillas y aquí hay 4 kB de presupuesto por componente. */
+    .clasica__rico {
+      color: color-mix(in srgb, var(--texto) 85%, transparent);
+    }
     .clasica__parrafo {
       margin: 0;
       white-space: pre-line;
@@ -293,6 +351,10 @@ import { cuentaAtras, seccionesVisibles, type DatosPortada } from '../portada';
   `,
 })
 export class PlantillaClasica {
+  /** La portada no pinta el título si la boda todavía no tiene nombres. */
+  protected readonly hayNombres = computed(() => hayNombres(this.datos().nombres));
+  protected readonly losDos = computed(() => losDosNombres(this.datos().nombres));
+  protected readonly unNombre = computed(() => elNombreQueHaya(this.datos().nombres));
   readonly datos = input.required<DatosPortada>();
 
   /**

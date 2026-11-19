@@ -12,9 +12,11 @@
  * justamente el que convierte una sesión de una boda en un lector de las demás.
  */
 
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
+import { conGrupoPorDefecto, idGrupoPorDefecto, validarAsignacion } from './dominio/grupos';
+import { MAX_INVITADOS } from './dominio/importacion';
 import {
   duplicadoDe,
   validarInvitado,
@@ -23,16 +25,18 @@ import {
 } from './dominio/invitados';
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { auditar } from './infra/auditoria';
+import { leerGrupos } from './groups';
 import { exigirPareja } from './infra/permisos';
-
-/** Tope por boda. Una boda de más de mil invitados no es nuestro caso de uso. */
-const MAX_INVITADOS = 1000;
 
 /**
  * Lo que se devuelve al panel de la pareja.
  *
  * Se recorta a propósito: el panel no necesita `rsvpAnswers` en el listado, y
  * mandarlo multiplica por cinco lo que viaja para pintar una tabla.
+ *
+ * `menu`, `allergies` y `tableId` sí entran: son tres cadenas cortas y son
+ * justo lo que la pareja exporta para el catering (§8.3). Pedirlas en otra
+ * llamada obligaría a leer la colección entera por segunda vez.
  */
 interface InvitadoEnLista {
   readonly id: string;
@@ -49,6 +53,18 @@ interface InvitadoEnLista {
   readonly maxCompanions: number;
   readonly loginCount: number;
   readonly notes: string;
+  readonly menu: string;
+  readonly allergies: string;
+  readonly tableId: string | null;
+  /**
+   * Si lo apuntó un invitado desde la web, no la pareja desde el panel.
+   *
+   * Hace falta en la lista para poder avisar: hasta ahora la pareja solo se
+   * enteraba de un acompañante nuevo mirando la lista con atención (F1.5c).
+   */
+  readonly apuntadoPorInvitado: boolean;
+  /** Cuándo se dio de alta, en ISO, o `null` si el documento es anterior. */
+  readonly altaEn: string | null;
 }
 
 function aLista(id: string, d: Record<string, unknown>): InvitadoEnLista {
@@ -72,6 +88,11 @@ function aLista(id: string, d: Record<string, unknown>): InvitadoEnLista {
     maxCompanions: entero(d['maxCompanions']),
     loginCount: entero(d['loginCount']),
     notes: texto(d['notes']),
+    menu: texto(d['menu']),
+    allergies: texto(d['allergies']),
+    tableId: typeof d['tableId'] === 'string' ? d['tableId'] : null,
+    apuntadoPorInvitado: d['addedBy'] === 'guest',
+    altaEn: d['createdAt'] instanceof Timestamp ? d['createdAt'].toDate().toISOString() : null,
   };
 }
 
@@ -102,6 +123,17 @@ export const upsertGuest = onCall<EntradaUpsert>(
     if (!validado.ok) {
       throw new HttpsError('invalid-argument', 'Revisa los datos del invitado.', {
         motivos: validado.motivos,
+      });
+    }
+
+    // Los grupos se comprueban contra los de la boda: que existan, y que no
+    // quede en dos restringidos (§8.5). Con el mismo error y el mismo formato
+    // que el resto de campos, para que la pantalla lo cuente igual.
+    const grupos = await leerGrupos(db(), weddingId);
+    const motivosGrupo = validarAsignacion(validado.datos.groupIds, grupos);
+    if (motivosGrupo.length > 0) {
+      throw new HttpsError('invalid-argument', 'Revisa los grupos del invitado.', {
+        motivos: motivosGrupo,
       });
     }
 
@@ -154,6 +186,9 @@ export const upsertGuest = onCall<EntradaUpsert>(
 
     const creado = await coleccion.add({
       ...validado.datos,
+      // Todo invitado nuevo entra en el grupo de todos (D-31). Solo al crear:
+      // al editar manda lo que la pareja haya marcado, también si lo quitó.
+      groupIds: conGrupoPorDefecto(validado.datos.groupIds, idGrupoPorDefecto(grupos)),
       isCompanion: false,
       invitedById: null,
       addedBy: 'owner',

@@ -208,6 +208,11 @@
           "id": "steering-wheel",
           "etiqueta": "Chófer",
           "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "user-circle",
+          "etiqueta": "Quién eres",
+          "surfaces": ["public", "panel"]
         }
       ]
     },
@@ -302,7 +307,7 @@
         {
           "id": "lock-simple",
           "etiqueta": "Privado",
-          "surfaces": ["panel"]
+          "surfaces": ["public", "panel"]
         }
       ]
     },
@@ -558,6 +563,26 @@
           "id": "playlist",
           "etiqueta": "Playlist",
           "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "copy",
+          "etiqueta": "Copiar",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "link-simple",
+          "etiqueta": "Enlace",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "arrows-clockwise",
+          "etiqueta": "Cambiar el enlace",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "chat-circle-text",
+          "etiqueta": "Respuestas",
+          "surfaces": ["panel"]
         }
       ]
     }

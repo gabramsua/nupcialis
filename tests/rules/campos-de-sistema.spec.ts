@@ -58,6 +58,42 @@ describe('campos de sistema: los mueve el servidor, no la pareja', () => {
     );
   });
 
+  /**
+   * `PL.8`. El panel escribe en `theme`, `content` y `modules` desde que existe
+   * el editor de la web, y la batería no lo cubría: lo que estaba probado era
+   * que no puede escribir lo de sistema, no que **sí** pueda escribir lo suyo.
+   * Si alguien endureciera la regla de más, el panel entero dejaría de guardar
+   * y esto es lo que lo diría.
+   */
+  describe('lo que el panel sí escribe', () => {
+    it.each([
+      ['theme', { theme: { templateId: 'botanica', palette: null } }],
+      ['content.sections', { 'content.sections': [{ id: 'portada', type: 'portada', order: 0 }] }],
+      ['la paleta sola', { 'theme.palette': { accent: '#123456' } }],
+      ['la foto de portada', { 'theme.heroImagePath': 'weddings/x/hero/a.jpg' }],
+      ['guestAccessMode', { guestAccessMode: 'name_phone4' }],
+      ['indexable', { indexable: true }],
+      ['la configuración de un módulo', { 'modules.dressCode.config.description': '<p>x</p>' }],
+      ['el plazo del RSVP', { 'modules.rsvp.config.deadline': new Date('2027-05-01') }],
+    ])('puede escribir %s', async (_que, payload) => {
+      const db = ownerOf(env, WEDDING_A);
+      await assertSucceeds(updateDoc(doc(db, 'weddings', WEDDING_A), payload));
+    });
+
+    /**
+     * El interruptor de un módulo **no** es de la pareja: decide lo que entra
+     * en su plan, y por eso lo mueve el superadmin. Que hoy las reglas lo
+     * dejen pasar es una deuda conocida y está apuntada; cuando se cierre,
+     * este test cambia de `assertSucceeds` a `assertFails` y se queda.
+     */
+    it('hoy puede encender un módulo, y no debería (deuda conocida)', async () => {
+      const db = ownerOf(env, WEDDING_A);
+      await assertSucceeds(
+        updateDoc(doc(db, 'weddings', WEDDING_A), { 'modules.gallery.enabled': true }),
+      );
+    });
+  });
+
   it('NO puede crear ni borrar la boda', async () => {
     const db = ownerOf(env, WEDDING_A);
     await assertFails(setDoc(doc(db, 'weddings', 'boda-inventada'), { slug: 'x' }));

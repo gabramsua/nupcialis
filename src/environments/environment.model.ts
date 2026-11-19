@@ -10,8 +10,6 @@ export interface AppEnvironment {
   readonly production: boolean;
   /** Dominio raíz sobre el que se resuelve el subdominio de cada boda. */
   readonly rootDomain: string;
-  /** Usar los emuladores locales en vez de los servicios reales. */
-  readonly useEmulators: boolean;
   readonly firebase: {
     readonly apiKey: string;
     readonly authDomain: string;

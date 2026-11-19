@@ -12,9 +12,16 @@
 import { inject } from '@angular/core';
 import { Timestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 
+import { esModoAcceso, type ModoAcceso } from '../../core/acceso/acceso';
+import { MENSAJE_POR_DEFECTO } from './invitados/invitacion';
 import { FIRESTORE } from '../../core/firebase/firestore.providers';
 import { CLAVES_PALETA, type ColoresPaleta } from '../public-site/paletas/paletas';
 import { sanearSecciones, type Seccion } from '../public-site/secciones/secciones';
+import {
+  sanearDressCode,
+  type DressCodePublico,
+  type IdColorDress,
+} from '../public-site/dress-code/dress-code';
 import {
   MODULOS,
   type BodaDelPanel,
@@ -35,6 +42,24 @@ export interface FuenteBoda {
   guardarPortada(weddingId: string, path: string | null, url: string | null): Promise<void>;
   /** Salir o no en buscadores. */
   guardarIndexable(weddingId: string, indexable: boolean): Promise<void>;
+  /** Si un invitado puede apuntar a sus acompañantes (§8.3). */
+  guardarAcompanantes(weddingId: string, permitir: boolean): Promise<void>;
+  /** Hasta cuándo se puede confirmar. `null` quita el plazo. */
+  guardarFechaLimite(weddingId: string, limite: Date | null): Promise<void>;
+  /** Cómo entra un invitado en la web (§3.3). */
+  guardarModoAcceso(weddingId: string, modo: ModoAcceso): Promise<void>;
+  /** La plantilla del mensaje de invitación, con sus marcadores. */
+  guardarMensajeInvitacion(weddingId: string, mensaje: string): Promise<void>;
+  /** El dress code (§8.11), que vive en la configuración de su módulo. */
+  guardarDressCode(weddingId: string, dress: DressCodeParaGuardar): Promise<void>;
+}
+
+/** Lo que la pantalla del dress code manda guardar. */
+export interface DressCodeParaGuardar {
+  readonly description: string;
+  readonly suggestedColors: readonly IdColorDress[];
+  readonly avoidColors: readonly IdColorDress[];
+  readonly tips: readonly string[];
 }
 
 export function crearFuenteBodaFirestore(): FuenteBoda {
@@ -80,6 +105,44 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
       await updateDoc(doc(db, 'weddings', weddingId), { indexable });
     },
 
+    async guardarMensajeInvitacion(weddingId: string, inviteMessage: string): Promise<void> {
+      await updateDoc(doc(db, 'weddings', weddingId), { inviteMessage });
+    },
+
+    async guardarAcompanantes(weddingId: string, permitir: boolean): Promise<void> {
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        allowGuestAddedCompanions: permitir,
+      });
+    },
+
+    async guardarFechaLimite(weddingId: string, limite: Date | null): Promise<void> {
+      // Dentro de la configuración del módulo, con ruta de puntos para no
+      // pisar el resto de `modules.rsvp`: un `updateDoc` con el objeto entero
+      // apagaría el módulo si alguien olvida copiar `enabled`.
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        'modules.rsvp.config.deadline': limite ? Timestamp.fromDate(limite) : null,
+      });
+    },
+
+    async guardarModoAcceso(weddingId: string, modo: ModoAcceso): Promise<void> {
+      // `guestAccessMode` no es campo de sistema (regla 6): lo decide la pareja
+      // y las reglas ya la dejan escribirlo. El trigger de la proyección lo
+      // republica, que es lo que hace que la web pública se entere.
+      await updateDoc(doc(db, 'weddings', weddingId), { guestAccessMode: modo });
+    },
+
+    async guardarDressCode(weddingId: string, dress: DressCodeParaGuardar): Promise<void> {
+      // Campo a campo y con ruta anidada, como el plazo del RSVP: escribir
+      // `modules.dressCode` entero apagaría el módulo, y escribir `config`
+      // entero se llevaría por delante el moodboard cuando exista.
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        'modules.dressCode.config.description': dress.description,
+        'modules.dressCode.config.suggestedColors': dress.suggestedColors as string[],
+        'modules.dressCode.config.avoidColors': dress.avoidColors as string[],
+        'modules.dressCode.config.tips': dress.tips as string[],
+      });
+    },
+
     async guardarSecciones(weddingId: string, secciones: readonly Seccion[]): Promise<void> {
       // Ruta anidada: `content` puede llegar a tener más cosas que `sections`,
       // y escribir el objeto entero se las llevaría por delante.
@@ -92,6 +155,14 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
       });
     },
   };
+}
+
+/** El dress code que haya en la configuración de su módulo. */
+function dressCodeDe(valor: unknown): DressCodePublico {
+  if (valor === null || typeof valor !== 'object') return sanearDressCode(null);
+  const modulo = (valor as Record<string, unknown>)['dressCode'];
+  if (modulo === null || typeof modulo !== 'object') return sanearDressCode(null);
+  return sanearDressCode((modulo as Record<string, unknown>)['config']);
 }
 
 /**
@@ -141,16 +212,32 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
       ? (datos['theme'] as Record<string, unknown>)
       : {};
   const estado = datos['status'];
+  const pareja =
+    datos['couple'] !== null && typeof datos['couple'] === 'object'
+      ? (datos['couple'] as Record<string, unknown>)
+      : {};
 
   return {
     weddingId,
     slug: typeof datos['slug'] === 'string' ? datos['slug'] : '',
+    pareja: {
+      partnerA: typeof pareja['partnerA'] === 'string' ? pareja['partnerA'] : '',
+      partnerB: typeof pareja['partnerB'] === 'string' ? pareja['partnerB'] : '',
+    },
     // Ante un estado desconocido, borrador: es el que menos promete.
     status: estado === 'active' || estado === 'archived' ? estado : 'draft',
     plan: datos['plan'] === 'extended' ? 'extended' : 'basic',
     weddingDate: datos['weddingDate'] instanceof Timestamp ? datos['weddingDate'].toDate() : null,
     weddingTime: typeof datos['weddingTime'] === 'string' ? datos['weddingTime'] : null,
     timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
+    // Ante un valor desconocido, abierta: es la que no deja a nadie fuera.
+    // Una boda que de pronto pidiera identificarse por un dato corrupto
+    // dejaría a sus invitados en la puerta sin que nadie lo hubiera pedido.
+    guestAccessMode: esModoAcceso(datos['guestAccessMode']) ? datos['guestAccessMode'] : 'open',
+    inviteMessage:
+      typeof datos['inviteMessage'] === 'string' && datos['inviteMessage'].trim() !== ''
+        ? datos['inviteMessage']
+        : MENSAJE_POR_DEFECTO,
     templateId: typeof tema['templateId'] === 'string' ? tema['templateId'] : '',
     indexable: datos['indexable'] === true,
     palette: paleta(tema['palette']),
@@ -158,5 +245,25 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
     heroImageUrl: typeof tema['heroImageUrl'] === 'string' ? tema['heroImageUrl'] : null,
     secciones: sanearSecciones(seccionesDe(datos['content'])),
     modulos: modulos(datos['modules']),
+    dressCode: dressCodeDe(datos['modules']),
+    rsvpDeadline: fechaLimiteRsvp(datos['modules']),
+    allowGuestAddedCompanions: datos['allowGuestAddedCompanions'] === true,
   };
+}
+
+/**
+ * La fecha límite del RSVP, enterrada en la configuración del módulo.
+ *
+ * Exportada para poder probarla: son cuatro saltos sobre un documento que puede
+ * no tener ninguno, y equivocarse aquí no da un error, da un formulario que se
+ * cierra solo o que no se cierra nunca.
+ */
+export function fechaLimiteRsvp(valor: unknown): Date | null {
+  const nivel = (dato: unknown, clave: string): unknown =>
+    dato !== null && typeof dato === 'object'
+      ? (dato as Record<string, unknown>)[clave]
+      : undefined;
+
+  const limite = nivel(nivel(nivel(valor, 'rsvp'), 'config'), 'deadline');
+  return limite instanceof Timestamp ? limite.toDate() : null;
 }

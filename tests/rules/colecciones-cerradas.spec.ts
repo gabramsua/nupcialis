@@ -28,6 +28,7 @@ beforeEach(async () => {
     await setDoc(doc(db, 'weddings', WEDDING_A, 'quizResults', 'r1'), { points: 10 });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'giftsReceived', 'g1'), { amount: 200 });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'guestAccessLog', 'l1'), { ip: '1.2.3.4' });
+    await setDoc(doc(db, 'weddings', WEDDING_A, 'loginAttempts', 'abc'), { intentos: 9 });
   });
 });
 
@@ -103,6 +104,31 @@ describe('giftsReceived: el dato más sensible del producto', () => {
     const db = guestOf(env, WEDDING_A);
     await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'giftsReceived', 'g1')));
     await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'giftsReceived')));
+  });
+});
+
+/**
+ * El contador de intentos de `guestLogin`. Si la pareja pudiera borrarlo desde
+ * el navegador, cualquiera con su sesión se quitaría de encima el límite; si
+ * pudiera leerlo, sabría cuánta gente ha probado a entrar y desde dónde.
+ */
+describe('loginAttempts: cerrada a todos, la pareja incluida', () => {
+  it('la pareja no lo lee', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'loginAttempts', 'abc')));
+    await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'loginAttempts')));
+  });
+
+  it('la pareja no lo borra ni lo pone a cero', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertFails(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'loginAttempts', 'abc'), { intentos: 0 }),
+    );
+  });
+
+  it('un invitado tampoco', async () => {
+    const db = guestOf(env, WEDDING_A);
+    await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'loginAttempts', 'abc')));
   });
 });
 

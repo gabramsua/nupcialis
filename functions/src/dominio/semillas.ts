@@ -406,6 +406,13 @@ export const PREGUNTAS_QUIZ_FABRICA: readonly PreguntaQuiz[] = [
 
 export interface GrupoInvitados {
   readonly name: string;
+  /**
+   * Para comparar nombres al importar y al crear. Sin él, importar una hoja
+   * con «Invitados» en la columna Grupos creaba un segundo «Invitados».
+   */
+  readonly normalizedName: string;
+  /** Todo invitado nuevo entra en este grupo (D-31). Ver `idGrupoPorDefecto`. */
+  readonly isDefault: boolean;
   readonly side: 'A' | 'B' | 'both';
   readonly photoAudience: 'public' | 'restricted';
   readonly allowPublicOptIn: boolean;
@@ -422,9 +429,13 @@ export interface GrupoInvitados {
  */
 export const GRUPO_POR_DEFECTO: GrupoInvitados = {
   name: 'Invitados',
+  normalizedName: 'invitados',
+  isDefault: true,
   side: 'both',
   photoAudience: 'public',
-  allowPublicOptIn: true,
+  // Solo significa algo en un grupo restringido; en uno público se guarda
+  // `false`, igual que hace `validarGrupo`, para no dejar un `true` dormido.
+  allowPublicOptIn: false,
   // Id de la paleta categórica del design system, no un hexadecimal: los
   // colores de grupo salen del catálogo cerrado. Ver REQUISITOS §9.1.
   color: 'rosa',

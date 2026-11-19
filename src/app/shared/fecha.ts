@@ -58,3 +58,9 @@ export function fechaMedia(fecha: Date | null, locale: string): string {
   if (!fecha || Number.isNaN(fecha.getTime())) return '';
   return formateador(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(fecha);
 }
+
+/** «23:14». La hora de una entrada en el registro de accesos. */
+export function horaCorta(fecha: Date | null, locale: string): string {
+  if (!fecha || Number.isNaN(fecha.getTime())) return '';
+  return formateador(locale, { hour: '2-digit', minute: '2-digit' }).format(fecha);
+}

@@ -12,17 +12,18 @@ runtime de Node distinto del navegador.
 npm run functions:install   # desde la raíz; equivale a npm --prefix functions install
 npm run functions:build
 npm run functions:test
-npm run emulators           # compila las funciones y levanta todos los emuladores
+npm run deploy:functions    # desde la raíz
 ```
 
-Los emuladores se lanzan **desde la raíz** del repositorio, no desde aquí. Y hay
-que compilar antes: el emulador de funciones carga `lib/`, no `src/`. Por eso
-`npm run emulators` compila primero.
+**No hay emulador de funciones** (D-33): una función se prueba desplegándola.
+`npm run deploy:functions` compila antes de subir. Lo que se puede probar sin
+desplegar —que es casi todo lo que importa— vive en `src/dominio/` y lo cubre
+`npm run functions:test`.
 
 ## Cómo está organizado
 
 - `src/dominio/` — lógica pura, sin Firebase. Es lo que se puede probar sin
-  emulador y donde vive lo que de verdad hay que acertar.
+  desplegar nada, y donde vive lo que de verdad hay que acertar.
 - `src/infra/` — adaptadores: permisos, auditoría, Identity Toolkit.
 - `src/*.ts` — una función por fichero, que orquesta el Admin SDK y llama a
   `dominio/`. `index.ts` solo reexporta.

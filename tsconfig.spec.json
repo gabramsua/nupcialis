@@ -3,7 +3,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["vitest/globals"]
+    // `node` es solo para las pruebas: alguna lee un fichero del repositorio
+    // —el diccionario de traducciones— para comprobarlo de verdad. La
+    // aplicación no lo hereda: `tsconfig.app.json` no incluye estos tipos.
+    "types": ["vitest/globals", "node"]
   },
   "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
 }

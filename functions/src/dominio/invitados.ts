@@ -134,7 +134,12 @@ export type MotivoInvitado =
   | { readonly campo: 'fullName'; readonly motivo: 'ausente' | 'demasiado-largo' }
   | { readonly campo: 'phone'; readonly motivo: 'no-es-telefono' }
   | { readonly campo: 'email'; readonly motivo: 'no-es-email' }
-  | { readonly campo: 'maxCompanions'; readonly motivo: 'fuera-de-rango' };
+  | { readonly campo: 'maxCompanions'; readonly motivo: 'fuera-de-rango' }
+  /** Se decide contra los grupos de la boda, fuera de `validarInvitado`. Ver `grupos.ts`. */
+  | {
+      readonly campo: 'groupIds';
+      readonly motivo: 'no-existe' | 'dos-restringidos' | 'demasiados-grupos';
+    };
 
 export type ResultadoInvitado =
   | { readonly ok: true; readonly datos: InvitadoValidado }

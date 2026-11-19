@@ -22,27 +22,18 @@ import { AppEnvironment } from '../../../environments/environment.model';
 /** Región europea. Los datos no salen de la UE. Ver REQUISITOS §9.4. */
 export const FUNCTIONS_REGION = 'europe-west1';
 
-export interface EmulatorConfig {
-  readonly host: string;
-  readonly ports: {
-    readonly auth: number;
-    readonly firestore: number;
-    readonly storage: number;
-    readonly functions: number;
-  };
-}
-
 export const FIREBASE_APP = new InjectionToken<FirebaseApp>('FIREBASE_APP');
-export const EMULATORS = new InjectionToken<EmulatorConfig | null>('EMULATORS');
 
-const DEFAULT_EMULATORS: EmulatorConfig = {
-  host: '127.0.0.1',
-  ports: { auth: 9099, firestore: 8080, storage: 9199, functions: 5001 },
-};
-
+/**
+ * **No hay emuladores** (D-33): todo, también en local, habla con Firebase.
+ *
+ * Lo que se escribe trabajando se escribe de verdad y se queda. Si algún día se
+ * vuelve a querer un emulador, no basta con enchufarlo en estos proveedores
+ * aquí: hace falta decidir antes contra qué proyecto, porque el de trabajo es
+ * el mismo donde viven las bodas de prueba.
+ */
 export function provideFirebaseApp(env: AppEnvironment): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: FIREBASE_APP, useValue: initializeApp(env.firebase) },
-    { provide: EMULATORS, useValue: env.useEmulators ? DEFAULT_EMULATORS : null },
   ]);
 }

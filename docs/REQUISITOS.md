@@ -106,18 +106,45 @@ El bundle del panel se carga de forma diferida: un invitado que abre la web de l
 
 El modo de acceso lo elige la pareja en la configuración de su boda. Es una propiedad de la boda, no del módulo.
 
+**En los modos B y C la identificación va delante de todo.** No es que haya módulos que pidan identidad y otros no: según §1.1 solo existe «visitante anónimo» cuando el modo es abierto, así que ni los nombres, ni la fecha, ni las secciones se pintan antes de saber quién entra. La puerta vive en un trozo de código diferido: una boda en modo A no descarga ni el formulario ni Firebase Auth.
+
 **Modo A — Entrada abierta.** Cualquiera con la URL ve la web. No hay identificación. Los módulos que requieren identidad (RSVP nominal, libro de firmas atribuido, subida de fotos) quedan deshabilitados o pasan a modo anónimo según su propia configuración.
 
 **Modo B — Nombre + últimos 4 dígitos del teléfono.** El invitado escribe su nombre y los cuatro últimos dígitos de su móvil. Se contrastan contra la lista de invitados cargada por la pareja.
 
 **Modo C — Teléfono completo.** El invitado escribe su número de móvil y se contrasta contra la lista de invitados.
 
-**Requisito de seguridad innegociable para los modos B y C:** la verificación se resuelve **íntegramente en una Cloud Function** que devuelve un _custom token_ de Firebase con claims `{ weddingId, guestId, role: 'guest' }`. El cliente **nunca** consulta teléfonos ni nombres contra Firestore, porque una regla que permita esa consulta permite descargar la lista de invitados completa.
+**Dos niveles de sesión en los modos B y C (D-34, decidido).** El enlace que la pareja manda por WhatsApp lleva un token por invitado y **abre la web**; para confirmar, elegir menú, apuntar acompañantes o ver fotos de audiencia restringida se le piden además los cuatro dígitos de su móvil (o el teléfono, en modo C).
+
+| Nivel        | Cómo se consigue                         | Qué permite                                                  |
+| ------------ | ---------------------------------------- | ------------------------------------------------------------ |
+| `enlace`     | Abrir el enlace de la pareja (`?k=`)     | Ver la web. Nada más                                         |
+| `verificado` | Escribir los cuatro dígitos (o el móvil) | Todo lo del invitado: RSVP, acompañantes, fotos restringidas |
+
+El motivo de la partición: **estos enlaces se reenvían**. El primo lo pasa al grupo de la familia «por si alguien no lo tiene», y un enlace que autorizara convertiría a doce personas en el mismo invitado —su confirmación, su menú, su grupo de fotos—. Lo cómodo es cómodo y lo que tiene consecuencias sigue pidiendo algo que solo tiene él.
+
+Sobre el token del enlace:
+
+- Lo **genera el servidor**: 24 bytes de azar (32 caracteres base64url) guardados en `guests/{id}.inviteToken`. No se deriva del `guestId`, porque un id viaja en cualquier captura de pantalla del panel.
+- Se crea la primera vez que la pareja comparte y **se reutiliza**, para que el enlace que ya mandó siga valiendo. La pareja puede **cambiarlo** desde el panel: es la única forma de invalidar uno que se haya ido donde no debía.
+- Sale de la barra de direcciones en cuanto se usa (`replaceState`): no tiene por qué quedarse en el historial del móvil ni en lo que se comparta desde el navegador.
+- **Un token de enlace no pisa una sesión ya verificada.** Quien se identificó con sus dígitos y vuelve a abrir el enlace del WhatsApp —que es lo que hace todo el mundo— no pierde el nivel.
+- `?n=` (el nombre pre-rellenado de los enlaces anteriores a D-34) se sigue leyendo: una pareja pudo mandar doscientos.
+
+**Quién cree la web que eres, y cómo decir que no.** Encima de la portada, la web enseña «Estás viendo esto como <nombre>» con un «¿No eres tú?» que cierra la sesión y devuelve la puerta ahí mismo, sin recargar. Es la otra mitad de D-34: si el enlace entra solo, quien recibe uno reenviado está dentro como otra persona sin haber hecho nada, y tiene que poder darse cuenta y salir. El nombre viaja en el claim `nombre` del custom token —el mote si lo tiene, y si no el nombre completo—, así que sobrevive a una recarga sin consultar nada. Sin nombre se dice «como invitado»: dejar el hueco en blanco parece un fallo.
+
+**Requisito de seguridad innegociable para los modos B y C:** la verificación se resuelve **íntegramente en una Cloud Function** que devuelve un _custom token_ de Firebase con claims `{ weddingId, guestId, role: 'guest', nivel }`. El cliente **nunca** consulta teléfonos ni nombres contra Firestore, porque una regla que permita esa consulta permite descargar la lista de invitados completa.
 
 Controles sobre la función de acceso de invitados:
 
 - App Check obligatorio.
-- Límite de intentos por IP y por boda (por ejemplo, 10 intentos en 15 minutos), con retardo creciente.
+- Límite de intentos por IP y por boda: **10 intentos en 15 minutos**, y a partir de ahí bloqueo creciente de 1, 5, 15 y 60 minutos, que se queda en 60 y no vuelve a empezar. Entrar bien lo borra todo. Vive en `loginAttempts/{hashDeIp}`, cerrada incluso a la pareja: poder vaciarla desde el navegador sería poder quitarse el límite de encima.
+- **La boda llega por slug, no por `weddingId`.** Aquí todavía no hay token del que sacarlo, y el slug ya es público —está en la URL—, así que se resuelve contra `slugs/{slug}` igual que hace la web. Aceptar un `weddingId` escrito por el cliente sería dar por bueno un identificador interno.
+- **Dos invitados que encajan a la vez no entran.** Pasa con dos personas del mismo nombre y los mismos cuatro dígitos. Dejar entrar a la primera le daría a una la identidad de la otra —su mesa, su menú, su grupo de fotos—, así que se trata como un fallo más y la pareja lo arregla en su lista.
+- Un invitado dado de baja (`active: false`) no entra, y la respuesta es la misma que si no existiera.
+- **Las tres puertas comparten el límite de intentos**: `guestLogin` (nombre y dígitos), `guestLinkLogin` (el token del enlace) y `verifyGuest` (subir de `enlace` a `verificado`). Cuatro dígitos son diez mil combinaciones, así que subir de nivel se cuenta igual que entrar.
+- **El `guestId` de `verifyGuest` sale del token, nunca de la petición.** Si fuera un parámetro, cualquiera con un enlace podría probar los cuatro dígitos de otro invitado.
+- **Cada función del invitado comprueba el nivel.** Lo vigila `functions/src/verificacion.spec.ts`, que lee el código y falla si una invocable nueva se olvida: el fallo realista no es escribir mal la comprobación, es no ponerla.
 - Respuesta genérica en caso de fallo: no se distingue entre "ese invitado no existe" y "los dígitos no coinciden", para evitar enumeración.
 - Los teléfonos se almacenan normalizados en E.164 y se indexa además `phoneLast4` para el modo B.
 - El token de invitado es de vida corta (24 h) y renovable repitiendo la verificación.
@@ -377,14 +404,26 @@ Los grupos dejan de ser una etiqueta de texto libre y pasan a ser entidades con 
 ```
 weddings/{weddingId}/guestGroups/{groupId}
   name: string                          // 'Universidad', 'Familia de la novia'
+  normalizedName: string                // minúsculas y sin tildes; único por boda
   side: 'A' | 'B' | 'both'
   photoAudience: 'public' | 'restricted'
-  allowPublicOptIn: bool                // si es restricted, ¿puede un miembro publicar para todos?
-  color: string                         // para distinguirlo en el plano de mesas
+  allowPublicOptIn: bool                // solo true si es restricted
+  color: string                         // id de la paleta categórica (§9.1), nunca un hexadecimal
   order: number
+  isDefault: bool                       // el grupo de todos: solo uno, lo crea el alta
+  createdAt, updatedAt
 ```
 
+**El grupo de todos** («Invitados», `isDefault: true`) se crea con la boda y **todo invitado nuevo entra en él**, por alta manual o por importación (D-31). No se puede borrar ni llevar candado. La pareja puede sacar de él a un invitado concreto al editarlo.
+
 **`photoAudience: 'restricted'` es el mecanismo de partición de audiencia de la galería.** Ver §8.5.
+
+**Se leen desde el cliente, se escriben por función** (`upsertGroup`, `deleteGroup`). Dos invariantes lo obligan, y ninguna se puede comprobar en una regla porque ambas miran a los invitados, que están cerrados:
+
+- **Nadie está en dos grupos restringidos.** Se valida al asignar (en `upsertGuest` e `importGuests`) y también **al pasar un grupo a restringido**: si algún miembro ya está en otro restringido, se rechaza diciendo cuántos son.
+- **Borrar un grupo suelta primero a sus miembros** (`arrayRemove` por lotes) y después borra el documento, para no dejar `groupIds` que apunten a la nada.
+
+El nombre es único por boda (comparado normalizado) porque la importación resuelve la columna «Grupos» por nombre. Los grupos que no existen se crean al importar, siempre **públicos**: restringir decide quién ve qué fotos y no se hace desde una celda de una hoja. Tope: 50 grupos por boda.
 
 ### 5.5 Invitados
 
@@ -416,6 +455,8 @@ weddings/{weddingId}/guests/{guestId}
   // Banquete
   menu: string
   allergies: string
+  needsTransport: bool            // lo pone la respuesta del RSVP (mapsTo)
+  needsAccommodation: bool        // idem
   tableId: string | null
 
   // Acceso
@@ -438,6 +479,8 @@ Reglas del alta de acompañantes por parte del invitado:
 - El acompañante **hereda los `groupIds` del titular**. Si el titular es del grupo "Universidad", su acompañante también lo es, y por tanto ve y publica con esa misma audiencia. Esto es deliberado: si no, el acompañante de un miembro del grupo restringido se convertiría en una fuga.
 - En modos de acceso B y C el titular debe aportar el teléfono del acompañante para que este pueda entrar. En modo A no hace falta.
 - La pareja ve en el panel qué invitados fueron añadidos por otros invitados y puede eliminarlos.
+- **Y se le avisa**: encima de la lista sale un aviso con los nombres de los que han apuntado sus invitados en los últimos siete días, con un botón que filtra la lista a esos. Sin eso, un acompañante nuevo no se distingue de los doscientos que ya estaban. El listado (`listGuests`) lleva para ello dos campos más: si lo apuntó un invitado y cuándo se dio de alta.
+- **El cupo se pone a varios a la vez** (`setCompanionQuota`): la pareja filtra la lista —por grupo, por estado— y le pone el mismo cupo a todos los que está viendo. En una boda son doscientos invitados y el cupo se decide por tandas («los amigos, uno cada uno»), así que de uno en uno es una tarde. Los acompañantes se omiten, porque un acompañante con cupo encadenaría las invitaciones, y **bajar el cupo no echa a nadie**: quien ya apuntó a dos sigue con dos y solo deja de poder apuntar a un tercero.
 - **RGPD:** el titular está facilitando datos de un tercero. El formulario debe informarlo expresamente y la finalidad debe constar en el aviso de privacidad.
 
 ### 5.6 Mesas
@@ -493,7 +536,7 @@ weddings/{weddingId}/formQuestions/{questionId}
 
 ```
 weddings/{weddingId}/quizQuestions/{questionId}
-  question: string
+  text: string                    // el enunciado
   correctAnswer: string
   wrongAnswers: [string, string, string]
   difficulty: 1 | 2 | 3           // 10, 20 o 30 puntos
@@ -503,7 +546,7 @@ weddings/{weddingId}/quizQuestions/{questionId}
 
 weddings/{weddingId}/quizResults/{resultId}
   guestId: string
-  displayName: string             // mote del invitado
+  fullName: string                // copia del nombre al jugar; el ranking público solo enseña esto
   points: number
   elapsedMs: number               // desempate: a igual puntuación gana el más rápido
   answeredCount: number
@@ -535,11 +578,16 @@ budgetItems/{id}           category, concept, estimatedCost, actualCost, paid, d
 
 guestAccessLog/{id}
   guestId, mode, ip, userAgent, createdAt
+
+loginAttempts/{hashDeIp}       // lo lleva guestLogin; cerrado a todos, pareja incluida
+  intentos, desde, bloqueos, bloqueadoHasta, actualizadoEn
 ```
 
 El dress code no tiene colección propia: vive en `modules.dressCode.config`, con su moodboard en Storage, porque es un contenido único por boda y no una lista.
 
 `guestAccessLog` guarda el detalle de cada entrada; el contador agregado vive en `guests.loginCount` para que el panel no tenga que agregar nada al pintarse.
+
+La pareja lo lee en «Quién ha entrado» (`/panel/guests/accesos`), que contesta dos preguntas: si a alguien le ha llegado la invitación, y si un enlace está circulando. Lo segundo se ve en que una misma invitación se abre desde **tres o más tipos de aparato distintos**, que es el aviso que sale arriba; con dos no se dice nada, porque el móvil y el ordenador de casa los tiene cualquiera y un aviso que salta siempre no lo lee nadie. Dos cosas no suben a esa pantalla: la **IP**, que se guarda porque sostiene el límite de intentos y no le dice nada a la pareja, y el **`user-agent` entero**, que el servidor reduce a dos palabras antes de mandarlo (§9.4). Se devuelven las **300 entradas más recientes**, y cuando se llega al tope la pantalla lo dice.
 
 ### 5.11 Índices
 
@@ -611,7 +659,7 @@ match /weddings/{wid} {
   match /photos/{p}        { allow read, write: if false; }   // siempre por Cloud Function
 
   match /guestGroups/{g}   { allow read: if isOwner(wid) || isGuestOf(wid);
-                             allow write: if isOwner(wid); }
+                             allow write: if false; }         // por upsertGroup / deleteGroup, ver §5.4
 
   match /quizQuestions/{q} { allow read: if isGuestOf(wid) || isOwner(wid);
                              allow write: if isOwner(wid); }
@@ -629,30 +677,34 @@ match /weddings/{wid} {
 
 Solo como pegamento. Todas con App Check activado.
 
-| Función                               | Tipo                                  | Responsabilidad                                                                                                                                                   |
-| ------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createWeddingRequest`                | callable (público)                    | Crear una solicitud desde el formulario de contratación. App Check y límite por IP: es la única escritura pública del sistema junto a `guestLogin`                |
-| `activateRequest`                     | callable (superadmin)                 | Revalidar el slug de una solicitud y lanzar `provisionWedding` con sus datos. Si el slug se ha ocupado, devuelve alternativas en vez de fallar                    |
-| `settleRequests`                      | callable (superadmin)                 | Marcar como cobradas una o varias solicitudes. Con un proveedor, cierra su liquidación de golpe                                                                   |
-| `notifyNewRequest`                    | trigger Firestore                     | Aviso por Telegram al superadmin cuando entra una solicitud. El token del bot vive en Secret Manager, **nunca en el repositorio, que es público**                 |
-| `purgeOldRequests`                    | programada                            | Borrar a los seis meses las solicitudes que nunca llegaron a boda                                                                                                 |
-| `provisionWedding`                    | callable (superadmin)                 | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo)                                                    |
-| `setUserClaims`                       | callable (superadmin)                 | Asignar o revocar `weddingId` y `role`                                                                                                                            |
-| `authorizeWeddingDomain`              | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch |
-| `guestLogin`                          | callable (público)                    | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`**                                              |
-| `addCompanion`                        | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                             |
-| `submitRsvp`                          | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                      |
-| `listPhotos`                          | callable (guest)                      | Devolver solo las fotos que ese invitado puede ver según su grupo                                                                                                 |
-| `uploadPhoto`                         | callable (guest)                      | Asignar `audienceGroupId` según el grupo del que sube, aplicar política de moderación                                                                             |
-| `deletePhoto`                         | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera                                                                                                               |
-| `submitQuizResult`                    | callable (guest)                      | Corregir el cuestionario **en servidor** y guardar la puntuación                                                                                                  |
-| `logOwnerAccess`                      | trigger / callable                    | Registrar en `auditLog` cada entrada de un novio al panel                                                                                                         |
-| `syncPublicProjection`                | trigger Firestore                     | Mantener `public/site` al día                                                                                                                                     |
-| `recomputeCounters`                   | trigger Firestore                     | Mantener `counters`                                                                                                                                               |
-| `onPhotoUploaded`                     | trigger Storage                       | Miniatura, validación de MIME y tamaño                                                                                                                            |
-| `sanitizeRichContent`                 | trigger Firestore                     | Limpiar el HTML de los contenidos editados por la pareja antes de publicarlos                                                                                     |
-| `exportGuests`                        | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                     |
-| `archiveWeddings` / `scheduledBackup` | programadas                           | Ciclo de vida y copias                                                                                                                                            |
+| Función                               | Tipo                                  | Responsabilidad                                                                                                                                                                    |
+| ------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createWeddingRequest`                | callable (público)                    | Crear una solicitud desde el formulario de contratación. App Check y límite por IP: es la única escritura pública del sistema junto a `guestLogin`                                 |
+| `activateRequest`                     | callable (superadmin)                 | Revalidar el slug de una solicitud y lanzar `provisionWedding` con sus datos. Si el slug se ha ocupado, devuelve alternativas en vez de fallar                                     |
+| `settleRequests`                      | callable (superadmin)                 | Marcar como cobradas una o varias solicitudes. Con un proveedor, cierra su liquidación de golpe                                                                                    |
+| `notifyNewRequest`                    | trigger Firestore                     | Aviso por Telegram al superadmin cuando entra una solicitud. El token del bot vive en Secret Manager, **nunca en el repositorio, que es público**                                  |
+| `purgeOldRequests`                    | programada                            | Borrar a los seis meses las solicitudes que nunca llegaron a boda                                                                                                                  |
+| `provisionWedding`                    | callable (superadmin)                 | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo)                                                                     |
+| `setUserClaims`                       | callable (superadmin)                 | Asignar o revocar `weddingId` y `role`                                                                                                                                             |
+| `authorizeWeddingDomain`              | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch                  |
+| `guestLogin`                          | callable (público)                    | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`**                                                               |
+| `listAccessLog`                       | callable (owner)                      | Registro de accesos para la pareja: une los nombres (que `guests` no se lee de fuera), baja el `user-agent` a «Android · Chrome» y **no devuelve la IP**. Las últimas 300 entradas |
+| `upsertGroup` / `deleteGroup`         | callable (owner)                      | Crear, editar y borrar grupos cuidando que nadie quede en dos restringidos y que un borrado no deje invitados apuntando a la nada. Ver §5.4                                        |
+| `reorderGroups`                       | callable (owner)                      | El orden de los grupos que decide la pareja, en una sola escritura. Ignora ids que ya no existen y no pierde los que no venían en la lista                                         |
+| `addCompanion`                        | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                                              |
+| `setCompanionQuota`                   | callable (owner)                      | Poner el mismo cupo de acompañantes a una lista de invitados, en lotes. Omite acompañantes; bajar el cupo no borra a nadie                                                         |
+| `submitRsvp`                          | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                                       |
+| `listPhotos`                          | callable (guest)                      | Devolver solo las fotos que ese invitado puede ver según su grupo                                                                                                                  |
+| `uploadPhoto`                         | callable (guest)                      | Asignar `audienceGroupId` según el grupo del que sube, aplicar política de moderación                                                                                              |
+| `deletePhoto`                         | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera                                                                                                                                |
+| `submitQuizResult`                    | callable (guest)                      | Corregir el cuestionario **en servidor** y guardar la puntuación                                                                                                                   |
+| `logOwnerAccess`                      | trigger / callable                    | Registrar en `auditLog` cada entrada de un novio al panel                                                                                                                          |
+| `syncPublicProjection`                | trigger Firestore                     | Mantener `public/site` al día                                                                                                                                                      |
+| `recomputeCounters`                   | trigger Firestore                     | Mantener `counters`                                                                                                                                                                |
+| `onPhotoUploaded`                     | trigger Storage                       | Miniatura, validación de MIME y tamaño                                                                                                                                             |
+| ~~`sanitizeRichContent`~~             | —                                     | No existe como función aparte: el saneado del HTML vive en `dominio/html.ts` y lo aplica `syncPublicProjection`, que ya reconstruye `content` con lista blanca. Ver §8.1           |
+| `exportGuests`                        | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                                      |
+| `archiveWeddings` / `scheduledBackup` | programadas                           | Ciclo de vida y copias                                                                                                                                                             |
 
 **Nota sobre `submitQuizResult`:** la corrección tiene que ocurrir en servidor. Si el cliente envía "he sacado 300 puntos", cualquiera gana el ranking desde la consola del navegador. El cliente envía las respuestas elegidas; la función las compara con `correctAnswer` y calcula la puntuación. El prototipo actual corrige en cliente y escribe el ranking directamente; esto es una mejora consciente sobre él.
 
@@ -722,7 +774,16 @@ Motivo: un maquetador libre es el módulo más caro del producto y el que más f
 
 **Sobre Jodit.** Es MIT y sirve. Dos avisos: la versión 4.7.6 que mencionaste está bastante por detrás de la actual (4.13.x), y el wrapper oficial de Angular (`jodit-angular`) está declarado sin mantenimiento activo por su propio autor, que advierte en el repositorio que no usa Angular y no puede corregir fallos con agilidad; el wrapper mantenido por la comunidad es `ngx-jodit`. Para una barra tan acotada como la que necesitamos, Jodit puede ser más peso del necesario. Decisión pendiente de una prueba comparativa (§12).
 
-**Requisito de seguridad innegociable:** todo HTML producido por el editor se **sanea en servidor** antes de publicarse, en el trigger `sanitizeRichContent`. Ese contenido lo van a ver cientos de invitados; renderizarlo en Angular exige saltarse el sanitizador del framework, y confiar solo en el saneado de cliente convierte el editor en un XSS almacenado.
+**Requisito de seguridad innegociable:** todo HTML producido por el editor se **sanea en servidor** antes de publicarse. Ese contenido lo van a ver cientos de invitados, y confiar en el saneado del navegador de la pareja convierte el editor en un XSS almacenado.
+
+Cómo está hecho (implementado el 2026-11-13):
+
+- El saneador es `functions/src/dominio/html.ts`, sobre `sanitize-html`. **No se escribe un parseador propio**: las cien formas de colar un `javascript:` en un atributo las mantiene al día una librería, no nosotros.
+- Se aplica **en la proyección pública** (`proyeccionPublica`), que es el único sitio por el que el contenido pasa antes de llegar al documento que lee un anónimo. No hace falta un trigger aparte: la proyección ya es un trigger y ya reconstruye `content` con lista blanca.
+- **Lista blanca de etiquetas:** `p`, `br`, `strong`, `b`, `em`, `i`, `u`, `s`, `a`, `ul`, `ol`, `li`, `h3`, `h4`, `blockquote`. Atributos solo en los enlaces (`href`, `target`, `rel`), y solo con los esquemas `http`, `https`, `mailto` y `tel`. Todo enlace sale con `target="_blank"` y `rel="noopener noreferrer"`.
+- **La barra del editor no ofrece nada que esa lista no admita**, y lo comprueba un test que lee las dos listas: un botón de tabla haría que la pareja maquetara algo que desaparece al publicar, y el fallo aparecería en la web de los invitados y no donde se cometió.
+- El contenido escrito **antes** de que existiera el editor es texto plano con saltos de línea: si no trae ni una etiqueta, se convierte a párrafos, para que nadie pierda su texto por un cambio nuestro.
+- En la web pública se pinta con `innerHTML`, así que Angular lo sanea otra vez al renderizarlo. Es la segunda red, no la primera.
 
 ### 8.2 RSVP con formulario dinámico
 
@@ -735,22 +796,82 @@ Motivo: un maquetador libre es el módulo más caro del producto y el que más f
 - Validación de obligatoriedad y de tipo, tanto en cliente como en la función `submitRsvp`.
 - Fecha límite configurable; el invitado puede modificar su respuesta hasta entonces.
 - En modos B y C el formulario llega pre-rellenado con el nombre del invitado.
-- Panel de control para la pareja con confirmados, declinados y pendientes, filtros y exportación.
+- **Pantalla de lo que han contestado** (`/panel/rsvp/respuestas`), pregunta a pregunta. Dos formas, porque son dos preguntas distintas: lo de opciones **se cuenta** —«vegano, 23» es lo primero que pregunta el catering— y lo escrito **se lee**, una respuesta por tarjeta y con quién la escribió. Esto último cubre un agujero: las respuestas sin campo propio en el invitado —la canción que pediría, el mensaje para los novios— vivían en `rsvpAnswers` y no se veían en ninguna parte, ni en la lista, ni en la ficha, ni en la exportación. Son peticiones de los invitados y alguna importa.
+  - Van **todas** las preguntas, también las que la pareja haya apagado: si desactiva una después de recibir cien respuestas, esas cien siguen ahí y tienen que poder leerse. Lo mismo con una opción retirada, que se enseña con su valor en bruto para que el total cuadre.
+  - Los recuentos cuentan **solo a quien ha contestado esa pregunta**. Incluir a los pendientes haría que todo pareciera minoritario.
+  - Va por una invocable aparte (`listRsvpAnswers`), porque `listGuests` recorta `rsvpAnswers` a propósito: con trescientos invitados y ocho preguntas, mandarlo para pintar la lista multiplica por cinco lo que viaja.
+  - La pareja puede cambiar el tipo de una pregunta suya aunque ya esté contestada, pero **se le dice cuántas respuestas hay** antes de hacerlo. No se borra ninguna: se siguen viendo tal cual, porque el recuento ya sabe enseñar valores que no están entre las opciones de ahora.
+- Panel de control para la pareja con confirmados, declinados y pendientes, filtros y exportación. **Las cifras de la cabecera de la lista son los filtros**: se pulsa «pendientes» y la lista se queda con esos; se vuelve a pulsar y vuelve entera. «Sin entrar» no es un estado del RSVP, es a quién hay que reenviarle el enlace. **Los grupos filtran igual**, en chips debajo de las cifras y con cuántos hay en cada uno; se cruzan con la cifra puesta, y el número del chip cuenta ya dentro de ella, para que no haya dos cifras contradiciéndose en la misma pantalla.
+
+  Cómo se resolvió (F1.8):
+
+  - **El formulario pasa por función invocable** (`getRsvpForm`, `submitRsvp`), no por lectura directa de `formQuestions`. Podría leerse con las reglas —son preguntas, no datos de nadie— pero entonces la web pública tendría que cargar Firestore para pintarlo, y el presupuesto de 200 kB no da. Llega ya filtrado por destinatario y ordenado.
+  - **La boda y el invitado salen del token** (regla 1). Con el `guestId` como parámetro, cambiar un número en la petición bastaría para elegirle el menú al primo.
+  - **`mapsTo` no se aplica, se traduce.** `formQuestions` lo escribe la pareja, así que una pregunta con `mapsTo: 'active'` dejaría a alguien fuera de la web al contestar, y una con `mapsTo: 'groupIds'` lo metería en el grupo de las fotos restringidas. Solo llegan al invitado los cinco campos de la lista blanca —`rsvpStatus`, `menu`, `allergies`, `needsTransport`, `needsAccommodation`—, cada uno con su tipo.
+  - **Lo oculto no se exige ni se guarda.** Quien dice que no viene no elige menú, y el menú que eligiera antes no sobrevive: las respuestas se reemplazan, no se mezclan. Si no, el catering contaría un comensal que no va.
+  - **La visibilidad condicional está escrita dos veces**, en el navegador y en el servidor: el formulario tiene que esconder el menú en el mismo instante en que alguien marca que no va, y el servidor no puede creerse nada de lo que llega. Las dos implementaciones se ejecutan sobre la misma tabla de casos en una prueba que falla si se separan.
+  - **La fecha límite vive en `modules.rsvp.config.deadline`** y el día cuenta entero: «hasta el 1 de junio» incluye el 1. Pasado el plazo, el formulario no se enseña y lo contestado se queda a la vista.
+  - **Las preguntas de sistema no se borran**, y eso lo defienden las reglas: se pueden reetiquetar y desactivar, pero no borrar ni quitarles el `isSystem` para borrarlas en dos pasos.
+  - **Primero móvil**: una pregunta por bloque, el sí y el no como dos botones grandes con icono y color, y el fallo pegado a su pregunta en vez de un aviso genérico arriba.
+  - **El editor de la pareja** (`/panel/rsvp`) parte de las ocho preguntas de fábrica y las ajusta: encender y apagar en un toque, reetiquetar, reordenar, añadir y borrar las propias. Se ve en la lista qué está apagado y qué no se puede borrar, y a las de sistema no se les ofrece el botón de borrar en vez de dejar que choquen contra las reglas. Las opciones se escriben una por línea, y su `value` no cambia al reetiquetarlas porque las respuestas guardadas apuntan a él.
+  - **No hay constructor de condiciones**, sino una casilla: «preguntar solo a quien confirme que viene». El modelo aguanta cualquier condición; el editor escribe esa.
+  - **La fecha límite se pone en esa misma pantalla**, no en «Datos de la boda»: es donde se busca.
+  - **En modo abierto (A) no hay formulario**: sin identidad no hay a quién apuntar la respuesta. Qué hacer ahí es D-09 y está sin decidir.
 
 ### 8.3 Invitados y acompañantes
 
 - Alta manual e **importación desde CSV/Excel** con previsualización, mapeo de columnas y detección de duplicados por teléfono.
+
+  Cómo se resolvió (F1.2):
+
+  - **Tres entradas**: plantilla descargable, subir un fichero, o pegar las celdas copiadas de la hoja. La plantilla es para quien empieza de cero; el reconocimiento de columnas, para quien ya tiene su lista, que son la mayoría.
+  - La plantilla se genera con **punto y coma y BOM**. Excel en español usa la coma como separador decimal y abre en ANSI si no encuentra el BOM: sin las dos cosas, el doble clic enseña una sola columna con «MarÃ­a» dentro.
+  - Al leer, el separador se **detecta** (`;`, `,` o tabulador) contando apariciones fuera de comillas en la primera línea no vacía. Pegar desde Excel produce tabuladores, no comas.
+  - **Las columnas se reconocen por alias** y la pareja puede corregir cualquiera. Un campo no se asigna dos veces: una hoja con «Teléfono» y «Teléfono 2» deja la segunda sin asignar en vez de pisar la primera.
+  - **La previsualización es la misma llamada que la importación**, con una bandera `soloPrevisualizar`. No son dos cálculos: lo que se ve antes de confirmar es literalmente lo que va a pasar.
+  - Los duplicados se buscan contra los invitados que ya están **y contra las filas anteriores del propio fichero**: una hoja que ha pasado por tres manos trae al mismo primo dos veces.
+  - **Tope de 1000 invitados por boda y 1000 filas por fichero.** La detección de duplicados lee la colección entera en cada importación; con decenas de miles no saldría a cuenta.
+  - **También se puede subir el `.xlsx` tal cual** (F1.2b), que es como la mitad de las parejas tiene su lista. Se lee **solo la primera hoja**: en la hoja de una boda las demás son el reparto de mesas a medias o una copia vieja, e importarlas metería duplicados. Las fechas llegan en ISO y no como número de serie, y las decenas de filas vacías que Excel arrastra al final se descartan antes de contar.
+
 - Asignación de **grupos** (§5.4), con indicación visual de cuáles son de audiencia restringida.
 - **Enlace de invitación por invitado y botón de compartir por WhatsApp** con mensaje predefinido y editable.
+  - **El enlace abre la web, y solo eso** (D-34, opción 3): lleva un token por invitado y entra con nivel `enlace`. Para confirmar, elegir menú o apuntar acompañantes se le piden los cuatro dígitos. Ver §3.3 para el detalle del token y de los dos niveles.
+  - **A quien llega por un enlace reenviado no se le enseña nada de esa persona**: ni sus respuestas, ni su menú, ni lo que escribió a los novios. El formulario no se lee sin verificarse.
+  - La pareja puede **cambiar el enlace** de una persona desde el panel, que es lo que invalida uno que haya acabado en un grupo donde no debía.
+  - El mensaje es una **plantilla de la boda**, con `{nombre}`, `{novios}`, `{fecha}` y `{enlace}`. Se guarda con los marcadores dentro, no montado, porque sirve para doscientos invitados. Lo que no se reconoce se queda escrito tal cual: así se ve el error en la vista previa en vez de mandar doscientos mensajes con un hueco.
+  - Se puede retocar el mensaje **de esa persona** antes de mandarlo, y se usa el mote si lo tiene: en un WhatsApp, «Hola Majo» se lee mejor que «Hola María José Pérez».
+  - A quien no tenga teléfono en la lista se le avisa **antes** de compartir, porque con puerta recibiría un enlace que no puede abrir.
 - **Acompañantes añadidos por el propio invitado** cuando la pareja lo permite: cupo por titular, herencia de grupos, teléfono obligatorio en modos B y C, y visibilidad en el panel de quién añadió a quién.
+
+  Cómo se resolvió (F1.5):
+
+  - **El cupo se cuenta en el servidor**, con los documentos que existen, y el formulario se recarga después de cada alta. Dos pestañas abiertas mandarían el mismo alta dos veces, y eso son comensales de más que se descubren el día del banquete.
+  - **Un acompañante no añade acompañantes.** Sin esa regla el cupo de uno se vuelve una cadena: invito a mi pareja, mi pareja invita a su hermana, y la pareja se encuentra treinta personas que no conoce.
+  - **El acompañante hereda los `groupIds` del titular** y entra con `side: 'both'`. La herencia es de seguridad, no comodidad: los grupos deciden quién ve qué fotos.
+  - **Al invitado se le piden tres datos**: nombre, edad y —solo donde hace falta para entrar— teléfono. Ni correo ni notas: está dando datos de un tercero, y el formulario lo dice expresamente (RGPD).
+  - **La fecha límite cierra también esto**: dejar añadir comensales después de dar el número al catering sería darlo dos veces.
+  - **El titular puede quitar a quien apuntó, mientras no haya entrado en la web.** A partir de ahí tiene sesión, confirmación y puede tener fotos subidas, así que lo quita la pareja, que ve el conjunto.
+  - **En el panel**, cada acompañante lleva el nombre de quien lo trae y cada titular, a cuántos trae. «Es acompañante» a secas obligaba a adivinar de quién, que es justo lo que hace falta para sentarlos juntos.
+  - El interruptor de la boda (`allowGuestAddedCompanions`) está en «Datos de la boda»; el cupo, en la ficha de cada invitado.
+
 - **Contador de accesos por invitado**: número de entradas, primera y última. Lista ordenable por accesos, con vista de quién no ha entrado nunca — útil para saber a quién hay que reenviar el enlace.
 - Exportación a XLSX con menús, alergias y mesas para el catering.
+
+  Cómo se resolvió (F1.6):
+
+  - **Tres hojas en el mismo fichero** —dos siempre y la tercera cuando hay algo escrito—. «Invitados» es la lista entera de la pareja —con teléfonos, correos y sus notas—, y «Para el catering» solo los que vienen, con nombre, edad, menú, alergias y mesa. Ese segundo fichero sale por correo a una empresa de fuera: los teléfonos de trescientas personas no tienen por qué ir dentro, y las notas son privadas de la pareja (§9.4). La tercera, «Respuestas», lleva **lo que los invitados han escrito a mano** en el formulario —una canción, una alergia que no cabía en su casilla, un mensaje—, una columna por pregunta de texto y solo las filas de quien escribió algo; no va en la del catering, y si la llamada que la trae falla, el fichero sale igual con las dos de siempre.
+  - **Se monta en el navegador**, con la lista que el panel ya tiene cargada. No pasa por el servidor, no se guarda en Storage y no deja copias.
+  - **La librería se carga al pulsar el botón**, en su propio trozo (20 kB comprimidos). El presupuesto de 200 kB es de la web pública y esto no la toca.
+  - Los códigos del modelo no salen a la hoja: «Confirmado» y «De María», no `confirmed` ni `A`. Los teléfonos van como texto, porque como número Excel se come el `+34`.
+  - El fichero se llama `invitados-<slug>-<fecha>.xlsx`: en la carpeta de descargas va a haber cinco.
 
 ### 8.4 Mesas
 
 Confirmado el enfoque de arrastrar y soltar, sin plano de finca.
 
-- Mesas **redondas y rectangulares**, cada una con **mínimo y máximo de comensales**.
+- **Tantas mesas como haga falta**, redondas o rectangulares, cada una con su **mínimo y su máximo de comensales**.
+- Los topes **vienen puestos y la pareja los cambia**: una redonda nace con mínimo 8 y máximo 12; una rectangular, con mínimo 12 y máximo 50. Son el punto de partida de la mesa recién creada, no un límite del producto: la pareja puede subirlos o bajarlos mesa a mesa, porque quien conoce la finca y el catering es ella.
+- El mínimo y el máximo son para **avisar, no para impedir**: una mesa con trece en una redonda de doce se marca, y se deja. El día de la boda las sillas se añaden.
 - Disposición sobre un **lienzo genérico**: la pareja coloca y ordena las mesas libremente, pero el lienzo **no representa el salón de ninguna hacienda concreta**. Sin fondo de plano, sin paredes, sin escenario. Es un esquema de agrupación, no un plano de arquitectura.
 - **Arrastrar invitados** desde la lista de confirmados sin asignar hasta una mesa, y entre mesas.
 - Avisos, no bloqueos: mesa por debajo del mínimo, mesa por encima del máximo, invitado confirmado sin mesa, acompañante separado de su titular.
@@ -760,7 +881,9 @@ Confirmado el enfoque de arrastrar y soltar, sin plano de finca.
 
 ### 8.5 Galería con audiencias por grupo
 
-Es el módulo con la lógica de permisos más delicada del producto.
+Es el módulo con la lógica de permisos más delicada del producto, y además el que más se mira: las fotos son lo que trae de vuelta a los invitados al día siguiente.
+
+**Se diseña con la plantilla de la boda, no aparte.** La galería hereda el tema de la pareja como cualquier otra sección —tipografía, paleta y aire—, y se diseña **primero para el móvil**, que es por donde la van a abrir casi todos. Una rejilla que se ve bien en un portátil y apretada en un móvil está mal hecha, no al revés.
 
 **Comportamiento.** Cada grupo tiene una `photoAudience`:
 
@@ -803,24 +926,26 @@ Se replica el juego del prototipo `wedding-quiz` y se convierte en módulo multi
 - **Tres niveles de dificultad** que valen 10, 20 y 30 puntos, representados con estrellas.
 - Cada partida toma **N preguntas al azar** del banco (10 por defecto, configurable).
 - Barra de progreso y avance pregunta a pregunta, sin volver atrás.
-- **Ranking** de las mejores puntuaciones (10 por defecto, configurable), con **desempate por tiempo**: a igual puntuación, gana quien lo resolvió más rápido. El tiempo no se muestra al jugador.
+- **Ranking** de las mejores puntuaciones (**20**, configurable), con **desempate por tiempo**: a igual puntuación, gana quien lo resolvió más rápido. El tiempo no se muestra al jugador.
 - Pantalla final con puntuación y posición en el ranking.
 
 **Añadidos respecto al prototipo:**
 
 - **Corrección en servidor** (§7). El prototipo corrige y puntúa en cliente y escribe el ranking directamente contra Firestore; en un producto vendido eso permite falsear la puntuación desde la consola del navegador.
-- **Identificación del jugador por su sesión de invitado**, no escribiendo el nombre. El ranking muestra el mote.
+- **Identificación del jugador por su sesión de invitado**, no escribiendo el nombre.
+- **Se juega las veces que se quiera** y el ranking se queda con la **mejor** partida de cada invitado (`D-11`).
+- **El ranking público enseña solo el nombre** —«Pepe García · 120 puntos»—, nunca los dígitos del móvil: en el modo B esos dígitos son la contraseña del invitado (§3.3), y publicarlos junto al nombre sería publicar la credencial entera. El teléfono lo ve **la pareja en su panel**, que es quien necesita saber quién es quién. A cada invitado se le destaca además **su mejor puntuación**, esté o no entre los veinte.
 - Configurable por la pareja: número de preguntas por partida, tamaño del ranking, si se permite repetir partida y si el ranking es visible para los invitados.
 - Pista opcional por pregunta.
 
 **Gestión en el panel privado:**
 
-- Alta, edición, duplicado, activación y borrado de preguntas, con la correcta y las tres falsas y el nivel de dificultad.
+- Alta, edición, duplicado y borrado de preguntas, con la correcta y las tres falsas y el nivel de dificultad. **No se encienden ni se apagan**: una pregunta que no se quiere, se borra.
 - Importación de un banco de preguntas desde CSV y **banco de ejemplo sembrado al crear la boda**, para que la pareja tenga de dónde partir.
 - Vista previa de la partida tal como la verá el invitado.
 - Consulta y **vaciado del ranking**, útil para dejarlo limpio antes del día de la boda.
-- **Partidas por invitado**: cada invitado acumula `quizPlayCount` y `quizBestPoints`. La pareja ve una tabla de quién ha jugado y cuántas veces, ordenable, con los que no han jugado nunca destacados. Sirve para dos cosas: medir si el juego está funcionando durante el banquete y, si el ranking premia con algo, saber quién se lo está trabajando.
-- Cada partida se guarda como un `quizResults` propio, no se sobrescribe: así el historial por invitado es real y el ranking puede mostrar la mejor o la primera según se configure.
+- **Partidas por invitado**: cada invitado acumula `quizPlayCount` y `quizBestPoints`. La pareja ve **el ranking con el teléfono** de cada jugador, que es lo que le permite distinguir a dos que se llamen igual. No se listan los invitados que no han jugado.
+- **Solo se guarda lo que está en el ranking.** Tras cada partida se podan los `quizResults` que se han quedado fuera de los veinte mejores (`D-11`). Guardar todas las partidas de todos los invitados llenaría la colección de datos que nadie va a mirar, y obligaría a tratar como dato personal una puntuación que a nadie le importa.
 - Estadísticas globales: partidas jugadas, jugadores únicos, preguntas más falladas y preguntas que nadie falla (candidatas a retirar por fáciles).
 
 ### 8.8 Regalos: lista, aportación y regalos recibidos
@@ -871,6 +996,16 @@ weddings/{weddingId}/faqs/{id}
   order, enabled
 ```
 
+Cómo está hecho (implementado el 2026-11-13):
+
+- **Las publicables viajan en la proyección pública**, no en su colección, y las reglas cierran `faqs` al invitado. En una boda abierta no hay sesión de invitado con la que leer nada, así que una regla con `isGuestOf` dejaría sin preguntas justo al modo por defecto; y una pregunta apagada o a medio escribir es trabajo en curso de la pareja, que no tiene por qué estar al alcance de una consulta directa. Va con su batería de aislamiento (`tests/rules/faqs.spec.ts`).
+- **Solo se publican las que tienen pregunta y respuesta.** La semilla de fábrica nace con la respuesta vacía, y publicarla sería prometerle al invitado algo que no está. La pantalla del panel avisa de cuántas quedan así.
+- La respuesta pasa por el **mismo saneador** que las secciones (regla de oro 5).
+- En la web son `<details>` agrupados por categoría: HTML y no JavaScript, así que se abren antes de que arranque Angular y con el teclado. Buscador solo a partir de **diez** preguntas, que busca también dentro de las respuestas y sin acentos.
+- La **categoría es texto libre** —cada boda agrupa como quiere— pero el panel sugiere las ya usadas, para que no acaben existiendo «Cómo llegar» y «como llegar».
+- Los **iconos son una lista cerrada** y presente en los dos sprites: uno que solo estuviera en el del panel se pintaría como un hueco en la web del invitado.
+- Lo que **todavía no está**: el `color` por pregunta (el icono y el grupo ya distinguen bastante; se verá si hace falta), el **contacto de referencia** y el `linkTo` a otro módulo, que espera a que esos módulos existan.
+
 ### 8.10 Alojamientos
 
 - Fichas de hoteles y casas rurales con nombre, categoría, **precio orientativo por noche**, distancia al banquete, teléfono, web, y **código de descuento o mención para la reserva** ("di que vas a la boda de María y Gabriel").
@@ -884,8 +1019,41 @@ weddings/{weddingId}/accommodations/{id}
   pricePerNight, distanceKm, phone, website
   discountCode, blockedRooms, bookingDeadline
   locationId: string | null
-  featured: bool, order, icon, color
+  recommended: bool, order, enabled: bool
 ```
+
+`category` es una de `hotel`, `rural`, `apartamento`, `camping` u `otro`, y es
+la que decide el icono: no hay icono ni color por ficha. Un color por hotel no
+le dice nada al invitado —no significa nada, y el color que no significa nada
+está prohibido (§9.1)—, y el icono se deduce de lo que es: `tent` para el
+camping y `bed` para todo lo demás.
+
+El campo del destacado se llama **`recommended`**, no `featured`: es la palabra
+que usa la pantalla («el que recomendáis») y la que entiende la pareja. Ausente
+es `false`.
+
+`enabled` ausente es **activo**, como en las demás listas: una ficha que la
+pareja apaga desaparece de la web y sigue en su panel. Lo publicable se queda
+además en **20 fichas**, que es lo que una web de boda puede enseñar sin
+convertirse en un buscador de hoteles.
+
+**Lo que decide si se publica.** Una ficha sin nombre no se publica —no es una
+ficha—, y el resto de los campos son opcionales a propósito: la pareja apunta
+el hotel con lo que sabe y lo completa después. El panel avisa de lo que el
+invitado va a notar: una ficha que no se publica, un plazo de reserva vencido o
+a punto de vencer, habitaciones bloqueadas sin fecha hasta la que valen, y una
+ficha sin teléfono ni web, con la que no se puede reservar.
+
+**El plazo cuenta el día entero**: «hasta el 1 de junio» incluye el 1, y a una
+semana o menos la web lo marca como urgente. Un plazo vencido **se dice**, no se
+esconde: el invitado que mira la web el día 2 necesita saber que ya no hay
+bloqueo, no quedarse esperando una tarifa que ya no existe.
+
+**El teléfono y la web se guardan normalizados** con las mismas funciones que
+usa el servidor (`telefonoValido`, `webValida`), y el formulario marca en rojo
+lo que el servidor va a rechazar. De la web solo se admiten `http` y `https`:
+un `javascript:` en el sitio donde la web pública pinta un enlace es el mismo
+agujero que el saneador evita en los textos (§9.3).
 
 ### 8.11 Dress code
 
@@ -894,6 +1062,37 @@ weddings/{weddingId}/accommodations/{id}
 - **Moodboard de imágenes de referencia**, que es como se entiende de verdad un dress code.
 - Indicaciones diferenciadas opcionales por rol o por grupo (por ejemplo, distinto para el cortejo que para el resto).
 - Avisos prácticos: si la ceremonia es en exterior sobre hierba, el aviso sobre tacones vale más que tres párrafos de estilo.
+
+```
+weddings/{weddingId}
+  modules.dressCode.config
+    description: string            // texto enriquecido, saneado en servidor
+    suggestedColors: string[]      // ids de la lista cerrada, 8 como máximo
+    avoidColors: string[]          // ids, 8 como máximo
+    tips: string[]                 // avisos prácticos, 6 de 140 caracteres
+```
+
+No tiene colección propia porque es un contenido único por boda y no una lista
+(§5.10). Eso obliga a un cuidado que los demás módulos no necesitan: la
+**configuración de un módulo nunca se copia a la proyección pública** —suele
+traer datos internos—, así que lo que se publica se **construye** campo a campo
+a partir de estos cuatro, como el resto de la proyección.
+
+**Los colores son ids de una lista cerrada, no hexadecimales.** Es lo que hace
+cumplible el requisito de que cada muestra lleve su nombre: el nombre sale de la
+misma lista que el color y no pueden discrepar. Y es lo que evita que un valor
+del documento acabe dentro de un atributo de estilo de la web pública: el
+dominio vuelve a resolver cada id contra la lista en los dos lados, y un id que
+no existe se cae. La lista, los treinta colores y el por qué están en `D-38`.
+
+**Quien decide si el invitado lo ve es su sección**, en `content.sections`,
+igual que con las preguntas frecuentes, la cronología y los alojamientos. El
+interruptor del módulo no entra: si entrara, una pareja podría escribir su dress
+code, verlo en su panel y no entender por qué no sale en la web.
+
+**El panel avisa de lo que el invitado no puede resolver**: un color que está a
+la vez en «nos encantan» y en «a evitar», y una sección que saldría con el
+título solo porque no hay nada escrito.
 
 ### 8.12 Personas importantes
 
@@ -934,6 +1133,15 @@ weddings/{weddingId}/timelineEvents/{id}
   visibleToGuests: bool
   order
 ```
+
+Cómo está hecho (implementado el 2026-11-13):
+
+- **Lo interno se queda fuera de la proyección pública**, que es lo único que de verdad cumple «la hora a la que llega el fotógrafo no es asunto de los invitados»: el documento público es lo que el invitado lee, y las reglas cierran `timelineEvents` igual que `faqs` —una regla no puede filtrar por `visibleToGuests` en una consulta de lista—.
+- **El orden es la hora, no un campo `order`.** En una cronología el orden _es_ la hora, y dejar que un número escrito a mano la contradiga solo serviría para que la pareja viera su día desordenado. `order` queda como desempate.
+- **La boda acaba de madrugada.** Las horas anteriores a las 6:00 cuentan como del día siguiente: «04:00» va después de «23:30», no antes. Sin esto, la barra libre aparecería antes de la ceremonia y los avisos dirían cualquier cosa.
+- **Avisos de solapes y huecos** (§8.13) con los nombres de los hitos, y calculados **también sobre los internos**: un solape entre el montaje y la ceremonia es justo el error que hay que cazar. Un hueco es un rato de **dos horas o más**: hora y media entre el cóctel y el banquete es la vida normal de una boda. Son avisos, no errores: una boda tiene cosas que pasan a la vez.
+- Los **iconos son una lista cerrada** del set curado, presentes en los dos sprites, y los **colores salen de la paleta de categorías** del sistema visual: aquí no se inventa ninguno. El color nunca viaja solo —al lado van el icono, la hora y, si es interno, su etiqueta—.
+- Lo que **todavía no está**: el enlace con una ubicación del mapa (`locationId`), que espera al módulo de mapa (§8.6, bloqueado por `D-04`).
 
 ### 8.14 Playlist colaborativa
 
@@ -1145,11 +1353,11 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 
 ## 12. Decisiones pendientes
 
-Ninguna bloquea el arranque del desarrollo.
+Ninguna bloquea el arranque del desarrollo. **El registro vivo es `docs/PENDIENTES.md`** (las `D-xx`): esta lista es el contexto con el que nacieron, y cuando una se decide se anota aquí también, para que las dos no digan cosas distintas.
 
 1. **Ciclo de vida post-boda.** Cuánto tiempo permanece viva la web y los datos tras la fecha, si se ofrece renovación y cuándo se purga. Afecta a retención RGPD y a coste. Los registros de acceso deberían purgarse antes que el resto.
-2. **Precio y planes.** Qué módulos entran en `basic` y cuáles en `premium`. El campo `plan` ya está en el modelo. Candidatos naturales a premium: quiz, galería con audiencias, mapa.
-3. **Librería del editor de texto enriquecido.** Jodit es MIT y sirve, pero su wrapper oficial de Angular está sin mantenimiento activo y la versión que manejabas (4.7.6) va varias menores por detrás de la actual. Para una barra tan acotada puede pesar de más. Pendiente de una prueba comparativa rápida contra una alternativa ligera antes de fijarlo.
+2. **Precio y planes.** El reparto de módulos vive en `functions/src/dominio/planes.ts`: el básico es de **una sola página** con seis módulos, y galería y quiz son solo del extendido porque las dos necesitan ruta propia. **El catálogo de dieciocho módulos se mantiene** (decidido el 2026-11-13): lo que todavía no está construido sale en el panel diciendo «En camino», no escondido. Queda por decidir el **precio** de cada plan.
+3. **Librería del editor de texto enriquecido. Decidida: Jodit con `ngx-jodit`** (ver `D-03`, confirmada el 2026-11-13). Ya no hay prueba comparativa pendiente. Siguen en pie el saneado en servidor y la barra acotada, y se carga **solo en el panel**: en la web pública no hace falta y ahí hay 200 kB de presupuesto que defender.
 4. **Confirmar la librería de mapas.** La recomendación es Leaflet o MapLibre sobre OpenStreetMap para evitar clave y facturación de Google. Si prefieres el aspecto de Google Maps, hay que asumir clave con facturación y restricción por _referrer_ poco estrecha por el wildcard.
 5. **Email transaccional.** Hoy fuera de alcance: la comunicación se hace compartiendo el enlace por WhatsApp manualmente, y solo se usan los correos propios de Firebase Auth. Si se quieren recordatorios automáticos a quienes no han confirmado, hará falta proveedor de email.
 6. **WhatsApp Business API.** No descartado. Coste por mensaje, plantillas aprobadas por Meta y alta como empresa. Previsto para F5.

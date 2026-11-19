@@ -9,6 +9,7 @@ import {
   fechaLimiteTarea,
   tareasAplicables,
 } from './semillas';
+import { COLORES_GRUPO, validarGrupo } from './grupos';
 
 const HOY = new Date('2026-09-10T00:00:00Z');
 
@@ -110,7 +111,21 @@ describe('grupo por defecto', () => {
   });
 
   it('su color es un id de la paleta categórica, no un hexadecimal', () => {
-    expect(GRUPO_POR_DEFECTO.color).not.toMatch(/^#/);
+    expect(COLORES_GRUPO).toContain(GRUPO_POR_DEFECTO.color);
+  });
+
+  it('pasa la misma validación que un grupo creado por la pareja', () => {
+    // Si nace distinto de como lo guardaría `upsertGroup`, el primer choque de
+    // nombres o la primera importación lo tratan como un grupo raro.
+    const validado = validarGrupo(GRUPO_POR_DEFECTO, []);
+    expect(validado.ok && validado.datos).toEqual({
+      name: GRUPO_POR_DEFECTO.name,
+      normalizedName: GRUPO_POR_DEFECTO.normalizedName,
+      side: GRUPO_POR_DEFECTO.side,
+      photoAudience: GRUPO_POR_DEFECTO.photoAudience,
+      allowPublicOptIn: GRUPO_POR_DEFECTO.allowPublicOptIn,
+      color: GRUPO_POR_DEFECTO.color,
+    });
   });
 });
 

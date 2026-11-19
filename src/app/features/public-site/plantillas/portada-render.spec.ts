@@ -58,7 +58,10 @@ describe.each(PLANTILLAS)('plantilla %s', (_nombre, Plantilla) => {
           type: 'texto',
           enabled: true,
           order: 1,
-          fields: { titulo: 'Nuestra historia', texto: 'Nos conocimos en Cádiz.' },
+          fields: {
+            titulo: 'Nuestra historia',
+            texto: '<p>Nos conocimos en <strong>Cádiz</strong>.</p>',
+          },
         },
         {
           id: 'apagada',
@@ -81,5 +84,115 @@ describe.each(PLANTILLAS)('plantilla %s', (_nombre, Plantilla) => {
     expect(texto).toContain('Nuestra historia');
     expect(texto).toContain('Nos conocimos en Cádiz.');
     expect(texto).not.toContain('No debería salir');
+  });
+
+  /**
+   * El texto enriquecido se pinta **como HTML**, no como texto escapado.
+   *
+   * Llega ya saneado del servidor (regla de oro 5) y Angular lo vuelve a
+   * sanear al pintarlo. Si esto se rompiera, la pareja vería sus etiquetas
+   * escritas en medio de la web.
+   */
+  it('pinta el texto enriquecido con su formato', async () => {
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: { es: {} },
+          translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+        }),
+      ],
+      providers: [provideIconSprite('public')],
+    });
+
+    const fixture = TestBed.createComponent(Plantilla);
+    fixture.componentRef.setInput('datos', {
+      nombres: { partnerA: 'María', partnerB: 'Gabriel' },
+      weddingDate: null,
+      weddingTime: null,
+      timezone: 'Europe/Madrid',
+      locale: 'es',
+      heroImageUrl: null,
+      secciones: [
+        {
+          id: 'historia',
+          type: 'texto',
+          enabled: true,
+          order: 1,
+          fields: {
+            titulo: 'Nuestra historia',
+            texto: '<p>Nos conocimos en <strong>Cádiz</strong>.</p><ul><li>2019</li></ul>',
+          },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('.np-rico strong')?.textContent).toBe('Cádiz');
+    expect(raiz.querySelectorAll('.np-rico li')).toHaveLength(1);
+    expect(raiz.textContent).not.toContain('<strong>');
+  });
+
+  /**
+   * Una boda recién creada, que es el primer estado de todas.
+   *
+   * Sin nombres, la clásica dibujaba un «&» suelto en mitad de la pantalla y
+   * la botánica una «y» sola: parece una web rota, no una boda a medio
+   * montar. Se vio en la página de muestra de desarrollo.
+   */
+  it('sin nombres no pinta un título a medias', async () => {
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: { es: { publico: { pareja: '{{partnerA}} y {{partnerB}}' } } },
+          translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+        }),
+      ],
+      providers: [provideIconSprite('public')],
+    });
+
+    const fixture = TestBed.createComponent(Plantilla);
+    fixture.componentRef.setInput('datos', {
+      nombres: { partnerA: '', partnerB: '' },
+      weddingDate: null,
+      weddingTime: null,
+      timezone: 'Europe/Madrid',
+      locale: 'es',
+      heroImageUrl: null,
+      secciones: [],
+    });
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('h1')).toBeNull();
+    expect((raiz.textContent ?? '').trim()).not.toMatch(/(^|\s)[y&](\s|$)/);
+  });
+
+  /** Con un solo nombre puesto, se escribe ese y no la conjunción. */
+  it('con un nombre solo, lo escribe sin conjunción', async () => {
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: { es: { publico: { pareja: '{{partnerA}} y {{partnerB}}' } } },
+          translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+        }),
+      ],
+      providers: [provideIconSprite('public')],
+    });
+
+    const fixture = TestBed.createComponent(Plantilla);
+    fixture.componentRef.setInput('datos', {
+      nombres: { partnerA: 'María', partnerB: '' },
+      weddingDate: null,
+      weddingTime: null,
+      timezone: 'Europe/Madrid',
+      locale: 'es',
+      heroImageUrl: null,
+      secciones: [],
+    });
+    fixture.detectChanges();
+
+    const h1 = (fixture.nativeElement as HTMLElement).querySelector('h1');
+    expect(h1?.textContent?.trim()).toBe('María');
   });
 });

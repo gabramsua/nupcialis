@@ -32,6 +32,14 @@ export interface Invitado {
   /** Cuántas veces ha entrado en la web. Lo mueve el servidor. */
   readonly loginCount: number;
   readonly notes: string;
+  /** Lo contesta el invitado en el RSVP; es lo que se exporta al catering. */
+  readonly menu: string;
+  readonly allergies: string;
+  readonly tableId: string | null;
+  /** Lo apuntó un invitado desde la web, no la pareja desde el panel. */
+  readonly apuntadoPorInvitado: boolean;
+  /** Cuándo se dio de alta, en ISO, o `null` si el documento es anterior. */
+  readonly altaEn: string | null;
 }
 
 /** Lo que la pareja puede escribir. El resto lo lleva el servidor (regla 6). */
@@ -44,6 +52,11 @@ export interface DatosInvitado {
   readonly side?: Lado;
   readonly ageGroup?: Edad;
   readonly groupIds?: readonly string[];
+  /**
+   * Solo al importar: los grupos llegan **por nombre**, como están en la hoja.
+   * El servidor los resuelve y crea los que falten.
+   */
+  readonly groupNames?: readonly string[];
   readonly maxCompanions?: number;
   readonly notes?: string;
 }
@@ -73,6 +86,17 @@ export type ResultadoGuardado =
   | { readonly ok: true; readonly id: string; readonly creado: boolean }
   | { readonly ok: false; readonly fallo: FalloInvitado };
 
+/**
+ * El cupo de acompañantes puesto a varios de una vez (F1.5b).
+ *
+ * `omitidos` son los que no lo recibieron: acompañantes —que no pueden tener
+ * cupo, o se encadenaría— y, si acaso, alguno borrado entre que se pintó la
+ * lista y se pulsó el botón.
+ */
+export type ResultadoCupo =
+  | { readonly ok: true; readonly cambiados: number; readonly omitidos: number }
+  | { readonly ok: false; readonly fallo: FalloInvitado };
+
 export type ResultadoBorrado =
   { readonly ok: true } | { readonly ok: false; readonly fallo: FalloInvitado };
 
@@ -88,10 +112,54 @@ export type ResultadoListado =
   | { readonly ok: true; readonly invitados: readonly Invitado[] }
   | { readonly ok: false; readonly fallo: FalloInvitado };
 
+/** Cada fila del fichero, tal como la ve el servidor. */
+export type EstadoFila = 'nuevo' | 'duplicado' | 'invalido' | 'sin-sitio';
+
+export interface FilaImportada {
+  readonly fila: number;
+  readonly nombre: string;
+  readonly estado: EstadoFila;
+  readonly motivos: readonly CampoInvalido[];
+  readonly duplicadoDe: string;
+  readonly motivoDuplicado: 'telefono' | 'nombre' | null;
+}
+
+export interface ResumenImportacion {
+  readonly nuevos: number;
+  readonly duplicados: number;
+  readonly invalidos: number;
+  readonly sinSitio: number;
+}
+
+export interface Importacion {
+  readonly filas: readonly FilaImportada[];
+  readonly resumen: ResumenImportacion;
+  /** Grupos que no existían y se crean (o se crearían) al importar. */
+  readonly gruposNuevos: readonly string[];
+  readonly importados: number;
+  readonly previsualizacion: boolean;
+}
+
+export type ResultadoImportacion =
+  | { readonly ok: true; readonly importacion: Importacion }
+  | { readonly ok: false; readonly fallo: FalloInvitado };
+
 export interface PuertaInvitados {
   listar(): Promise<ResultadoListado>;
+  /**
+   * Importa una lista, o solo mira qué pasaría.
+   *
+   * Es **la misma llamada** con una bandera, no dos caminos: lo que se enseña
+   * antes de confirmar tiene que ser exactamente lo que va a ocurrir.
+   */
+  importar(
+    filas: readonly DatosInvitado[],
+    opciones: { soloPrevisualizar: boolean; forzarDuplicados?: boolean },
+  ): Promise<ResultadoImportacion>;
   guardar(datos: DatosInvitado, forzar?: boolean): Promise<ResultadoGuardado>;
   borrar(id: string): Promise<ResultadoBorrado>;
+  /** Pone el mismo cupo de acompañantes a todos los de la lista. */
+  cupoEnLote(guestIds: readonly string[], maxCompanions: number): Promise<ResultadoCupo>;
 }
 
 export const PUERTA_INVITADOS = new InjectionToken<PuertaInvitados>('PUERTA_INVITADOS');
@@ -109,6 +177,8 @@ export interface ResumenInvitados {
   readonly pendientes: number;
   /** Cuántos no han entrado nunca. Es a quién hay que reenviar el enlace (§8.3). */
   readonly sinEntrar: number;
+  /** Cuántos los han apuntado los propios invitados. */
+  readonly apuntados: number;
 }
 
 export function resumirInvitados(invitados: readonly Invitado[]): ResumenInvitados {
@@ -118,7 +188,73 @@ export function resumirInvitados(invitados: readonly Invitado[]): ResumenInvitad
     declinados: invitados.filter((i) => i.rsvpStatus === 'declined').length,
     pendientes: invitados.filter((i) => i.rsvpStatus === 'pending').length,
     sinEntrar: invitados.filter((i) => i.loginCount === 0).length,
+    apuntados: invitados.filter((i) => i.apuntadoPorInvitado === true).length,
   };
+}
+
+/**
+ * Lo que la pareja puede pedir ver.
+ *
+ * `sin-entrar` no es un estado del RSVP: es «a quién hay que reenviarle el
+ * enlace», que es la pregunta que de verdad se hace cuando faltan dos semanas.
+ */
+export type Vista =
+  | 'todos'
+  | 'confirmed'
+  | 'declined'
+  | 'pending'
+  | 'sin-entrar'
+  /** Los que han apuntado los propios invitados (§5.5). */
+  | 'apuntados';
+
+export function porVista(invitados: readonly Invitado[], vista: Vista): readonly Invitado[] {
+  if (vista === 'todos') return invitados;
+  if (vista === 'sin-entrar') return invitados.filter((i) => i.loginCount === 0);
+  if (vista === 'apuntados') return invitados.filter((i) => i.apuntadoPorInvitado === true);
+  return invitados.filter((i) => i.rsvpStatus === vista);
+}
+
+/**
+ * Los que han apuntado los invitados **en los últimos días** (F1.5c).
+ *
+ * Es el aviso que faltaba: la pareja se enteraba de que alguien había
+ * apuntado a su pareja mirando la lista con atención, o no se enteraba.
+ *
+ * Una semana, y no «desde la última vez que entraste»: guardar esa marca
+ * obliga a escribir por cada visita al panel, y con dos novios es una marca
+ * que pisa la del otro. «Esta semana» se entiende sin explicar nada.
+ */
+export const DIAS_DE_NOVEDAD = 7;
+
+export function apuntadosHacePoco(
+  invitados: readonly Invitado[],
+  ahora: Date = new Date(),
+  dias: number = DIAS_DE_NOVEDAD,
+): readonly Invitado[] {
+  const desde = ahora.getTime() - dias * 24 * 60 * 60 * 1000;
+
+  return invitados.filter((invitado) => {
+    if (invitado.apuntadoPorInvitado !== true) return false;
+    if (typeof invitado.altaEn !== 'string') return false;
+
+    const cuando = new Date(invitado.altaEn).getTime();
+    return Number.isFinite(cuando) && cuando >= desde;
+  });
+}
+
+/**
+ * Filtra por grupo. `null` es «todos», que no es lo mismo que «ninguno».
+ *
+ * Se cruza con las demás vistas en vez de sustituirlas: «pendientes» y
+ * «Primos» a la vez es exactamente la pregunta que se hace la pareja cuando va
+ * a llamar por teléfono a los que faltan de una rama de la familia.
+ */
+export function porGrupo(
+  invitados: readonly Invitado[],
+  groupId: string | null,
+): readonly Invitado[] {
+  if (groupId === null) return invitados;
+  return invitados.filter((invitado) => invitado.groupIds.includes(groupId));
 }
 
 /**

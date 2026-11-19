@@ -7,8 +7,14 @@ import {
   PaletaMarca,
   SitioPublico,
   TemaPublico,
+  type VisibilidadModulo,
 } from '../tenant/tenant-source';
+import { esModoAcceso } from '../acceso/acceso';
 import { sanearSecciones } from '../../features/public-site/secciones/secciones';
+import { sanearFaqs } from '../../features/public-site/faqs/faqs';
+import { sanearCronologia } from '../../features/public-site/cronologia/cronologia';
+import { sanearAlojamientos } from '../../features/public-site/alojamientos/alojamientos';
+import { dressCodePublicado } from '../../features/public-site/dress-code/dress-code';
 import { FIRESTORE } from './firestore.providers';
 
 /**
@@ -63,11 +69,22 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         locale: typeof datos['locale'] === 'string' ? datos['locale'] : 'es',
         theme: tema(datos['theme']),
         indexable: datos['indexable'] === true,
+        modulos: modulos(datos['modules']),
+        // Ante un valor que no reconocemos, abierta. Una boda que pidiera
+        // identificarse por un dato corrupto dejaría fuera a sus invitados sin
+        // que nadie lo hubiera decidido.
+        guestAccessMode: esModoAcceso(datos['guestAccessMode']) ? datos['guestAccessMode'] : 'open',
         // Se vuelve a sanear en el cliente aunque el servidor ya lo haya hecho.
         // No es desconfianza del servidor: es que este documento puede haber
         // sido escrito por una versión anterior de la función, y una web de
         // boda no puede romperse por un despliegue a medias.
         secciones: sanearSecciones(secciones(datos['content'])),
+        faqs: sanearFaqs(dentroDeContent(datos['content'], 'faqs')),
+        cronologia: sanearCronologia(dentroDeContent(datos['content'], 'cronologia')),
+        alojamientos: sanearAlojamientos(dentroDeContent(datos['content'], 'alojamientos')),
+        // El HTML de la descripción ya viene saneado del servidor: aquí solo
+        // se comprueba la forma, como con todo lo que llega de Firestore.
+        dressCode: dressCodePublicado(dentroDeContent(datos['content'], 'dressCode')),
       };
     },
   };
@@ -82,8 +99,12 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
  */
 /** El array de secciones dentro de `content`, sin suponer que exista. */
 function secciones(valor: unknown): unknown {
+  return dentroDeContent(valor, 'sections');
+}
+
+function dentroDeContent(valor: unknown, clave: string): unknown {
   if (valor === null || typeof valor !== 'object') return null;
-  return (valor as Record<string, unknown>)['sections'];
+  return (valor as Record<string, unknown>)[clave];
 }
 
 function nombres(valor: unknown): NombresPareja {
@@ -128,4 +149,20 @@ function paleta(valor: unknown): PaletaMarca | null {
   if (!completa) return null;
 
   return Object.fromEntries(CLAVES_PALETA.map((c) => [c, p[c]])) as unknown as PaletaMarca;
+}
+
+/**
+ * La visibilidad de cada módulo, sin creerse nada.
+ *
+ * Lo que no se reconozca es `hidden`: un módulo que apareciera por un dato
+ * corrupto enseñaría al invitado una puerta que no lleva a ningún sitio.
+ */
+function modulos(valor: unknown): Readonly<Record<string, VisibilidadModulo>> {
+  if (valor === null || typeof valor !== 'object') return {};
+
+  const salida: Record<string, VisibilidadModulo> = {};
+  for (const [modulo, estado] of Object.entries(valor as Record<string, unknown>)) {
+    salida[modulo] = estado === 'visible' || estado === 'soon' ? estado : 'hidden';
+  }
+  return salida;
 }

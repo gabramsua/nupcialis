@@ -13,7 +13,17 @@
  */
 
 import { MODULOS, type Modulo, type Visibilidad } from './planes';
-import { sanearSecciones, type Seccion } from './secciones';
+import { CAMPOS_POR_TIPO, esCampoRico, sanearSecciones, type Seccion } from './secciones';
+import { sanearHtml } from './html';
+import { MAX_RESPUESTA, sanearFaqs, type FaqPublica } from './faqs';
+import { sanearCronologia, type HitoPublico } from './cronologia';
+import { sanearAlojamientos, type AlojamientoPublico } from './alojamientos';
+import {
+  DRESS_CODE_VACIO,
+  MAX_DESCRIPCION_DRESS,
+  sanearDressCode,
+  type DressCodePublico,
+} from './dress-code';
 
 /** Módulos que tienen presencia en la web pública. */
 export const MODULOS_PUBLICOS: readonly Modulo[] = [
@@ -56,7 +66,10 @@ export interface BodaParaProyectar {
   readonly guestAccessMode?: unknown;
   readonly theme?: TemaBoda;
   readonly modules?: Partial<
-    Record<Modulo, { readonly enabled?: unknown; readonly visibility?: unknown }>
+    Record<
+      Modulo,
+      { readonly enabled?: unknown; readonly visibility?: unknown; readonly config?: unknown }
+    >
   >;
   readonly content?: unknown;
   readonly indexable?: unknown;
@@ -80,7 +93,39 @@ export interface ProyeccionPublica {
     readonly heroImageUrl: string | null;
   };
   readonly publicModules: Record<string, Visibilidad>;
-  readonly content: { readonly sections: readonly Seccion[] };
+  readonly content: {
+    readonly sections: readonly Seccion[];
+    /**
+     * Las preguntas frecuentes publicables (§8.9).
+     *
+     * Viajan **aquí y no en su colección** aunque las reglas dejaran leerlas:
+     * en una boda abierta no hay sesión de invitado con la que leer nada, y
+     * las preguntas internas de la pareja no tienen por qué estar al alcance
+     * de una consulta directa.
+     */
+    readonly faqs: readonly FaqPublica[];
+    /**
+     * La cronología del día, solo lo visible para invitados (§8.13).
+     *
+     * Lo interno —la hora a la que llega el fotógrafo, la del montaje— se queda
+     * fuera **aquí**, que es lo único que de verdad lo protege: el documento
+     * público es lo que lee el invitado.
+     */
+    readonly cronologia: readonly HitoPublico[];
+    /** Los alojamientos para los invitados de fuera (§8.10). */
+    readonly alojamientos: readonly AlojamientoPublico[];
+    /**
+     * El dress code (§8.11).
+     *
+     * El único módulo cuyo contenido vive en `modules.dressCode.config` y no
+     * en una subcolección, porque es un contenido único y no una lista. Eso
+     * obliga a tener cuidado: la configuración de un módulo **nunca** se copia
+     * a la proyección —suele traer datos internos, el IBAN de los regalos por
+     * ejemplo—, así que esto no se copia, se **construye** campo a campo con
+     * lista blanca, como todo lo demás de aquí.
+     */
+    readonly dressCode: DressCodePublico;
+  };
   /** Si la pareja quiere salir en buscadores. Por defecto, no. Ver §8.1. */
   readonly indexable: boolean;
 }
@@ -97,6 +142,24 @@ export const PROHIBIDOS_EN_PUBLICO: readonly string[] = [
 ];
 
 /** El array de secciones de dentro de `content`, sin suponer que exista. */
+/**
+ * Pasa por el saneador los campos que llevan HTML.
+ *
+ * El tope en caracteres es el mismo que ya aplica `sanearSecciones`: lo que se
+ * publica no puede crecer por llevar etiquetas dentro.
+ */
+function conHtmlSaneado(seccion: Seccion): Seccion {
+  const fields: Record<string, string> = { ...seccion.fields };
+
+  for (const [campo, valor] of Object.entries(seccion.fields)) {
+    if (esCampoRico(seccion.type, campo)) {
+      fields[campo] = sanearHtml(valor, CAMPOS_POR_TIPO[seccion.type][campo] ?? 0);
+    }
+  }
+
+  return { ...seccion, fields };
+}
+
 function secciones(content: unknown): unknown {
   if (content === null || typeof content !== 'object') return null;
   return (content as Record<string, unknown>)['sections'];
@@ -141,7 +204,44 @@ export function modulosPublicos(
   return salida;
 }
 
-export function proyeccionPublica(boda: BodaParaProyectar): ProyeccionPublica {
+/**
+ * El dress code, construido campo a campo.
+ *
+ * Vive en `modules.dressCode.config` y no en una subcolección, y aquí hay un
+ * cuidado que no hace falta en los otros módulos: **ninguna `config` se
+ * copia**, porque suelen traer datos internos —el IBAN de los regalos, el
+ * email del catering—. Así que esto no copia nada: lee cuatro campos conocidos
+ * y descarta el resto, igual que la proyección entera.
+ *
+ * **No se mira `enabled`**, por lo mismo que no se mira para las preguntas o
+ * los alojamientos: lo que decide si el invitado ve esto es el interruptor de
+ * **su sección** en `content.sections`, que es el que tiene la pareja a mano.
+ * Atarlo además al del módulo daría un contenido escrito que no sale en la web
+ * y nadie entendería por qué.
+ *
+ * La descripción pasa por el saneador como los demás textos con formato
+ * (regla de oro 5).
+ */
+function dressCodePublico(modules: BodaParaProyectar['modules']): DressCodePublico {
+  const config = modules?.['dressCode']?.config;
+  if (config === undefined || config === null) return DRESS_CODE_VACIO;
+
+  const dress = sanearDressCode(config);
+  return { ...dress, descripcion: sanearHtml(dress.descripcion, MAX_DESCRIPCION_DRESS) };
+}
+
+/**
+ * Lo que se publica de una boda.
+ *
+ * `faqs` llega aparte porque vive en una subcolección y esta función es pura:
+ * quien la llama es el trigger, que sí sabe leer de Firestore.
+ */
+export function proyeccionPublica(
+  boda: BodaParaProyectar,
+  faqs: unknown = [],
+  cronologia: unknown = [],
+  alojamientos: unknown = [],
+): ProyeccionPublica {
   const tema = boda.theme ?? {};
   return {
     slug: cadena(boda.slug, ''),
@@ -173,7 +273,23 @@ export function proyeccionPublica(boda: BodaParaProyectar): ProyeccionPublica {
     // **No se copia `content` tal cual.** Lo escribe la pareja desde su panel
     // —no es campo de sistema— y esto acaba en el único documento que puede
     // leer un anónimo. Se reconstruye con lista blanca, igual que el resto.
-    content: { sections: sanearSecciones(secciones(boda.content)) },
+    // El texto enriquecido se sanea **aquí**, justo antes de publicarse, y no
+    // en el panel: lo que decida el navegador de la pareja no protege a quien
+    // abre la web (regla de oro 5).
+    content: {
+      sections: sanearSecciones(secciones(boda.content)).map(conHtmlSaneado),
+      // La respuesta de una pregunta la escribe la pareja con el editor, así
+      // que pasa por el mismo saneador que las secciones (regla de oro 5).
+      faqs: sanearFaqs(faqs).map((faq) => ({
+        ...faq,
+        answer: sanearHtml(faq.answer, MAX_RESPUESTA),
+      })),
+      // La descripción de un hito es texto plano, no HTML: en una línea de
+      // tiempo que se lee de un vistazo no hay sitio para párrafos con formato.
+      cronologia: sanearCronologia(cronologia),
+      alojamientos: sanearAlojamientos(alojamientos),
+      dressCode: dressCodePublico(boda.modules),
+    },
     // Solo `true` cuenta como sí. Cualquier otra cosa —ausente, corrupta, una
     // cadena 'true'— deja la boda fuera de Google, que es el fallo seguro.
     indexable: boda.indexable === true,

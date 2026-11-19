@@ -6,6 +6,7 @@ export type NpIconName =
   | 'airplane'
   | 'archive'
   | 'arrow-left'
+  | 'arrows-clockwise'
   | 'baby'
   | 'balloon'
   | 'bank'
@@ -26,6 +27,7 @@ export type NpIconName =
   | 'champagne'
   | 'chart-bar'
   | 'chart-pie-slice'
+  | 'chat-circle-text'
   | 'check'
   | 'check-circle'
   | 'chef-hat'
@@ -33,6 +35,7 @@ export type NpIconName =
   | 'clock'
   | 'clock-countdown'
   | 'confetti'
+  | 'copy'
   | 'cow'
   | 'credit-card'
   | 'crown-simple'
@@ -63,6 +66,7 @@ export type NpIconName =
   | 'images'
   | 'info'
   | 'leaf'
+  | 'link-simple'
   | 'list'
   | 'list-checks'
   | 'lock-simple'
@@ -96,6 +100,7 @@ export type NpIconName =
   | 'trophy'
   | 'upload-simple'
   | 'user'
+  | 'user-circle'
   | 'user-plus'
   | 'users'
   | 'video-camera'
@@ -148,6 +153,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'crown-simple': "Padrinos",
   'hand-heart': "Testigos",
   'steering-wheel': "Chófer",
+  'user-circle': "Quién eres",
   'leaf': "Vegetariano",
   'plant': "Vegano",
   'grains': "Sin gluten",
@@ -213,4 +219,8 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'images': "Galería",
   'note-pencil': "Libro de firmas",
   'playlist': "Playlist",
+  'copy': "Copiar",
+  'link-simple': "Enlace",
+  'arrows-clockwise': "Cambiar el enlace",
+  'chat-circle-text': "Respuestas",
 };

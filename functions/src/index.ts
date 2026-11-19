@@ -10,10 +10,22 @@
  * alcanza. Toda la lógica que se pueda decidir sin red vive en `dominio/`.
  */
 
+export { listAccessLog } from './access-log';
 export { authorizeWeddingDomain } from './authorize-wedding-domain';
+export { addCompanion, deleteCompanion } from './companions';
+export { setCompanionQuota } from './companion-quota';
+export { deleteGroup, reorderGroups, upsertGroup } from './groups';
+export { guestLinkLogin, guestLogin, verifyGuest } from './guest-login';
+export { getInviteLink } from './invite-links';
 export { deleteGuest, listGuests, upsertGuest } from './guests';
+export { importGuests } from './import-guests';
 export { provisionWedding } from './provision-wedding';
+export { listQuizRanking, startQuiz, submitQuiz } from './quiz';
+export { clearQuizRanking, listQuizPlays } from './quiz-admin';
+export { assignGuestsToTable } from './tables';
 export { recomputeCounters } from './recompute-counters';
+export { listRsvpAnswers } from './rsvp-answers';
+export { getRsvpForm, submitRsvp } from './rsvp';
 export { setUserClaims } from './set-user-claims';
 export { setWeddingStatus } from './set-wedding-status';
-export { syncPublicProjection } from './sync-public-projection';
+export { syncPublicFaqs, syncPublicProjection, syncPublicTimeline } from './sync-public-projection';

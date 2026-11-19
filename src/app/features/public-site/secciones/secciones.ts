@@ -15,7 +15,16 @@
 export const MAX_SECCIONES = 20;
 export const MAX_ID = 40;
 
-export const TIPOS_SECCION = ['portada', 'texto', 'evento'] as const;
+export const TIPOS_SECCION = [
+  'portada',
+  'texto',
+  'evento',
+  'preguntas',
+  'cronologia',
+  'alojamientos',
+  'dressCode',
+  'quiz',
+] as const;
 export type TipoSeccion = (typeof TIPOS_SECCION)[number];
 
 export interface Seccion {
@@ -37,9 +46,47 @@ export const CAMPOS_POR_TIPO: Record<TipoSeccion, Readonly<Record<string, number
   // La portada se pinta con los nombres, la fecha y la foto de la boda. No
   // tiene campos propios, y por eso no se puede desactivar ni borrar.
   portada: {},
-  texto: { titulo: 80, texto: 2000 },
+  texto: { titulo: 80, texto: 5000 },
   evento: { titulo: 80, hora: 5, lugar: 120, direccion: 200, nota: 300 },
+  // Las preguntas no se escriben aquí: viven en su colección (§8.9). Esta
+  // sección solo decide **dónde** van en la página y con qué título.
+  preguntas: { titulo: 80 },
+  // Igual la cronología del día (§8.13).
+  cronologia: { titulo: 80 },
+  // Y los alojamientos (§8.10).
+  alojamientos: { titulo: 80 },
+  // Y el dress code (§8.11), que tampoco se escribe aquí: vive en
+  // `modules.dressCode.config` porque es un contenido único y no una lista.
+  dressCode: { titulo: 80 },
+  // El quiz (§8.7) no se pinta dentro de la página: esta sección es el cartel
+  // que lleva a `/quiz`, que es donde está el juego.
+  quiz: { titulo: 80 },
 };
+
+/**
+ * Qué campos llevan **texto enriquecido** y no texto a secas.
+ *
+ * Son los que la pareja escribe con la barra de formato del panel, y los
+ * únicos que la web pública pinta como HTML. Todo lo demás viaja como texto y
+ * se escapa al pintarse, que es lo que lo hace inofensivo.
+ *
+ * El saneado de estos vive **solo en el servidor** (`dominio/html.ts` de las
+ * funciones): lo que decidiera el navegador de la pareja no protege a nadie.
+ */
+export const CAMPOS_RICOS: Record<TipoSeccion, readonly string[]> = {
+  portada: [],
+  texto: ['texto'],
+  evento: [],
+  preguntas: [],
+  cronologia: [],
+  alojamientos: [],
+  dressCode: [],
+  quiz: [],
+};
+
+export function esCampoRico(tipo: TipoSeccion, campo: string): boolean {
+  return CAMPOS_RICOS[tipo].includes(campo);
+}
 
 function texto(valor: unknown, maximo: number): string {
   if (typeof valor !== 'string') return '';
@@ -150,10 +197,45 @@ export const SECCIONES_INICIALES: readonly Seccion[] = [
     fields: { titulo: 'Banquete', hora: '', lugar: '', direccion: '', nota: '' },
   },
   {
+    id: 'cronologia',
+    type: 'cronologia',
+    enabled: false,
+    order: 4,
+    fields: { titulo: 'El día' },
+  },
+  {
+    id: 'preguntas',
+    type: 'preguntas',
+    enabled: false,
+    order: 5,
+    fields: { titulo: 'Preguntas frecuentes' },
+  },
+  {
+    id: 'alojamientos',
+    type: 'alojamientos',
+    enabled: false,
+    order: 6,
+    fields: { titulo: 'Dónde dormir' },
+  },
+  {
+    id: 'dress-code',
+    type: 'dressCode',
+    enabled: false,
+    order: 7,
+    fields: { titulo: 'Cómo vestir' },
+  },
+  {
+    id: 'quiz',
+    type: 'quiz',
+    enabled: false,
+    order: 8,
+    fields: { titulo: 'El juego de la boda' },
+  },
+  {
     id: 'contacto',
     type: 'texto',
     enabled: false,
-    order: 4,
+    order: 9,
     fields: { titulo: 'Contacto', texto: '' },
   },
 ];

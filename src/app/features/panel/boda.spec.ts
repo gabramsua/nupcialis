@@ -1,24 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { ICONO_MODULO, MODULOS, menuDeModulos, modulosNoVisibles, type BodaDelPanel } from './boda';
+import { BODA_DE_PRUEBA } from './boda.testing';
 
 function boda(modulos: BodaDelPanel['modulos']): BodaDelPanel {
-  return {
-    weddingId: 'id',
-    slug: 'mariaygabriel',
-    status: 'draft',
-    plan: 'extended',
-    weddingDate: new Date('2027-06-12T00:00:00.000Z'),
-    weddingTime: null,
-    timezone: 'Europe/Madrid',
-    templateId: 'clasica',
-    indexable: false,
-    palette: null,
-    heroImagePath: null,
-    heroImageUrl: null,
-    secciones: [],
-    modulos,
-  };
+  return { ...BODA_DE_PRUEBA, status: 'draft', plan: 'extended', modulos };
 }
 
 describe('menuDeModulos', () => {
