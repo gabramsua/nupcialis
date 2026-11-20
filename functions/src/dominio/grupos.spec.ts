@@ -67,11 +67,9 @@ describe('validarGrupo', () => {
       datos: {
         name: 'Amigos del cole',
         normalizedName: 'amigos del cole',
-        side: 'both',
         // Público por defecto: restringir cambia quién ve qué fotos, y eso se
         // decide a propósito, no por no haber tocado nada.
         photoAudience: 'public',
-        allowPublicOptIn: false,
         color: 'rosa',
       },
     });
@@ -107,15 +105,16 @@ describe('validarGrupo', () => {
     expect(r.ok && r.datos.color).toBe('teja');
   });
 
-  it('«publicar para todos» solo se guarda en un grupo restringido', () => {
-    const publico = validarGrupo({ name: 'A', allowPublicOptIn: true }, []);
-    const restringido = validarGrupo(
-      { name: 'B', photoAudience: 'restricted', allowPublicOptIn: true },
-      [],
-    );
-
-    expect(publico.ok && publico.datos.allowPublicOptIn).toBe(false);
-    expect(restringido.ok && restringido.datos.allowPublicOptIn).toBe(true);
+  /**
+   * Solo la pareja decide si una foto se publica para todos. Un invitado no
+   * puede, ni siquiera en un grupo que la pareja haya marcado: es la defensa
+   * contra quien suba la foto de la despedida que la familia no debe ver.
+   */
+  it('un grupo no puede dar a los invitados la opción de publicar para todos', () => {
+    // Un cliente antiguo (o uno manipulado) puede seguir mandándolo.
+    const entrada = { name: 'B', photoAudience: 'restricted', allowPublicOptIn: true };
+    const r = validarGrupo(entrada, []);
+    expect(r.ok && 'allowPublicOptIn' in r.datos).toBe(false);
   });
 
   it('una audiencia desconocida se queda en pública, nunca en restringida', () => {

@@ -40,6 +40,47 @@ export const TOPE_RANKING = 20;
 
 /** Las tres dificultades y lo que valen. Un acierto fácil no vale lo mismo. */
 export const PUNTOS = { 1: 10, 2: 20, 3: 30 } as const;
+
+/**
+ * Lo que vale un acierto **habiendo pedido la pista**: la mitad.
+ *
+ * Es una decisión de juego, no de seguridad: ver la pista es ayuda, y la ayuda
+ * se paga. El invitado lo sabe **antes** de pedirla. Siempre entero (10, 20 y 30
+ * dan 5, 10 y 15), así que no hay medios puntos en el ranking.
+ */
+export function puntosConPista(dificultad: Dificultad): number {
+  return PUNTOS[dificultad] / 2;
+}
+
+/**
+ * Estadística de una pregunta: gente que la ha contestado y gente que la ha
+ * acertado. Lo escribe el servidor al corregir; el panel solo lo lee.
+ */
+export interface EstadisticaDePregunta {
+  readonly asked: number;
+  readonly correct: number;
+  readonly hints: number;
+}
+
+/** Desde qué porcentaje de aciertos una pregunta es «fácil», y hasta cuál «difícil». */
+export const UMBRAL_PREGUNTA_FACIL = 0.9;
+export const UMBRAL_PREGUNTA_DIFICIL = 0.1;
+/**
+ * Con menos respuestas que estas no se etiqueta nada: con tres jugadores, que
+ * los tres acierten no dice que la pregunta sea fácil.
+ */
+export const MIN_RESPUESTAS_PARA_ETIQUETAR = 10;
+
+export type EtiquetaDePregunta = 'facil' | 'dificil' | null;
+
+/** `facil` con ≥ 90 % de aciertos, `dificil` con ≤ 10 %, y `null` si no hay datos bastantes. */
+export function etiquetaDePregunta(estadistica: EstadisticaDePregunta | null): EtiquetaDePregunta {
+  if (!estadistica || estadistica.asked < MIN_RESPUESTAS_PARA_ETIQUETAR) return null;
+
+  const tasa = estadistica.correct / estadistica.asked;
+  if (tasa >= UMBRAL_PREGUNTA_FACIL) return 'facil';
+  return tasa <= UMBRAL_PREGUNTA_DIFICIL ? 'dificil' : null;
+}
 export type Dificultad = keyof typeof PUNTOS;
 
 export function esDificultad(valor: unknown): valor is Dificultad {
@@ -73,7 +114,12 @@ export interface PreguntaDeJuego {
   readonly text: string;
   readonly difficulty: Dificultad;
   readonly puntos: number;
-  readonly hint: string | null;
+  /**
+   * Si hay pista. **El texto no viaja con la pregunta**: se pide aparte y
+   * cuesta la mitad de los puntos de esta pregunta, así que no puede estar ya
+   * en el navegador.
+   */
+  readonly tienePista: boolean;
   /** Las cuatro, ya barajadas por el servidor. */
   readonly opciones: readonly string[];
 }
@@ -195,7 +241,7 @@ export function paraJugar(
     text: pregunta.text,
     difficulty: pregunta.difficulty,
     puntos: PUNTOS[pregunta.difficulty],
-    hint: pregunta.hint,
+    tienePista: pregunta.hint !== null,
     opciones: barajar([pregunta.correctAnswer, ...pregunta.wrongAnswers], azar),
   };
 }
@@ -215,10 +261,14 @@ export interface Puntuacion {
  * desincronizar.
  *
  * Lo que no se contesta no resta: el juego premia acertar, no arriesgar.
+ *
+ * `conPista` son las preguntas en las que se pidió la pista: si se aciertan,
+ * valen la mitad. Las pide el servidor a la partida guardada, nunca el cliente.
  */
 export function puntuar(
   preguntas: readonly PreguntaDelPanel[],
   respuestas: Readonly<Record<string, unknown>>,
+  conPista: ReadonlySet<string> = new Set(),
 ): Puntuacion {
   let points = 0;
   let aciertos = 0;
@@ -231,7 +281,9 @@ export function puntuar(
     answeredCount += 1;
     if (elegida === pregunta.correctAnswer) {
       aciertos += 1;
-      points += PUNTOS[pregunta.difficulty];
+      points += conPista.has(pregunta.id)
+        ? puntosConPista(pregunta.difficulty)
+        : PUNTOS[pregunta.difficulty];
     }
   }
 

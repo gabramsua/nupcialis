@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  deLaFamilia,
   filtrarInvitados,
   ordenarPorNombre,
   porGrupo,
@@ -16,7 +17,6 @@ function invitado(parcial: Partial<Invitado>): Invitado {
     fullName: 'María Pérez',
     nickname: 'Mari',
     phone: '+34666123456',
-    email: null,
     side: 'both',
     ageGroup: 'adult',
     groupIds: [],
@@ -206,5 +206,27 @@ describe('porVista: apuntados', () => {
     ];
 
     expect(porVista(lista, 'apuntados').map((i) => i.id)).toEqual(['1']);
+  });
+});
+
+describe('deLaFamilia', () => {
+  const lista = [
+    invitado({ id: 'a', fullName: 'Ana' }),
+    invitado({ id: 'b', fullName: 'Beto', isCompanion: true, invitedById: 'a' }),
+    invitado({ id: 'c', fullName: 'Cris', isCompanion: true, invitedById: 'a' }),
+    invitado({ id: 'd', fullName: 'Dani' }),
+    invitado({ id: 'e', fullName: 'Eva', isCompanion: true, invitedById: 'd' }),
+  ];
+
+  it('sin titular, la lista entera', () => {
+    expect(deLaFamilia(lista, null)).toHaveLength(5);
+  });
+
+  it('el titular y los suyos, y nadie más', () => {
+    expect(deLaFamilia(lista, 'a').map((i) => i.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('un titular sin acompañantes sale solo', () => {
+    expect(deLaFamilia([lista[0]!, lista[3]!], 'd').map((i) => i.id)).toEqual(['d']);
   });
 });

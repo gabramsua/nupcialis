@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { CdkDrag, CdkDropList, CdkDropListGroup, type CdkDragDrop } from '@angular/cdk/drag-drop';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
@@ -8,19 +9,21 @@ import { NpEmptyState } from '../../../design-system/components/empty-state/empt
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpIcon } from '../../../design-system/icons/icon';
 import type { FalloMesas } from '../../../core/mesas/mesas-gateway';
-import { NpArrastrable, type SoltadoEn } from './arrastrable';
 import {
   FORMAS,
   MAX_NOMBRE_MESA,
   TOPES_INICIALES,
-  acompanantesDe,
   cabida,
   nombreDeMesa,
   type FormaMesa,
   type InvitadoSentado,
   type Mesa,
 } from './mesas';
+import { BodaStore } from '../boda.store';
+import { descargarXlsx } from '../invitados/exportar-xlsx';
+import { hojasDeMesas, nombreDelFicheroDeMesas } from './exportar-mesas';
 import { MesasStore } from './mesas.store';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /** Lo que hay que saber para preguntar por los acompañantes de alguien. */
 interface CasoDeAcompanantes {
@@ -60,7 +63,10 @@ interface CasoDeAcompanantes {
     NpEmptyState,
     NpModal,
     NpIcon,
-    NpArrastrable,
+    CdkDrag,
+    CdkDropList,
+    CdkDropListGroup,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -71,25 +77,39 @@ interface CasoDeAcompanantes {
             <h2>{{ t('panel.mesas.titulo') }}</h2>
             <p>{{ t('panel.mesas.ayuda') }}</p>
           </div>
-          <button npButton type="button" (click)="nuevaMesa()">
-            <np-icon name="plus" />
-            {{ t('panel.mesas.anadir') }}
-          </button>
+          <div class="ms__acciones">
+            <!--
+              La hoja para el catering se monta aquí mismo con lo que ya está
+              cargado y se descarga: no sale por el servidor y la librería se
+              carga al pulsar, no al abrir la pantalla.
+            -->
+            <button
+              npButton
+              variant="secondary"
+              type="button"
+              [loading]="exportando()"
+              [disabled]="store.mesas().length === 0"
+              (click)="exportar()"
+            >
+              <np-icon name="download-simple" />
+              {{ t('panel.mesas.exportar') }}
+            </button>
+            <button npButton type="button" (click)="nuevaMesa()">
+              <np-icon name="plus" />
+              {{ t('panel.mesas.anadir') }}
+            </button>
+          </div>
         </header>
+
+        @if (falloAlExportar()) {
+          <np-alert status="declined" [heading]="t('panel.mesas.error')">
+            <p>{{ t('panel.mesas.fallo.exportar') }}</p>
+          </np-alert>
+        }
 
         @if (store.fallo(); as fallo) {
           <np-alert status="declined" [heading]="t('panel.mesas.error')">
             <p>{{ textoDelFallo(fallo, t) }}</p>
-          </np-alert>
-        }
-
-        @if (textosDeAvisos().length > 0) {
-          <np-alert status="attention" [heading]="t('panel.mesas.avisos')">
-            <ul class="ms__avisos">
-              @for (aviso of textosDeAvisos(); track aviso) {
-                <li>{{ aviso }}</li>
-              }
-            </ul>
           </np-alert>
         }
 
@@ -113,143 +133,222 @@ interface CasoDeAcompanantes {
               lista que la pareja va vaciando, y el trabajo se acaba cuando se
               queda vacía.
             -->
-            <section class="ms__pendientes">
-              <h3>{{ t('panel.mesas.porSentar', { n: store.porSentar().length }) }}</h3>
+            <div class="ms__leyenda" role="note">
+              <span class="ms__marca ms__marca--confirmed">
+                <np-icon name="check-circle" />
+                {{ t('panel.mesas.leyenda.confirmed') }}
+              </span>
+              <span class="ms__marca ms__marca--pending">
+                <np-icon name="clock" />
+                {{ t('panel.mesas.leyenda.pending') }}
+              </span>
+              <span class="ms__marca ms__marca--declined">
+                <np-icon name="x-circle" />
+                {{ t('panel.mesas.leyenda.declined') }}
+              </span>
+            </div>
 
-              @if (store.porSentar().length === 0) {
-                <p class="ms__hecho">
-                  <np-icon name="check-circle" />
-                  {{ t('panel.mesas.todosSentados') }}
-                </p>
-              } @else {
-                <ul class="ms__fichas">
-                  @for (invitado of store.porSentar(); track invitado.id) {
-                    <li>
-                      <button
-                        type="button"
-                        class="ms__ficha"
-                        [class.ms__ficha--elegida]="elegido() === invitado.id"
-                        [attr.aria-pressed]="elegido() === invitado.id"
-                        [npArrastrable]="invitado.id"
-                        (tocado)="alternarElegido($event)"
-                        (arrastrado)="elegido.set($event)"
-                        (soltado)="soltarEn($event)"
+            <div cdkDropListGroup>
+              <section
+                class="ms__pendientes"
+                cdkDropList
+                [cdkDropListData]="null"
+                [cdkDropListSortingDisabled]="true"
+                (cdkDropListDropped)="soltado($event)"
+              >
+                <h3>{{ t('panel.mesas.porSentar', { n: store.porSentar().length }) }}</h3>
+
+                @if (store.porSentar().length === 0) {
+                  <p class="ms__hecho">
+                    <np-icon name="check-circle" />
+                    {{ t('panel.mesas.todosSentados') }}
+                  </p>
+                } @else {
+                  <ul class="ms__fichas">
+                    @for (invitado of store.porSentar(); track invitado.id) {
+                      <li
+                        cdkDrag
+                        cdkDragPreviewContainer="parent"
+                        [cdkDragData]="invitado.id"
+                        [cdkDragStartDelay]="retardo"
+                        (cdkDragStarted)="elegido.set(invitado.id)"
+                        class="ms__item"
                       >
-                        {{ invitado.fullName }}
-                      </button>
-                    </li>
-                  }
-                </ul>
-              }
-            </section>
+                        <div
+                          class="ms__ficha ms__ficha--{{ invitado.rsvpStatus }}"
+                          [class.ms__ficha--elegida]="elegido() === invitado.id"
+                          [class.ms__ficha--huerfano]="huerfano(invitado)"
+                        >
+                          <button
+                            type="button"
+                            class="ms__fichaBtn"
+                            [attr.aria-pressed]="elegido() === invitado.id"
+                            (click)="alternarElegido(invitado.id)"
+                          >
+                            <np-icon [name]="icono(invitado)" />
+                            <span class="ms__fichaTexto">
+                              {{ invitado.fullName }}
+                              @if (deQuien(invitado); as titular) {
+                                <small>
+                                  {{ t('panel.mesas.acompananteDe', { nombre: titular }) }}
+                                </small>
+                              }
+                            </span>
+                            <span class="ms__sr">{{
+                              t('panel.mesas.leyenda.' + invitado.rsvpStatus)
+                            }}</span>
+                          </button>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                }
+              </section>
 
-            @if (store.mesas().length === 0) {
-              <np-empty-state
-                icon="fork-knife"
-                [title]="t('panel.mesas.ninguna')"
-                [description]="t('panel.mesas.ningunaDescripcion')"
-              />
-            } @else {
-              <!--
+              @if (store.mesas().length === 0) {
+                <np-empty-state
+                  icon="fork-knife"
+                  [title]="t('panel.mesas.ninguna')"
+                  [description]="t('panel.mesas.ningunaDescripcion')"
+                />
+              } @else {
+                <!--
                 El lienzo es un esquema de agrupación, no el plano de ninguna
                 finca (§8.4): sin paredes, sin escenario y sin escala.
               -->
-              <ul class="ms__lienzo">
-                @for (mesa of store.mesas(); track mesa.id; let i = $index) {
-                  <li
-                    class="ms__mesa"
-                    [attr.data-mesa]="mesa.id"
-                    [class.ms__mesa--destino]="elegido() !== null"
-                    [class.ms__mesa--pasada]="pasada(mesa)"
-                    [class.ms__mesa--corta]="corta(mesa)"
-                  >
-                    <button type="button" class="ms__soltar" (click)="sentarAqui(mesa)">
-                      <span class="ms__nombre">
-                        <np-icon name="table" />
-                        {{ nombre(mesa, i + 1) }}
-                        <!-- La forma, escrita: decide los topes de partida y
+                <ul class="ms__lienzo">
+                  @for (mesa of store.mesas(); track mesa.id; let i = $index) {
+                    <li
+                      class="ms__mesa"
+                      cdkDropList
+                      [cdkDropListData]="mesa.id"
+                      [cdkDropListSortingDisabled]="true"
+                      (cdkDropListDropped)="soltado($event)"
+                      [attr.data-mesa]="mesa.id"
+                      [class.ms__mesa--destino]="elegido() !== null"
+                      [class.ms__mesa--pasada]="pasada(mesa)"
+                      [class.ms__mesa--corta]="corta(mesa)"
+                    >
+                      <button type="button" class="ms__soltar" (click)="sentarAqui(mesa)">
+                        <span class="ms__nombre">
+                          <np-icon name="table" />
+                          {{ nombre(mesa, i + 1) }}
+                          <!-- La forma, escrita: decide los topes de partida y
                              no hay icono que la diga sin ambigüedad. -->
-                        <small>{{ t('panel.mesas.forma.' + mesa.shape) }}</small>
-                      </span>
-                      <span class="ms__cuenta">
-                        {{
-                          t('panel.mesas.ocupacion', {
-                            cuantos: sentados(mesa).length,
-                            max: mesa.maxSeats,
-                          })
-                        }}
-                      </span>
-                    </button>
-
-                    @if (pasada(mesa)) {
-                      <p class="ms__estado">
-                        <np-icon name="warning" />
-                        {{ t('panel.mesas.pasada', { n: sentados(mesa).length - mesa.maxSeats }) }}
-                      </p>
-                    } @else if (corta(mesa)) {
-                      <p class="ms__estado">
-                        <np-icon name="info" />
-                        {{ t('panel.mesas.corta', { n: mesa.minSeats - sentados(mesa).length }) }}
-                      </p>
-                    }
-
-                    <ul class="ms__fichas">
-                      @for (invitado of sentados(mesa); track invitado.id) {
-                        <li>
-                          <button
-                            type="button"
-                            class="ms__ficha"
-                            [class.ms__ficha--elegida]="elegido() === invitado.id"
-                            [class.ms__ficha--separado]="separado(invitado)"
-                            [npArrastrable]="invitado.id"
-                            (tocado)="alternarElegido($event)"
-                            (arrastrado)="elegido.set($event)"
-                            (soltado)="soltarEn($event)"
-                          >
-                            {{ invitado.fullName }}
-                          </button>
-                        </li>
-                      }
-                    </ul>
-
-                    <div class="ms__acciones">
-                      <button
-                        npButton
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        (click)="editarMesa(mesa)"
-                      >
-                        <np-icon name="pencil-simple" />
-                        {{ t('common.edit') }}
+                          <small>{{ t('panel.mesas.forma.' + mesa.shape) }}</small>
+                        </span>
+                        <span class="ms__cuenta">
+                          {{
+                            t('panel.mesas.ocupacion', {
+                              cuantos: ocupan(mesa),
+                              max: mesa.maxSeats,
+                            })
+                          }}
+                        </span>
                       </button>
-                      @if (sentados(mesa).length > 0) {
+
+                      @if (pasada(mesa)) {
+                        <p class="ms__estado">
+                          <np-icon name="warning" />
+                          {{ t('panel.mesas.pasada', { n: ocupan(mesa) - mesa.maxSeats }) }}
+                        </p>
+                      } @else if (corta(mesa)) {
+                        <p class="ms__estado">
+                          <np-icon name="info" />
+                          {{ t('panel.mesas.corta', { n: mesa.minSeats - ocupan(mesa) }) }}
+                        </p>
+                      }
+
+                      <ul class="ms__fichas">
+                        @for (invitado of sentados(mesa); track invitado.id) {
+                          <li
+                            cdkDrag
+                            cdkDragPreviewContainer="parent"
+                            [cdkDragData]="invitado.id"
+                            [cdkDragStartDelay]="retardo"
+                            (cdkDragStarted)="elegido.set(invitado.id)"
+                            class="ms__item"
+                          >
+                            <div
+                              class="ms__ficha ms__ficha--{{ invitado.rsvpStatus }}"
+                              [class.ms__ficha--elegida]="elegido() === invitado.id"
+                              [class.ms__ficha--separado]="separado(invitado)"
+                            >
+                              <button
+                                type="button"
+                                class="ms__fichaBtn"
+                                [attr.aria-pressed]="elegido() === invitado.id"
+                                (click)="alternarElegido(invitado.id)"
+                              >
+                                <np-icon [name]="icono(invitado)" />
+                                <span class="ms__fichaTexto">
+                                  {{ invitado.fullName }}
+                                  @if (deQuien(invitado); as titular) {
+                                    <small>
+                                      {{ t('panel.mesas.acompananteDe', { nombre: titular }) }}
+                                    </small>
+                                  }
+                                </span>
+                                <span class="ms__sr">
+                                  {{ t('panel.mesas.leyenda.' + invitado.rsvpStatus) }}
+                                </span>
+                              </button>
+                              <!-- Quitar de la mesa sin tener que elegir y pulsar otra
+                                 cosa: vuelve a «por sentar». -->
+                              <button
+                                type="button"
+                                class="ms__quitar"
+                                [attr.aria-label]="
+                                  t('panel.mesas.quitar', { nombre: invitado.fullName })
+                                "
+                                (click)="quitar(invitado)"
+                              >
+                                <np-icon name="x" />
+                              </button>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+
+                      <div class="ms__acciones">
                         <button
                           npButton
                           size="sm"
                           variant="ghost"
                           type="button"
-                          (click)="vaciar(mesa)"
+                          (click)="editarMesa(mesa)"
                         >
-                          <np-icon name="x" />
-                          {{ t('panel.mesas.vaciar') }}
+                          <np-icon name="pencil-simple" />
+                          {{ t('common.edit') }}
                         </button>
-                      }
-                      <button
-                        npButton
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        (click)="borrando.set(mesa)"
-                      >
-                        <np-icon name="trash" />
-                        {{ t('common.delete') }}
-                      </button>
-                    </div>
-                  </li>
-                }
-              </ul>
-            }
+                        @if (sentados(mesa).length > 0) {
+                          <button
+                            npButton
+                            size="sm"
+                            variant="ghost"
+                            type="button"
+                            (click)="vaciar(mesa)"
+                          >
+                            <np-icon name="x" />
+                            {{ t('panel.mesas.vaciar') }}
+                          </button>
+                        }
+                        <button
+                          npButton
+                          size="sm"
+                          variant="ghost"
+                          type="button"
+                          (click)="borrando.set(mesa)"
+                        >
+                          <np-icon name="trash" />
+                          {{ t('common.delete') }}
+                        </button>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
 
             @if (elegido(); as quien) {
               <p class="ms__elegido" role="status">
@@ -328,13 +427,13 @@ interface CasoDeAcompanantes {
             <form class="ms__form" [formGroup]="formulario" (submit)="enviar($event)">
               <label>
                 {{ t('panel.mesas.campo.nombre') }}
-                <input formControlName="name" [attr.maxlength]="maximoNombre" />
+                <input npInput formControlName="name" [attr.maxlength]="maximoNombre" />
                 <small>{{ t('panel.mesas.campo.nombreAyuda') }}</small>
               </label>
 
               <label>
                 {{ t('panel.mesas.campo.forma') }}
-                <select formControlName="shape" (change)="cambiarForma($event)">
+                <select npInput formControlName="shape" (change)="cambiarForma($event)">
                   @for (forma of formas; track forma) {
                     <option [value]="forma">{{ t('panel.mesas.forma.' + forma) }}</option>
                   }
@@ -344,11 +443,11 @@ interface CasoDeAcompanantes {
               <div class="ms__pareja">
                 <label>
                   {{ t('panel.mesas.campo.minimo') }}
-                  <input formControlName="minSeats" type="number" min="0" step="1" />
+                  <input npInput formControlName="minSeats" type="number" min="0" step="1" />
                 </label>
                 <label>
                   {{ t('panel.mesas.campo.maximo') }}
-                  <input formControlName="maxSeats" type="number" min="0" step="1" />
+                  <input npInput formControlName="maxSeats" type="number" min="0" step="1" />
                 </label>
               </div>
               <small>{{ t('panel.mesas.campo.topesAyuda') }}</small>
@@ -423,6 +522,11 @@ interface CasoDeAcompanantes {
         justify-content: space-between;
       }
     }
+    .ms__acciones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--np-space-2);
+    }
     .ms__avisos {
       margin: var(--np-space-1) 0 0;
       padding-inline-start: 1.1em;
@@ -455,33 +559,136 @@ interface CasoDeAcompanantes {
       padding: 0;
       list-style: none;
     }
-    /* Cada invitado es un botón entero: se arrastra con el dedo y también se
-       toca para elegirlo, que es lo que de verdad funciona en un móvil. */
+    .ms__leyenda {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--np-space-3);
+      font-size: var(--np-text-sm);
+    }
+    .ms__marca {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--np-space-1);
+    }
+    .ms__marca--confirmed {
+      color: var(--np-confirmed-fg);
+    }
+    .ms__marca--pending {
+      color: var(--np-pending-fg);
+    }
+    .ms__marca--declined {
+      color: var(--np-declined-fg);
+    }
+    .ms__sr {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .ms__item {
+      list-style: none;
+    }
+    /* La ficha: el color dice si ha confirmado, y siempre va con icono y texto
+       (el color nunca viaja solo). Se arrastra con el ratón o con el dedo
+       (manteniendo pulsado un momento) y también se toca para elegirla. */
     .ms__ficha {
+      display: flex;
+      align-items: center;
       min-block-size: var(--np-tap-target);
-      padding: var(--np-space-1) var(--np-space-2);
       border: 1px solid var(--np-surface-border);
       border-radius: var(--np-radius-sm);
       background: var(--np-surface-surface);
       color: inherit;
-      font: inherit;
       font-size: var(--np-text-sm);
       cursor: grab;
     }
+    .ms__ficha--confirmed {
+      border-color: var(--np-confirmed-border);
+      background: var(--np-confirmed-bg);
+      color: var(--np-confirmed-fg);
+    }
+    .ms__ficha--pending {
+      border-color: var(--np-pending-border);
+      background: var(--np-pending-bg);
+      color: var(--np-pending-fg);
+    }
+    .ms__ficha--declined {
+      border-color: var(--np-declined-border);
+      background: var(--np-declined-bg);
+      color: var(--np-declined-fg);
+    }
+    .ms__fichaBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--np-space-1);
+      min-block-size: var(--np-tap-target);
+      padding: var(--np-space-1) var(--np-space-2);
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      text-align: start;
+      cursor: inherit;
+    }
+    .ms__fichaTexto {
+      display: flex;
+      flex-direction: column;
+    }
+    .ms__fichaTexto small {
+      font-size: var(--np-text-xs);
+      opacity: 0.85;
+    }
+    .ms__quitar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-block-size: var(--np-tap-target);
+      min-inline-size: var(--np-tap-target);
+      border: 0;
+      border-inline-start: 1px solid currentColor;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+      opacity: 0.8;
+    }
+    .ms__quitar:hover {
+      opacity: 1;
+    }
     .ms__ficha--elegida {
-      border-color: var(--np-surface-text);
-      background: var(--np-surface-raised);
+      outline: 2px solid var(--np-surface-text);
+      outline-offset: 1px;
       font-weight: var(--np-weight-medium);
     }
-    /* El acompañante lejos de quien lo apuntó: marcado en su ficha y no solo
-       en el aviso de arriba, que es donde se mira al repartir. */
+    /* El acompañante lejos de quien lo apuntó: marcado en su ficha. */
     .ms__ficha--separado {
-      border-color: var(--np-attention-border);
       border-style: dashed;
+      border-width: 2px;
     }
-    .ms__ficha.np-arrastrando {
-      opacity: 0.6;
-      cursor: grabbing;
+    /* Un acompañante cuyo titular ya tiene mesa y él no: es el que se olvida. */
+    .ms__ficha--huerfano {
+      border-style: dashed;
+      border-width: 2px;
+    }
+    /* Arrastre del CDK: el original se queda como hueco y la copia que sigue
+       al puntero lleva sombra. La vista previa se queda dentro del componente
+       (cdkDragPreviewContainer="parent") para que estos estilos le lleguen. */
+    .cdk-drag-placeholder {
+      opacity: 0.35;
+    }
+    .cdk-drag-preview {
+      box-shadow: var(--np-shadow-md, 0 4px 12px rgb(0 0 0 / 0.2));
+      border-radius: var(--np-radius-sm);
+      z-index: 1000;
+    }
+    .cdk-drag-animating {
+      transition: transform 200ms ease;
+    }
+    .ms__mesa.cdk-drop-list-dragging {
+      outline: 2px dashed var(--np-surface-text);
+    }
+    .ms__pendientes.cdk-drop-list-dragging {
+      outline: 2px dashed var(--np-surface-text);
     }
     .ms__lienzo {
       display: grid;
@@ -596,6 +803,11 @@ interface CasoDeAcompanantes {
 })
 export class PanelMesas {
   protected readonly store = inject(MesasStore);
+  private readonly i18n = inject(TranslocoService);
+  // Opcional: solo da el slug para el nombre del fichero.
+  private readonly boda = inject(BodaStore, { optional: true });
+  protected readonly exportando = signal(false);
+  protected readonly falloAlExportar = signal(false);
   private readonly fb = inject(FormBuilder);
 
   protected readonly formas = FORMAS;
@@ -619,24 +831,6 @@ export class PanelMesas {
     maxSeats: [TOPES_INICIALES.round.max],
   });
 
-  /** Los avisos del dominio, ya escritos para leerlos de corrido. */
-  protected readonly textosDeAvisos = computed(() => {
-    const nombres = new Map(
-      this.store.mesas().map((mesa, n) => [mesa.id, nombreDeMesa(mesa, n + 1)]),
-    );
-    const invitados = new Map(this.store.comoSentados().map((i) => [i.id, i.fullName]));
-
-    return this.store.avisos().map((aviso) => {
-      if (aviso.tipo === 'pasada') {
-        return `«${nombres.get(aviso.mesaId) ?? ''}» tiene ${aviso.sobran} más de los que caben.`;
-      }
-      if (aviso.tipo === 'corta') {
-        return `«${nombres.get(aviso.mesaId) ?? ''}» se queda corta: faltan ${aviso.faltan}.`;
-      }
-      return `${invitados.get(aviso.invitadoId) ?? ''} está lejos de ${invitados.get(aviso.titularId) ?? ''}, que fue quien lo apuntó.`;
-    });
-  });
-
   constructor() {
     void this.store.cargar();
   }
@@ -649,13 +843,72 @@ export class PanelMesas {
     return this.store.sentadosEnMesa(mesa.id);
   }
 
+  /** Cuántos ocupan silla: todos menos los que han dicho que no vienen. */
+  protected ocupan(mesa: Mesa): number {
+    return this.sentados(mesa).filter((i) => i.rsvpStatus !== 'declined').length;
+  }
+
   protected pasada(mesa: Mesa): boolean {
-    return this.sentados(mesa).length > mesa.maxSeats;
+    return this.ocupan(mesa) > mesa.maxSeats;
   }
 
   protected corta(mesa: Mesa): boolean {
-    const cuantos = this.sentados(mesa).length;
+    const cuantos = this.ocupan(mesa);
     return cuantos > 0 && cuantos < mesa.minSeats;
+  }
+
+  /** En móvil, mantener pulsado un momento para arrastrar: así el scroll sigue funcionando. */
+  protected readonly retardo = { touch: 250, mouse: 0 };
+
+  protected icono(invitado: InvitadoSentado): 'check-circle' | 'clock' | 'x-circle' {
+    if (invitado.rsvpStatus === 'confirmed') return 'check-circle';
+    return invitado.rsvpStatus === 'declined' ? 'x-circle' : 'clock';
+  }
+
+  /** El nombre de su titular, si es acompañante. */
+  protected deQuien(invitado: InvitadoSentado): string | null {
+    if (!invitado.isCompanion || invitado.invitedById === null) return null;
+    return this.nombreDe(invitado.invitedById) || null;
+  }
+
+  /**
+   * Un acompañante sin mesa cuyo titular **sí** la tiene: el que se queda
+   * olvidado al sentar. Se marca en su ficha; no hay banner (D-47).
+   */
+  protected huerfano(invitado: InvitadoSentado): boolean {
+    if (!invitado.isCompanion || invitado.invitedById === null || invitado.tableId !== null) {
+      return false;
+    }
+    return this.mesaDe(invitado.invitedById) !== null;
+  }
+
+  protected async quitar(invitado: InvitadoSentado): Promise<void> {
+    if (this.elegido() === invitado.id) this.elegido.set(null);
+    await this.store.sentar([invitado.id], null);
+  }
+
+  /**
+   * Soltar una ficha en una lista: la mesa de destino la dice la propia lista
+   * (`null` es «por sentar»). Soltarla donde ya estaba no hace nada.
+   */
+  protected async soltado(
+    // Los datos de cada lista son un id de mesa o `null` (por sentar); el tipo
+    // de CDK no admite esa unión, así que se estrecha dentro.
+    evento: CdkDragDrop<any, any, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ): Promise<void> {
+    this.elegido.set(null);
+    if (evento.previousContainer === evento.container) return;
+
+    const quien = evento.item.data as string;
+    const destino = (evento.container.data as string | null) ?? null;
+
+    if (destino === null) {
+      await this.store.sentar([quien], null);
+      return;
+    }
+
+    const mesa = this.store.mesas().find((otra) => otra.id === destino);
+    if (mesa) await this.sentarEn(quien, mesa);
   }
 
   protected separado(invitado: InvitadoSentado): boolean {
@@ -697,7 +950,15 @@ export class PanelMesas {
 
     const invitados = this.store.comoSentados();
     const titular = invitados.find((invitado) => invitado.id === guestId);
-    const acompanantes = acompanantesDe(guestId, mesa.id, invitados);
+    // Los acompañantes que aún no están en esta mesa y no han dicho que no
+    // vienen (los pendientes cuentan: la pareja los gestiona ella).
+    const acompanantes = invitados.filter(
+      (invitado) =>
+        invitado.isCompanion &&
+        invitado.invitedById === guestId &&
+        invitado.rsvpStatus !== 'declined' &&
+        invitado.tableId !== mesa.id,
+    );
     if (!titular || acompanantes.length === 0) return;
 
     const sitio = cabida(mesa, acompanantes.length, invitados);
@@ -741,26 +1002,6 @@ export class PanelMesas {
       caso.acompanantes.map((invitado) => invitado.id),
       caso.mesa.id,
     );
-  }
-
-  /**
-   * Soltar el arrastre: cuenta la mesa que haya debajo del dedo.
-   *
-   * Se mira el punto, no el elemento sobre el que se levantó el puntero: con
-   * la captura de puntero, los eventos siguen llegando a la ficha que se
-   * arrastra aunque esté encima de otra cosa.
-   */
-  protected async soltarEn(donde: SoltadoEn): Promise<void> {
-    const quien = this.elegido();
-    this.elegido.set(null);
-    if (!quien) return;
-
-    const debajo = document.elementFromPoint(donde.x, donde.y);
-    const id = debajo?.closest('[data-mesa]')?.getAttribute('data-mesa') ?? null;
-    const mesa = this.store.mesas().find((otra) => otra.id === id);
-    if (!mesa) return;
-
-    await this.sentarEn(quien, mesa);
   }
 
   protected async levantar(): Promise<void> {
@@ -848,6 +1089,49 @@ export class PanelMesas {
     const resultado = await this.store.borrarMesa(cual.id);
     this.borrandoYa.set(false);
     if (resultado.ok) this.borrando.set(null);
+  }
+
+  /**
+   * Monta el `.xlsx` para el catering y lo descarga.
+   *
+   * Lleva tres hojas —resumen por mesa con los menús contados, quién se sienta
+   * dónde y los que aún no tienen sitio— y ni un teléfono ni una nota (§9.4).
+   */
+  protected async exportar(): Promise<void> {
+    if (this.exportando()) return;
+
+    this.exportando.set(true);
+    this.falloAlExportar.set(false);
+
+    const hecho = await descargarXlsx(
+      hojasDeMesas({
+        mesas: this.store.mesas(),
+        invitados: this.store.invitados(),
+        etiquetas: {
+          edad: {
+            adult: this.i18n.translate('panel.invitados.edad.adult'),
+            child: this.i18n.translate('panel.invitados.edad.child'),
+            baby: this.i18n.translate('panel.invitados.edad.baby'),
+          },
+          forma: {
+            round: this.i18n.translate('panel.mesas.forma.round'),
+            rect: this.i18n.translate('panel.mesas.forma.rect'),
+          },
+          estado: {
+            bien: this.i18n.translate('panel.mesas.estado.bien'),
+            corta: this.i18n.translate('panel.mesas.estado.corta'),
+            pasada: this.i18n.translate('panel.mesas.estado.pasada'),
+            vacia: this.i18n.translate('panel.mesas.estado.vacia'),
+          },
+          sinMenu: this.i18n.translate('panel.mesas.sinMenu'),
+          total: this.i18n.translate('panel.mesas.total'),
+        },
+      }),
+      nombreDelFicheroDeMesas(this.boda?.boda()?.slug ?? '', new Date()),
+    );
+
+    this.exportando.set(false);
+    this.falloAlExportar.set(!hecho);
   }
 
   protected textoDelFallo(fallo: FalloMesas, t: (clave: string) => string): string {

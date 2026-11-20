@@ -11,6 +11,7 @@ import type { ModoAcceso } from '../../core/acceso/acceso';
 import type { NpIconName } from '../../design-system/icons/icon-name.generated';
 import type { ColoresPaleta } from '../public-site/paletas/paletas';
 import type { DressCodePublico } from '../public-site/dress-code/dress-code';
+import type { AportacionPublica } from '../public-site/regalos/regalos';
 import type { Seccion } from '../public-site/secciones/secciones';
 
 export const MODULOS = [
@@ -114,6 +115,16 @@ export interface BodaDelPanel {
    * `modules.dressCode.config` porque es un contenido único y no una lista.
    */
   readonly dressCode: DressCodePublico;
+
+  /**
+   * Lo que la pareja publica para que le aporten (§8.8).
+   *
+   * Vive en `content.gifts` y **no sube a la proyección pública**: un IBAN con
+   * su titular en un documento que lee cualquiera que sepa el slug es lo que
+   * necesita un tercero para montar la misma web y cobrar él. Se lo sirve
+   * `getGifts` al invitado identificado.
+   */
+  readonly aportacion: AportacionPublica;
 }
 
 /**
@@ -164,6 +175,11 @@ export const RUTA_MODULO: Partial<Record<Modulo, string>> = {
   accommodation: '/panel/accommodation',
   dressCode: '/panel/dress-code',
   quiz: '/panel/quiz',
+  gallery: '/panel/gallery',
+  gifts: '/panel/gifts',
+  map: '/panel/map',
+  playlist: '/panel/playlist',
+  checklist: '/panel/checklist',
   tables: '/panel/tables',
 };
 

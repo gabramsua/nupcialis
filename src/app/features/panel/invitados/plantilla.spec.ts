@@ -26,11 +26,19 @@ describe('adivinarColumnas', () => {
   });
 
   it('reconoce cómo llama la gente a las columnas en sus propias hojas', () => {
-    expect(adivinarColumnas(['NOMBRE', 'Móvil', 'Correo', 'Observaciones'])).toEqual([
+    expect(adivinarColumnas(['NOMBRE', 'Móvil', 'Observaciones'])).toEqual([
       'fullName',
       'phone',
-      'email',
       'notes',
+    ]);
+  });
+
+  /** No guardamos el correo de los invitados para nada: una columna así se ignora. */
+  it('no reconoce una columna de correo', () => {
+    expect(adivinarColumnas(['Nombre', 'Email', 'Correo electrónico'])).toEqual([
+      'fullName',
+      null,
+      null,
     ]);
   });
 

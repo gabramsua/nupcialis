@@ -17,7 +17,6 @@ export const COLUMNAS = [
   'fullName',
   'nickname',
   'phone',
-  'email',
   'groups',
   'side',
   'ageGroup',
@@ -59,12 +58,6 @@ export const DEFINICIONES: readonly DefinicionColumna[] = [
     etiqueta: 'Teléfono',
     obligatoria: false,
     alias: ['telefono', 'movil', 'celular', 'tlf', 'tfno', 'phone', 'mobile'],
-  },
-  {
-    clave: 'email',
-    etiqueta: 'Email',
-    obligatoria: false,
-    alias: ['email', 'correo', 'correo electronico', 'e mail', 'mail'],
   },
   {
     clave: 'groups',
@@ -154,19 +147,9 @@ function ejemplos(pareja: Pareja): readonly (readonly string[])[] {
   const b = primerNombre(pareja.partnerB) || 'B';
 
   return [
-    [
-      'María José Pérez',
-      'Majo',
-      '666123456',
-      'majo@ejemplo.com',
-      'Familia',
-      a,
-      'adulto',
-      '1',
-      'Viene en autobús',
-    ],
-    ['Íñigo Muñoz', '', '+34677000111', '', 'Universidad, Pádel', b, 'adulto', '0', ''],
-    ['Lucía Muñoz', 'Lu', '', '', 'Familia', 'Los dos', 'niño', '0', 'Menú infantil'],
+    ['María José Pérez', 'Majo', '666123456', 'Familia', a, 'adulto', '1', 'Viene en autobús'],
+    ['Íñigo Muñoz', '', '+34677000111', 'Universidad, Pádel', b, 'adulto', '0', ''],
+    ['Lucía Muñoz', 'Lu', '', 'Familia', 'Los dos', 'niño', '0', 'Menú infantil'],
   ];
 }
 

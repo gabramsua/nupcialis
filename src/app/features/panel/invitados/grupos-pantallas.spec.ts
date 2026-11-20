@@ -462,13 +462,14 @@ describe('la pantalla de grupos', () => {
     // En singular, y con su espacio: se leía «1invitados».
     expect(tarjetas[0]).toContain('1 invitado ');
     expect(tarjetas[0]).toContain('Sus fotos solo las ve el grupo');
-    expect(tarjetas[0]).toContain('De María');
+    // El grupo ya no tiene lado (D-47): no se enseña de quién es.
+    expect(tarjetas[0]).not.toContain('De María');
 
     expect(tarjetas[1]).toContain('0 invitados');
 
     // Familia es pública: ni candado ni texto de candado.
     expect(tarjetas[2]).not.toContain('Sus fotos solo las ve el grupo');
-    expect(tarjetas[2]).toContain('De los dos');
+    expect(tarjetas[2]).not.toContain('De los dos');
   });
 
   it('al editar, el formulario enseña marcado lo que el grupo tiene', async () => {
@@ -483,7 +484,6 @@ describe('la pantalla de grupos', () => {
 
     expect(marcados(fixture.nativeElement as HTMLElement)).toEqual([
       'Azul',
-      'De Gabriel',
       expect.stringContaining('Solo para el grupo'),
     ]);
   });
@@ -566,9 +566,7 @@ describe('el grupo de todos (D-31)', () => {
   const TODOS = {
     id: 'todos',
     name: 'Invitados',
-    side: 'both' as const,
     photoAudience: 'public' as const,
-    allowPublicOptIn: false,
     color: 'rosa' as const,
     order: -1,
     porDefecto: true,

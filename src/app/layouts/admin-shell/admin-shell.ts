@@ -6,6 +6,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { PUERTA_ALTA } from '../../core/alta/alta-gateway';
@@ -13,15 +14,18 @@ import {
   accionesDe,
   claveDeNombre,
   conIncidencias,
+  filtrarBodas,
+  hayFiltros,
   ordenPorDefecto,
+  SIN_FILTROS,
   type AccionSobreBoda,
   type BodaEnListado,
+  type FiltrosDeBodas,
 } from '../../features/superadmin/bodas';
 import { crearFuenteBodasFirestore } from '../../features/superadmin/bodas.firestore';
 import { AltaBoda } from '../../features/superadmin/alta-boda/alta-boda';
 import { NpAlert } from '../../design-system/components/alert/alert';
 import { NpButton } from '../../design-system/components/button/button';
-import { NpCard } from '../../design-system/components/card/card';
 import { NpEmptyState } from '../../design-system/components/empty-state/empty-state';
 import { NpModal } from '../../design-system/components/modal/modal';
 import { NpStatusChip } from '../../design-system/components/status-chip/status-chip';
@@ -30,6 +34,7 @@ import { NpSortable } from '../../design-system/components/table/sortable';
 import { NpSortHeader } from '../../design-system/components/table/sort-header';
 import { NpIcon } from '../../design-system/icons/icon';
 import { fechaMedia } from '../../shared/fecha';
+import { NpInput } from '../../design-system/components/field/input';
 
 type Carga = 'cargando' | 'lista' | 'error';
 
@@ -45,17 +50,18 @@ type Carga = 'cargando' | 'lista' | 'error';
 @Component({
   selector: 'np-admin-shell',
   imports: [
+    RouterLink,
     TranslocoDirective,
     AltaBoda,
     NpAlert,
     NpButton,
-    NpCard,
     NpEmptyState,
     NpModal,
     NpStatusChip,
     NpSortable,
     NpSortHeader,
     NpIcon,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -65,16 +71,78 @@ type Carga = 'cargando' | 'lista' | 'error';
           <np-icon name="diamond" weight="fill" />
           <span>{{ t('superadmin.titulo') }}</span>
         </div>
-        @if (incidencias() > 0) {
-          <np-status-chip
-            status="declined"
-            [label]="t('superadmin.bodas.incidencias', { n: incidencias() })"
-          />
-        }
+        <div class="np-admin__cabecera-acciones">
+          @if (incidencias() > 0) {
+            <np-status-chip
+              status="declined"
+              [label]="t('superadmin.bodas.incidencias', { n: incidencias() })"
+            />
+          }
+          <a class="np-admin__ver" routerLink="/superadmin/estadisticas">
+            <np-icon name="chart-bar" />
+            {{ t('superadmin.estadisticas.enlace') }}
+          </a>
+          <button npButton type="button" (click)="abrirAlta()">
+            <np-icon name="plus" />
+            {{ t('superadmin.alta.abrir') }}
+          </button>
+        </div>
       </header>
 
       <main class="np-admin__cuerpo">
         <section class="np-admin__listado">
+          @if (carga() === 'lista' && todas().length > 0) {
+            <div class="np-admin__filtros" role="search">
+              <label class="np-admin__buscar">
+                <span>{{ t('superadmin.bodas.filtro.buscar') }}</span>
+                <input
+                  npInput
+                  type="search"
+                  [value]="filtros().texto"
+                  [placeholder]="t('superadmin.bodas.filtro.buscarPista')"
+                  (input)="cambiarFiltro('texto', $any($event.target).value)"
+                />
+              </label>
+              <label>
+                <span>{{ t('superadmin.bodas.filtro.estado') }}</span>
+                <select
+                  npInput
+                  [value]="filtros().estado"
+                  (change)="cambiarFiltro('estado', $any($event.target).value)"
+                >
+                  @for (e of estadosFiltro; track e) {
+                    <option [value]="e">{{ t('superadmin.bodas.filtro.estados.' + e) }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                <span>{{ t('superadmin.bodas.filtro.fecha') }}</span>
+                <select
+                  npInput
+                  [value]="filtros().momento"
+                  (change)="cambiarFiltro('momento', $any($event.target).value)"
+                >
+                  @for (m of momentosFiltro; track m) {
+                    <option [value]="m">{{ t('superadmin.bodas.filtro.momentos.' + m) }}</option>
+                  }
+                </select>
+              </label>
+              <p class="np-admin__cuenta" aria-live="polite">
+                {{
+                  t('superadmin.bodas.filtro.cuenta', {
+                    n: bodas().length,
+                    total: todas().length,
+                  })
+                }}
+                @if (hayFiltros(filtros())) {
+                  <button npButton variant="ghost" size="sm" type="button" (click)="limpiar()">
+                    <np-icon name="x" />
+                    {{ t('superadmin.bodas.filtro.limpiar') }}
+                  </button>
+                }
+              </p>
+            </div>
+          }
           @switch (carga()) {
             @case ('cargando') {
               <np-empty-state icon="clock-countdown" [title]="t('superadmin.bodas.cargando')" />
@@ -89,11 +157,17 @@ type Carga = 'cargando' | 'lista' | 'error';
               </np-alert>
             }
             @default {
-              @if (bodas().length === 0) {
+              @if (todas().length === 0) {
                 <np-empty-state
                   icon="diamond"
                   [title]="t('superadmin.bodas.ninguna')"
                   [description]="t('superadmin.bodas.ningunaDescripcion')"
+                />
+              } @else if (bodas().length === 0) {
+                <np-empty-state
+                  icon="magnifying-glass"
+                  [title]="t('superadmin.bodas.filtro.ninguna')"
+                  [description]="t('superadmin.bodas.filtro.ningunaDescripcion')"
                 />
               } @else {
                 <!--
@@ -223,13 +297,19 @@ type Carga = 'cargando' | 'lista' | 'error';
             }
           }
         </section>
-
-        <aside class="np-admin__alta">
-          <np-card [heading]="t('superadmin.alta.titulo')">
-            <np-alta-boda (altaHecha)="recargar()" />
-          </np-card>
-        </aside>
       </main>
+
+      <!--
+        El alta es una acción, no una columna fija: ocupaba un tercio de la
+        pantalla para algo que se hace de vez en cuando. Al crear la boda el
+        modal sigue abierto, porque ahí se enseñan los enlaces de acceso, que
+        solo se ven una vez.
+      -->
+      @if (altaAbierta()) {
+        <np-modal [open]="true" [heading]="t('superadmin.alta.titulo')" (closed)="cerrarAlta()">
+          <np-alta-boda (altaHecha)="recargar()" />
+        </np-modal>
+      }
 
       <!--
         Publicar no es destructivo, pero sí irreversible en la práctica: la
@@ -268,10 +348,17 @@ type Carga = 'cargando' | 'lista' | 'error';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: var(--np-space-4);
+      flex-wrap: wrap;
+      gap: var(--np-space-3) var(--np-space-4);
       padding: var(--np-space-4) var(--np-space-5);
       background: var(--np-surface-surface);
       border-block-end: 1px solid var(--np-surface-border);
+    }
+    .np-admin__cabecera-acciones {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--np-space-3);
     }
     .np-admin__marca {
       display: flex;
@@ -283,11 +370,31 @@ type Carga = 'cargando' | 'lista' | 'error';
       color: var(--np-cat-rosa);
     }
     .np-admin__cuerpo {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 22rem;
-      gap: var(--np-space-5);
       padding: var(--np-space-5);
-      align-items: start;
+    }
+    .np-admin__filtros {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: var(--np-space-3);
+      margin-block-end: var(--np-space-4);
+    }
+    .np-admin__filtros label {
+      display: grid;
+      gap: var(--np-space-1);
+      font-size: var(--np-text-sm);
+    }
+    .np-admin__buscar {
+      flex: 1 1 14rem;
+    }
+    .np-admin__cuenta {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      min-block-size: 2.75rem;
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
     }
     .np-admin__pareja {
       font-weight: var(--np-weight-medium);
@@ -322,12 +429,6 @@ type Carga = 'cargando' | 'lista' | 'error';
       font-size: var(--np-text-xs);
       color: var(--np-surface-text-muted);
     }
-    /* El panel se diseña primero para móvil: ahí el alta va debajo. */
-    @media (max-width: 60rem) {
-      .np-admin__cuerpo {
-        grid-template-columns: 1fr;
-      }
-    }
   `,
 })
 export class AdminShell {
@@ -357,10 +458,19 @@ export class AdminShell {
   protected readonly noPublicable = signal<string | null>(null);
   protected readonly motivos = signal<readonly string[]>([]);
 
-  private readonly todas = signal<readonly BodaEnListado[]>([]);
+  private readonly _todas = signal<readonly BodaEnListado[]>([]);
+  protected readonly todas = this._todas.asReadonly();
+
+  protected readonly filtros = signal<FiltrosDeBodas>(SIN_FILTROS);
+  protected readonly altaAbierta = signal(false);
+  protected readonly estadosFiltro = ['todas', 'draft', 'active', 'archived'] as const;
+  protected readonly momentosFiltro = ['todas', 'proximas', 'pasadas', 'sin-fecha'] as const;
+  protected readonly hayFiltros = hayFiltros;
 
   protected readonly bodas = computed(() => {
-    const porDefecto = [...this.todas()].sort(ordenPorDefecto);
+    const porDefecto = [...filtrarBodas(this._todas(), this.filtros(), new Date())].sort(
+      ordenPorDefecto,
+    );
     const orden = this.tabla()?.sort() ?? null;
     if (!orden) return porDefecto;
 
@@ -372,7 +482,7 @@ export class AdminShell {
       invitados: (boda) => boda.invitados,
     });
   });
-  protected readonly incidencias = computed(() => conIncidencias(this.todas()));
+  protected readonly incidencias = computed(() => conIncidencias(this._todas()));
 
   constructor() {
     void this.recargar();
@@ -390,10 +500,29 @@ export class AdminShell {
     }
   }
 
+  protected cambiarFiltro<K extends keyof FiltrosDeBodas>(
+    campo: K,
+    valor: FiltrosDeBodas[K],
+  ): void {
+    this.filtros.update((f) => ({ ...f, [campo]: valor }));
+  }
+
+  protected limpiar(): void {
+    this.filtros.set(SIN_FILTROS);
+  }
+
+  protected abrirAlta(): void {
+    this.altaAbierta.set(true);
+  }
+
+  protected cerrarAlta(): void {
+    this.altaAbierta.set(false);
+  }
+
   protected async recargar(): Promise<void> {
     this.carga.set('cargando');
     try {
-      this.todas.set(await this.fuente.listar());
+      this._todas.set(await this.fuente.listar());
       this.carga.set('lista');
     } catch (error) {
       this.mensajeError.set(error instanceof Error ? error.message : String(error));

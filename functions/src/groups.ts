@@ -31,6 +31,17 @@ import { exigirPareja } from './infra/permisos';
 /** Tope de escrituras por lote en Firestore, con margen. */
 const POR_LOTE = 400;
 
+/**
+ * El id del grupo general («Invitados») de la boda, o `null` si no lo hay.
+ *
+ * Todo invitado pertenece a él siempre: no tiene sentido que alguien esté en la
+ * lista de una boda y no en el grupo de todos. Lo usan los sitios que escriben
+ * `groupIds` para garantizarlo.
+ */
+export async function grupoGeneral(base: Firestore, weddingId: string): Promise<string | null> {
+  return idGrupoPorDefecto(await leerGrupos(base, weddingId));
+}
+
 /** Los grupos de una boda, en la forma que necesitan las validaciones. */
 export async function leerGrupos(
   base: Firestore,

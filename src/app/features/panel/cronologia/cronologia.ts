@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
@@ -24,6 +25,10 @@ import {
   type IconoHito,
 } from '../../public-site/cronologia/cronologia';
 import { CronologiaStore } from './cronologia.store';
+import { NpInput } from '../../../design-system/components/field/input';
+import { NpColorPicker } from '../../../design-system/components/picker/color-picker';
+import { NpIconPicker } from '../../../design-system/components/picker/icon-picker';
+import { NpCronologiaPublica } from '../../public-site/cronologia/cronologia-publica';
 
 /**
  * La cronología del día, donde la pareja la monta (§8.13).
@@ -43,6 +48,9 @@ import { CronologiaStore } from './cronologia.store';
 @Component({
   selector: 'np-panel-cronologia',
   imports: [
+    NpColorPicker,
+    NpIconPicker,
+    NpCronologiaPublica,
     ReactiveFormsModule,
     TranslocoDirective,
     NpAlert,
@@ -51,6 +59,7 @@ import { CronologiaStore } from './cronologia.store';
     NpModal,
     NpStatusChip,
     NpIcon,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -175,6 +184,19 @@ import { CronologiaStore } from './cronologia.store';
                   </li>
                 }
               </ol>
+
+              <!--
+                Cómo lo ve el invitado, con lo que ahora mismo hay publicado.
+                Sirve para decidir qué marcar como interno o qué color poner
+                sin tener que abrir la web en otra pestaña.
+              -->
+              <section class="cr__web" [attr.aria-label]="t('panel.cronologia.previa.web')">
+                <h3>{{ t('panel.cronologia.previa.web') }}</h3>
+                <p class="cr__ayuda">{{ t('panel.cronologia.previa.webAyuda') }}</p>
+                <div class="cr__marco">
+                  <np-cronologia-publica [cronologia]="previaDeLaWeb()" />
+                </div>
+              </section>
             }
           }
         }
@@ -190,17 +212,17 @@ import { CronologiaStore } from './cronologia.store';
             <form class="cr__form" [formGroup]="formulario" (submit)="enviar($event)">
               <label>
                 {{ t('panel.cronologia.campo.titulo') }}
-                <input formControlName="title" [attr.maxlength]="maximoTitulo" />
+                <input npInput formControlName="title" [attr.maxlength]="maximoTitulo" />
               </label>
 
               <div class="cr__horas">
                 <label>
                   {{ t('panel.cronologia.campo.hora') }}
-                  <input formControlName="time" type="time" />
+                  <input npInput formControlName="time" type="time" />
                 </label>
                 <label>
                   {{ t('panel.cronologia.campo.fin') }}
-                  <input formControlName="endTime" type="time" />
+                  <input npInput formControlName="endTime" type="time" />
                   <small>{{ t('panel.cronologia.campo.finAyuda') }}</small>
                 </label>
               </div>
@@ -208,29 +230,49 @@ import { CronologiaStore } from './cronologia.store';
               <label>
                 {{ t('panel.cronologia.campo.descripcion') }}
                 <textarea
+                  npInput
                   formControlName="description"
                   rows="3"
                   [attr.maxlength]="maximoDescripcion"
                 ></textarea>
               </label>
 
-              <div class="cr__horas">
-                <label>
-                  {{ t('panel.cronologia.campo.icono') }}
-                  <select formControlName="icon">
-                    @for (icono of iconos; track icono) {
-                      <option [value]="icono">{{ t('panel.cronologia.icono.' + icono) }}</option>
-                    }
-                  </select>
-                </label>
-                <label>
-                  {{ t('panel.cronologia.campo.color') }}
-                  <select formControlName="color">
-                    @for (color of colores; track color.id) {
-                      <option [value]="color.id">{{ color.nombre }}</option>
-                    }
-                  </select>
-                </label>
+              <div class="cr__grupo" role="group" aria-labelledby="cr-icono">
+                <span id="cr-icono" class="cr__etiqueta">{{
+                  t('panel.cronologia.campo.icono')
+                }}</span>
+                <np-icon-picker
+                  [opciones]="opcionesDeIcono()"
+                  [etiqueta]="t('panel.cronologia.campo.icono')"
+                  [value]="formulario.controls.icon.value"
+                  (valueChange)="formulario.controls.icon.setValue($any($event))"
+                />
+              </div>
+
+              <div class="cr__grupo" role="group" aria-labelledby="cr-color">
+                <span id="cr-color" class="cr__etiqueta">{{
+                  t('panel.cronologia.campo.color')
+                }}</span>
+                <np-color-picker
+                  [opciones]="colores"
+                  [etiqueta]="t('panel.cronologia.campo.color')"
+                  [value]="formulario.controls.color.value"
+                  (valueChange)="formulario.controls.color.setValue($any($event))"
+                />
+              </div>
+
+              <!--
+                Cómo va a quedar. Se mira mientras se escribe, no después de
+                guardar: la hora, el icono y el color cambian lo que se ve en la
+                web, y es más fácil acertar viéndolo que imaginándolo.
+              -->
+              <div class="cr__previa" aria-live="polite">
+                <span class="cr__etiqueta">{{ t('panel.cronologia.previa.titulo') }}</span>
+                @if (previaDelHito().length > 0) {
+                  <np-cronologia-publica [cronologia]="previaDelHito()" />
+                } @else {
+                  <p class="cr__ayuda">{{ t('panel.cronologia.previa.vacia') }}</p>
+                }
               </div>
 
               <label class="cr__casilla">
@@ -392,7 +434,45 @@ import { CronologiaStore } from './cronologia.store';
     .cr__form small {
       color: var(--np-surface-text-muted);
     }
-    .cr__casilla {
+    .cr__grupo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+    }
+    .cr__etiqueta {
+      font-size: var(--np-text-sm);
+    }
+    .cr__previa {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+    }
+    .cr__previa np-cronologia-publica {
+      padding: var(--np-space-3);
+      border: 1px dashed var(--np-surface-border);
+      border-radius: var(--np-radius-md);
+      background: var(--np-surface-canvas);
+    }
+    .cr__web {
+      margin-block-start: var(--np-space-5);
+    }
+    .cr__web h3 {
+      margin: 0;
+      font-size: var(--np-text-lg);
+      font-weight: var(--np-weight-semibold);
+    }
+    .cr__ayuda {
+      margin: var(--np-space-1) 0 var(--np-space-3);
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
+    }
+    .cr__marco {
+      padding: var(--np-space-4);
+      border: 1px solid var(--np-surface-border);
+      border-radius: var(--np-radius-md);
+      background: var(--np-surface-surface);
+    }
+    .cr__form .cr__casilla {
       flex-direction: row;
       align-items: center;
       gap: var(--np-space-2);
@@ -413,6 +493,15 @@ export class PanelCronologia {
   protected readonly colores = NP_CATEGORIAS.filter((categoria) =>
     (COLORES_HITO as readonly string[]).includes(categoria.id),
   );
+  private readonly i18n = inject(TranslocoService);
+
+  /** Los iconos con su nombre, para el selector visual. */
+  protected readonly opcionesDeIcono = computed(() =>
+    this.iconos.map((icono) => ({
+      value: icono,
+      label: this.i18n.translate('panel.cronologia.icono.' + icono),
+    })),
+  );
   protected readonly maximoTitulo = MAX_TITULO;
   protected readonly maximoDescripcion = MAX_DESCRIPCION;
 
@@ -430,6 +519,53 @@ export class PanelCronologia {
     color: ['rosa' as ColorHito],
     visibleToGuests: [true],
   });
+
+  private readonly valoresDelFormulario = toSignal(this.formulario.valueChanges, {
+    initialValue: this.formulario.getRawValue(),
+  });
+
+  /**
+   * El momento que se está escribiendo, tal y como saldría en la web.
+   *
+   * Vacío hasta que tiene título y hora: sin hora no hay dónde ponerlo, y
+   * inventar una (las 12:00) enseñaría un resultado que no es el que saldrá.
+   */
+  protected readonly previaDelHito = computed<readonly HitoPublico[]>(() => {
+    const v = this.valoresDelFormulario();
+    const time = v.time ?? '';
+    const title = (v.title ?? '').trim();
+    if (title === '' || minutosDelDia(time) === null) return [];
+
+    return [
+      {
+        id: 'previa',
+        time,
+        endTime: v.endTime ? v.endTime : null,
+        title,
+        description: (v.description ?? '').trim(),
+        icon: (v.icon ?? 'clock') as IconoHito,
+        color: (v.color ?? 'rosa') as ColorHito,
+        order: 0,
+      },
+    ];
+  });
+
+  /** Lo que ve ahora mismo el invitado: solo lo que no es interno. */
+  protected readonly previaDeLaWeb = computed<readonly HitoPublico[]>(() =>
+    this.store
+      .hitos()
+      .filter((hito) => hito.visibleToGuests && minutosDelDia(hito.time) !== null)
+      .map((hito) => ({
+        id: hito.id,
+        time: hito.time,
+        endTime: hito.endTime,
+        title: hito.title,
+        description: hito.description,
+        icon: hito.icon,
+        color: hito.color,
+        order: hito.order,
+      })),
+  );
 
   /**
    * Los avisos de planificación, ya escritos.

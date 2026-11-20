@@ -36,7 +36,7 @@ service cloud.firestore {
     // Campos que mueve el servidor y la pareja no puede tocar.
     function noSystemFields() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt']);
+        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt', 'limits']);
     }
 
     // ---------- colecciones raíz ----------
@@ -106,7 +106,11 @@ service cloud.firestore {
                                    allow write: if false; }
       match /tables/{id}         { allow read: if isOwner(wid) || isGuestOf(wid);
                                    allow write: if isOwner(wid); }
-      match /locations/{id}      { allow read: if isOwner(wid) || isGuestOf(wid);
+      // El invitado **no lee los sitios de aquí**: los visibles le llegan por la
+      // proyección pública. Si pudiera consultar la colección vería también los
+      // que la pareja apuntó como internos —dónde aparcan los proveedores—, y
+      // `visibleToGuests` no protegería nada.
+      match /locations/{id}      { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
       // Las preguntas frecuentes **no las lee el invitado de aquí**: las lee de
       // la proyección pública, donde llegan ya saneadas y solo las que tienen
@@ -143,7 +147,13 @@ service cloud.firestore {
                           || request.resource.data.isSystem == true);
         allow delete: if isOwner(wid) && resource.data.isSystem != true;
       }
-      match /gifts/{id}          { allow read: if isOwner(wid) || isGuestOf(wid);
+      // La lista de regalos **el invitado no la lee de aquí**: se la sirve
+      // `getGifts`. Dos motivos. El primero, que la reserva es anónima para el
+      // resto (§8.8) y `reservedBy` vive en el documento: una regla puede
+      // negar una escritura, no esconder un campo de una lectura. El segundo,
+      // que reservar sin pisar la reserva de otro es una transacción y no un
+      // `update`, así que la escritura del invitado tampoco podía ir aquí.
+      match /gifts/{id}          { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
 
       // ---- quiz ----
@@ -165,6 +175,14 @@ service cloud.firestore {
       match /quizGames/{id} {
         allow read, write: if false;
       }
+      // quizStats: cuántos contestan y cuántos aciertan cada pregunta. Lo
+      // escribe solo `submitQuiz`; la pareja lo lee para ver qué preguntas
+      // salen fáciles o difíciles. Escribirlo desde el cliente falsearía las
+      // etiquetas, y el invitado no tiene por qué leerlo.
+      match /quizStats/{id} {
+        allow read: if isOwner(wid);
+        allow write: if false;
+      }
       // quizResults: lo escribe la función tras corregir. Si el cliente pudiera
       // escribir aquí, cualquiera se pone primero desde la consola del
       // navegador, y la corrección en servidor (regla de oro 4) no serviría de
@@ -178,9 +196,14 @@ service cloud.firestore {
 
       // ---- contenidos moderados de invitados ----
 
+      // La playlist la sirve `listPlaylist`, no una lectura directa: cada
+      // canción guarda los `guestId` de quien la votó, y una regla puede negar
+      // una lectura pero no esconder un campo de ella. Con la colección
+      // abierta, cualquier invitado sabría quién ha votado qué. Proponer y
+      // votar pasan por `suggestSong` y `voteSong`.
       match /playlistSuggestions/{id} {
-        allow read: if isOwner(wid) || isGuestOf(wid);
-        allow write: if isOwner(wid);    // el alta del invitado pasa por función
+        allow read: if isOwner(wid);
+        allow write: if isOwner(wid);
       }
       match /guestbookEntries/{id} {
         allow read: if isOwner(wid) || isGuestOf(wid);

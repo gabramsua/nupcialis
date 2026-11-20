@@ -28,8 +28,8 @@ se actualiza al cerrar cada bloque. En corto:
 | **F0** Fundaciones                  | Hecha en lo que bloquea |
 | **F1** Núcleo vendible              | **En curso**            |
 | **F2** Banquete, ubicaciones y día  | **En curso**            |
-| **F3** Participación de invitados   | Sin empezar             |
-| **F4** Gestión interna de la pareja | Sin empezar             |
+| **F3** Participación de invitados   | **En curso**            |
+| **F4** Gestión interna de la pareja | **En curso**            |
 | **F5** Comercialización             | Sin empezar             |
 
 **Ahora: F1 cerrada en código y F2 empezada.** Los diez bloques de F1 están

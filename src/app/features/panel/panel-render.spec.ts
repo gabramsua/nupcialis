@@ -281,6 +281,9 @@ const PUERTA_ACCESOS_FALSA: PuertaAccesos = {
 };
 
 const PUERTA_RESPUESTAS_FALSA: PuertaRespuestas = {
+  async guardar() {
+    return { ok: true as const, estado: 'confirmed' as const };
+  },
   async leer() {
     return { ok: true as const, datos: { preguntas: [], invitados: [] } };
   },

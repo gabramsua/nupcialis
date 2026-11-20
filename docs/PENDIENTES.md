@@ -10,7 +10,7 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-01 | Ciclo de vida post-boda: cuánto vive la web y los datos, renovación, purga | F5, RGPD                         | abierta                                                      |
 | D-02 | Precio y planes: qué módulos son `basic` y cuáles `premium`                | F5                               | abierta                                                      |
 | D-03 | Librería del editor de texto enriquecido                                   | F1                               | **decidida 2026-09-08: Jodit con `ngx-jodit`**               |
-| D-04 | Confirmar librería de mapas (Leaflet/MapLibre frente a Google Maps)        | F2                               | abierta                                                      |
+| D-04 | Confirmar librería de mapas (Leaflet/MapLibre frente a Google Maps)        | F2                               | **elegida: Leaflet + OSM; pendiente de validar**             |
 | D-05 | Email transaccional: proveedor y si entra en el producto                   | F5                               | abierta                                                      |
 | D-06 | WhatsApp Business API                                                      | F5                               | abierta                                                      |
 | D-07 | Dominio propio de la pareja                                                | —                                | abierta                                                      |
@@ -44,6 +44,13 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-35 | RSVP: lo decidido al implementarlo                                         | F1.8                             | **pendiente de validar**                                     |
 | D-36 | Acompañantes: lo decidido al implementarlo                                 | F1.5                             | **pendiente de validar**                                     |
 | D-37 | Librería de hojas de cálculo                                               | F1.6                             | **pendiente de validar**                                     |
+| D-41 | Playlist: lo decidido al implementarla                                     | F3.4                             | **pendiente de validar**                                     |
+| D-42 | Estadísticas y límites del superadmin: lo decidido al implementarlos       | F3.1d                            | **pendiente de validar**                                     |
+| D-43 | Tareas de la pareja: lo decidido al implementarlas                         | F4.1                             | **pendiente de validar**                                     |
+| D-44 | Smoke test 1: arreglos y orden del backlog                                 | S1                               | **pendiente de validar**                                     |
+| D-45 | La pareja contesta por el invitado: lo decidido al implementarlo           | F1.8h                            | **pendiente de validar**                                     |
+| D-46 | Acompañantes desde el panel y pulido del timeline/FAQ/editor               | F1.5d                            | **pendiente de validar**                                     |
+| D-47 | Tanda de 18 puntos (quiz, grupos, mesas, tareas…) y lo que he apartado     | S2                               | **pendiente de validar**                                     |
 
 ---
 
@@ -89,7 +96,21 @@ actual. Para una barra tan acotada como la que necesitamos puede pesar de más.
 
 ### D-04 · Librería de mapas
 
-Recomendación: Leaflet o MapLibre sobre OpenStreetMap, sin clave ni facturación,
+**Elegida por mí para no parar (2026-11-17), pendiente de que la valides:**
+**Leaflet 1.9.4 sobre teselas de OpenStreetMap**, cargada solo al abrir un mapa
+(trozo aparte de 38 kB comprimidos; la portada no paga nada), con búsqueda de
+direcciones en **Nominatim** y enlaces profundos a Google Maps para navegar.
+Sin clave ni facturación. Si prefieres otra, cambiarla toca un solo fichero
+(`features/public-site/mapa/leaflet.ts`) y el buscador (`geocodificador.ts`).
+
+**Riesgo que debes conocer:** los servidores públicos de teselas y de Nominatim
+de OpenStreetMap tienen una política de uso razonable (sin tráfico masivo ni
+autocompletado, atribución visible, y buscar solo al pulsar «Buscar»). Para una
+boda va sobrada; **con muchas bodas a la vez, o antes de vender a escala, hay que
+pasar a un proveedor de teselas con plan** (MapTiler, Stadia, etc.) o alojar las
+propias. Está apuntado como `F2.3b`.
+
+Recomendación original: Leaflet o MapLibre sobre OpenStreetMap, sin clave ni facturación,
 con enlaces profundos a Google Maps para navegar. La alternativa, Maps JavaScript
 API, exige clave con facturación, se paga por carga y obliga a restringir por
 _referrer_; con subdominios wildcard esa restricción sería `*.nupcialis.com/*`,
@@ -415,10 +436,10 @@ reenvía por canales que no controlemos.
 dirección, y obligarles a inventarse una segunda es peor que permitirlo. Lo que
 no se admite es la misma dos veces.
 
-**d) Las preguntas de fábrica del quiz nacen desactivadas.** Se siembran cinco
-con la forma correcta pero sin respuestas, porque solo la pareja sabe dónde se
-conocieron. Activas, un invitado jugaría a un quiz imposible de acertar y se
-llevaría la impresión de que la web está rota.
+**d) ~~Las preguntas de fábrica del quiz nacen desactivadas.~~ Ya no se
+siembran (D-46).** El quiz nace vacío: cinco preguntas sin respuestas eran ruido
+que la pareja tenía que borrar. En su lugar, el panel explica cómo funciona el
+juego (partida, puntos, ranking) y trae un buscador.
 
 **e) Si falla el alta del subdominio en Auth, la boda se crea igual.** Queda con
 `setup.authDomain: 'pending'`, la respuesta trae un aviso y hay una función para
@@ -983,3 +1004,391 @@ El moodboard comparte toda la maquinaria de subida con la foto de portada y es
 media pantalla más; preferí entregar el módulo funcionando —texto con formato,
 colores y avisos prácticos— antes que las tres cosas a medias. Dime si lo
 prefieres al revés.
+
+---
+
+### D-39 · Galería: lo que he decidido al implementarla — **RESUELTA (2026-11-17)**
+
+> **Respuestas de Gabriel:** (1) las fotos salen **publicadas**, con borrado
+> inmediato para la pareja; no hay cola de aprobación por defecto. (2) **Tope de
+> 500 fotos por boda**, pero **configurable** desde un panel de superadmin donde
+> acabarán todas las estadísticas. Hecho: `limits.maxPhotos` (campo de sistema,
+> defecto 500) y `F3.1d` para el panel. Las cinco decisiones de abajo siguen en
+> pie.
+
+La galería de invitados está hecha (§8.5) y con ella cinco decisiones que no
+estaban escritas. Ninguna es irreversible, pero las cinco se notan.
+
+**1. Reduce el móvil, no el servidor.** El navegador pasa cada foto por un
+`canvas` y manda dos JPEG en la misma llamada: la grande a 1600 px de lado
+largo y la miniatura a 480, las dos al 82 %. Los requisitos pedían miniaturas
+«en servidor» con un trigger de Storage, y lo he cambiado a propósito: una foto
+de cámara son ocho megas y así viaja en menos de uno, que es la diferencia entre
+que la galería funcione o no en una finca con una barra de cobertura. De paso
+nos ahorra el trigger, la librería de imagen y el segundo rebote por Storage.
+**Lo que se pierde:** si alguien se salta nuestro cliente, puede mandar una
+miniatura que no se parezca a la grande. No es un agujero —sigue siendo una
+imagen suya en su propia galería— pero conviene que lo sepas.
+
+**2. Los ficheros se sirven con token de descarga, no con `makePublic()`.** Es
+lo que deja revocar el acceso a una foto concreta cambiándole el token, y es
+justo lo que van a necesitar las audiencias por grupo. Las reglas de Storage
+siguen cerradas a todo el mundo.
+
+**3. Subir exige invitado verificado; mirar, no.** En modo A (enlace sin
+dígitos) cualquiera con el enlace ve la galería, que es lo que quiere una pareja
+que manda el enlace por WhatsApp. Para **subir** hace falta haber escrito los
+cuatro dígitos, porque una foto lleva un nombre detrás y ese nombre tiene que
+significar algo.
+
+**4. Las audiencias por grupo quedan fuera, a propósito.** Toda foto nace con
+`audienceGroupId: null`, que es «la ve todo el mundo». Dijiste que de grupos
+hablamos después, y el módulo está escrito para que ese día solo cambien dos
+cosas: quién pone ese campo al subir y qué filtra `listPhotos`. Ni el cliente ni
+el almacenamiento se tocan.
+
+**5. La moderación es a posteriori, no una cola.** La pareja tiene su pantalla
+en `/panel/gallery`: ve la galería entera con el nombre de quien subió cada
+foto, quita cualquiera y puede vaciarla escribiendo `VACIAR`. Lo que no hay es
+cola de aprobación, denuncia ni ZIP; las tres están apuntadas en `F3.1b`. La moderación en concreto tiene una pregunta que es tuya y no mía:
+**¿las fotos salen publicadas o a cola de aprobación por defecto?** Mi
+recomendación es publicadas, con borrado inmediato para la pareja: una cola que
+nadie mira es una galería vacía el día de la boda. Dime si lo ves al revés.
+
+**Y una pregunta abierta:** falta el **tope por boda** (número de fotos o
+megas). Hoy no hay ninguno más allá de los 8 MB por fichero, y eso es una
+factura de Storage sin techo. Hace falta una cifra por plan.
+
+---
+
+### D-40 · Regalos: lo que he decidido al implementarlos — **RESUELTA (2026-11-17)**
+
+> **Respuestas de Gabriel:** (1) el IBAN y el Bizum **siguen fuera de la
+> proyección pública** y solo los ve el invitado identificado. (2) **No hay
+> exportación a XLSX de lo recibido**: nada de eso sale del panel en un fichero.
+> `F3.3d` retirada.
+
+La mitad pública está hecha (§8.8): cómo aportar y la lista. Con ella, cuatro
+decisiones que no estaban escritas, y la primera es de seguridad.
+
+**1. Ni el IBAN ni el Bizum viajan en la proyección pública.** Los requisitos
+los llaman «público», y en el sentido de «lo ven los invitados» lo siguen
+siendo. Pero `public/site` no es eso: lo lee **cualquiera que sepa el slug**,
+sin identificarse, y la web de una boda está en un dominio que se adivina. Un
+número de cuenta con su titular ahí dentro es justo lo que necesita un tercero
+para levantar una copia de la web y pedir el dinero en nombre de la pareja, y
+el invitado que pica no tiene forma de notarlo.
+
+Así que la sección de la web es un **cartel** que lleva a `/regalos`, y esa
+página la sirve `getGifts` a quien está identificado como invitado. Es el mismo
+patrón que el quiz y la galería, por un motivo distinto. **Si lo prefieres al
+revés** —número de cuenta a la vista de cualquiera que abra la web— es un
+cambio de un sitio, pero antes de hacerlo dime que lo has pensado.
+
+**2. El IBAN se comprueba con el módulo 97**, en el panel y mientras se
+escribe. Son diez líneas y la pareja escribe esto una vez, de memoria, el día
+que monta su web; un dígito cambiado es dinero rebotado o en la cuenta de otro.
+El Bizum se comprueba como móvil español. Ninguno de los dos es obligatorio: se
+puede publicar solo el mensaje, solo el Bizum, o nada.
+
+**3. La reserva es anónima de verdad, no «anónima en pantalla».** `reservedBy`
+no sale nunca de la función: lo que viaja al navegador son dos booleanos,
+`reservado` y `esMio`. Por eso la colección `gifts` queda cerrada a la lectura
+del invitado, y por eso reservar es una **transacción**: dos invitados abriendo
+la lista a la vez es el caso normal el día que se manda el recordatorio, y lo
+que no puede pasar es que el segundo pise al primero y los dos se queden
+pensando que llevan la cafetera.
+
+**4. La imagen del regalo es una URL, no una subida.** Es lo único que he
+dejado a medias a propósito: subir imágenes es la maquinaria de la foto de
+portada otra vez, y con un enlace a la tienda la lista ya es útil. Está
+apuntado en `F3.3c`.
+
+**Y el panel de regalos recibidos (`F3.3b`) ya está hecho**, con todo menos la
+exportación: es el dato más sensible del producto y el trabajo de verdad de la
+semana siguiente a la boda. Ahí sigue una pregunta tuya: **¿se puede exportar a
+XLSX con los importes dentro?** §8.8 dice que sí, pero es un fichero con nombres, apellidos
+y cantidades que acaba en Descargas y en WhatsApp. Yo lo haría, con un aviso
+claro al descargar; dime si lo ves.
+
+### D-41 · Playlist: lo que he decidido al implementarla — **pendiente de validar**
+
+Los requisitos (§8.14) dicen qué hace la playlist, no cómo se resuelven sus
+bordes. Lo que he decidido, para que lo veas y lo cambies si no te cuadra:
+
+**1. La colección es solo de la pareja y el invitado la lee por `listPlaylist`.**
+Cada canción guarda los `guestId` de quien la votó; una regla puede negar una
+lectura pero no esconder un campo de ella, así que con la colección abierta
+cualquier invitado sabría quién ha votado qué. Es el mismo motivo por el que
+`reservedBy` no sale de `getGifts`. Antes la regla dejaba leer a los invitados:
+**la he cerrado** (hay que desplegar las reglas).
+
+**2. Duplicados: «Mr. Brightside», «mr brightside» y «Mr Brightside (Live)» son la
+misma.** Se compara título y artista sin tildes, mayúsculas, signos ni lo que va
+entre paréntesis o corchetes; el artista solo cuenta si **los dos** lo tienen.
+Proponer algo que ya está **no lo duplica: suma el voto** y se le dice al
+invitado, para que no crea que su petición se ha perdido.
+
+**3. Vetar es silencioso para el invitado.** Si propone una canción vetada o
+descartada, ve «no está disponible», sin decir cuál de las dos ni por qué: no
+tiene por qué saber qué no queréis oír. Y si la pareja veta algo que ya habían
+propuesto, **se cambia su estado en vez de duplicarla**.
+
+**4. Topes: 5 canciones nuevas por invitado y 300 en la lista.** Votar es
+ilimitado. Lo que entra por el RSVP **no gasta** el tope de propuestas, y sumar
+un voto a una existente tampoco. Son constantes en `dominio/playlist.ts`; si
+prefieres otros números, es una línea.
+
+**5. La canción del RSVP entra sola**, al enviar la confirmación, desde la
+pregunta con id `cancion` (la de la semilla). Es texto libre: se acepta «Título»,
+«Título - Artista» y «Título by Artista», y varias por líneas o con punto y coma
+(hasta tres). **«de» no separa**: está dentro de demasiados títulos. Entra con el
+voto de quien la escribió y **sin poder romper la confirmación**: si falla, se
+registra y el invitado ve su confirmación hecha. Si una pareja renombra esa
+pregunta, deja de entrar sola.
+
+**6. No hay moderación previa.** §8.14 la llama «opcional, como la galería» y,
+como en la galería (D-39), la he dejado **posterior**: las canciones salen
+publicadas y la pareja las descarta o veta desde «Por decidir». Es lo que cuesta
+menos al invitado y lo que no obliga a la pareja a entrar para que algo aparezca.
+
+**7. La exportación para el DJ** es un XLSX con «Suena» (lo aceptado, por votos) y
+«No poner» (la lista de veto, solo si hay). Lo pendiente no sale: no es una
+instrucción. **No agrupa por momento** (§8.14 lo menciona) porque no hay forma
+de asignar un momento a una canción; si lo quieres, hay que decidir cómo.
+
+### D-42 · Estadísticas y límites del superadmin: lo que he decidido — **pendiente de validar**
+
+§8.18 lista las métricas pero no cómo se miden ni qué se puede cambiar. Lo que
+he decidido, para que lo veas:
+
+**1. El almacenamiento es una estimación: fotos × 0,3 MB.** Las fotos no
+guardan su peso, y la pantalla lo marca como «estimado». Si quieres el dato
+exacto, hay que guardar el tamaño al subir (y rellenar las que ya hay).
+
+**2. Solo se puede cambiar el tope de fotos.** Rango de 1 a 5000, o volver al de
+por defecto (500). Es lo único que existe como límite; invitados o mesas no
+tienen tope hoy, así que no hay nada que fijar.
+
+**3. Quién cuenta como «alta del mes».** El mes natural **en UTC**, por la fecha
+de creación de la boda.
+
+**4. Como mucho 200 bodas por consulta.** Cada boda son tres conteos; a partir
+de ahí la pantalla avisa de que los totales no incluyen el resto. Con el volumen
+que se espera es holgado; si algún día no lo es, hay que pasar a contadores
+mantenidos por trigger.
+
+**5. Orden por urgencia, no por fecha:** las galerías más llenas primero, y el
+aviso se enciende desde el 80 %.
+
+**6. Cada cambio de tope queda en el registro de auditoría** con el valor
+anterior y el nuevo.
+
+### D-43 · Tareas de la pareja: lo que he decidido — **pendiente de validar**
+
+§8.17 describe el modelo y no los bordes de la pantalla. Lo que he decidido:
+
+**1. El estado no se guarda, se calcula.** Cinco estados contra «hoy»: vencida,
+esta semana (hoy y los siete días siguientes), próxima, sin fecha y hecha. Pides
+«estados» y el documento solo tiene `done`; lo calculado cubre lo que importa
+(qué quema) sin añadir un campo que haya que mantener. Si quieres además un
+**«en curso»** manual, es un campo más (`F4.1d`).
+
+**2. «Lo de María» incluye lo de los dos.** El filtro por persona enseña sus
+tareas y las compartidas: a quien le toca «contratar el catering» entre los dos
+la tiene que ver al mirar lo suyo. Las cuentas de cada filtro lo reflejan.
+
+**3. Las hechas se esconden** detrás de «Ver las hechas (n)». Una lista que
+crece con lo tachado deja de enseñar lo que falta.
+
+**4. Las fechas de la plantilla no se recalculan** si cambias la fecha de la
+boda (`F4.1b`). Es lo que más puede morder: una pareja que da de alta con una
+fecha provisional y la corrige después se queda con las tareas en las fechas
+viejas hasta que las edite una a una.
+
+**5. Tope de 300 tareas** por boda y 120 caracteres de título. Son constantes en
+`features/panel/checklist/tareas.ts`.
+
+**6. El aviso del inicio** enseña como mucho tres tareas —vencidas primero— y
+cuenta las que quedan. Si no hay ninguna urgente, dice cuántas lleva hechas.
+
+---
+
+### D-44 · Smoke test 1: lo que he decidido — **pendiente de validar**
+
+**1. El destino tras el login es dato de la ruta**, no una constante: el mismo
+componente sirve a la pareja (`/panel`) y al superadmin (`/superadmin`).
+
+**2. El enlace de alta continúa en `/panel/acceso`**, no en `/panel`: tras fijar la
+contraseña, la pareja cae en el login del panel de su boda, nunca en la web pública.
+
+**3. El 403 de App Check no se «arregla» en código.** Un token de depuración
+registrado salta App Check entero; no puede ir en el repositorio. Solo se avisa.
+
+**3b. El panel abre con la boda en borrador o archivada.** Es donde la pareja la
+prepara antes de publicar; la guarda lo impedía. La seguridad no cambia: sigue
+mandando el claim `weddingId` y las reglas de Firestore.
+
+**4. Filtros y alta del superadmin** como se describen en `S1.3b/c`.
+
+**5. Backlog propuesto, por orden** (cámbialo si quieres): primero lo que bloquea
+vender (recuperación de contraseña desde el superadmin, ficha de boda + auditoría),
+luego el módulo financiero con facturas, después landing y estadísticas de
+conversión, y al final recordatorios y notificaciones (necesitan un proveedor de
+correo y decidir si hay push). **Necesito los precios de los planes básico y extendido.**
+
+---
+
+### D-45 · La pareja contesta por el invitado: lo que he decidido — **pendiente de validar**
+
+Lo pediste porque habrá gente que no entre en la web. Esto es lo que he decidido
+yo y conviene que mires:
+
+**1. Es una función aparte (`setGuestRsvp`), no `upsertGuest`.** El servidor mueve
+`rsvpStatus` y `rsvpAnswers` (regla 6): la pareja no los escribe en la ficha del
+invitado. Esta función es la única forma de que lo haga, y valida como el invitado.
+
+**2. No se exigen las obligatorias.** La pareja apunta lo que sabe. Si te parece
+mejor que el menú sea obligatorio al marcar «viene» —para que el catering no se
+quede con huecos— es un cambio de una línea, pero obliga a rellenar algo que quizá
+no sabes aún. Las mesas ya
+muestran «Sin menú» para quien confirma sin elegirlo (`exportar-mesas.ts`).
+
+**3. No hay plazo.** El plazo del RSVP es para el invitado; la pareja puede
+corregir hasta el último día.
+
+**4. «Sin contestar» vuelve a pendiente** y vacía la fecha de respuesta. No borra
+las respuestas escritas.
+
+**5. Lo que no hay todavía:** marcar a varios a la vez (`F1.8i`, `F1.8j`). Va en
+cuanto la lista tenga selección múltiple; es lo que más tiempo ahorra con una
+familia que confirma por teléfono.
+
+**6. Un invitado que declina conserva su menú anterior** en el documento, igual
+que cuando declina él por sí mismo. No lo he cambiado: si quieres que al marcar
+«no viene» se vacíen menú y alergias, es un cambio aparte que también afectaría
+al formulario del invitado, y conviene mirarlo antes contra lo que cuenta el
+catering.
+
+### D-46 · Acompañantes desde el panel y pulido de contenido — **pendiente de validar**
+
+**1. La pareja decide quién viene con quién** (`validarVinculo`, en
+`upsertGuest` con `invitedById`). Se puede dar de alta a alguien ya como
+acompañante de un titular («Añadir acompañante» en su tarjeta) o enlazar a uno
+que ya estaba con el selector «Viene con» de la ficha. Reglas: nadie viene
+consigo mismo, un acompañante no puede ser titular (sin cadenas) y quien ya trae
+gente no pasa a ser acompañante. Hereda los grupos del titular y no tiene cupo
+propio.
+
+**2. La pareja no está sujeta al cupo del titular.** El cupo (`maxCompanions`)
+limita lo que apunta el invitado desde la web; la pareja puede enlazar más. Si
+prefieres que también lo respete, es una línea en `upsertGuest`.
+
+**3. Navegar:** «Trae a N» y «Lo trae X» son botones que abren la **familia**
+(titular primero y sus acompañantes). Mientras se mira una familia los demás
+filtros se ignoran, para que ninguno esconda a alguien. «Ver toda la lista»
+vuelve.
+
+**4. Todavía no hay:** desenlazar sin editar (se hace con «Viene por su cuenta»
+en la ficha), ni crear varios acompañantes de una vez.
+
+**5. Timeline y FAQ:** selector de iconos visual (rejilla con icono y nombre) y
+de colores con muestra, vista previa de «cómo lo verá el invitado» en el
+timeline, casillas en una sola línea, icono alineado en la web pública.
+
+**6. Jodit:** el aspecto cutre era porque no se cargaba su hoja de estilos.
+Ahora se enlaza (como Leaflet) y se viste con los tokens del panel. **Hay que
+reiniciar `ng serve`**: se ha tocado `angular.json`.
+
+**6b. Quiz:** ya no se siembran preguntas de ejemplo; el panel trae un bloque
+«Cómo funciona el juego» (abierto mientras no hay preguntas) y un buscador por
+enunciado, respuestas y pista (aparece desde 6 preguntas). **Las bodas ya
+creadas conservan las 5 vacías**: bórralas desde el panel del juego.
+
+**7. Lo que NO está hecho de lo que pediste:** la vista previa en la **galería**.
+Hoy el panel de galería es solo moderación. Propuesta: botón «Cómo lo ven los
+invitados» que abra la galería pública con las mismas fotos, como el timeline.
+
+### D-47 · Tanda de 18 puntos: lo que he decidido y lo que he apartado — **pendiente de validar**
+
+Hecha mientras Gabriel no estaba, con la instrucción de **apartar lo que
+necesitara su respuesta**. Primero lo que he decidido yo; después, lo apartado.
+
+**Decidido y hecho**
+
+1. **Iconos de la cronología:** 17 más (cóctel, discursos, llegada de invitados,
+   aplausos, entrada, primer baile, llegada, final, música en directo, viaje de
+   novios, traje del novio, pareja, coche, globos, vídeo, testigos, descanso).
+   «Llegada del novio» y «Llegada de la novia» se cubren con _Traje del novio_ y
+   _Vestido_ (Phosphor no trae un traje), o con _Llegada_ y _Coche_.
+2. **Pista del quiz:** cuesta **la mitad de los puntos de esa pregunta**
+   (10/20/30 → 5/10/15) y la pantalla **avisa antes** de enseñarla
+   («Pedir una pista (cuesta N puntos)» → confirmar). El servidor la apunta al
+   entregarla (`getQuizHint`), no al corregir, y el texto de la pista solo sale
+   por esa función. Se quita «dejarla en blanco» del texto: no existe.
+3. **Nunca se enseña la respuesta correcta.** Al terminar solo salen los puntos
+   y, si se ha entrado, el puesto en el ranking. Se retira el bloque «era…».
+4. **Estadística por pregunta** (`quizStats/{id}`: contestada, acertada, pistas
+   pedidas; la escribe el servidor al corregir, solo la lee la pareja). Con **al
+   menos 10 respuestas**, ≥ 90 % de aciertos = _Pregunta fácil_ y ≤ 10 % =
+   _Pregunta difícil_. Menos muestra no etiqueta: con tres jugadores, que los
+   tres acierten no prueba nada. El panel enseña el porcentaje y la etiqueta.
+5. **«Cómo funciona el juego»** lleva flecha de acordeón, y el texto deja de
+   prometer lo que no hay (en blanco, pista gratis, «ve cuál era la correcta») y
+   avisa de que **una pregunta fácil para la familia no lo es para los
+   amigos** (el colegio de la novia): hay que elegir las que pueda contestar
+   el grupo que juega o que salgan de información pública.
+6. **No se guarda el email del invitado** para nada: campo, columna de
+   importación, plantilla, exportación y funciones. Los invitados que ya lo
+   tenían conservan el dato en su documento hasta que se limpie (no se lee).
+7. **Grupos sin lado** (novio/novia) y **sin «los invitados pueden publicar una
+   foto para todos»**: solo decide la pareja. Se quitan `side` y
+   `allowPublicOptIn` del modelo y del formulario (quedan en documentos viejos,
+   sin leerse). El `side` **del invitado** se mantiene.
+8. **Todo invitado pertenece siempre al grupo general «Invitados»**: al crearlo,
+   al importar, al editarlo (la casilla va marcada y bloqueada) y al
+   **confirmar asistencia** (por la web y por la pareja).
+9. **Menú «Confirmaciones de asistencia»**.
+10. **Mesas:** la lista enseña a **todos** los invitados con color y texto
+    (verde = confirmado, rojo = no viene, ámbar = sin contestar). Al sentar a
+    un titular se pregunta por sus acompañantes; si no van con él **no hace
+    falta elegir otra mesa** y los que quedan sin sitio se ven aparte. Se puede
+    **quitar a alguien de su mesa**. Se quita el aviso de «mesas incompletas».
+    Arrastrar usa **Angular CDK** (`@angular/cdk`, ya instalado en el patch):
+    vista previa que sigue al dedo, retardo corto en táctil para no romper el
+    scroll.
+11. **El scroll vuelve arriba en cada navegación** (y conserva la posición al
+    volver atrás): `withInMemoryScrolling`.
+12. **Tareas:** filtros por **estado** (pendientes/vencidas/hechas), **categoría**
+    y **texto**, además del de responsable. Al completar una tarea se guarda
+    **cuándo** (hora del servidor) y **quién** (`doneByUid`, `doneByEmail`); se
+    muestra «Completada el … por …». Las anteriores no tienen autor y solo
+    enseñan la fecha.
+
+**Apartado: necesita tu respuesta**
+
+- **Desempate del ranking (punto 4 de tu lista).** Hoy gana quien tardó menos
+  (§8.7 lo decía así, y el servidor lo hace). Tú dices que no lo hablamos. He
+  **retirado esa frase del texto del panel** y no he tocado el comportamiento.
+  Opciones: (a) más rápido gana, (b) empate compartido, (c) gana quien jugó
+  antes. Mientras decides, el ranking sigue con (a) sin enseñar el tiempo.
+- **Lista del superadmin de preguntas fáciles/difíciles para demos.** Se
+  recoge la estadística por boda, pero **no** he montado la lista global: hace
+  falta decidir (i) si las preguntas de una pareja pueden salir de su boda
+  hacia otras (consentimiento, privacidad: suelen hablar de gente real), y (ii)
+  qué pasa con la estadística cuando la pareja **edita** el enunciado (hoy se
+  arrastraría). Propuesta: botón «Proponer como pregunta de demo» por pregunta,
+  que la copia sin estadística a una colección del superadmin.
+- **Preguntas por grupo de invitados (punto 6, más allá del aviso).** He
+  añadido el consejo al texto. Etiquetar cada pregunta con los grupos a los que
+  se dirige, y que cada invitado solo reciba las de su grupo, es un cambio de
+  modelo y de reparto de la partida: dime si lo quieres.
+- **Umbrales de la estadística:** 90 %, 10 % y mínimo 10 respuestas son míos.
+- **Los «no viene» salen en rojo en mesas** pero no ocupan plaza. ¿Prefieres
+  ocultarlos?
+- **`doneBy` lo escribe el navegador** (la regla es «la pareja escribe sus
+  tareas»): el otro miembro de la pareja podría falsearlo. Si importa, se mueve
+  a una función o se añade una regla `doneByUid == request.auth.uid` con su
+  test.
+- Siguen sin respuesta: vista previa de la **galería** y confirmación **masiva**
+  (F1.8i/j). Las bodas viejas conservan las 5 preguntas vacías del quiz.

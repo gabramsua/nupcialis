@@ -147,9 +147,9 @@ function montar(mesas: readonly Mesa[], invitados: readonly Invitado[]) {
     borradas,
     asentar,
     texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
-    fichas: () => [...raiz.querySelectorAll<HTMLButtonElement>('.ms__ficha')],
+    fichas: () => [...raiz.querySelectorAll<HTMLButtonElement>('.ms__fichaBtn')],
     ficha(nombre: string) {
-      return [...raiz.querySelectorAll<HTMLButtonElement>('.ms__ficha')].find((f) =>
+      return [...raiz.querySelectorAll<HTMLButtonElement>('.ms__fichaBtn')].find((f) =>
         f.textContent?.includes(nombre),
       )!;
     },
@@ -161,14 +161,9 @@ function montar(mesas: readonly Mesa[], invitados: readonly Invitado[]) {
         b.textContent?.includes(texto),
       ) as HTMLButtonElement;
     },
-    /** Un toque: puntero abajo y arriba sin moverse. */
+    /** Un toque en la ficha. */
     async tocar(elemento: HTMLElement) {
-      elemento.dispatchEvent(
-        new PointerEvent('pointerdown', { button: 0, clientX: 10, clientY: 10, bubbles: true }),
-      );
-      elemento.dispatchEvent(
-        new PointerEvent('pointerup', { button: 0, clientX: 10, clientY: 10, bubbles: true }),
-      );
+      elemento.click();
       await asentar();
     },
     async pulsar(boton: HTMLButtonElement) {
@@ -177,6 +172,118 @@ function montar(mesas: readonly Mesa[], invitados: readonly Invitado[]) {
     },
   };
 }
+
+describe('todos los invitados en las mesas (D-47)', () => {
+  const lista = [
+    invitado({ id: 'c', fullName: 'Carla Sí', rsvpStatus: 'confirmed' }),
+    invitado({ id: 'p', fullName: 'Pablo Duda', rsvpStatus: 'pending' }),
+    invitado({ id: 'n', fullName: 'Nuria No', rsvpStatus: 'declined' }),
+  ];
+
+  it('salen todos, con su estado en color, icono y texto', async () => {
+    const p = montar([mesa({ id: 'm1' })], lista);
+    await p.asentar();
+
+    expect(p.raiz.querySelectorAll('.ms__ficha--confirmed')).toHaveLength(1);
+    expect(p.raiz.querySelectorAll('.ms__ficha--pending')).toHaveLength(1);
+    expect(p.raiz.querySelectorAll('.ms__ficha--declined')).toHaveLength(1);
+    expect(p.texto()).toContain('Pablo Duda');
+    expect(p.texto()).toContain('Nuria No');
+    // Nunca solo color: cada ficha dice su estado con texto.
+    expect(p.ficha('Pablo Duda').textContent).toContain('Sin contestar');
+  });
+
+  it('los confirmados, primero', async () => {
+    const p = montar([mesa({ id: 'm1' })], [lista[2]!, lista[1]!, lista[0]!]);
+    await p.asentar();
+
+    expect(p.fichas().map((f) => f.textContent?.trim().split(/\s+/)[0])).toEqual([
+      'Carla',
+      'Pablo',
+      'Nuria',
+    ]);
+  });
+
+  it('no hay banner de mesas incompletas', async () => {
+    const p = montar([mesa({ id: 'm1', minSeats: 8 })], [invitado({ id: 'a', tableId: 'm1' })]);
+    await p.asentar();
+
+    expect(p.raiz.querySelector('np-alert')).toBeNull();
+  });
+
+  it('quien no viene no ocupa silla', async () => {
+    const p = montar(
+      [mesa({ id: 'm1', minSeats: 1, maxSeats: 2 })],
+      [
+        invitado({ id: 'a', tableId: 'm1', rsvpStatus: 'confirmed' }),
+        invitado({ id: 'b', tableId: 'm1', rsvpStatus: 'confirmed' }),
+        invitado({ id: 'c', tableId: 'm1', rsvpStatus: 'declined' }),
+      ],
+    );
+    await p.asentar();
+
+    expect(p.texto()).not.toContain('más de los que caben');
+  });
+
+  it('se puede quitar a alguien de su mesa con su propio botón', async () => {
+    const p = montar(
+      [mesa({ id: 'm1', minSeats: 1 })],
+      [invitado({ id: 'a', fullName: 'Ana Ruiz', tableId: 'm1' })],
+    );
+    await p.asentar();
+
+    const quitar = p.raiz.querySelector<HTMLButtonElement>('.ms__quitar')!;
+    expect(quitar.getAttribute('aria-label')).toContain('Ana Ruiz');
+    await p.pulsar(quitar);
+
+    expect(p.sentados).toEqual([{ ids: ['a'], mesa: null }]);
+  });
+
+  it('un acompañante sin mesa cuyo titular ya está sentado queda marcado', async () => {
+    const p = montar(
+      [mesa({ id: 'm1', minSeats: 1 })],
+      [
+        invitado({ id: 't', fullName: 'Ana Ruiz', tableId: 'm1' }),
+        invitado({
+          id: 'x',
+          fullName: 'Luis Mas',
+          isCompanion: true,
+          invitedById: 't',
+        }),
+      ],
+    );
+    await p.asentar();
+
+    expect(p.raiz.querySelectorAll('.ms__ficha--huerfano')).toHaveLength(1);
+    expect(p.texto()).toContain('Acompañante de Ana Ruiz');
+  });
+
+  it('soltar una ficha en una mesa la sienta; en «por sentar», la levanta', async () => {
+    const p = montar(
+      [mesa({ id: 'm1', minSeats: 1 })],
+      [invitado({ id: 'a', fullName: 'Ana Ruiz' }), invitado({ id: 'b', tableId: 'm1' })],
+    );
+    await p.asentar();
+
+    const clase = p.fixture.componentInstance as unknown as {
+      soltado(e: unknown): Promise<void>;
+    };
+    const lista = {};
+    await clase.soltado({
+      previousContainer: lista,
+      container: { data: 'm1' },
+      item: { data: 'a' },
+    });
+    expect(p.sentados.at(-1)).toEqual({ ids: ['a'], mesa: 'm1' });
+
+    await clase.soltado({
+      previousContainer: lista,
+      container: { data: null },
+      item: { data: 'b' },
+    });
+    expect(p.sentados.at(-1)).toEqual({ ids: ['b'], mesa: null });
+  });
+});
 
 describe('el reparto de mesas', () => {
   it('enseña quién falta por sentar', async () => {
@@ -229,7 +336,8 @@ describe('el reparto de mesas', () => {
     await p.asentar();
 
     expect(p.texto()).toContain('1 más de los que caben');
-    expect(p.texto()).toContain('tiene 1 más de los que caben');
+    // Sin banner de avisos arriba: el aviso vive en la propia mesa (D-47).
+    expect(p.texto()).not.toContain('tiene 1 más de los que caben');
   });
 
   it('marca la mesa que se queda corta', async () => {
@@ -255,7 +363,7 @@ describe('el reparto de mesas', () => {
     );
     await p.asentar();
 
-    expect(p.texto()).toContain('Luis Mas está lejos de Ana Ruiz');
+    expect(p.texto()).not.toContain('está lejos de');
     expect(p.raiz.querySelectorAll('.ms__ficha--separado')).toHaveLength(1);
   });
 

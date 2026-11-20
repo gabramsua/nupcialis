@@ -36,6 +36,23 @@ export const ICONOS_HITO = [
   'moon-stars',
   'flower',
   'map-pin',
+  'heart',
+  'car',
+  'balloon',
+  'video-camera',
+  'hand-heart',
+  'bed',
+  'martini',
+  'microphone-stage',
+  'users-three',
+  'hands-clapping',
+  'door-open',
+  'sparkle',
+  'person-simple-walk',
+  'flag-checkered',
+  'guitar',
+  'suitcase',
+  't-shirt',
 ] as const;
 
 export type IconoHito = (typeof ICONOS_HITO)[number];

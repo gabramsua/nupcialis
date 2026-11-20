@@ -48,7 +48,6 @@ const VIENE = invitado({
   fullName: 'Ana Ruiz',
   nickname: 'Anita',
   phone: '+34600111222',
-  email: 'ana@example.com',
   rsvpStatus: 'confirmed',
   menu: 'Vegano',
   allergies: 'Nueces',
@@ -65,7 +64,12 @@ const SIN_CONTESTAR = invitado({ id: 'g3', fullName: 'Carmen Díaz', ageGroup: '
 const GRUPOS: readonly Grupo[] = GRUPOS_DE_PRUEBA;
 
 function datos(invitados: readonly Invitado[]) {
-  return { invitados, grupos: GRUPOS, etiquetas: ETIQUETAS };
+  return {
+    invitados,
+    grupos: GRUPOS,
+    etiquetas: ETIQUETAS,
+    mesaDe: (id: string | null) => (id === 'mesa-3' ? 'Los de la uni' : ''),
+  };
 }
 
 describe('la hoja de invitados', () => {
@@ -92,11 +96,10 @@ describe('la hoja de invitados', () => {
     expect(fila).not.toContain('uni');
   });
 
-  it('la pareja sí ve el teléfono, el correo y sus notas', () => {
+  it('la pareja sí ve el teléfono y sus notas', () => {
     const fila = hojaDeInvitados(datos([VIENE])).filas[0]!;
 
     expect(fila).toContain('+34600111222');
-    expect(fila).toContain('ana@example.com');
     expect(fila).toContain('La prima de mi madre');
   });
 
@@ -122,12 +125,11 @@ describe('la hoja de invitados', () => {
 
 describe('la hoja del catering', () => {
   /** **La prueba que importa.** Ese fichero sale a una empresa de fuera. */
-  it('no lleva teléfonos, ni correos, ni las notas de la pareja', () => {
+  it('no lleva teléfonos ni las notas de la pareja', () => {
     const hoja = hojaParaCatering(datos([VIENE]));
     const todo = JSON.stringify(hoja);
 
     expect(todo).not.toContain('+34600111222');
-    expect(todo).not.toContain('ana@example.com');
     expect(todo).not.toContain('La prima de mi madre');
     expect(hoja.columnas.map((c) => c.titulo)).toEqual([
       'Nombre',
@@ -151,8 +153,16 @@ describe('la hoja del catering', () => {
       'Adulto',
       'Vegano',
       'Nueces',
-      'mesa-3',
+      'Los de la uni',
     ]);
+  });
+
+  it('la mesa sale con su nombre, nunca con el identificador de Firestore', () => {
+    const sinMesas = { invitados: [VIENE], grupos: GRUPOS, etiquetas: ETIQUETAS };
+
+    expect(JSON.stringify(hojaParaCatering(sinMesas))).not.toContain('mesa-3');
+    expect(JSON.stringify(hojaDeInvitados(sinMesas))).not.toContain('mesa-3');
+    expect(JSON.stringify(hojaDeInvitados(datos([VIENE])))).toContain('Los de la uni');
   });
 
   it('un niño sale como niño: el catering cuenta menús infantiles', () => {

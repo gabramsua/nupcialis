@@ -9,17 +9,29 @@ import { NpEmptyState } from '../../../design-system/components/empty-state/empt
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
 import { NpIcon } from '../../../design-system/icons/icon';
-import type { FalloQuizPanel, PreguntaDelPanel } from '../../../core/quiz/quiz-admin-gateway';
+import type {
+  EstadisticaDePregunta,
+  FalloQuizPanel,
+  PreguntaDelPanel,
+} from '../../../core/quiz/quiz-admin-gateway';
 import {
   MAX_OPCION,
   MAX_PISTA,
   MAX_PREGUNTAS_BANCO,
   MAX_TEXTO,
   MIN_POR_PARTIDA,
+  MIN_RESPUESTAS_PARA_ETIQUETAR,
+  PREGUNTAS_POR_PARTIDA,
   PUNTOS,
+  TOPE_RANKING,
+  UMBRAL_PREGUNTA_DIFICIL,
+  UMBRAL_PREGUNTA_FACIL,
+  etiquetaDePregunta,
   type Dificultad,
 } from '../../public-site/quiz/quiz';
 import { PreguntasQuizStore } from './preguntas-quiz.store';
+import { buscarPreguntas } from './buscar-preguntas';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * El banco de preguntas del quiz (§8.7).
@@ -48,6 +60,7 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
     NpModal,
     NpStatusChip,
     NpIcon,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -69,6 +82,45 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
             </button>
           </div>
         </header>
+
+        <!--
+          Cómo funciona el juego, con las reglas de verdad (los números salen de
+          las mismas constantes que usa el servidor). Abierto mientras no hay
+          preguntas: es cuando la pareja se pregunta qué se espera de ella.
+        -->
+        <details class="qp__como" [open]="store.preguntas().length === 0">
+          <summary>
+            <np-icon name="info" />
+            <span class="qp__comoTitulo">{{ t('panel.quiz.como.titulo') }}</span>
+            <np-icon class="qp__flecha" name="caret-down" />
+          </summary>
+          <ul>
+            <li>{{ t('panel.quiz.como.partida', { n: porPartida, min: minimo }) }}</li>
+            <li>
+              {{
+                t('panel.quiz.como.puntos', {
+                  facil: puntosDe(1),
+                  normal: puntosDe(2),
+                  dificil: puntosDe(3),
+                })
+              }}
+            </li>
+            <li>{{ t('panel.quiz.como.ranking', { tope: topeRanking }) }}</li>
+            <li>{{ t('panel.quiz.como.jugable', { min: minimo }) }}</li>
+            <li>{{ t('panel.quiz.como.pista') }}</li>
+            <li>{{ t('panel.quiz.como.final') }}</li>
+            <li>{{ t('panel.quiz.como.grupos') }}</li>
+            <li>
+              {{
+                t('panel.quiz.como.estadistica', {
+                  facil: umbralFacil,
+                  dificil: umbralDificil,
+                  min: minRespuestas,
+                })
+              }}
+            </li>
+          </ul>
+        </details>
 
         @if (store.fallo(); as fallo) {
           <np-alert status="declined" [heading]="t('panel.quiz.errorGuardar')">
@@ -107,8 +159,24 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
                 }}
               </p>
 
+              @if (store.preguntas().length >= UMBRAL_BUSCADOR) {
+                <label class="qp__buscador">
+                  <np-icon name="magnifying-glass" />
+                  <input
+                    type="search"
+                    [placeholder]="t('panel.quiz.buscar')"
+                    [value]="busqueda()"
+                    (input)="buscar($event)"
+                  />
+                </label>
+              }
+
+              @if (visibles().length === 0) {
+                <np-empty-state icon="magnifying-glass" [title]="t('panel.quiz.sinResultados')" />
+              }
+
               <ul class="qp__lista">
-                @for (pregunta of store.preguntas(); track pregunta.id) {
+                @for (pregunta of visibles(); track pregunta.id) {
                   <li class="qp__ficha">
                     <p class="qp__texto">
                       <span class="qp__estrellas" [attr.aria-label]="dificultad(pregunta, t)">
@@ -119,6 +187,24 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
                       <strong>{{ pregunta.text || t('panel.quiz.sinEnunciado') }}</strong>
                       <small>{{ t('panel.quiz.vale', { puntos: puntos(pregunta) }) }}</small>
                     </p>
+
+                    @if (store.estadisticas()[pregunta.id]; as e) {
+                      <p class="qp__stats">
+                        {{
+                          t('panel.quiz.estadistica', {
+                            asked: e.asked,
+                            porcentaje: porcentaje(e),
+                            hints: e.hints,
+                          })
+                        }}
+                        @if (etiqueta(pregunta.id); as marca) {
+                          <np-status-chip
+                            [status]="marca === 'facil' ? 'confirmed' : 'pending'"
+                            [label]="t('panel.quiz.etiqueta.' + marca)"
+                          />
+                        }
+                      </p>
+                    }
 
                     <p class="qp__opciones">
                       <span class="qp__buena">
@@ -186,7 +272,12 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
             <form class="qp__form" [formGroup]="formulario" (submit)="enviar($event)">
               <label>
                 {{ t('panel.quiz.campo.enunciado') }}
-                <textarea formControlName="text" rows="2" [attr.maxlength]="maximoTexto"></textarea>
+                <textarea
+                  npInput
+                  formControlName="text"
+                  rows="2"
+                  [attr.maxlength]="maximoTexto"
+                ></textarea>
               </label>
 
               <!--
@@ -199,19 +290,19 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
                   <np-icon name="check-circle" />
                   {{ t('panel.quiz.campo.correcta') }}
                 </span>
-                <input formControlName="correctAnswer" [attr.maxlength]="maximoOpcion" />
+                <input npInput formControlName="correctAnswer" [attr.maxlength]="maximoOpcion" />
               </label>
 
               @for (campo of camposFalsos; track campo) {
                 <label>
                   {{ t('panel.quiz.campo.falsa', { n: $index + 1 }) }}
-                  <input [formControlName]="campo" [attr.maxlength]="maximoOpcion" />
+                  <input npInput [formControlName]="campo" [attr.maxlength]="maximoOpcion" />
                 </label>
               }
 
               <label>
                 {{ t('panel.quiz.campo.dificultad') }}
-                <select formControlName="difficulty">
+                <select npInput formControlName="difficulty">
                   @for (nivel of niveles; track nivel) {
                     <option [value]="nivel">
                       {{ t('panel.quiz.nivel.' + nivel) }} · {{ puntosDe(nivel) }}
@@ -222,7 +313,7 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
 
               <label>
                 {{ t('panel.quiz.campo.pista') }}
-                <input formControlName="hint" [attr.maxlength]="maximoPista" />
+                <input npInput formControlName="hint" [attr.maxlength]="maximoPista" />
                 <small>{{ t('panel.quiz.campo.pistaAyuda') }}</small>
               </label>
             </form>
@@ -296,6 +387,72 @@ import { PreguntasQuizStore } from './preguntas-quiz.store';
         align-items: flex-start;
         justify-content: space-between;
       }
+    }
+    .qp__como {
+      margin-block-end: var(--np-space-4);
+      padding: var(--np-space-3);
+      border: 1px solid var(--np-surface-border);
+      border-radius: var(--np-radius-md);
+      background: var(--np-surface-surface);
+      font-size: var(--np-text-sm);
+    }
+    .qp__como summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      min-block-size: var(--np-tap-target);
+      font-weight: var(--np-weight-semibold);
+      cursor: pointer;
+    }
+    .qp__como summary::-webkit-details-marker {
+      display: none;
+    }
+    .qp__comoTitulo {
+      flex: 1;
+    }
+    .qp__flecha {
+      transition: transform 150ms ease;
+    }
+    .qp__como[open] .qp__flecha {
+      transform: rotate(180deg);
+    }
+    .qp__stats {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
+    }
+    .qp__como ul {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-2);
+      margin: var(--np-space-2) 0 0;
+      padding-inline-start: 1.2em;
+      color: var(--np-surface-text-muted);
+    }
+    .qp__buscador {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin-block-start: var(--np-space-2);
+      padding-inline: var(--np-space-3);
+      border: 1px solid var(--np-surface-border);
+      border-radius: var(--np-radius-md);
+      background: var(--np-surface-surface);
+      min-block-size: var(--np-tap-target);
+    }
+    .qp__buscador input {
+      flex: 1;
+      min-inline-size: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      outline: none;
     }
     .qp__avisos {
       margin: var(--np-space-1) 0 0;
@@ -398,6 +555,24 @@ export class PanelPreguntasQuiz {
   protected readonly maximoTexto = MAX_TEXTO;
   protected readonly maximoOpcion = MAX_OPCION;
   protected readonly maximoPista = MAX_PISTA;
+  protected readonly porPartida = PREGUNTAS_POR_PARTIDA;
+  protected readonly minimo = MIN_POR_PARTIDA;
+  protected readonly topeRanking = TOPE_RANKING;
+
+  /**
+   * Desde cuántas preguntas sale el buscador. Con tres o cuatro, un buscador es
+   * ruido; con diez ya compensa, y el banco admite doscientas.
+   */
+  protected readonly UMBRAL_BUSCADOR = 6;
+
+  protected readonly busqueda = signal('');
+  protected readonly visibles = computed(() =>
+    buscarPreguntas(this.store.preguntas(), this.busqueda()),
+  );
+
+  protected buscar(evento: Event): void {
+    this.busqueda.set((evento.target as HTMLInputElement).value);
+  }
 
   protected readonly editando = signal<PreguntaDelPanel | 'nueva' | null>(null);
   protected readonly borrando = signal<PreguntaDelPanel | null>(null);
@@ -456,6 +631,18 @@ export class PanelPreguntasQuiz {
 
   protected puntosDe(nivel: Dificultad): number {
     return PUNTOS[nivel];
+  }
+
+  protected readonly umbralFacil = Math.round(UMBRAL_PREGUNTA_FACIL * 100);
+  protected readonly umbralDificil = Math.round(UMBRAL_PREGUNTA_DIFICIL * 100);
+  protected readonly minRespuestas = MIN_RESPUESTAS_PARA_ETIQUETAR;
+
+  protected porcentaje(e: EstadisticaDePregunta): number {
+    return e.asked === 0 ? 0 : Math.round((e.correct / e.asked) * 100);
+  }
+
+  protected etiqueta(id: string) {
+    return etiquetaDePregunta(this.store.estadisticas()[id] ?? null);
   }
 
   protected estrellas(dificultad: number): readonly number[] {

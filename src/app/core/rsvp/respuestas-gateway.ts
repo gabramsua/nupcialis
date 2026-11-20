@@ -37,8 +37,37 @@ export type ResultadoRespuestas =
   | { readonly ok: true; readonly datos: RespuestasDeLaBoda }
   | { readonly ok: false; readonly fallo: FalloRespuestas };
 
+/**
+ * Lo que la pareja fija por un invitado (D-45).
+ *
+ * `estado` solo: «viene», «no viene» o «vuelve a pendiente», que es lo del
+ * teléfono. `respuestas` además: el menú, las alergias y lo demás del
+ * formulario, sin exigir las obligatorias.
+ */
+export interface RespuestaDeLaPareja {
+  readonly estado?: 'pending' | 'confirmed' | 'declined';
+  readonly respuestas?: Respuestas;
+}
+
+/** Un fallo por pregunta, para señalarlo en su campo. */
+export interface FalloDePregunta {
+  readonly questionId: string;
+  readonly motivo: string;
+}
+
+export type FalloAlGuardar =
+  | FalloRespuestas
+  | { readonly tipo: 'no-valen'; readonly fallos: readonly FalloDePregunta[] }
+  | { readonly tipo: 'no-existe' };
+
+export type ResultadoGuardarRespuesta =
+  | { readonly ok: true; readonly estado: 'pending' | 'confirmed' | 'declined' }
+  | { readonly ok: false; readonly fallo: FalloAlGuardar };
+
 export interface PuertaRespuestas {
   leer(): Promise<ResultadoRespuestas>;
+  /** Fija la respuesta de un invitado en su nombre. Solo la pareja. */
+  guardar(guestId: string, respuesta: RespuestaDeLaPareja): Promise<ResultadoGuardarRespuesta>;
 }
 
 export const PUERTA_RESPUESTAS = new InjectionToken<PuertaRespuestas>('PUERTA_RESPUESTAS');

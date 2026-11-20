@@ -135,6 +135,44 @@ export function heredarDelTitular(titular: Titular): { readonly groupIds: readon
   return { groupIds: [...titular.groupIds] };
 }
 
+export type MotivoVinculo = 'no-existe' | 'uno-mismo' | 'es-acompanante' | 'tiene-acompanantes';
+
+export type Vinculo =
+  | { readonly ok: true; readonly groupIds: readonly string[] }
+  | { readonly ok: false; readonly motivo: MotivoVinculo };
+
+/**
+ * ¿Puede la pareja hacer que este invitado venga con ese titular?
+ *
+ * La pareja decide quién viene con quién: lo mismo si lo dio de alta ella como
+ * acompañante que si enlaza a dos que ya estaban en la lista. Las reglas son las
+ * del invitado que añade a alguien, y por la misma razón:
+ *
+ * - **Nadie viene consigo mismo**, ni con un titular que no existe en esta boda.
+ * - **Un acompañante no puede ser titular.** Con cadenas, «quién trae a quién»
+ *   deja de poderse contar y el cupo de uno acaba arrastrando a media familia.
+ * - **Quien ya trae gente no pasa a ser acompañante.** Sus acompañantes se
+ *   quedarían huérfanos sin que nadie lo decidiera.
+ *
+ * Y se hereda de él lo mismo que en el alta por el invitado: los grupos
+ * (`heredarDelTitular`). Es de seguridad, no de comodidad: define quién ve las
+ * fotos restringidas.
+ */
+export function validarVinculo(
+  idDelInvitado: string | null,
+  titular: Titular | null,
+  acompanantesQueYaTrae: number,
+): Vinculo {
+  if (!titular) return { ok: false, motivo: 'no-existe' };
+  if (idDelInvitado !== null && titular.id === idDelInvitado) {
+    return { ok: false, motivo: 'uno-mismo' };
+  }
+  if (titular.isCompanion) return { ok: false, motivo: 'es-acompanante' };
+  if (acompanantesQueYaTrae > 0) return { ok: false, motivo: 'tiene-acompanantes' };
+
+  return { ok: true, ...heredarDelTitular(titular) };
+}
+
 /**
  * El cupo que la pareja fija **a varios invitados a la vez** (F1.5b).
  *

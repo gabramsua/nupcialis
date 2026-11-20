@@ -4,6 +4,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpIcon } from '../../../design-system/icons/icon';
 import { PUERTA_INVITADOS, type FalloInvitado } from '../../../core/invitados/invitados-gateway';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * El cupo de acompañantes, a todos los que la pareja está viendo (F1.5b).
@@ -23,7 +24,7 @@ import { PUERTA_INVITADOS, type FalloInvitado } from '../../../core/invitados/in
  */
 @Component({
   selector: 'np-cupo-en-lote',
-  imports: [TranslocoDirective, NpButton, NpIcon],
+  imports: [TranslocoDirective, NpButton, NpIcon, NpInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -35,7 +36,7 @@ import { PUERTA_INVITADOS, type FalloInvitado } from '../../../core/invitados/in
         <div class="cupo__cuerpo">
           <label>
             {{ t('panel.invitados.cupo.cuantos') }}
-            <select [value]="cupo()" (change)="elegir($event)">
+            <select npInput [value]="cupo()" (change)="elegir($event)">
               @for (n of posibles; track n) {
                 <option [value]="n">{{ n }}</option>
               }
@@ -85,15 +86,6 @@ import { PUERTA_INVITADOS, type FalloInvitado } from '../../../core/invitados/in
       display: inline-flex;
       align-items: center;
       gap: var(--np-space-2);
-    }
-    select {
-      min-block-size: var(--np-tap-target);
-      padding-inline: var(--np-space-2);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-sm);
-      background: var(--np-surface-canvas);
-      color: inherit;
-      font: inherit;
     }
     .cupo__hecho {
       display: inline-flex;

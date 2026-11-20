@@ -18,9 +18,7 @@ export const GRUPOS_DE_PRUEBA: readonly Grupo[] = [
   {
     id: 'uni',
     name: 'Universidad',
-    side: 'A',
     photoAudience: 'restricted',
-    allowPublicOptIn: false,
     color: 'rosa',
     order: 0,
     porDefecto: false,
@@ -28,9 +26,7 @@ export const GRUPOS_DE_PRUEBA: readonly Grupo[] = [
   {
     id: 'padel',
     name: 'Pádel',
-    side: 'B',
     photoAudience: 'restricted',
-    allowPublicOptIn: false,
     color: 'azul',
     order: 1,
     porDefecto: false,
@@ -38,9 +34,7 @@ export const GRUPOS_DE_PRUEBA: readonly Grupo[] = [
   {
     id: 'familia',
     name: 'Familia',
-    side: 'both',
     photoAudience: 'public',
-    allowPublicOptIn: false,
     color: 'verde',
     order: 2,
     porDefecto: false,
@@ -113,7 +107,6 @@ export const INVITADO_DE_PRUEBA: Invitado = {
   fullName: 'María José Pérez',
   nickname: 'Majo',
   phone: '+34600111222',
-  email: null,
   side: 'A',
   ageGroup: 'adult',
   groupIds: [],

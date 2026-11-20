@@ -156,6 +156,13 @@ export function traducir(error: unknown): FalloInvitado {
       };
 
     case 'functions/failed-precondition':
+      // Dos cosas distintas comparten código: no poder borrar a quien trae
+      // gente, y no poder enlazar con un titular que no vale.
+      if (typeof detalles['vinculo'] === 'string') {
+        const motivos = ['no-existe', 'uno-mismo', 'es-acompanante', 'tiene-acompanantes'] as const;
+        const motivo = motivos.find((m) => m === detalles['vinculo']) ?? 'no-existe';
+        return { tipo: 'vinculo-invalido', motivo };
+      }
       return {
         tipo: 'con-acompanantes',
         cuantos: typeof detalles['acompanantes'] === 'number' ? detalles['acompanantes'] : 0,

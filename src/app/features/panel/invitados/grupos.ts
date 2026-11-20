@@ -10,7 +10,7 @@ import {
   type FalloGrupo,
   type Grupo,
 } from '../../../core/invitados/grupos-gateway';
-import { PUERTA_INVITADOS, type Lado } from '../../../core/invitados/invitados-gateway';
+import { PUERTA_INVITADOS } from '../../../core/invitados/invitados-gateway';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpEmptyState } from '../../../design-system/components/empty-state/empty-state';
@@ -20,6 +20,7 @@ import { NP_CATEGORIAS, type NpCategoria } from '../../../design-system/tokens/s
 import { BodaStore } from '../boda.store';
 import { NpGrupoChip } from './grupo-chip';
 import { GruposStore } from './grupos.store';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * Los grupos de invitados.
@@ -44,6 +45,7 @@ import { GruposStore } from './grupos.store';
     NpModal,
     NpIcon,
     NpGrupoChip,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -92,9 +94,6 @@ import { GruposStore } from './grupos.store';
                         [grupo]="grupo"
                         [etiquetaRestringido]="t('panel.grupos.restringido')"
                       />
-                      <span class="gru__dato">
-                        {{ ladoDe(grupo.side, t) }}
-                      </span>
                       @if (grupo.photoAudience === 'restricted') {
                         <span class="gru__dato">
                           <np-icon name="lock-simple" />
@@ -194,7 +193,7 @@ import { GruposStore } from './grupos.store';
           <form [formGroup]="formulario" class="gru__form" (ngSubmit)="guardar()">
             <label>
               <span>{{ t('panel.grupos.campo.nombre') }}</span>
-              <input formControlName="name" autocomplete="off" maxlength="60" />
+              <input npInput formControlName="name" autocomplete="off" maxlength="60" />
               <small>{{ t('panel.grupos.campo.nombrePista') }}</small>
             </label>
 
@@ -207,18 +206,6 @@ import { GruposStore } from './grupos.store';
                     <input type="radio" formControlName="color" [value]="color.id" />
                     <span class="gru__muestra" aria-hidden="true"></span>
                     <span>{{ color.nombre }}</span>
-                  </label>
-                }
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>{{ t('panel.grupos.campo.lado') }}</legend>
-              <div class="gru__opciones">
-                @for (lado of lados; track lado) {
-                  <label class="gru__opcion">
-                    <input type="radio" formControlName="side" [value]="lado" />
-                    <span>{{ ladoDe(lado, t) }}</span>
                   </label>
                 }
               </div>
@@ -252,16 +239,6 @@ import { GruposStore } from './grupos.store';
                   </label>
                 </div>
               </fieldset>
-
-              @if (formulario.controls.photoAudience.value === 'restricted') {
-                <label class="gru__opcion gru__opcion--larga">
-                  <input type="checkbox" formControlName="allowPublicOptIn" />
-                  <span>
-                    <strong>{{ t('panel.grupos.campo.optIn') }}</strong>
-                    <small>{{ t('panel.grupos.campo.optInPista') }}</small>
-                  </span>
-                </label>
-              }
             }
 
             @if (fallo(); as f) {
@@ -457,15 +434,6 @@ import { GruposStore } from './grupos.store';
       color: var(--np-surface-text-muted);
       font-size: var(--np-text-xs);
     }
-    .gru__form input:not([type]) {
-      min-block-size: var(--np-tap-target);
-      padding: var(--np-space-2) var(--np-space-3);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-md);
-      background: var(--np-surface-canvas);
-      color: inherit;
-      font: inherit;
-    }
     .gru__form fieldset {
       margin: 0;
       padding: 0;
@@ -536,7 +504,6 @@ export class Grupos {
   private readonly fb = inject(FormBuilder);
 
   protected readonly colores = NP_CATEGORIAS;
-  protected readonly lados: readonly Lado[] = ['both', 'A', 'B'];
 
   protected readonly editando = signal(false);
   protected readonly enEdicion = signal<Grupo | null>(null);
@@ -550,21 +517,11 @@ export class Grupos {
   protected readonly formulario = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(60)]],
     color: ['rosa' as NpCategoria],
-    side: ['both' as Lado],
     photoAudience: ['public' as Audiencia],
-    allowPublicOptIn: [false],
   });
 
   constructor() {
     void this.contarMiembros();
-  }
-
-  /** «De María», «De Gabriel», «De los dos». Con los nombres, nunca «lado A». */
-  protected ladoDe(lado: Lado, t: (clave: string, params?: object) => string): string {
-    const pareja = this.boda.boda()?.pareja;
-    if (lado === 'A' && pareja?.partnerA) return t('panel.lado.de', { nombre: pareja.partnerA });
-    if (lado === 'B' && pareja?.partnerB) return t('panel.lado.de', { nombre: pareja.partnerB });
-    return t('panel.lado.' + lado);
   }
 
   protected claveDe(f: FalloGrupo): string | null {
@@ -590,9 +547,7 @@ export class Grupos {
     this.formulario.reset({
       name: '',
       color: this.colorLibre(),
-      side: 'both',
       photoAudience: 'public',
-      allowPublicOptIn: false,
     });
     this.editando.set(true);
   }
@@ -619,9 +574,7 @@ export class Grupos {
     this.formulario.reset({
       name: grupo.name,
       color: grupo.color,
-      side: grupo.side,
       photoAudience: grupo.photoAudience,
-      allowPublicOptIn: grupo.allowPublicOptIn,
     });
     this.editando.set(true);
   }

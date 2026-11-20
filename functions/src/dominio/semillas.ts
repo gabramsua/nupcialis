@@ -346,63 +346,13 @@ export interface PreguntaQuiz {
 }
 
 /**
- * Banco de ejemplo del quiz.
+ * El quiz nace **vacío**.
  *
- * Va con las respuestas en blanco a propósito: solo la pareja sabe dónde se
- * conocieron. Lo que se siembra es la **forma** de una buena pregunta —una
- * correcta y tres falsas creíbles— para que la pareja escriba encima en lugar
- * de mirar una pantalla vacía preguntándose qué se espera de ella.
- *
- * Nacen con `enabled: false`: una pregunta sin respuestas no se puede jugar, y
- * un quiz que se publica vacío es peor que no tener quiz.
+ * Antes se sembraban cinco preguntas con las respuestas en blanco y apagadas.
+ * Eran ruido: preguntas que no se podían jugar y que la pareja tenía que borrar
+ * o rellenar sin saber qué se esperaba. Ahora el panel explica cómo funciona el
+ * juego y la pareja escribe las suyas.
  */
-export const PREGUNTAS_QUIZ_FABRICA: readonly PreguntaQuiz[] = [
-  {
-    question: '¿Dónde nos conocimos?',
-    correctAnswer: '',
-    wrongAnswers: ['', '', ''],
-    difficulty: 1,
-    hint: null,
-    enabled: false,
-    order: 1,
-  },
-  {
-    question: '¿Adónde fuimos en nuestra primera cita?',
-    correctAnswer: '',
-    wrongAnswers: ['', '', ''],
-    difficulty: 1,
-    hint: null,
-    enabled: false,
-    order: 2,
-  },
-  {
-    question: '¿Quién dijo "te quiero" primero?',
-    correctAnswer: '',
-    wrongAnswers: ['', '', ''],
-    difficulty: 2,
-    hint: null,
-    enabled: false,
-    order: 3,
-  },
-  {
-    question: '¿A qué sitio viajamos juntos por primera vez?',
-    correctAnswer: '',
-    wrongAnswers: ['', '', ''],
-    difficulty: 2,
-    hint: null,
-    enabled: false,
-    order: 4,
-  },
-  {
-    question: '¿Cómo fue la pedida?',
-    correctAnswer: '',
-    wrongAnswers: ['', '', ''],
-    difficulty: 3,
-    hint: null,
-    enabled: false,
-    order: 5,
-  },
-];
 
 export interface GrupoInvitados {
   readonly name: string;
@@ -413,9 +363,7 @@ export interface GrupoInvitados {
   readonly normalizedName: string;
   /** Todo invitado nuevo entra en este grupo (D-31). Ver `idGrupoPorDefecto`. */
   readonly isDefault: boolean;
-  readonly side: 'A' | 'B' | 'both';
   readonly photoAudience: 'public' | 'restricted';
-  readonly allowPublicOptIn: boolean;
   readonly color: string;
   readonly order: number;
 }
@@ -431,11 +379,7 @@ export const GRUPO_POR_DEFECTO: GrupoInvitados = {
   name: 'Invitados',
   normalizedName: 'invitados',
   isDefault: true,
-  side: 'both',
   photoAudience: 'public',
-  // Solo significa algo en un grupo restringido; en uno público se guarda
-  // `false`, igual que hace `validarGrupo`, para no dejar un `true` dormido.
-  allowPublicOptIn: false,
   // Id de la paleta categórica del design system, no un hexadecimal: los
   // colores de grupo salen del catálogo cerrado. Ver REQUISITOS §9.1.
   color: 'rosa',

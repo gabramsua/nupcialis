@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpEmptyState } from '../../../design-system/components/empty-state/empty-state';
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
+import { NpIconPicker } from '../../../design-system/components/picker/icon-picker';
 import { NpIcon } from '../../../design-system/icons/icon';
 import {
   aMedias,
@@ -18,6 +19,7 @@ import {
 import { ICONOS_FAQ, MAX_PREGUNTA, type IconoFaq } from '../../public-site/faqs/faqs';
 import { NpEditorRico } from '../web/editor-rico';
 import { FaqsStore } from './faqs.store';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * Las preguntas frecuentes, donde la pareja las escribe (§8.9).
@@ -45,6 +47,8 @@ import { FaqsStore } from './faqs.store';
     NpStatusChip,
     NpIcon,
     NpEditorRico,
+    NpInput,
+    NpIconPicker,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -179,12 +183,12 @@ import { FaqsStore } from './faqs.store';
             <form class="fq__form" [formGroup]="formulario" (submit)="enviar($event)">
               <label>
                 {{ t('panel.faqs.campo.pregunta') }}
-                <input formControlName="question" [attr.maxlength]="maximoPregunta" />
+                <input npInput formControlName="question" [attr.maxlength]="maximoPregunta" />
               </label>
 
               <label>
                 {{ t('panel.faqs.campo.categoria') }}
-                <input formControlName="category" list="fq-categorias" maxlength="40" />
+                <input npInput formControlName="category" list="fq-categorias" maxlength="40" />
                 <datalist id="fq-categorias">
                   @for (categoria of categorias(); track categoria) {
                     <option [value]="categoria"></option>
@@ -193,14 +197,15 @@ import { FaqsStore } from './faqs.store';
                 <small>{{ t('panel.faqs.campo.categoriaAyuda') }}</small>
               </label>
 
-              <label>
-                {{ t('panel.faqs.campo.icono') }}
-                <select formControlName="icon">
-                  @for (icono of iconos; track icono) {
-                    <option [value]="icono">{{ t('panel.faqs.icono.' + icono) }}</option>
-                  }
-                </select>
-              </label>
+              <div class="fq__grupo" role="group" aria-labelledby="fq-icono">
+                <span id="fq-icono" class="fq__etiqueta">{{ t('panel.faqs.campo.icono') }}</span>
+                <np-icon-picker
+                  [opciones]="opcionesDeIcono()"
+                  [etiqueta]="t('panel.faqs.campo.icono')"
+                  [value]="formulario.controls.icon.value"
+                  (valueChange)="formulario.controls.icon.setValue($any($event))"
+                />
+              </div>
 
               <div class="fq__respuesta">
                 <span class="fq__etiqueta">{{ t('panel.faqs.campo.respuesta') }}</span>
@@ -220,6 +225,7 @@ import { FaqsStore } from './faqs.store';
                   <p class="fq__cargandoEditor">{{ t('panel.secciones.cargandoEditor') }}</p>
                 } @error {
                   <textarea
+                    npInput
                     rows="6"
                     [value]="respuesta()"
                     (input)="escribirRespuesta($event)"
@@ -351,13 +357,18 @@ import { FaqsStore } from './faqs.store';
       gap: var(--np-space-1);
       font-size: var(--np-text-sm);
     }
+    .fq__grupo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+    }
     .fq__etiqueta {
       font-size: var(--np-text-sm);
     }
     .fq__form small {
       color: var(--np-surface-text-muted);
     }
-    .fq__casilla {
+    .fq__form .fq__casilla {
       flex-direction: row;
       align-items: center;
       gap: var(--np-space-2);
@@ -372,7 +383,16 @@ export class PanelFaqs {
   protected readonly store = inject(FaqsStore);
   private readonly fb = inject(FormBuilder);
 
+  private readonly i18n = inject(TranslocoService);
+
   protected readonly iconos = ICONOS_FAQ;
+  /** Los iconos con su nombre, para el selector visual. */
+  protected readonly opcionesDeIcono = computed(() =>
+    this.iconos.map((icono) => ({
+      value: icono,
+      label: this.i18n.translate('panel.faqs.icono.' + icono),
+    })),
+  );
   protected readonly maximoPregunta = MAX_PREGUNTA;
   protected readonly maximoRespuesta = 3000;
 

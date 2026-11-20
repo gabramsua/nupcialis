@@ -39,9 +39,13 @@ describe('mover', () => {
       'alojamientos',
       'dress-code',
       'quiz',
+      'galeria',
+      'regalos',
+      'mapa',
+      'playlist',
       'contacto',
     ]);
-    expect(salida.map((s) => s.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(salida.map((s) => s.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
   });
 
   it('sube una sección', () => {
@@ -55,6 +59,10 @@ describe('mover', () => {
       'alojamientos',
       'dress-code',
       'quiz',
+      'galeria',
+      'regalos',
+      'mapa',
+      'playlist',
       'contacto',
     ]);
   });

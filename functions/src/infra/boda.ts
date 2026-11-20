@@ -8,6 +8,8 @@
  */
 
 import { Timestamp } from 'firebase-admin/firestore';
+import { db } from '../firebase';
+import { esModoAcceso, type ModoAcceso } from '../dominio/acceso';
 
 /**
  * La fecha límite del RSVP, enterrada en la configuración del módulo.
@@ -24,4 +26,18 @@ export function limiteDe(boda: Record<string, unknown> | undefined): Date | null
 
   const limite = nivel(nivel(nivel(nivel(boda, 'modules'), 'rsvp'), 'config'), 'deadline');
   return limite instanceof Timestamp ? limite.toDate() : null;
+}
+
+/**
+ * El modo de acceso de una boda, para `exigirVerificado`.
+ *
+ * Vive aquí y no en cada función porque ya lo necesitan el quiz, la galería y
+ * los acompañantes, y una copia por función es una copia que algún día dirá
+ * otra cosa. Ante un valor corrupto, `open`: es el que no deja a nadie fuera,
+ * y la decisión de qué puede hacer cada nivel la toma `puedeHacer`.
+ */
+export async function modoDeAcceso(weddingId: string): Promise<ModoAcceso> {
+  const snap = await db().doc(`weddings/${weddingId}`).get();
+  const modo = snap.data()?.['guestAccessMode'];
+  return esModoAcceso(modo) ? modo : 'open';
 }

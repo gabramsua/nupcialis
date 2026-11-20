@@ -53,12 +53,15 @@ function pregunta(parcial: Partial<PreguntaDelPanel> & { id: string }): Pregunta
   };
 }
 
-function montarPreguntas(preguntas: readonly PreguntaDelPanel[]) {
+function montarPreguntas(
+  preguntas: readonly PreguntaDelPanel[],
+  estadisticas: Record<string, { asked: number; correct: number; hints: number }> = {},
+) {
   const guardadas: DatosPregunta[] = [];
 
   const doble: PuertaPreguntasQuiz = {
     async listar() {
-      return { ok: true, preguntas };
+      return { ok: true, preguntas, estadisticas };
     },
     async guardar(_weddingId, datos) {
       guardadas.push(datos);
@@ -230,6 +233,119 @@ describe('el banco de preguntas', () => {
     expect(p.escrituras[0]).toEqual(
       expect.objectContaining({ id: undefined, text: '¿Dónde nos conocimos?' }),
     );
+  });
+});
+
+describe('cómo funciona el juego', () => {
+  /** Las reglas que se enseñan salen de las constantes del juego, no de un texto a mano. */
+  it('explica partida, puntos y ranking con los números reales', async () => {
+    const p = montarPreguntas([pregunta({ id: 'a' })]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('Cómo funciona el juego');
+    expect(p.texto()).toContain('10 preguntas');
+    expect(p.texto()).toContain('fácil 10, normal 20 y difícil 30');
+    expect(p.texto()).toContain('20 mejores');
+  });
+
+  it('no promete lo que el juego no hace', async () => {
+    const p = montarPreguntas([pregunta({ id: 'a' })]);
+    await p.asentar();
+
+    // La respuesta correcta no se enseña nunca, no hay «en blanco» y el empate
+    // no está decidido (D-47): el texto no puede afirmar nada de eso.
+    expect(p.texto()).not.toContain('en blanco');
+    expect(p.texto()).not.toContain('gana quien tardó');
+    expect(p.texto()).not.toContain('ve cuál era la correcta');
+    expect(p.texto()).toContain('la mitad de los puntos');
+    expect(p.texto()).toContain('colegio');
+  });
+
+  it('el resumen lleva la flecha del acordeón', async () => {
+    const p = montarPreguntas([pregunta({ id: 'a' })]);
+    await p.asentar();
+
+    expect(p.raiz.querySelector('.qp__como summary .qp__flecha')).not.toBeNull();
+  });
+
+  it('sin preguntas queda abierto y no hay fichas de ejemplo', async () => {
+    const p = montarPreguntas([]);
+    await p.asentar();
+
+    expect(p.raiz.querySelector('details')?.hasAttribute('open')).toBe(true);
+    expect(p.raiz.querySelectorAll('.qp__ficha')).toHaveLength(0);
+  });
+});
+
+describe('estadística por pregunta', () => {
+  it('enseña aciertos y marca fácil o difícil con datos suficientes', async () => {
+    const p = montarPreguntas(
+      [pregunta({ id: 'f' }), pregunta({ id: 'd' }), pregunta({ id: 'n' }), pregunta({ id: 'x' })],
+      {
+        f: { asked: 20, correct: 19, hints: 2 },
+        d: { asked: 20, correct: 2, hints: 0 },
+        n: { asked: 20, correct: 10, hints: 1 },
+        x: { asked: 3, correct: 3, hints: 0 },
+      },
+    );
+    await p.asentar();
+
+    const fichas = [...p.raiz.querySelectorAll('.qp__ficha')].map((f) => f.textContent ?? '');
+    expect(fichas[0]).toContain('95 % de aciertos');
+    expect(fichas[0]).toContain('Pregunta fácil');
+    expect(fichas[1]).toContain('Pregunta difícil');
+    expect(fichas[2]).toContain('50 % de aciertos');
+    expect(fichas[2]).not.toContain('Pregunta fácil');
+    expect(fichas[2]).not.toContain('Pregunta difícil');
+    // Tres respuestas no son muestra: se ve el dato, no la etiqueta.
+    expect(fichas[3]).toContain('100 % de aciertos');
+    expect(fichas[3]).not.toContain('Pregunta fácil');
+  });
+
+  it('sin respuestas todavía no hay línea de estadística', async () => {
+    const p = montarPreguntas([pregunta({ id: 'a' })]);
+    await p.asentar();
+
+    expect(p.raiz.querySelector('.qp__stats')).toBeNull();
+  });
+});
+
+describe('el buscador del banco', () => {
+  const muchas = Array.from({ length: 7 }, (_, n) =>
+    pregunta({ id: `p${n}`, text: `Pregunta ${n}`, correctAnswer: `Respuesta ${n}` }),
+  );
+
+  it('no sale con pocas preguntas', async () => {
+    const p = montarPreguntas(muchas.slice(0, 3));
+    await p.asentar();
+
+    expect(p.raiz.querySelector('.qp__buscador')).toBeNull();
+  });
+
+  it('con un banco grande filtra por respuesta, no solo por enunciado', async () => {
+    const p = montarPreguntas([...muchas, pregunta({ id: 'x', correctAnswer: 'Lavapiés' })]);
+    await p.asentar();
+
+    const campo = p.raiz.querySelector('.qp__buscador input') as HTMLInputElement;
+    campo.value = 'lavapies';
+    campo.dispatchEvent(new Event('input'));
+    await p.asentar();
+
+    expect(p.raiz.querySelectorAll('.qp__ficha')).toHaveLength(1);
+    expect(p.texto()).toContain('Lavapiés');
+  });
+
+  it('si nada coincide, lo dice', async () => {
+    const p = montarPreguntas(muchas);
+    await p.asentar();
+
+    const campo = p.raiz.querySelector('.qp__buscador input') as HTMLInputElement;
+    campo.value = 'zzzz';
+    campo.dispatchEvent(new Event('input'));
+    await p.asentar();
+
+    expect(p.raiz.querySelectorAll('.qp__ficha')).toHaveLength(0);
+    expect(p.texto()).toContain('Ninguna pregunta ni respuesta coincide');
   });
 });
 

@@ -15,7 +15,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
-import { colorLibre } from './dominio/grupos';
+import { colorLibre, conGrupoPorDefecto, idGrupoPorDefecto } from './dominio/grupos';
 import { MAX_FILAS, planificarImportacion, type EntradaImportada } from './dominio/importacion';
 import { normalizarNombre, type Existente } from './dominio/invitados';
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
@@ -89,11 +89,9 @@ export const importGuests = onCall<EntradaImportacion>(
           lote.create(ref, {
             name: nuevo.name,
             normalizedName: normalizarNombre(nuevo.name),
-            side: 'both',
             // Públicos siempre: restringir decide quién ve qué fotos, y eso no
             // se decide con una celda de un Excel.
             photoAudience: 'public',
-            allowPublicOptIn: false,
             color,
             order: ++orden,
             createdAt: FieldValue.serverTimestamp(),
@@ -111,7 +109,11 @@ export const importGuests = onCall<EntradaImportacion>(
         for (const fila of entran.slice(desde, desde + POR_LOTE)) {
           lote.create(coleccion.doc(), {
             ...fila.datos,
-            groupIds: (fila.datos?.groupIds ?? []).map((id) => idReal.get(id) ?? id),
+            // El grupo de todos siempre (D-47), aunque la hoja no lo nombre.
+            groupIds: conGrupoPorDefecto(
+              (fila.datos?.groupIds ?? []).map((id) => idReal.get(id) ?? id),
+              idGrupoPorDefecto(grupos),
+            ),
             isCompanion: false,
             invitedById: null,
             addedBy: 'owner',

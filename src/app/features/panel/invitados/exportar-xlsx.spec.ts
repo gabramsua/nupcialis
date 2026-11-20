@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { hojas } from './exportacion';
+import { hojasDeMesas } from '../mesas/exportar-mesas';
 import { datosDeHoja } from './exportar-xlsx';
 import { INVITADO_DE_PRUEBA } from './dobles.testing';
 import { GRUPOS_DE_PRUEBA } from './dobles.testing';
@@ -64,6 +65,49 @@ describe('el .xlsx que se descarga', () => {
     const crudo = bytes.toString('latin1');
     expect(crudo).toContain('xl/worksheets/sheet1.xml');
     expect(crudo).toContain('xl/worksheets/sheet2.xml');
+  });
+
+  it('el plano de mesas para el catering también se escribe y se abre', async () => {
+    const { default: escribir } = await import('write-excel-file/node');
+
+    const lista = hojasDeMesas({
+      mesas: [
+        {
+          id: 'm1',
+          name: 'Los novios',
+          shape: 'round',
+          minSeats: 8,
+          maxSeats: 12,
+          order: 1,
+          notes: '',
+        },
+      ],
+      invitados: [
+        { ...ANA, tableId: 'm1' },
+        { ...ANA, id: 'x', fullName: 'Sin sitio', tableId: null },
+      ],
+      etiquetas: {
+        edad: { adult: 'Adulto', child: 'Niño', baby: 'Bebé' },
+        forma: { round: 'Redonda', rect: 'Rectangular' },
+        estado: { bien: 'Bien', corta: 'Corta', pasada: 'Pasada', vacia: 'Vacía' },
+        sinMenu: 'Sin menú',
+        total: 'Total',
+      },
+    });
+    expect(lista.map((h) => h.nombre)).toEqual(['Resumen', 'Por mesa', 'Sin mesa']);
+
+    const destino = join(mkdtempSync(join(tmpdir(), 'nupcialis-')), 'mesas.xlsx');
+    await escribir(
+      lista.map((hoja) => ({
+        data: datosDeHoja(hoja),
+        sheet: hoja.nombre,
+        columns: hoja.columnas.map((c) => ({ width: c.ancho })),
+        stickyRowsCount: 1,
+      })) as never,
+    ).toFile(destino);
+
+    const crudo = readFileSync(destino).toString('latin1');
+    expect(crudo).toContain('xl/worksheets/sheet3.xml');
   });
 
   /**

@@ -1,7 +1,7 @@
 import { InjectionToken } from '@angular/core';
 
 import type { NpCategoria } from '../../design-system/tokens/semantic.generated';
-import type { CampoInvalido, Lado } from './invitados-gateway';
+import type { CampoInvalido } from './invitados-gateway';
 
 /**
  * Puerto de los grupos de invitados.
@@ -18,14 +18,12 @@ export type Audiencia = 'public' | 'restricted';
 export interface Grupo {
   readonly id: string;
   readonly name: string;
-  readonly side: Lado;
   /**
    * `restricted`: lo que suben sus miembros solo lo ven ellos y la pareja.
    * Es lo que convierte un grupo en algo más que una etiqueta.
    */
   readonly photoAudience: Audiencia;
   /** En un grupo restringido, ¿puede un miembro publicar una foto para todos? */
-  readonly allowPublicOptIn: boolean;
   /** Id de la paleta categórica, nunca un hexadecimal. */
   readonly color: NpCategoria;
   readonly order: number;
@@ -39,9 +37,7 @@ export interface Grupo {
 export interface DatosGrupo {
   readonly id?: string;
   readonly name: string;
-  readonly side?: Lado;
   readonly photoAudience?: Audiencia;
-  readonly allowPublicOptIn?: boolean;
   readonly color?: NpCategoria;
 }
 

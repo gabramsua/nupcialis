@@ -108,7 +108,6 @@ export interface EntradaInvitado {
   readonly fullName?: unknown;
   readonly nickname?: unknown;
   readonly phone?: unknown;
-  readonly email?: unknown;
   readonly side?: unknown;
   readonly ageGroup?: unknown;
   readonly groupIds?: unknown;
@@ -122,7 +121,6 @@ export interface InvitadoValidado {
   readonly nickname: string;
   readonly phone: string | null;
   readonly phoneLast4: string | null;
-  readonly email: string | null;
   readonly side: Lado;
   readonly ageGroup: Edad;
   readonly groupIds: readonly string[];
@@ -133,7 +131,6 @@ export interface InvitadoValidado {
 export type MotivoInvitado =
   | { readonly campo: 'fullName'; readonly motivo: 'ausente' | 'demasiado-largo' }
   | { readonly campo: 'phone'; readonly motivo: 'no-es-telefono' }
-  | { readonly campo: 'email'; readonly motivo: 'no-es-email' }
   | { readonly campo: 'maxCompanions'; readonly motivo: 'fuera-de-rango' }
   /** Se decide contra los grupos de la boda, fuera de `validarInvitado`. Ver `grupos.ts`. */
   | {
@@ -144,8 +141,6 @@ export type MotivoInvitado =
 export type ResultadoInvitado =
   | { readonly ok: true; readonly datos: InvitadoValidado }
   | { readonly ok: false; readonly motivos: readonly MotivoInvitado[] };
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
  * Valida y normaliza un invitado. Devuelve **todos** los motivos de una vez.
@@ -167,10 +162,6 @@ export function validarInvitado(entrada: EntradaInvitado): ResultadoInvitado {
   const phone = telefonoEscrito ? normalizarTelefono(entrada.phone) : null;
   if (telefonoEscrito && !phone) motivos.push({ campo: 'phone', motivo: 'no-es-telefono' });
 
-  const emailEscrito = typeof entrada.email === 'string' && entrada.email.trim() !== '';
-  const email = emailEscrito ? (entrada.email as string).trim().toLowerCase() : null;
-  if (email && !EMAIL.test(email)) motivos.push({ campo: 'email', motivo: 'no-es-email' });
-
   const cupo = entrada.maxCompanions;
   const maxCompanions = typeof cupo === 'number' && Number.isFinite(cupo) ? Math.floor(cupo) : 0;
   if (maxCompanions < 0 || maxCompanions > MAX_ACOMPANANTES) {
@@ -191,7 +182,6 @@ export function validarInvitado(entrada: EntradaInvitado): ResultadoInvitado {
       nickname: limpiarNombre(entrada.nickname) || fullName,
       phone,
       phoneLast4: ultimos4(phone),
-      email,
       side: LADOS.includes(entrada.side as Lado) ? (entrada.side as Lado) : 'both',
       ageGroup: EDADES.includes(entrada.ageGroup as Edad) ? (entrada.ageGroup as Edad) : 'adult',
       groupIds: Array.isArray(entrada.groupIds)

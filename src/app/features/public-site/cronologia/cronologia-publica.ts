@@ -53,38 +53,56 @@ import { sanearCronologia, type HitoPublico } from './cronologia';
     :host {
       display: block;
     }
+    /* Las tres columnas son **las de la lista entera**, no las de cada hito: con
+       una rejilla por fila, «hasta las 17:45» ensanchaba la columna de la hora
+       solo en esa fila y los iconos quedaban en columnas distintas, escalonados.
+       Cada hito toma las columnas de la lista con subgrid. */
     .cr {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      column-gap: var(--np-space-3);
       margin: 0;
       padding: 0;
       list-style: none;
     }
-    /* Tres columnas: la hora, la marca con su línea y lo que pasa. La hora
-       primero porque es lo que se viene a mirar. */
+    /* La hora primero porque es lo que se viene a mirar. */
     .cr__hito {
       display: grid;
-      grid-template-columns: auto auto 1fr;
-      column-gap: var(--np-space-3);
+      grid-column: 1 / -1;
+      grid-template-columns: subgrid;
     }
     .cr__hora {
       margin: 0;
       padding-block: var(--np-space-1);
       font-variant-numeric: tabular-nums;
       font-weight: var(--np-weight-medium);
+      line-height: 1.5rem;
       text-align: end;
     }
     .cr__hora small {
       display: block;
+      max-inline-size: 5.5rem;
+      margin-inline-start: auto;
+      line-height: 1.25;
       font-weight: var(--np-weight-regular);
       opacity: 0.7;
     }
     /* La línea que une los hitos la dibuja la propia marca, con un borde: así
        no hace falta ni un pseudoelemento absoluto ni saber cuántos hay. */
+    /* El icono ocupa la misma altura de línea que la hora y el título, con el
+       mismo aire arriba: así sus centros coinciden y no «cuelga» más arriba. */
     .cr__marca {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: var(--np-space-1);
+      padding-block-start: var(--np-space-1);
       color: var(--cr-color);
+    }
+    .cr__marca np-icon {
+      display: flex;
+      align-items: center;
+      block-size: 1.5rem;
     }
     .cr__hito:not(:last-child) .cr__marca::after {
       content: '';
@@ -100,6 +118,7 @@ import { sanearCronologia, type HitoPublico } from './cronologia';
       margin: 0;
       font-size: var(--np-text-base);
       font-weight: var(--np-weight-medium);
+      line-height: 1.5rem;
     }
     .cr__que p {
       margin: var(--np-space-1) 0 0;

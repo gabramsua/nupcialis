@@ -51,6 +51,15 @@ export interface DatosExportacion {
   readonly grupos: readonly Grupo[];
   readonly etiquetas: Etiquetas;
   /**
+   * El nombre de la mesa de cada invitado.
+   *
+   * `tableId` es un identificador de Firestore y en una hoja que lee el catering
+   * no dice nada. Es opcional porque las mesas se piden al pulsar exportar y
+   * pueden no llegar: sin ellas la columna sale vacía, que es mejor que un
+   * identificador ilegible.
+   */
+  readonly mesaDe?: (tableId: string | null) => string;
+  /**
    * Lo que han escrito en el formulario, si se ha podido leer.
    *
    * Es opcional a propósito: la exportación no puede quedarse sin salir porque
@@ -90,6 +99,7 @@ function quienLoTrae(invitado: Invitado, porId: Map<string, string>): string {
  */
 export function hojaDeInvitados(datos: DatosExportacion): Hoja {
   const { invitados, grupos, etiquetas } = datos;
+  const mesaDe = datos.mesaDe ?? (() => '');
   const porId = new Map(invitados.map((i) => [i.id, i.fullName]));
 
   const filas = invitados
@@ -104,9 +114,8 @@ export function hojaDeInvitados(datos: DatosExportacion): Hoja {
       etiquetas.edad[i.ageGroup] ?? i.ageGroup,
       etiquetas.lado[i.side] ?? i.side,
       gruposDe(i, grupos),
-      i.tableId ?? '',
+      mesaDe(i.tableId),
       i.phone ?? '',
-      i.email ?? '',
       quienLoTrae(i, porId),
       i.loginCount,
       i.notes,
@@ -125,7 +134,6 @@ export function hojaDeInvitados(datos: DatosExportacion): Hoja {
       { titulo: 'Grupos', ancho: 24 },
       { titulo: 'Mesa', ancho: 10 },
       { titulo: 'Teléfono', ancho: 16 },
-      { titulo: 'Correo', ancho: 24 },
       { titulo: 'Lo trae', ancho: 20 },
       { titulo: 'Entradas a la web', ancho: 16 },
       { titulo: 'Notas', ancho: 30 },
@@ -143,6 +151,7 @@ export function hojaDeInvitados(datos: DatosExportacion): Hoja {
  */
 export function hojaParaCatering(datos: DatosExportacion): Hoja {
   const { invitados, etiquetas } = datos;
+  const mesaDe = datos.mesaDe ?? (() => '');
 
   const filas = invitados
     .filter((i) => i.rsvpStatus === 'confirmed')
@@ -152,7 +161,7 @@ export function hojaParaCatering(datos: DatosExportacion): Hoja {
       etiquetas.edad[i.ageGroup] ?? i.ageGroup,
       i.menu,
       i.allergies,
-      i.tableId ?? '',
+      mesaDe(i.tableId),
     ]);
 
   return {

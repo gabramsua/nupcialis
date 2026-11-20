@@ -10,6 +10,7 @@ import {
   MAX_EN_UN_LOTE,
   idsDelLote,
   validarLoteDeCupo,
+  validarVinculo,
 } from './acompanantes';
 import { normalizarTelefono } from './invitados';
 
@@ -201,6 +202,39 @@ describe('heredarDelTitular', () => {
     heredado.push('colado');
 
     expect(quien.groupIds).toEqual(['uni', 'familia']);
+  });
+});
+
+describe('validarVinculo', () => {
+  /**
+   * La pareja decide quién viene con quién, pero no a costa de dejar la lista
+   * en un estado que luego no se pueda contar: sin cadenas y sin huérfanos.
+   */
+  it('enlaza con un titular y hereda sus grupos', () => {
+    expect(validarVinculo('g2', titular(), 0)).toEqual({ ok: true, groupIds: ['uni', 'familia'] });
+  });
+
+  it('también vale para quien aún no existe (alta directa como acompañante)', () => {
+    expect(validarVinculo(null, titular(), 0).ok).toBe(true);
+  });
+
+  it('no existe el titular', () => {
+    expect(validarVinculo('g2', null, 0)).toEqual({ ok: false, motivo: 'no-existe' });
+  });
+
+  it('nadie viene consigo mismo', () => {
+    expect(validarVinculo('g1', titular(), 0)).toEqual({ ok: false, motivo: 'uno-mismo' });
+  });
+
+  it('un acompañante no puede ser titular', () => {
+    expect(validarVinculo('g2', titular({ isCompanion: true }), 0)).toEqual({
+      ok: false,
+      motivo: 'es-acompanante',
+    });
+  });
+
+  it('quien ya trae gente no pasa a ser acompañante', () => {
+    expect(validarVinculo('g2', titular(), 2)).toEqual({ ok: false, motivo: 'tiene-acompanantes' });
   });
 });
 

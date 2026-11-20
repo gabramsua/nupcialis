@@ -2,12 +2,19 @@ import { NgComponentOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, type Type, signal } from '@angular/core';
 
 import { PanelAlojamientos } from '../panel/alojamientos/alojamientos';
+import { PanelResumen } from '../panel/resumen/resumen';
+import { PanelChecklist } from '../panel/checklist/checklist-panel';
+import { PanelMapa } from '../panel/mapa/mapa-panel';
+import { PanelPlaylist } from '../panel/playlist/playlist-panel';
 import { PanelCronologia } from '../panel/cronologia/cronologia';
 import { PanelDressCode } from '../panel/dress-code/dress-code';
 import { PanelFaqs } from '../panel/faqs/faqs';
 import { PanelPreguntasQuiz } from '../panel/quiz/preguntas-quiz';
 import { PanelRankingQuiz } from '../panel/quiz/ranking-quiz';
 import { PanelMesas } from '../panel/mesas/mesas-pantalla';
+import { PanelGaleria } from '../panel/galeria/galeria-panel';
+import { PanelRegalos } from '../panel/regalos/regalos-panel';
+import { PanelRecibidos } from '../panel/regalos/recibidos-panel';
 
 /**
  * Las pantallas de contenido del panel, con datos de muestra. **Solo en desarrollo.**
@@ -70,12 +77,19 @@ import { PanelMesas } from '../panel/mesas/mesas-pantalla';
 export class PreviaPanel {
   protected readonly pantallas = [
     { id: 'alojamientos', nombre: 'Dónde dormir', componente: PanelAlojamientos },
+    { id: 'resumen', nombre: 'El inicio', componente: PanelResumen },
+    { id: 'checklist', nombre: 'Las tareas', componente: PanelChecklist },
+    { id: 'mapa', nombre: 'El mapa', componente: PanelMapa },
+    { id: 'playlist', nombre: 'La música', componente: PanelPlaylist },
     { id: 'dressCode', nombre: 'Cómo vestir', componente: PanelDressCode },
     { id: 'faqs', nombre: 'Preguntas frecuentes', componente: PanelFaqs },
     { id: 'cronologia', nombre: 'El día, hora a hora', componente: PanelCronologia },
     { id: 'quizPreguntas', nombre: 'El juego: preguntas', componente: PanelPreguntasQuiz },
     { id: 'quizRanking', nombre: 'El juego: quién ha jugado', componente: PanelRankingQuiz },
     { id: 'mesas', nombre: 'El reparto de mesas', componente: PanelMesas },
+    { id: 'galeria', nombre: 'Las fotos', componente: PanelGaleria },
+    { id: 'regalos', nombre: 'Los regalos', componente: PanelRegalos },
+    { id: 'recibidos', nombre: 'Lo recibido', componente: PanelRecibidos },
   ] as const;
 
   protected readonly cual = signal<string>('alojamientos');

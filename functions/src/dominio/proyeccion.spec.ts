@@ -136,6 +136,41 @@ describe('proyeccionPublica', () => {
       expect(publico.content.dressCode.avisos).toEqual(['Hay hierba']);
     });
 
+    describe('el mapa', () => {
+      const sitio = (extra: object) => ({
+        id: 'ceremonia',
+        type: 'ceremonia',
+        name: 'Iglesia',
+        coords: { lat: 40.9481, lng: -4.1184 },
+        visibleToGuests: true,
+        order: 1,
+        ...extra,
+      });
+
+      /** El punto donde la pareja deja el coche de los proveedores no es de los invitados. */
+      it('publica solo lo visible y con pin, y no lo interno', () => {
+        const publico = proyeccionPublica(
+          BODA,
+          [],
+          [],
+          [],
+          [
+            sitio({}),
+            sitio({ id: 'proveedores', name: 'Proveedores', visibleToGuests: false }),
+            sitio({ id: 'sinpin', name: 'Sin pin', coords: null }),
+            sitio({ id: 'mar', name: 'En el mar', coords: { lat: 0, lng: 0 } }),
+          ],
+        );
+
+        expect(publico.content.ubicaciones.map((u) => u.id)).toEqual(['ceremonia']);
+        expect(JSON.stringify(publico)).not.toContain('Proveedores');
+      });
+
+      it('sin ubicaciones publica la lista vacía, no un hueco', () => {
+        expect(proyeccionPublica(BODA).content.ubicaciones).toEqual([]);
+      });
+    });
+
     it('sin nada escrito publica el dress code vacío, no un hueco', () => {
       const publico = proyeccionPublica(BODA);
 

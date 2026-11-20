@@ -4,7 +4,6 @@ import {
   CHECKLIST_PLANTILLA,
   FAQS_FABRICA,
   GRUPO_POR_DEFECTO,
-  PREGUNTAS_QUIZ_FABRICA,
   PREGUNTAS_RSVP_FABRICA,
   fechaLimiteTarea,
   tareasAplicables,
@@ -79,30 +78,6 @@ describe('FAQs de fábrica', () => {
   });
 });
 
-describe('preguntas de fábrica del quiz', () => {
-  // Un quiz publicado con cinco preguntas sin respuestas es peor que no tener
-  // quiz: el invitado juega, no puede acertar, y se lleva la impresión de que
-  // la web está rota.
-  it('nacen desactivadas porque nacen sin respuestas', () => {
-    for (const p of PREGUNTAS_QUIZ_FABRICA) {
-      expect(p.enabled, p.question).toBe(false);
-      expect(p.correctAnswer).toBe('');
-    }
-  });
-
-  it('cada pregunta trae hueco para tres respuestas falsas', () => {
-    for (const p of PREGUNTAS_QUIZ_FABRICA) {
-      expect(p.wrongAnswers, p.question).toHaveLength(3);
-    }
-  });
-
-  it('la dificultad está dentro de los tres niveles', () => {
-    for (const p of PREGUNTAS_QUIZ_FABRICA) {
-      expect([1, 2, 3], p.question).toContain(p.difficulty);
-    }
-  });
-});
-
 describe('grupo por defecto', () => {
   // De los grupos depende quién ve qué fotos. El grupo que nace con la boda es
   // público: la partición restringida la crea la pareja a conciencia.
@@ -121,9 +96,7 @@ describe('grupo por defecto', () => {
     expect(validado.ok && validado.datos).toEqual({
       name: GRUPO_POR_DEFECTO.name,
       normalizedName: GRUPO_POR_DEFECTO.normalizedName,
-      side: GRUPO_POR_DEFECTO.side,
       photoAudience: GRUPO_POR_DEFECTO.photoAudience,
-      allowPublicOptIn: GRUPO_POR_DEFECTO.allowPublicOptIn,
       color: GRUPO_POR_DEFECTO.color,
     });
   });

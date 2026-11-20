@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { describe, expect, it } from 'vitest';
@@ -12,6 +12,7 @@ import {
   type PuertaInvitados,
 } from '../../../core/invitados/invitados-gateway';
 import { BodaStore } from '../boda.store';
+import { abrirDialogosEnPruebas } from '../boda.testing';
 import { INVITADO_DE_PRUEBA, bodaStoreFalso, gruposStoreFalso } from './dobles.testing';
 import { GruposStore } from './grupos.store';
 import { Invitados } from './invitados';
@@ -202,6 +203,153 @@ describe('acompañantes en la lista', () => {
 
   it('a quien no trae a nadie no se le pinta un cero', async () => {
     expect(await conLista([MARIA])).not.toContain('Trae a');
+  });
+});
+
+/**
+ * Navegar de un titular a sus acompañantes y al revés.
+ *
+ * Es lo que la pareja usa para sentarlos juntos: de «Trae a 2» a ver quiénes
+ * son, sin buscarlos a mano entre trescientos.
+ */
+describe('la familia de un invitado', () => {
+  const MARIA: Invitado = { ...INVITADO_DE_PRUEBA, id: 'g1', fullName: 'María', nickname: '' };
+  const ANA: Invitado = {
+    ...MARIA,
+    id: 'g2',
+    fullName: 'Ana',
+    isCompanion: true,
+    invitedById: 'g1',
+  };
+  const LUIS: Invitado = { ...MARIA, id: 'g3', fullName: 'Luis' };
+
+  const guardados: unknown[] = [];
+
+  async function montarLista() {
+    guardados.length = 0;
+    const puerta: PuertaInvitados = {
+      async listar() {
+        return { ok: true, invitados: [MARIA, ANA, LUIS] };
+      },
+      async importar() {
+        throw new Error('no se usa');
+      },
+      async guardar(datos) {
+        guardados.push(datos);
+        return { ok: true as const, id: 'nuevo', creado: true };
+      },
+      async cupoEnLote() {
+        return { ok: true as const, cambiados: 0, omitidos: 0 };
+      },
+      async borrar() {
+        throw new Error('no se usa');
+      },
+    };
+
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: {
+            es: {
+              panel: {
+                invitados: {
+                  loTrae: 'Lo trae {{nombre}}',
+                  trae: 'Trae a {{n}}',
+                  anadirAcompanante: 'Añadir acompañante',
+                  familia: { titulo: 'Mirando una familia', verTodos: 'Ver toda la lista' },
+                },
+              },
+            },
+          },
+          translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+        }),
+      ],
+      providers: [
+        provideIconSprite('panel'),
+        provideRouter([]),
+        { provide: PUERTA_RESPUESTAS, useValue: PUERTA_RESPUESTAS_FALSA },
+        { provide: PUERTA_INVITADOS, useValue: puerta },
+        { provide: BodaStore, useValue: bodaStoreFalso() },
+        { provide: GruposStore, useValue: gruposStoreFalso() },
+      ],
+    });
+    abrirDialogosEnPruebas();
+
+    const fixture = TestBed.createComponent(Invitados);
+    fixture.detectChanges();
+    await new Promise((listo) => setTimeout(listo, 0));
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const texto = (f: ComponentFixture<Invitados>) =>
+    ((f.nativeElement as HTMLElement).querySelector('.inv__lista')?.textContent ?? '').replace(
+      /\s+/g,
+      ' ',
+    );
+
+  function pulsar(f: ComponentFixture<Invitados>, contiene: string) {
+    const boton = Array.from((f.nativeElement as HTMLElement).querySelectorAll('button')).find(
+      (b) => b.textContent?.includes(contiene),
+    );
+    expect(boton, contiene).toBeTruthy();
+    boton!.click();
+    f.detectChanges();
+  }
+
+  it('«Trae a 1» deja al titular y a los suyos, y «Ver toda la lista» lo devuelve todo', async () => {
+    const f = await montarLista();
+    expect(texto(f)).toContain('Luis');
+
+    pulsar(f, 'Trae a 1');
+    expect(texto(f)).toContain('María');
+    expect(texto(f)).toContain('Ana');
+    expect(texto(f)).not.toContain('Luis');
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Mirando una familia');
+
+    pulsar(f, 'Ver toda la lista');
+    expect(texto(f)).toContain('Luis');
+  });
+
+  it('desde el acompañante se llega a la misma familia', async () => {
+    const f = await montarLista();
+
+    pulsar(f, 'Lo trae María');
+    expect(texto(f)).toContain('Ana');
+    expect(texto(f)).not.toContain('Luis');
+  });
+
+  it('«Añadir acompañante» solo se ofrece a los titulares', async () => {
+    const f = await montarLista();
+    const botones = Array.from((f.nativeElement as HTMLElement).querySelectorAll('.inv__tarjeta'))
+      .filter((t) => t.textContent?.includes('Añadir acompañante'))
+      .map((t) => t.querySelector('.inv__nombre')?.textContent?.trim());
+
+    expect(botones).toEqual(['Luis', 'María']);
+  });
+
+  it('el alta desde un titular nace como su acompañante y se queda mirando la familia', async () => {
+    const f = await montarLista();
+    const tarjeta = Array.from(
+      (f.nativeElement as HTMLElement).querySelectorAll('.inv__tarjeta'),
+    ).find((t) => t.querySelector('.inv__nombre')?.textContent?.trim() === 'Luis')!;
+    const boton = Array.from(tarjeta.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Añadir acompañante'),
+    )!;
+    boton.click();
+    f.detectChanges();
+
+    const clase = f.componentInstance as unknown as {
+      formulario: { patchValue(v: object): void };
+      guardar(): Promise<void>;
+    };
+    clase.formulario.patchValue({ fullName: 'Marta' });
+    await clase.guardar();
+    f.detectChanges();
+
+    expect(guardados).toHaveLength(1);
+    expect(guardados[0]).toMatchObject({ fullName: 'Marta', invitedById: 'g3', maxCompanions: 0 });
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Mirando una familia');
   });
 });
 

@@ -19,6 +19,7 @@
  */
 
 import { FieldValue } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions/v2';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { esModoAcceso, type ModoAcceso } from './dominio/acceso';
@@ -38,6 +39,8 @@ import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { limiteDe } from './infra/boda';
 import { leerPreguntas } from './infra/formulario';
 import { exigirInvitado, exigirVerificado } from './infra/permisos';
+import { grupoGeneral } from './groups';
+import { proponerDesdeRsvp } from './playlist';
 
 interface Contexto {
   readonly weddingId: string;
@@ -232,18 +235,35 @@ export const submitRsvp = onCall<EntradaRsvp>(
     const suyas = preguntasPara(ctx.preguntas, ctx.esAcompanante);
     const campos = camposDelInvitado(suyas, validacion.respuestas);
 
+    const estado = estadoTrasEnviar(campos);
+    // Quien confirma está en el grupo de todos (D-47). Normalmente ya lo está;
+    // esto cubre a los invitados anteriores a la regla.
+    const general = estado === 'confirmed' ? await grupoGeneral(db(), weddingId) : null;
+
     await db()
       .doc(`weddings/${weddingId}/guests/${guestId}`)
       .update({
+        ...(general ? { groupIds: FieldValue.arrayUnion(general) } : {}),
         // Las respuestas se **reemplazan**, no se mezclan: si ahora dice que no
         // viene, su menú de la vez anterior no puede quedarse ahí.
         rsvpAnswers: validacion.respuestas,
         ...campos,
-        rsvpStatus: estadoTrasEnviar(campos),
+        rsvpStatus: estado,
         rsvpAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-    return { ok: true as const, estado: estadoTrasEnviar(campos) };
+    // La canción que no puede faltar entra sola en la playlist (§8.14). Va
+    // después de guardar la respuesta y sin dejar que falle la confirmación:
+    // quien envió bien su formulario no debe ver un error por la lista de música.
+    if (typeof validacion.respuestas['cancion'] === 'string') {
+      try {
+        await proponerDesdeRsvp(weddingId, guestId, validacion.respuestas['cancion']);
+      } catch (error) {
+        logger.warn('No se pudo añadir la canción del RSVP a la playlist', { weddingId, error });
+      }
+    }
+
+    return { ok: true as const, estado };
   },
 );

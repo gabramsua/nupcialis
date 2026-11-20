@@ -14,7 +14,6 @@ import {
 const VALIDO: EntradaInvitado = {
   fullName: 'María José Pérez',
   phone: '666 12 34 56',
-  email: 'MJ@Example.com',
 };
 
 function datos(parcial: Partial<EntradaInvitado>): InvitadoValidado {
@@ -104,7 +103,8 @@ describe('validarInvitado', () => {
     expect(d.normalizedName).toBe('maria jose perez');
     expect(d.phone).toBe('+34666123456');
     expect(d.phoneLast4).toBe('3456');
-    expect(d.email).toBe('mj@example.com');
+    // El correo no se guarda para nada: aunque llegue, no entra en el documento.
+    expect('email' in d).toBe(false);
   });
 
   it('exige el nombre y nada más', () => {
@@ -125,10 +125,6 @@ describe('validarInvitado', () => {
     expect(motivos({ phone: '' })).toEqual([]);
   });
 
-  it('valida el email', () => {
-    expect(motivos({ email: 'arroba falta' })).toEqual([{ campo: 'email', motivo: 'no-es-email' }]);
-  });
-
   it('pone tope al cupo de acompañantes', () => {
     expect(motivos({ maxCompanions: MAX_ACOMPANANTES + 1 })).toEqual([
       { campo: 'maxCompanions', motivo: 'fuera-de-rango' },
@@ -140,8 +136,8 @@ describe('validarInvitado', () => {
 
   it('devuelve todos los motivos de una vez, no el primero', () => {
     // En una importación de doscientas filas, de uno en uno es una tortura.
-    const todos = motivos({ fullName: '', phone: 'nada', email: 'tampoco' });
-    expect(todos.map((m) => m.campo).sort()).toEqual(['email', 'fullName', 'phone']);
+    const todos = motivos({ fullName: '', phone: 'nada' });
+    expect(todos.map((m) => m.campo).sort()).toEqual(['fullName', 'phone']);
   });
 
   it('sin mote, el mote es el nombre', () => {

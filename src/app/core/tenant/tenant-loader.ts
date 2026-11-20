@@ -25,10 +25,16 @@ export type ResultadoTenant =
    * «no encontramos esta boda», que es lo que pasaba.
    */
   | { readonly tipo: 'landing' }
-  /** Existe pero está en borrador: la pareja aún no la ha publicado. */
-  | { readonly tipo: 'no-publicada' }
-  /** Pasó el plazo de conservación y se archivó. */
-  | { readonly tipo: 'archivada' }
+  /**
+   * Existe pero está en borrador: la pareja aún no la ha publicado.
+   *
+   * Lleva el `weddingId` porque el **panel sí tiene que abrirse en borrador**:
+   * es donde la pareja prepara la web antes de publicarla. La web pública usa
+   * solo el `tipo`; el id no sale de aquí hacia ninguna pantalla pública.
+   */
+  | { readonly tipo: 'no-publicada'; readonly weddingId: string }
+  /** Pasó el plazo de conservación y se archivó. Lleva el id por lo mismo. */
+  | { readonly tipo: 'archivada'; readonly weddingId: string }
   /** Falló la lectura. Distinto de "no existe": aquí sí tiene sentido reintentar. */
   | { readonly tipo: 'error' };
 
@@ -62,9 +68,9 @@ export async function cargarTenant(slug: string, fuente: FuenteTenant): Promise<
       case 'active':
         return { tipo: 'ok', weddingId: entrada.weddingId, slug, sitio };
       case 'draft':
-        return { tipo: 'no-publicada' };
+        return { tipo: 'no-publicada', weddingId: entrada.weddingId };
       case 'archived':
-        return { tipo: 'archivada' };
+        return { tipo: 'archivada', weddingId: entrada.weddingId };
       default:
         return { tipo: 'error' };
     }

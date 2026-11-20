@@ -115,6 +115,7 @@ function bodaOk(modo: ModoAcceso): ResultadoTenant {
       faqs: [],
       cronologia: [],
       alojamientos: [],
+      ubicaciones: [],
       dressCode: DRESS_CODE_VACIO,
       modulos: { rsvp: 'visible' },
       locale: 'es',

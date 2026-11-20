@@ -41,6 +41,16 @@ export interface Pregunta {
   readonly required: boolean;
   readonly visibleIf: { readonly questionId: string; readonly equals: unknown } | null;
   readonly order: number;
+  /**
+   * A quién se le hace: `guest` es el titular, `companion` el acompañante y
+   * `both` los dos. Solo la pantalla de la pareja lo necesita, para no ofrecerle
+   * por un acompañante una pregunta que es del titular.
+   */
+  readonly target?: 'guest' | 'companion' | 'both';
+  /** El campo del invitado que alimenta, si alimenta alguno. */
+  readonly mapsTo?: string | null;
+  /** Apagada por la pareja: ya no se pregunta, pero sus respuestas siguen. */
+  readonly enabled?: boolean;
 }
 
 export type Respuestas = Readonly<Record<string, unknown>>;

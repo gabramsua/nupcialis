@@ -5,7 +5,10 @@ import {
   MAX_PREGUNTAS_BANCO,
   OPCIONES_POR_PREGUNTA,
   PREGUNTAS_POR_PARTIDA,
+  MIN_RESPUESTAS_PARA_ETIQUETAR,
   PUNTOS,
+  etiquetaDePregunta,
+  puntosConPista,
   TOPE_RANKING,
   barajar,
   elegirPreguntas,
@@ -138,7 +141,9 @@ describe('la partida', () => {
     expect(deJuego.opciones).toHaveLength(OPCIONES_POR_PREGUNTA);
     expect(deJuego.opciones).toContain('La buena');
     expect(deJuego.puntos).toBe(PUNTOS[3]);
-    expect(deJuego.hint).toBe('Una pista');
+    // El texto de la pista no viaja: se pide aparte y cuesta la mitad de los puntos.
+    expect(deJuego.tienePista).toBe(true);
+    expect(JSON.stringify(deJuego)).not.toContain('Una pista');
   });
 
   it('baraja sin perder ni repetir nada', () => {
@@ -287,5 +292,53 @@ describe('el nombre del ranking', () => {
   it('corta un nombre larguísimo para que no rompa la fila', () => {
     const largo = nombreEnRanking('A'.repeat(200));
     expect(largo.length).toBe(MAX_NOMBRE_RANKING);
+  });
+});
+
+describe('la pista', () => {
+  const preguntas = [
+    pregunta({ id: 'facil', difficulty: 1 }),
+    pregunta({ id: 'normal', difficulty: 2 }),
+    pregunta({ id: 'dificil', difficulty: 3 }),
+  ];
+  const todasBien = { facil: 'La buena', normal: 'La buena', dificil: 'La buena' };
+
+  it('vale la mitad de la pregunta, siempre en puntos enteros', () => {
+    expect([1, 2, 3].map((d) => puntosConPista(d as 1 | 2 | 3))).toEqual([5, 10, 15]);
+  });
+
+  it('solo se descuenta de la pregunta en la que se pidió', () => {
+    const puntos = puntuar(preguntas, todasBien, new Set(['dificil']));
+    expect(puntos.points).toBe(10 + 20 + 15);
+  });
+
+  it('si se pide la pista y se falla, no se resta nada', () => {
+    const puntos = puntuar(preguntas, { facil: 'Otra' }, new Set(['facil']));
+    expect(puntos.points).toBe(0);
+  });
+
+  it('sin pistas, como siempre', () => {
+    expect(puntuar(preguntas, todasBien).points).toBe(60);
+  });
+});
+
+describe('etiquetaDePregunta', () => {
+  const est = (asked: number, correct: number) => ({ asked, correct, hints: 0 });
+
+  it('fácil con el 90 % o más, difícil con el 10 % o menos', () => {
+    expect(etiquetaDePregunta(est(20, 18))).toBe('facil');
+    expect(etiquetaDePregunta(est(20, 20))).toBe('facil');
+    expect(etiquetaDePregunta(est(20, 2))).toBe('dificil');
+    expect(etiquetaDePregunta(est(20, 0))).toBe('dificil');
+  });
+
+  it('en medio, sin etiqueta', () => {
+    expect(etiquetaDePregunta(est(20, 10))).toBeNull();
+    expect(etiquetaDePregunta(est(20, 17))).toBeNull();
+  });
+
+  it('con pocas respuestas no se etiqueta nada', () => {
+    expect(etiquetaDePregunta(est(MIN_RESPUESTAS_PARA_ETIQUETAR - 1, 9))).toBeNull();
+    expect(etiquetaDePregunta(null)).toBeNull();
   });
 });

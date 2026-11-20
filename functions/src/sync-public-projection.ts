@@ -41,6 +41,15 @@ export const syncPublicAccommodations = onDocumentWritten(
   },
 );
 
+/** Las ubicaciones del mapa (§8.6), por lo mismo que los alojamientos. */
+export const syncPublicLocations = onDocumentWritten(
+  { document: 'weddings/{weddingId}/locations/{ubicacionId}', region: REGION },
+  async (evento) => {
+    const weddingId = evento.params['weddingId'];
+    if (weddingId) await reconstruirProyeccion(weddingId);
+  },
+);
+
 export const syncPublicTimeline = onDocumentWritten(
   { document: 'weddings/{weddingId}/timelineEvents/{hitoId}', region: REGION },
   async (evento) => {

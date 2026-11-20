@@ -14,7 +14,7 @@ que preguntarlo.
 ## 1. Antes de arrancar (cinco minutos, y bloquea todo lo demás)
 
 ```bash
-npm install                 # jodit, ngx-jodit, write-excel-file, read-excel-file
+npm install                 # jodit, ngx-jodit, write-excel-file, read-excel-file, leaflet
 npm run functions:install   # sanitize-html
 ```
 
@@ -31,31 +31,110 @@ npm run deploy:functions
 npm run deploy:rules
 ```
 
+**Tras el smoke test 1** hay que redesplegar `provisionWedding` (el enlace de alta
+ahora continúa en `/panel/acceso`) con `npm run deploy:functions`.
+
+**App Check 403 en `localhost`**: el token de depuración de cada origen
+(`localhost`, `<slug>.localhost`) tiene que estar registrado en Firebase → App
+Check → Apps → tu app → ⋮ → _Administrar tokens de depuración_. Más rápido:
+abre el panel con `?appcheck=<uuid-ya-registrado>` y se guarda para ese
+subdominio. Si sigue el 403, revisa las restricciones de la clave de API
+(Google Cloud → Credenciales): tienen que permitir `*.localhost:4200` y la API
+«Firebase App Check».
+
+**Función nueva: `setGuestRsvp`** (la pareja contesta por un invitado, D-45).
+Sin desplegarla, el botón «Respuesta» de la lista de invitados avisa de que no
+se ha podido guardar.
+
+**`upsertGuest` cambia** (acepta `invitedById`, para enlazar acompañantes desde
+el panel, D-46): hay que **desplegar functions** otra vez. Y reinicia `ng serve`
+(se ha tocado `angular.json` para el Jodit).
+
+**Tanda D-47 (la de los 18 puntos).** Antes de nada: `npm install` (entra
+`@angular/cdk` para arrastrar en las mesas), `npm run icons` (hay iconos nuevos;
+el sprite ya viene en el parche, pero no sobra) y reinicia `ng serve`. Después
+**`npm run deploy:rules`** (`quizStats`) y **`npm run deploy:functions`**: tocan
+`upsertGuest`, `setGuestRsvp`, `submitRsvp`, `importGuests`, `startQuiz`,
+`submitQuiz`, la nueva **`getQuizHint`** y `provisionWedding`. Sin
+`getQuizHint` desplegada, pedir una pista en el juego falla. Las respuestas
+viejas del quiz siguen valiendo. Las decisiones que he apartado para ti están
+al final de `D-47` en `PENDIENTES.md`.
+
 **Funciones nuevas acumuladas**, por orden de entrada:
 
-| Función                     | Para qué                                                |
-| --------------------------- | ------------------------------------------------------- |
-| `getRsvpForm`, `submitRsvp` | El formulario de confirmación del invitado              |
-| `guestLinkLogin`            | Entrar con el enlace de la pareja (D-34)                |
-| `verifyGuest`               | Subir de «enlace» a «verificado» con los cuatro dígitos |
-| `getInviteLink`             | El token del enlace de cada invitado                    |
-| `listRsvpAnswers`           | Lo que han contestado, para la pareja                   |
-| `listAccessLog`             | «Quién ha entrado»                                      |
-| `setCompanionQuota`         | El cupo de acompañantes en lote                         |
-| `reorderGroups`             | El orden de los grupos                                  |
-| `startQuiz`, `submitQuiz`   | Jugar al quiz, con la corrección en servidor            |
-| `listQuizRanking`           | El ranking que ve el invitado                           |
-| `listQuizPlays`             | Quién ha jugado, con teléfono, para vuestro panel       |
-| `clearQuizRanking`          | Vaciar el ranking antes del día de la boda              |
+| Función                      | Para qué                                                 |
+| ---------------------------- | -------------------------------------------------------- |
+| `getRsvpForm`, `submitRsvp`  | El formulario de confirmación del invitado               |
+| `guestLinkLogin`             | Entrar con el enlace de la pareja (D-34)                 |
+| `verifyGuest`                | Subir de «enlace» a «verificado» con los cuatro dígitos  |
+| `getInviteLink`              | El token del enlace de cada invitado                     |
+| `listRsvpAnswers`            | Lo que han contestado, para la pareja                    |
+| `listAccessLog`              | «Quién ha entrado»                                       |
+| `setCompanionQuota`          | El cupo de acompañantes en lote                          |
+| `reorderGroups`              | El orden de los grupos                                   |
+| `startQuiz`, `submitQuiz`    | Jugar al quiz, con la corrección en servidor             |
+| `listQuizRanking`            | El ranking que ve el invitado                            |
+| `listQuizPlays`              | Quién ha jugado, con teléfono, para vuestro panel        |
+| `clearQuizRanking`           | Vaciar el ranking antes del día de la boda               |
+| `assignGuestsToTable`        | Sentar invitados en una mesa, en lote                    |
+| `uploadPhoto`                | Subir foto a la galería (grande y miniatura)             |
+| `listPhotos`                 | Una página de la galería                                 |
+| `deletePhoto`                | Borrar una foto (la suya, o cualquiera si sois vosotros) |
+| `clearGallery`               | Vaciar la galería entera                                 |
+| `listPlaylist`               | La lista de canciones que ve el invitado, sin ids        |
+| `suggestSong`, `voteSong`    | Proponer y votar una canción (con duplicados detectados) |
+| `getGifts`                   | La página de regalos del invitado                        |
+| `getAdminStats`              | Las estadísticas del superadmin (solo con el claim)      |
+| `setWeddingLimits`           | Fijar el tope de fotos de una boda (solo superadmin)     |
+| `reserveGift`, `releaseGift` | Coger y soltar un regalo de la lista                     |
+
+**Las reglas cambian**: `playlistSuggestions` pasa a ser **solo de la pareja**
+(antes un invitado podía leerla, y con ella quién había votado qué). Sin
+desplegar las reglas, la playlist sigue funcionando pero esa fuga queda abierta.
+Y `submitRsvp` ahora añade a la playlist la canción que el invitado escribe al
+confirmar: hasta que se despliegue, esa canción se guarda en su respuesta y no
+entra en la lista.
 
 Y `listGuests` devuelve dos campos más (si lo apuntó un invitado y cuándo), y
 `syncPublicProjection` ahora **sanea el HTML** del texto enriquecido. Hasta que
 no se despliegue, el aviso de acompañantes nuevos no sale y el texto con formato
 se publica sin sanear.
 
-**Reglas e índices:** hay un índice nuevo (`guests` por `normalizedName` +
-`phoneLast4`). Sin él, el modo B de acceso falla con un error de índice la
-primera vez que alguien intenta entrar.
+**Reglas e índices:** hay dos índices nuevos. Uno en `guests` por
+`normalizedName` + `phoneLast4`: sin él, el modo B de acceso falla con un error
+de índice la primera vez que alguien intenta entrar. Otro en `photos` por
+`status` + `createdAt` descendente: sin él, la galería no lista nada y la
+consola de Firebase te ofrece el enlace para crearlo con un clic.
+
+**Lo recibido no necesita despliegue de funciones**: el cuaderno de la pareja
+habla con Firestore directo, y la regla de `giftsReceived` (solo la pareja) y su
+test de aislamiento ya estaban. Para mirarlo: panel → Regalos → «Lo recibido».
+Apunta un par de cosas, marca una como agradecida y mira que, con un regalo en
+especie, el importe sale «—» y no «0 €».
+
+**Las reglas cambian otra vez, para `gifts`.** El invitado ya no lee esa
+colección: se la sirve `getGifts`. Es lo que mantiene anónima la reserva —el id
+de quien ha cogido cada cosa vive en el documento, y una regla puede negar una
+escritura pero no esconder un campo de una lectura—. Hasta que se desplieguen
+las reglas, un invitado identificado podría consultar la colección y ver quién
+ha cogido qué.
+
+**El IBAN.** Lo que la pareja escribe se comprueba con el módulo 97 antes de
+publicarse, y **no sube a la proyección pública** ni el número de cuenta ni el
+Bizum. Lo confirmaste el 2026-11-17 (`D-40`).
+
+**El tope de fotos (500 por boda, `D-39`) toca las reglas otra vez**: `limits`
+pasa a ser un campo de sistema que la pareja no puede escribir. Hasta que se
+desplieguen las reglas, una pareja podría subirse el tope a sí misma desde la
+consola del navegador. Para cambiar el tope de una boda, mientras no exista el
+panel de superadmin (`F3.1d`), hay que escribir `limits.maxPhotos` a mano en el
+documento de la boda.
+
+**La galería escribe en Storage.** Los ficheros los escribe `uploadPhoto` con el
+SDK de administrador y se sirven por URL con token de descarga, así que el
+bucket **no** necesita lectura pública y no hay que tocar las reglas de Storage.
+Si vuestro bucket no se llama `<proyecto>.firebasestorage.app`, hay que ponerlo
+en la variable `NUPCIALIS_BUCKET` de las funciones.
 
 Y **las reglas han cambiado** para `faqs`, `timelineEvents` y `accommodations`:
 el invitado ya no las lee directamente, porque lo publicable le llega por la
@@ -63,9 +142,13 @@ proyección pública. Hasta que se despliegue, un invitado identificado podría
 leer una pregunta a medio escribir, la hora a la que llega el fotógrafo o un
 hotel que todavía no habéis decidido, con una consulta directa.
 
-**Tres triggers nuevos** de proyección, uno por lista: `syncPublicFaqs`,
-`syncPublicTimeline` y `syncPublicAccommodations`. Los cuatro —con el de
-siempre— llaman a la misma función (`reconstruirProyeccion`), que compara antes
+**Cuatro triggers nuevos** de proyección, uno por lista: `syncPublicFaqs`,
+`syncPublicTimeline`, `syncPublicAccommodations` y `syncPublicLocations` (el
+del mapa). **Ojo: `syncPublicAccommodations` existía pero no estaba exportado en
+`functions/src/index.ts`, así que los alojamientos nunca se habrían publicado
+solos.** Ya está arreglado, y un test nuevo (`triggers-exportados.spec.ts`)
+falla si cualquier función con trigger se queda sin exportar. Los cinco —con el
+de siempre— llaman a la misma función (`reconstruirProyeccion`), que compara antes
 de escribir, así que no se llaman entre ellos. Hasta que no se despliegue, las
 preguntas, la cronología y los alojamientos **no aparecen en la web**: se
 guardan bien en el panel y la proyección no se entera.
@@ -116,12 +199,21 @@ queda para dar **F1 por terminada**. Con `npm start` levantado y entrando por
 4. **«Quién ha entrado»** con entradas de verdad: las mías son inventadas.
 5. **El resumen del panel** con una boda a medio montar: es la primera pantalla
    que ve la pareja y la he visto solo en pruebas.
+6. **Las tareas** (`/panel/checklist`): que la plantilla sembrada al dar de alta
+   la boda aparezca con fechas razonables, que marcar una sea un toque, y que
+   el aviso del inicio salga. No hay nada que desplegar para esto: sin
+   funciones nuevas ni cambio de reglas. Mírala también con una boda
+   **dada de alta con una fecha cercana**, que es donde la plantilla se ancla
+   a hoy (D-43, punto 4).
 
-**Dos páginas nuevas que te ahorran parte de esto**, las dos solo en desarrollo
-y sin tocar Firebase: `localhost:4200/dev/previa` enseña las dos plantillas de
-la web con una boda entera de muestra y con el caso de boda recién creada, y
-`localhost:4200/dev/panel` monta las cuatro pantallas de contenido del panel con
-datos de muestra que se pueden tocar. Abriéndolas a 360 px salieron seis fallos
+**Cuatro páginas nuevas que te ahorran parte de esto**, todas solo en
+desarrollo y sin tocar Firebase: `localhost:4200/dev/previa` enseña las dos
+plantillas de la web con una boda entera de muestra y con el caso de boda recién
+creada, `localhost:4200/dev/panel` monta las pantallas de contenido del panel
+con datos de muestra que se pueden tocar, `localhost:4200/dev/quiz` juega una
+partida entera con un banco de ejemplo, y `localhost:4200/dev/galeria` abre la
+galería del invitado con fotos de mentira para ver la rejilla y el visor (y la
+de la pareja está dentro de `/dev/panel`, en el selector de pantalla). Abriéndolas a 360 px salieron seis fallos
 que no veía ningún test; están en `TAREAS.md`, `F2.7` y `F2.7b`. **Los
 alojamientos y el dress code en un móvil ya los he mirado yo ahí**: lo que sigue
 necesitando tus ojos es lo de arriba, que depende de datos y de aparatos de
@@ -139,13 +231,13 @@ dice si un botón se sale de la pantalla en un móvil de 360 px.
 No las resuelvo por mi cuenta (regla de `CLAUDE.md`). Ordenadas por lo que
 desbloquean:
 
-| Decisión                                                 | Qué bloquea                                                                   |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **D-04 · Librería de mapas** (Leaflet/MapLibre o Google) | El módulo de **mapa**, que está en el plan básico y hoy sale «En camino»      |
-| **D-02 · Precio** de cada plan                           | La landing comercial y el alta con datos de cobro (`F0.7.7`)                  |
-| **D-09 · Módulos con identidad en modo abierto**         | Galería, quiz y libro de firmas en una boda sin puerta (F3)                   |
-| **D-11 · Repeticiones del quiz** y qué enseña el ranking | El quiz (F3)                                                                  |
-| **D-01 · Ciclo de vida post-boda**: cuánto se conserva   | El archivado y la purga, y lo que hay que contar en la política de privacidad |
+| Decisión                                                       | Qué bloquea                                                                                    |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **D-04 · Librería de mapas**: la he elegido yo (Leaflet + OSM) | **Valídala**: el mapa ya funciona; el riesgo es el uso de las teselas públicas de OSM a escala |
+| **D-02 · Precio** de cada plan                                 | La landing comercial y el alta con datos de cobro (`F0.7.7`)                                   |
+| **D-09 · Módulos con identidad en modo abierto**               | Galería, quiz y libro de firmas en una boda sin puerta (F3)                                    |
+| **D-11 · Repeticiones del quiz** y qué enseña el ranking       | El quiz (F3)                                                                                   |
+| **D-01 · Ciclo de vida post-boda**: cuánto se conserva         | El archivado y la purga, y lo que hay que contar en la política de privacidad                  |
 
 ## 7. Infraestructura, cuando toque vender
 
@@ -182,8 +274,8 @@ de `TAREAS.md`, en «Lo siguiente, por valor para la pareja». En corto:
 
 De esas, **tres decisiones tuyas de un minuto adelantan trabajo de días**:
 `D-11` (el quiz: si se repite partida y qué enseña el ranking), `D-09` (quién
-sube una foto o firma en una boda en modo abierto, donde no hay sesión) y `D-04`
-(la librería de mapas).
+sube una foto o firma en una boda en modo abierto, donde no hay sesión). `D-04`
+(mapas) ya la elegí yo —Leaflet + OSM— y solo necesita tu visto bueno.
 
 ### Dos cosas del dress code para que las mires
 

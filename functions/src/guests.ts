@@ -15,6 +15,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
+import { validarVinculo } from './dominio/acompanantes';
 import { conGrupoPorDefecto, idGrupoPorDefecto, validarAsignacion } from './dominio/grupos';
 import { MAX_INVITADOS } from './dominio/importacion';
 import {
@@ -43,7 +44,6 @@ interface InvitadoEnLista {
   readonly fullName: string;
   readonly nickname: string;
   readonly phone: string | null;
-  readonly email: string | null;
   readonly side: string;
   readonly ageGroup: string;
   readonly groupIds: readonly string[];
@@ -76,7 +76,6 @@ function aLista(id: string, d: Record<string, unknown>): InvitadoEnLista {
     fullName: texto(d['fullName']),
     nickname: texto(d['nickname']),
     phone: typeof d['phone'] === 'string' ? d['phone'] : null,
-    email: typeof d['email'] === 'string' ? d['email'] : null,
     side: texto(d['side']) || 'both',
     ageGroup: texto(d['ageGroup']) || 'adult',
     groupIds: Array.isArray(d['groupIds'])
@@ -109,6 +108,11 @@ export const listGuests = onCall<unknown>(
 export interface EntradaUpsert extends EntradaInvitado {
   /** Ausente para crear; presente para editar. */
   readonly id?: unknown;
+  /**
+   * Con quién viene. Ausente: no se toca. Un id: viene con ese titular. `null`:
+   * viene por su cuenta (deja de ser acompañante).
+   */
+  readonly invitedById?: unknown;
   /** Crear aunque se parezca a uno que ya está. */
   readonly forzar?: unknown;
 }
@@ -172,6 +176,54 @@ export const upsertGuest = onCall<EntradaUpsert>(
       });
     }
 
+    // Con quién viene (F1.5d). Ausente: no se toca nada de la relación.
+    const quiereVinculo = datos.invitedById !== undefined;
+    const titularId =
+      typeof datos.invitedById === 'string' && datos.invitedById !== '' ? datos.invitedById : null;
+
+    let heredados: readonly string[] | null = null;
+    if (titularId !== null) {
+      const [titularSnap, suyos] = await Promise.all([
+        coleccion.doc(titularId).get(),
+        id ? coleccion.where('invitedById', '==', id).limit(1).get() : Promise.resolve(null),
+      ]);
+      const t = titularSnap.data();
+      const vinculo = validarVinculo(
+        id,
+        titularSnap.exists && t
+          ? {
+              id: titularId,
+              isCompanion: t['isCompanion'] === true,
+              maxCompanions: typeof t['maxCompanions'] === 'number' ? t['maxCompanions'] : 0,
+              groupIds: Array.isArray(t['groupIds'])
+                ? t['groupIds'].filter((g): g is string => typeof g === 'string')
+                : [],
+              active: t['active'] !== false,
+            }
+          : null,
+        suyos?.size ?? 0,
+      );
+      if (!vinculo.ok) {
+        throw new HttpsError('failed-precondition', 'No se puede enlazar con ese titular.', {
+          vinculo: vinculo.motivo,
+        });
+      }
+      heredados = vinculo.groupIds;
+    }
+
+    // Lo que cambia en el documento por la relación. Un acompañante no tiene
+    // cupo propio (`maxCompanions: 0`) y hereda los grupos del titular.
+    const relacion: Record<string, unknown> = !quiereVinculo
+      ? {}
+      : titularId === null
+        ? { isCompanion: false, invitedById: null }
+        : {
+            isCompanion: true,
+            invitedById: titularId,
+            maxCompanions: 0,
+            groupIds: heredados ?? [],
+          };
+
     if (id) {
       const ref = coleccion.doc(id);
       const actual = await ref.get();
@@ -180,18 +232,27 @@ export const upsertGuest = onCall<EntradaUpsert>(
       // Solo los campos que la pareja edita. `rsvpStatus`, `loginCount` y los
       // contadores del quiz los mueve el servidor (regla 6) y un `set` entero
       // se los llevaría por delante.
-      await ref.update({ ...validado.datos, updatedAt: FieldValue.serverTimestamp() });
+      await ref.update({
+        ...validado.datos,
+        // También al editar: quitar a alguien del grupo de todos no es una
+        // opción (D-47). Antes mandaba lo marcado, «también si lo quitó».
+        groupIds: conGrupoPorDefecto(validado.datos.groupIds, idGrupoPorDefecto(grupos)),
+        ...relacion,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
       return { id, creado: false };
     }
 
     const creado = await coleccion.add({
       ...validado.datos,
-      // Todo invitado nuevo entra en el grupo de todos (D-31). Solo al crear:
-      // al editar manda lo que la pareja haya marcado, también si lo quitó.
+      // Todo invitado entra en el grupo de todos (D-31), y no sale de él (D-47).
       groupIds: conGrupoPorDefecto(validado.datos.groupIds, idGrupoPorDefecto(grupos)),
       isCompanion: false,
       invitedById: null,
       addedBy: 'owner',
+      // Si se crea ya como acompañante de alguien, manda la relación: los
+      // grupos son los del titular y no hay cupo propio.
+      ...relacion,
       rsvpStatus: 'pending',
       rsvpAt: null,
       rsvpAnswers: {},

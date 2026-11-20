@@ -24,6 +24,7 @@ import {
   type TipoAlojamiento,
 } from '../../public-site/alojamientos/alojamientos';
 import { AlojamientosStore } from './alojamientos.store';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * Dónde dormir, donde la pareja lo apunta (§8.10).
@@ -53,6 +54,7 @@ import { AlojamientosStore } from './alojamientos.store';
     NpModal,
     NpStatusChip,
     NpIcon,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -211,12 +213,12 @@ import { AlojamientosStore } from './alojamientos.store';
             <form class="al__form" [formGroup]="formulario" (submit)="enviar($event)">
               <label>
                 {{ t('panel.alojamientos.campo.nombre') }}
-                <input formControlName="name" [attr.maxlength]="maximoNombre" />
+                <input npInput formControlName="name" [attr.maxlength]="maximoNombre" />
               </label>
 
               <label>
                 {{ t('panel.alojamientos.campo.tipo') }}
-                <select formControlName="category">
+                <select npInput formControlName="category">
                   @for (tipo of tipos; track tipo) {
                     <option [value]="tipo">{{ t('panel.alojamientos.tipo.' + tipo) }}</option>
                   }
@@ -226,6 +228,7 @@ import { AlojamientosStore } from './alojamientos.store';
               <label>
                 {{ t('panel.alojamientos.campo.descripcion') }}
                 <textarea
+                  npInput
                   formControlName="description"
                   rows="3"
                   [attr.maxlength]="maximoDescripcion"
@@ -235,25 +238,25 @@ import { AlojamientosStore } from './alojamientos.store';
               <div class="al__pareja">
                 <label>
                   {{ t('panel.alojamientos.campo.precio') }}
-                  <input formControlName="pricePerNight" type="number" min="0" step="1" />
+                  <input npInput formControlName="pricePerNight" type="number" min="0" step="1" />
                 </label>
                 <label>
                   {{ t('panel.alojamientos.campo.distancia') }}
-                  <input formControlName="distanceKm" type="number" min="0" step="0.1" />
+                  <input npInput formControlName="distanceKm" type="number" min="0" step="0.1" />
                 </label>
               </div>
 
               <div class="al__pareja">
                 <label>
                   {{ t('panel.alojamientos.campo.telefono') }}
-                  <input formControlName="phone" type="tel" inputmode="tel" />
+                  <input npInput formControlName="phone" type="tel" inputmode="tel" />
                   @if (telefonoMal()) {
                     <small class="al__mal">{{ t('panel.alojamientos.campo.telefonoMal') }}</small>
                   }
                 </label>
                 <label>
                   {{ t('panel.alojamientos.campo.web') }}
-                  <input formControlName="website" type="url" inputmode="url" />
+                  <input npInput formControlName="website" type="url" inputmode="url" />
                   @if (webMal()) {
                     <small class="al__mal">{{ t('panel.alojamientos.campo.webMal') }}</small>
                   }
@@ -262,18 +265,18 @@ import { AlojamientosStore } from './alojamientos.store';
 
               <label>
                 {{ t('panel.alojamientos.campo.codigo') }}
-                <input formControlName="discountCode" [attr.maxlength]="maximoCodigo" />
+                <input npInput formControlName="discountCode" [attr.maxlength]="maximoCodigo" />
                 <small>{{ t('panel.alojamientos.campo.codigoAyuda') }}</small>
               </label>
 
               <div class="al__pareja">
                 <label>
                   {{ t('panel.alojamientos.campo.bloqueadas') }}
-                  <input formControlName="blockedRooms" type="number" min="0" step="1" />
+                  <input npInput formControlName="blockedRooms" type="number" min="0" step="1" />
                 </label>
                 <label>
                   {{ t('panel.alojamientos.campo.plazo') }}
-                  <input formControlName="bookingDeadline" type="date" />
+                  <input npInput formControlName="bookingDeadline" type="date" />
                   <small>{{ t('panel.alojamientos.campo.plazoAyuda') }}</small>
                 </label>
               </div>
@@ -430,7 +433,7 @@ import { AlojamientosStore } from './alojamientos.store';
     .al__mal {
       color: var(--np-declined-fg);
     }
-    .al__casilla {
+    .al__form .al__casilla {
       flex-direction: row;
       align-items: center;
       gap: var(--np-space-2);

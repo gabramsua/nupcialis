@@ -60,19 +60,27 @@ describe('las funciones del invitado', () => {
   });
 
   /**
-   * Una por invocable, no una por fichero: `rsvp.ts` tiene dos —leer y
-   * enviar— y las dos enseñan o cambian cosas del invitado.
+   * Una por **puerta**, no una por fichero.
+   *
+   * La puerta es `exigirInvitado(`: cada vez que una función abre una sesión
+   * de invitado, ahí mismo tiene que decidir qué nivel pide. Contar puertas y
+   * no invocables es lo correcto por dos motivos: un fichero puede tener
+   * invocables que no son del invitado —`clearGallery` es de la pareja y se
+   * guarda con `exigirPareja`— y la comprobación puede vivir en un ayudante
+   * compartido por dos invocables, como el `quienBorra` de la galería. Lo que
+   * no puede pasar nunca es abrir una sesión de invitado y seguir adelante sin
+   * mirar su nivel.
    */
-  it('una comprobación por cada invocable del fichero', () => {
+  it('una comprobación por cada puerta de invitado', () => {
     const descuadres = delInvitado.flatMap((fichero) => {
       const nombre = fichero.split('/').pop() ?? '';
       if (nombre in SIN_VERIFICAR) return [];
 
       const codigo = readFileSync(fichero, 'utf8');
-      const invocables = [...codigo.matchAll(/onCall[<(]/g)].length;
+      const puertas = [...codigo.matchAll(/exigirInvitado\(/g)].length;
       const comprobaciones = [...codigo.matchAll(/exigirVerificado\(/g)].length;
 
-      return comprobaciones >= invocables ? [] : [`${fichero}: ${comprobaciones}/${invocables}`];
+      return comprobaciones >= puertas ? [] : [`${fichero}: ${comprobaciones}/${puertas}`];
     });
 
     expect(descuadres).toEqual([]);

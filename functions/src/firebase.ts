@@ -7,6 +7,7 @@
 
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth, type Auth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 /**
@@ -44,6 +45,20 @@ export function db(): Firestore {
 
 export function auth(): Auth {
   return getAuth(app());
+}
+
+/**
+ * El bucket de Storage del proyecto.
+ *
+ * Se nombra a mano y no se deja al valor por defecto del SDK porque los
+ * proyectos creados desde 2024 usan `<id>.firebasestorage.app` y los
+ * anteriores `<id>.appspot.com`; dejarlo al azar del SDK es descubrirlo el día
+ * del despliegue. Se puede fijar con `NUPCIALIS_BUCKET` si algún entorno usa
+ * otro.
+ */
+export function bucket() {
+  const nombre = process.env['NUPCIALIS_BUCKET'] ?? `${projectId()}.firebasestorage.app`;
+  return getStorage(app()).bucket(nombre);
 }
 
 /**

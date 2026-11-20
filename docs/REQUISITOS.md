@@ -226,7 +226,7 @@ Pasos:
 1. Validar y normalizar el slug; comprobar que no está reservado.
 2. En una **transacción**: crear `slugs/{slug}` y el documento `weddings/{weddingId}`. Si el slug ya existe, la operación falla completa y se propone una alternativa.
 3. Sembrar la configuración por defecto: plantilla, paleta, módulos activos según el plan, modo de acceso `open`.
-   Además se siembran: las **preguntas de fábrica del formulario de RSVP**, un **banco de preguntas de ejemplo del quiz**, la **plantilla de checklist** con fechas relativas a la fecha de la boda y un **grupo por defecto** de audiencia pública.
+   Además se siembran: las **preguntas de fábrica del formulario de RSVP**, la **plantilla de checklist** con fechas relativas a la fecha de la boda y un **grupo por defecto** de audiencia pública.
 4. Crear la proyección pública `weddings/{weddingId}/public/site`.
 5. Crear o localizar las cuentas de Firebase Auth de los dos emails y asignarles los claims.
 6. **Dar de alta `<slug>.nupcialis.com` en los dominios autorizados de Firebase Auth**, mediante el Identity Toolkit Admin API v2 (`PATCH admin/v2/projects/{projectId}/config`) con cuenta de servicio. Firebase Auth no admite comodines ahí, así que sin este paso el acceso con Google no funcionaría en la boda nueva. Es una lectura del listado actual, más el dominio, y un patch del conjunto completo.
@@ -366,6 +366,7 @@ weddings/{weddingId}
     guestsTotal, guestsConfirmed, guestsDeclined, guestsPending,
     seatsAssigned, photosPending, quizPlays, uniqueLogins
   }
+  limits: { maxPhotos }              // techos por boda; campo de sistema (§8.5)
   createdAt, updatedAt
 ```
 
@@ -405,16 +406,14 @@ Los grupos dejan de ser una etiqueta de texto libre y pasan a ser entidades con 
 weddings/{weddingId}/guestGroups/{groupId}
   name: string                          // 'Universidad', 'Familia de la novia'
   normalizedName: string                // minúsculas y sin tildes; único por boda
-  side: 'A' | 'B' | 'both'
   photoAudience: 'public' | 'restricted'
-  allowPublicOptIn: bool                // solo true si es restricted
   color: string                         // id de la paleta categórica (§9.1), nunca un hexadecimal
   order: number
   isDefault: bool                       // el grupo de todos: solo uno, lo crea el alta
   createdAt, updatedAt
 ```
 
-**El grupo de todos** («Invitados», `isDefault: true`) se crea con la boda y **todo invitado nuevo entra en él**, por alta manual o por importación (D-31). No se puede borrar ni llevar candado. La pareja puede sacar de él a un invitado concreto al editarlo.
+**El grupo de todos** («Invitados», `isDefault: true`) se crea con la boda y **todo invitado nuevo entra en él**, por alta manual o por importación (D-31). No se puede borrar ni llevar candado. **Todo invitado pertenece siempre a él** (D-47): no se puede sacar al editarlo y quien confirma asistencia entra aunque no estuviera.
 
 **`photoAudience: 'restricted'` es el mecanismo de partición de audiencia de la galería.** Ver §8.5.
 
@@ -436,7 +435,6 @@ weddings/{weddingId}/guests/{guestId}
   nickname: string                // mote, es lo que se muestra en la mesa
   phone: string | null            // E.164
   phoneLast4: string | null
-  email: string | null
   side: 'A' | 'B' | 'both'
   groupIds: string[]              // referencias a guestGroups
   ageGroup: 'adult' | 'child' | 'baby'
@@ -594,7 +592,7 @@ La pareja lo lee en «Quién ha entrado» (`/panel/guests/accesos`), que contest
 Declarados en `firestore.indexes.json`. Los previsibles:
 
 - `guests` por `rsvpStatus` + `fullName`, por `tableId` + `fullName`, por `groupIds` (array-contains) + `fullName`, por `invitedById`
-- `photos` por `status` + `audienceGroupId` + `createdAt`
+- `photos` por `status` + `createdAt` desc (el que usa `listPhotos` hoy) y, cuando entren las audiencias, por `status` + `audienceGroupId` + `createdAt`
 - `quizResults` por `points` desc + `elapsedMs` asc, y por `guestId` + `playedAt`
 - `giftsReceived` por `thanked` + `receivedAt`; `checklistItems` por `vendorId` + `dueDate`
 - `faqs`, `accommodations`, `weddingParty`, `timelineEvents` por `enabled` / `visibleToGuests` + `order`
@@ -606,11 +604,13 @@ Declarados en `firestore.indexes.json`. Los previsibles:
 ```
 weddings/{weddingId}/hero/...
 weddings/{weddingId}/gallery/{photoId}/original.jpg
-weddings/{weddingId}/gallery/{photoId}/thumb.webp
+weddings/{weddingId}/gallery/{photoId}/thumb.jpg
 weddings/{weddingId}/vendors/{vendorId}/{contrato}.pdf
 ```
 
-Cuotas por boda según plan: espacio total, tamaño máximo por fichero (10 MB por foto de invitado) y tipos MIME permitidos, aplicados en reglas de Storage y verificados en el trigger de subida.
+Los ficheros de la galería **no los escribe el navegador**: los escribe `uploadPhoto` con el SDK de administrador, y se sirven por URL con `firebaseStorageDownloadTokens`, no con `makePublic()`. Así el bucket no necesita lectura abierta y una foto borrada deja de servirse al borrar el fichero.
+
+Cuotas por boda según plan: espacio total, tamaño máximo por fichero (8 MB por foto de invitado, comprobado en `uploadPhoto` antes de convertir el base64 a bytes) y tipos MIME permitidos.
 
 ---
 
@@ -694,14 +694,15 @@ Solo como pegamento. Todas con App Check activado.
 | `addCompanion`                        | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                                              |
 | `setCompanionQuota`                   | callable (owner)                      | Poner el mismo cupo de acompañantes a una lista de invitados, en lotes. Omite acompañantes; bajar el cupo no borra a nadie                                                         |
 | `submitRsvp`                          | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                                       |
-| `listPhotos`                          | callable (guest)                      | Devolver solo las fotos que ese invitado puede ver según su grupo                                                                                                                  |
-| `uploadPhoto`                         | callable (guest)                      | Asignar `audienceGroupId` según el grupo del que sube, aplicar política de moderación                                                                                              |
-| `deletePhoto`                         | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera                                                                                                                                |
+| `listPhotos`                          | callable (guest)                      | Una página de 24 fotos, de la última a la primera, con el cursor en el `createdAt` de la última servida. Devuelve solo lo que ese invitado puede ver                               |
+| `uploadPhoto`                         | callable (guest verificado)           | Guarda grande y miniatura (las dos vienen ya reducidas del navegador) y escribe el documento. Asignará `audienceGroupId` cuando entren los grupos                                  |
+| `deletePhoto`                         | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera. Borra también los dos ficheros de Storage                                                                                     |
+| `clearGallery`                        | callable (owner)                      | Vaciar la galería entera. Solo la pareja, y pidiendo confirmación escrita en el panel                                                                                              |
 | `submitQuizResult`                    | callable (guest)                      | Corregir el cuestionario **en servidor** y guardar la puntuación                                                                                                                   |
 | `logOwnerAccess`                      | trigger / callable                    | Registrar en `auditLog` cada entrada de un novio al panel                                                                                                                          |
 | `syncPublicProjection`                | trigger Firestore                     | Mantener `public/site` al día                                                                                                                                                      |
 | `recomputeCounters`                   | trigger Firestore                     | Mantener `counters`                                                                                                                                                                |
-| `onPhotoUploaded`                     | trigger Storage                       | Miniatura, validación de MIME y tamaño                                                                                                                                             |
+| ~~`onPhotoUploaded`~~                 | —                                     | No existe: la miniatura la hace el **navegador** con un `canvas` y la manda en la misma llamada que la grande. Ver §8.5                                                            |
 | ~~`sanitizeRichContent`~~             | —                                     | No existe como función aparte: el saneado del HTML vive en `dominio/html.ts` y lo aplica `syncPublicProjection`, que ya reconstruye `content` con lista blanca. Ver §8.1           |
 | `exportGuests`                        | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                                      |
 | `archiveWeddings` / `scheduledBackup` | programadas                           | Ciclo de vida y copias                                                                                                                                                             |
@@ -818,6 +819,14 @@ Cómo está hecho (implementado el 2026-11-13):
   - **La fecha límite se pone en esa misma pantalla**, no en «Datos de la boda»: es donde se busca.
   - **En modo abierto (A) no hay formulario**: sin identidad no hay a quién apuntar la respuesta. Qué hacer ahí es D-09 y está sin decidir.
 
+- **La pareja asigna acompañantes** (D-46). Desde la tarjeta de un titular, «Añadir acompañante» abre el alta ya enlazada; en la ficha de cualquiera, «Viene con» lo cuelga de un titular o lo suelta. El acompañante hereda los grupos del titular. Sin cadenas: un acompañante no puede traer a nadie, y quien trae gente no puede pasar a ser acompañante. «Trae a N» y «Lo trae X» llevan a la familia entera.
+
+- **La pareja contesta por el invitado** (`setGuestRsvp`, D-45). Hay gente mayor que no entra en la web y gente que no contesta aunque se le insista: lo dicen por teléfono o por WhatsApp y lo tiene que poder apuntar quien organiza la boda. Desde cada invitado de la lista, botón «Respuesta»: tres botones —viene, no viene, sin contestar— con color, icono y texto, y debajo el resto de preguntas del formulario.
+  - **Solo el estado, solo el estado.** Si únicamente se cambia si viene o no, es lo único que se guarda: el resto de lo que el invitado hubiera contestado no se toca. Si se toca alguna pregunta, se mandan las respuestas y **se reemplazan**, como cuando contesta el invitado.
+  - **Se validan igual que las del invitado** —tipos, opciones, largos, visibilidad condicional—, con una diferencia: **no se exigen las obligatorias**, porque la pareja apunta lo que sabe («viene», y el menú ya se verá). Y **no hay plazo**: el plazo es para el invitado.
+  - **Deja el documento igual que `submitRsvp`**: `rsvpAnswers`, los campos mapeados y `rsvpStatus`, así que contadores, mesas y exportación al catering lo ven. «Sin contestar» devuelve el invitado a pendiente y vacía `rsvpAt`.
+  - Solo la pareja y solo de su boda (regla 1); queda en el log de auditoría sin nombre ni respuestas.
+
 ### 8.3 Invitados y acompañantes
 
 - Alta manual e **importación desde CSV/Excel** con previsualización, mapeo de columnas y detección de duplicados por teléfono.
@@ -873,11 +882,11 @@ Confirmado el enfoque de arrastrar y soltar, sin plano de finca.
 - Los topes **vienen puestos y la pareja los cambia**: una redonda nace con mínimo 8 y máximo 12; una rectangular, con mínimo 12 y máximo 50. Son el punto de partida de la mesa recién creada, no un límite del producto: la pareja puede subirlos o bajarlos mesa a mesa, porque quien conoce la finca y el catering es ella.
 - El mínimo y el máximo son para **avisar, no para impedir**: una mesa con trece en una redonda de doce se marca, y se deja. El día de la boda las sillas se añaden.
 - Disposición sobre un **lienzo genérico**: la pareja coloca y ordena las mesas libremente, pero el lienzo **no representa el salón de ninguna hacienda concreta**. Sin fondo de plano, sin paredes, sin escenario. Es un esquema de agrupación, no un plano de arquitectura.
-- **Arrastrar invitados** desde la lista de confirmados sin asignar hasta una mesa, y entre mesas.
-- Avisos, no bloqueos: mesa por debajo del mínimo, mesa por encima del máximo, invitado confirmado sin mesa, acompañante separado de su titular.
+- **Arrastrar invitados** (Angular CDK) desde la lista hasta una mesa y entre mesas. La lista enseña **a todos** con color y texto según su respuesta (confirmado, no viene, sin contestar). Al sentar a un titular se pregunta si sus acompañantes van a la misma mesa; si no, quedan visibles como pendientes. Se puede **quitar** a un invitado de su mesa (D-47).
+- Avisos, no bloqueos: mesa por debajo del mínimo y mesa por encima del máximo. (El aviso global de «mesas incompletas» se retiró en D-47.)
 - Coloreado por grupo para detectar de un vistazo mesas mal mezcladas.
 - Exportación del esquema a PDF y de la asignación a XLSX.
-- Fuera del alcance: plano real de la finca, sillas individuales, dimensiones a escala. Se valorará como extra más adelante.
+- **XLSX para el catering (hecho, F2.8d):** el botón «Exportar para el catering» de la pantalla de mesas monta en el navegador un fichero de tres hojas: **Resumen** (una fila por mesa con forma, mínimo, máximo, sentados, estado corta/pasada/vacía, **cuántos hay de cada menú** y cuántos con alergias, más una fila de totales), **Por mesa** (quién se sienta dónde, con menú, alergias y a quién acompaña) y **Sin mesa** (los confirmados sin sitio; solo sale si los hay, para que un reparto sin terminar no se mande como terminado). No lleva teléfonos, correos ni notas (§9.4). Solo se sientan los confirmados. La columna «Mesa» de las hojas de invitados lleva el **nombre de la mesa**, no su identificador de Firestore.- Fuera del alcance: plano real de la finca, sillas individuales, dimensiones a escala. Se valorará como extra más adelante.
 
 ### 8.5 Galería con audiencias por grupo
 
@@ -892,7 +901,7 @@ Es el módulo con la lógica de permisos más delicada del producto, y además e
 
 La visibilidad es **asimétrica y deliberada**: quien pertenece a un grupo restringido ve las fotos de su grupo **y** todas las públicas; quien no pertenece no ve nada de ese grupo. En el ejemplo de la boda: los del grupo "Universidad" ven todo, y la tía Consuelo ve todo menos lo que ha subido la peña de la universidad.
 
-**Implementación.** Cada foto guarda `audienceGroupId`. Al subir, el servidor lo calcula a partir del grupo restringido del que sube; el cliente no lo elige. Si el grupo tiene `allowPublicOptIn`, quien sube puede marcar una foto concreta como pública, pero nunca al revés desde el cliente.
+**Implementación.** Cada foto guarda `audienceGroupId`. Al subir, el servidor lo calcula a partir del grupo restringido del que sube; el cliente no lo elige. **Quien sube no decide nunca que una foto sea para todos**: el grupo no tiene opción de publicación pública y solo la pareja puede publicarla (D-47).
 
 **La visibilidad se resuelve siempre en `listPhotos`, en servidor.** La colección está cerrada en las reglas. El prototipo ya lo hace así con su flag `tsf`, y esa decisión se mantiene; lo que cambia es que el flag booleano de un único grupo se generaliza a N grupos configurables por la pareja.
 
@@ -903,8 +912,21 @@ Además:
 - **Moderación opcional** por interruptor: publicación inmediata o cola de aprobación. Es independiente de las audiencias: una cosa es _quién puede verla_ y otra _si está aprobada_.
 - La pareja lo ve absolutamente todo, de todos los grupos, y puede borrar cualquier foto.
 - Miniaturas en servidor, WebP con `srcset`, límite de tamaño por fichero y cuota por boda.
+- **Publicadas al subir (D-39, decidido):** la pareja modera a posteriori, borrando; no hay cola de aprobación por defecto.
+- **Tope de 500 fotos por boda (D-39, decidido)**, en `weddings/{id}.limits.maxPhotos`. Es un campo de sistema: lo escribe el servidor y las reglas impiden que lo toque la pareja (regla de oro 6). Sin el campo, 500. Cuando se alcanza, `uploadPhoto` responde `resource-exhausted` y el invitado ve «la galería está llena». El tope es blando: dos subidas simultáneas en la foto 499 pueden pasarse en una. Se pensó para cambiarse **desde el panel de superadmin** cuando éste tenga sus estadísticas (`F3.1d`).
 - Descarga masiva en ZIP para la pareja.
 - Botón de denuncia para cualquier invitado.
+
+**Lo que ya está hecho (F3.1).** La galería de invitados funciona de punta a punta, con las audiencias por grupo **fuera** a propósito: toda foto nace con `audienceGroupId: null`, que es «la ve todo el mundo». El día que entren los grupos, lo único que cambia es quién pone ese campo al subir y qué filtra `listPhotos`; ni el cliente ni el almacenamiento se tocan.
+
+- **Reduce el móvil, no el servidor.** El navegador pasa cada foto por un `canvas` y manda dos JPEG en la misma llamada: la grande a 1600 px de lado largo y la miniatura a 480, las dos al 82 %. Una foto de cámara de ocho megas viaja en menos de uno, la función no necesita ninguna librería de imagen y la rejilla carga miniaturas de verdad, no fotos grandes encogidas con CSS. De tres en tres, que es lo que aguanta una barra de cobertura en una finca.
+- **HEIC no entra.** El `canvas` de ningún navegador lo pinta. El `accept="image/*"` del selector deja que el móvil lo ofrezca —y iOS convierte a JPEG al seleccionar—, pero si llegara igual, se rechaza con un mensaje que dice qué pasa.
+- **Subir exige invitado verificado** (`exigirVerificado`, regla de oro 3). Mirar, no: en modo A cualquiera que tenga el enlace ve la galería.
+- **Borrar**: la suya cada invitado, cualquiera la pareja (`puedeBorrar`). Se borran también los dos ficheros de Storage, no solo el documento.
+- **Paginación por cursor** de 24 en 24 sobre `createdAt`, sin `offset`: una galería de dos mil fotos cuesta lo mismo que una de veinte.
+- **El visor** ocupa la pantalla, se cierra con `Escape` o con la equis, y pasa de foto con las flechas del teclado y con los dos botones de las esquinas, que en el móvil caen justo donde está el pulgar.
+- **En el panel**, `/panel/gallery`: la misma rejilla, con el nombre de quien subió cada foto debajo, borrado de cualquiera y vaciado de la galería entera escribiendo la palabra `VACIAR`. Es moderación **a posteriori**: se publica y se quita si hace falta.
+- Quedan para después: la cola de aprobación, la denuncia, la descarga en ZIP, `srcset` en WebP y las audiencias por grupo.
 
 ### 8.6 Mapa interactivo
 
@@ -913,6 +935,15 @@ Además:
 - La web pública muestra un **mapa con todos los marcadores visibles**, cada uno con su icono por tipo, y una ficha al pulsar con la descripción, la hora y los botones **"Abrir en Google Maps"** y **"Cómo llegar"**, que abren la app nativa de mapas del móvil.
 - Lista de ubicaciones bajo el mapa, ordenable, para quien prefiera leer.
 - Las ubicaciones se enlazan con los eventos del timeline (§8.10), de modo que la agenda del día sabe dónde ocurre cada cosa.
+
+**Lo que hay hecho (F2.3).** Colección `locations/{id}` con `type`, `name`, `address`, `coords: {lat, lng}`, `description`, `time` (**hora `HH:mm`**, o `null`), `order` y `visibleToGuests`. Lo decidido al construirlo:
+
+- **El invitado lee la proyección, no la colección.** `locations` es de lectura solo para la pareja (una regla no puede filtrar por `visibleToGuests` en una consulta de lista, y un sitio interno —dónde aparcan los proveedores— no debe estar al alcance de una consulta directa). El trigger `syncPublicLocations` publica en `public/site.content.ubicaciones` solo lo **visible, con nombre y con coordenadas de verdad**.
+- **`0, 0` no es un pin**: es el golfo de Guinea, a donde va a parar lo que no se geolocalizó. Una ficha sin pin se guarda con `coords: null`, no sale en el mapa y el panel lo dice con texto («Sin pin: no sale en el mapa») y con un aviso arriba.
+- **La lista es la red de seguridad.** Bajo el mapa, cada sitio con su tipo, hora, dirección y dos botones grandes —«Cómo llegar» y «Abrir en Google Maps»— que sacan la app de mapas. Si el mapa no carga (sin cobertura en la finca) la lista sigue entera.
+- **El color nunca va solo**: el marcador lleva el icono de su tipo y la ficha su nombre escrito.
+- **Selector de pin**: se busca la dirección (solo al pulsar «Buscar», por la política de Nominatim) y se elige un resultado, o se toca el mapa; el pin se arrastra para afinar. Máximo 30 sitios.
+- Elección técnica: Leaflet + OpenStreetMap (ver `D-04`).
 
 **Elección técnica.** Recomendación: **Leaflet o MapLibre con teselas de OpenStreetMap** para el mapa interactivo, y **enlaces profundos a Google Maps** para la navegación. Motivo: no requiere clave de API ni facturación, no hay coste por carga de mapa, y el invitado acaba igualmente en Google Maps cuando pulsa "Cómo llegar", que es lo que realmente pide el requisito. La alternativa —Maps JavaScript API— exige clave con facturación activada, se paga por carga y obliga a restringir por _referrer_; con subdominios wildcard la restricción tendría que ser `*.nupcialis.com/*`, que es tan amplia que protege poco. Si se decide usarla igualmente, la clave debe vivir en configuración de servidor y no en el bundle.
 
@@ -926,8 +957,8 @@ Se replica el juego del prototipo `wedding-quiz` y se convierte en módulo multi
 - **Tres niveles de dificultad** que valen 10, 20 y 30 puntos, representados con estrellas.
 - Cada partida toma **N preguntas al azar** del banco (10 por defecto, configurable).
 - Barra de progreso y avance pregunta a pregunta, sin volver atrás.
-- **Ranking** de las mejores puntuaciones (**20**, configurable), con **desempate por tiempo**: a igual puntuación, gana quien lo resolvió más rápido. El tiempo no se muestra al jugador.
-- Pantalla final con puntuación y posición en el ranking.
+- **Ranking** de las mejores puntuaciones (**20**, configurable), con **desempate por tiempo** (_provisional, pendiente de validar en D-47_): a igual puntuación, gana quien lo resolvió más rápido. El tiempo no se muestra al jugador.
+- Pantalla final con puntuación y, si ha entrado, posición en el ranking. **Nunca se enseña cuál era la respuesta correcta** (D-47).
 
 **Añadidos respecto al prototipo:**
 
@@ -936,17 +967,18 @@ Se replica el juego del prototipo `wedding-quiz` y se convierte en módulo multi
 - **Se juega las veces que se quiera** y el ranking se queda con la **mejor** partida de cada invitado (`D-11`).
 - **El ranking público enseña solo el nombre** —«Pepe García · 120 puntos»—, nunca los dígitos del móvil: en el modo B esos dígitos son la contraseña del invitado (§3.3), y publicarlos junto al nombre sería publicar la credencial entera. El teléfono lo ve **la pareja en su panel**, que es quien necesita saber quién es quién. A cada invitado se le destaca además **su mejor puntuación**, esté o no entre los veinte.
 - Configurable por la pareja: número de preguntas por partida, tamaño del ranking, si se permite repetir partida y si el ranking es visible para los invitados.
-- Pista opcional por pregunta.
+- Pista opcional por pregunta. **Pedirla cuesta la mitad de los puntos de esa pregunta** y la pantalla avisa antes. No hay «dejar en blanco».
+- **Estadística por pregunta** (`quizStats`): cuántas veces se contestó, se acertó y se pidió pista. Con 10 respuestas o más, ≥ 90 % de aciertos = «pregunta fácil» y ≤ 10 % = «pregunta difícil».
 
 **Gestión en el panel privado:**
 
 - Alta, edición, duplicado y borrado de preguntas, con la correcta y las tres falsas y el nivel de dificultad. **No se encienden ni se apagan**: una pregunta que no se quiere, se borra.
-- Importación de un banco de preguntas desde CSV y **banco de ejemplo sembrado al crear la boda**, para que la pareja tenga de dónde partir.
+- **El banco nace vacío** (D-46): ni importación CSV ni preguntas de ejemplo. El panel explica cómo funciona el juego y avisa de que una pregunta fácil para la familia no lo es para otros grupos de invitados.
 - Vista previa de la partida tal como la verá el invitado.
 - Consulta y **vaciado del ranking**, útil para dejarlo limpio antes del día de la boda.
 - **Partidas por invitado**: cada invitado acumula `quizPlayCount` y `quizBestPoints`. La pareja ve **el ranking con el teléfono** de cada jugador, que es lo que le permite distinguir a dos que se llamen igual. No se listan los invitados que no han jugado.
 - **Solo se guarda lo que está en el ranking.** Tras cada partida se podan los `quizResults` que se han quedado fuera de los veinte mejores (`D-11`). Guardar todas las partidas de todos los invitados llenaría la colección de datos que nadie va a mirar, y obligaría a tratar como dato personal una puntuación que a nadie le importa.
-- Estadísticas globales: partidas jugadas, jugadores únicos, preguntas más falladas y preguntas que nadie falla (candidatas a retirar por fáciles).
+- Estadísticas: partidas jugadas, jugadores únicos y, por pregunta, porcentaje de aciertos y etiqueta fácil/difícil. La lista de preguntas de demo en el superadmin está **apartada** (D-47).
 
 ### 8.8 Regalos: lista, aportación y regalos recibidos
 
@@ -977,8 +1009,26 @@ weddings/{weddingId}/giftsReceived/{id}
 - Vista de totales **por método de pago** y total general.
 - **Control de agradecimientos:** marca de agradecido con fecha, y filtro de "pendientes de agradecer". Es el trabajo real de la semana siguiente a la boda y nadie lo tiene resuelto.
 - **Cruce con la lista de invitados:** quién asistió y no tiene regalo registrado, y quién tiene regalo registrado sin haber asistido. Se presenta como información, nunca como reproche: sin totales por invitado a la vista ni rankings.
-- Exportación a XLSX.
+- **Sin exportación (D-40, decidido):** es el dato más sensible del producto y nada de él sale del panel en ningún fichero.
 - **Este panel no aparece jamás en la web pública ni en la proyección `public/site`.** Es el dato más sensible del producto: importes de dinero asociados a personas con nombre y apellidos.
+
+**Lo que ya está hecho (F3.3).** La aportación y la lista, de punta a punta. Lo recibido —el panel privado— queda para `F3.3b`.
+
+- **Ni el IBAN ni el Bizum viajan en la proyección pública**, y eso cambia lo que decía arriba. `public/site` lo lee cualquiera que sepa el slug: un número de cuenta con su titular ahí dentro es exactamente lo que necesita un tercero para levantar la misma web y pedir el dinero en su nombre. Los sirve `getGifts` a invitados identificados, y en la web solo hay un cartel que lleva a `/regalos`. La sección se llama `regalos` y funciona como la del quiz y la de la galería: es una puerta, no un contenido.
+- **El IBAN se comprueba con el módulo 97**, en el panel y mientras se escribe. Es el único dato del producto donde un dígito cambiado significa dinero rebotado o en la cuenta de otro, y el momento de decirlo es cuando la pareja todavía tiene el papel del banco delante. El Bizum se comprueba como móvil español y se guarda sin prefijo ni espacios.
+- **En el móvil, el IBAN y el Bizum son botones que copian.** El invitado abre esto con la aplicación del banco en la otra mano; seleccionar veinticuatro caracteres con el dedo sin pasarse no es un gesto que se le pueda pedir a nadie.
+- **La reserva es anónima de verdad.** `reservedBy` no sale nunca de la función: lo que viaja son dos booleanos, `reservado` y `esMio`. Por eso `gifts` está cerrada a la lectura del invitado —una regla puede negar una escritura, no esconder un campo— y por eso reservar es una **transacción**: dos invitados abriendo la lista a la vez es el caso normal, y lo que no puede pasar es que el segundo pise al primero.
+- Lo libre sale primero y lo cogido al final; lo propio sube con lo libre, que es donde el invitado va a buscarlo si quiere soltarlo. Soltar, solo lo suyo.
+- Quedan para después: **imagen propia** del regalo (hoy es una URL) y el enlace a `locationId`.
+
+**Lo que ya está hecho (F3.3b).** El cuaderno de lo recibido, en `/panel/gifts/recibidos`, enlazado desde la pantalla de regalos.
+
+- **Agradecer es un toque**, sin abrir ficha: es el gesto que se repite cincuenta veces la semana siguiente, y por eso el botón mide 44 px y va a la izquierda de cada fila. Marca `thanked` y `thankedAt` (el día en que se marca).
+- **El total suma solo lo que lleva importe.** Un regalo en especie no tiene precio y no se le inventa uno; sale aparte («Y 1 regalo que no es dinero») y en su fila el importe es «—», nunca «0 €».
+- **El cruce con la lista se presenta como repaso, no como reproche**: dos listas de nombres, sin importes ni totales por invitado. «Vinieron y no tenéis nada apuntado» (confirmados, sin contar acompañantes) y «Tenéis algo apuntado y no vinieron».
+- Se puede apuntar a un invitado de la lista (buscador) o escribir un nombre suelto; si el invitado vinculado se borra, la anotación conserva el texto.
+- Habla con Firestore directo y solo desde la sesión de la pareja (regla 7); la regla y su test de aislamiento ya existían.
+- **No hay exportación a XLSX**: lo decidió Gabriel (D-40). Lo recibido no sale del panel.
 
 ### 8.9 Preguntas frecuentes
 
@@ -1141,7 +1191,7 @@ Cómo está hecho (implementado el 2026-11-13):
 - **La boda acaba de madrugada.** Las horas anteriores a las 6:00 cuentan como del día siguiente: «04:00» va después de «23:30», no antes. Sin esto, la barra libre aparecería antes de la ceremonia y los avisos dirían cualquier cosa.
 - **Avisos de solapes y huecos** (§8.13) con los nombres de los hitos, y calculados **también sobre los internos**: un solape entre el montaje y la ceremonia es justo el error que hay que cazar. Un hueco es un rato de **dos horas o más**: hora y media entre el cóctel y el banquete es la vida normal de una boda. Son avisos, no errores: una boda tiene cosas que pasan a la vez.
 - Los **iconos son una lista cerrada** del set curado, presentes en los dos sprites, y los **colores salen de la paleta de categorías** del sistema visual: aquí no se inventa ninguno. El color nunca viaja solo —al lado van el icono, la hora y, si es interno, su etiqueta—.
-- Lo que **todavía no está**: el enlace con una ubicación del mapa (`locationId`), que espera al módulo de mapa (§8.6, bloqueado por `D-04`).
+- Lo que **todavía no está**: el selector del enlace con una ubicación del mapa (`locationId`); el mapa ya existe (§8.6), falta enseñarlo en esta pantalla (`F2.2b`).
 
 ### 8.14 Playlist colaborativa
 
@@ -1153,6 +1203,15 @@ Módulo completo e independiente, además de la pregunta del RSVP.
 - Vista para la pareja ordenada por votos, con marcado de aceptada, descartada y **lista de veto** para las canciones que no quieren oír bajo ningún concepto.
 - Exportación de la lista definitiva para el DJ, ordenada o agrupada por momento.
 - Moderación opcional, igual que la galería.
+
+**Lo que hay hecho (F3.4).** Colección `playlistSuggestions/{id}` con `title`, `artist`, `suggestedBy`, `source` (`guest`, `rsvp` o `couple`), `votes` (conjunto de `guestId`) y `status` (`pending`, `accepted`, `discarded`, `vetoed`). Lo decidido al construirlo está en `D-41`; lo esencial:
+
+- **La colección es solo de la pareja.** El invitado la lee con `listPlaylist`, que devuelve cada canción con su recuento y si la ha votado él, **sin ningún `guestId`**. Proponer (`suggestSong`) y votar (`voteSong`) son transacciones con sesión verificada.
+- **Duplicados**: el título y el artista se comparan sin tildes, mayúsculas, signos ni paréntesis; proponer algo que ya está suma el voto en vez de repetirlo. Un voto por invitado y canción por construcción (es un conjunto). Máximo 5 canciones nuevas por invitado y 300 en total.
+- **Vetada o descartada** sale de la vista del invitado y no se puede volver a proponer; el invitado solo ve «no está disponible».
+- **RSVP**: la respuesta a la pregunta `cancion` entra sola, con su voto, sin gastar el tope de propuestas y sin poder romper la confirmación.
+- **Panel** `/panel/playlist`: «Por decidir» primero, cada estado con su recuento, y la exportación XLSX para el DJ («Suena» por votos y «No poner»).
+- Sin moderación previa y sin agrupar por momento (`F3.4b`).
 
 ### 8.15 Libro de firmas
 
@@ -1205,7 +1264,10 @@ weddings/{weddingId}/checklistItems/{id}
 - Tareas con categoría, fecha límite, responsable y prioridad, **sembradas al crear la boda** con fechas relativas calculadas desde la fecha del enlace.
 - **Vinculación a proveedor y a partida de presupuesto**, de modo que "pagar la señal del catering" enlaza con las dos cosas.
 - Vista de próximas y vencidas en el resumen del panel, con **semáforo de color por urgencia** acompañado siempre de la fecha escrita.
-- Filtro por responsable, para repartir el trabajo entre los dos sin discutirlo dos veces.
+- Filtro por responsable, para repartir el trabajo entre los dos sin discutirlo dos veces, y por **estado, categoría y texto**.
+- Al completar una tarea se guardan **cuándo y quién** (`doneAt`, `doneByUid`, `doneByEmail`) y la pantalla los enseña.
+
+**Lo que hay hecho (F4.1):** la pantalla `/panel/checklist` y el aviso del inicio. El **estado no se guarda**: se calcula contra «hoy» a partir de `done` y `dueDate` (vencida si el día ya pasó, «esta semana» hasta siete días, próxima, sin fecha, hecha). El filtro por persona enseña **las suyas y las de los dos**. Quedan para después las vinculaciones a proveedor y partida (no hay aún pantalla de proveedores ni de presupuesto) y recalcular las fechas de la plantilla si cambia la boda.
 
 ### 8.18 Panel de superadmin
 
@@ -1215,6 +1277,9 @@ weddings/{weddingId}/checklistItems/{id}
 - Acceso de soporte al panel de una boda, siempre registrado.
 - **Registro de accesos de los novios**: qué cuenta entró, cuándo, desde qué IP y con qué agente, con vista por boda y vista global. Sirve para soporte y para detectar cuentas compartidas o abandonadas.
 - Métricas agregadas: bodas activas, altas del mes, almacenamiento consumido, partidas de quiz, accesos de invitados.
+- **Estadísticas y límites por boda** (`/superadmin/estadisticas`): los totales de arriba y una fila por boda con fotos frente a su tope, invitados, partidas de quiz y accesos. El superadmin fija el **tope de fotos** de una boda (entero de 1 a 5000, o «por defecto»), que se escribe por `setWeddingLimits` —nunca desde el navegador: `limits` es campo de sistema— y queda en el registro de auditoría con el valor anterior y el nuevo. El almacenamiento es una **estimación** (fotos × 0,3 MB). Se miden como mucho 200 bodas por consulta, y los conteos son por agregación (`count()`) para que mirar esto cueste céntimos.
+
+**Lo que hay hecho (F3.1d):** estadísticas y tope de fotos. Otros límites por boda (invitados, mesas) no existen todavía.
 
 ---
 

@@ -12,7 +12,11 @@
 import { inject } from '@angular/core';
 import { collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 
-import { completa, type PreguntaDelPanel } from '../../features/public-site/quiz/quiz';
+import {
+  completa,
+  type EstadisticaDePregunta,
+  type PreguntaDelPanel,
+} from '../../features/public-site/quiz/quiz';
 import {
   type DatosPregunta,
   type FalloQuizPanel,
@@ -29,13 +33,31 @@ export function crearPuertaPreguntasQuizFirestore(): PuertaPreguntasQuiz {
   return {
     async listar(weddingId: string): Promise<ResultadoPreguntas> {
       try {
-        const snap = await getDocs(ruta(weddingId));
+        const [snap, stats] = await Promise.all([
+          getDocs(ruta(weddingId)),
+          // La estadística es un extra: si falla, las preguntas salen igual.
+          getDocs(collection(db, 'weddings', weddingId, 'quizStats')).catch(() => null),
+        ]);
 
         // `completa` devuelve `null` para las que están a medio escribir, y
         // aquí **sí** se quieren: la pantalla de la pareja es el único sitio
         // donde se ven, y es donde se arreglan.
         const preguntas = snap.docs.map((d) => aPregunta(d.id, d.data()));
-        return { ok: true, preguntas: preguntas.sort((a, b) => a.order - b.order) };
+        const estadisticas: Record<string, EstadisticaDePregunta> = {};
+        for (const d of stats?.docs ?? []) {
+          const e = d.data();
+          estadisticas[d.id] = {
+            asked: numero(e['asked']),
+            correct: numero(e['correct']),
+            hints: numero(e['hints']),
+          };
+        }
+
+        return {
+          ok: true,
+          preguntas: preguntas.sort((a, b) => a.order - b.order),
+          estadisticas,
+        };
       } catch (error) {
         return { ok: false, fallo: traducir(error) };
       }
@@ -99,6 +121,10 @@ function aPregunta(id: string, datos: Record<string, unknown>): PreguntaDelPanel
     enabled: datos['enabled'] !== false,
     order: typeof datos['order'] === 'number' ? datos['order'] : 0,
   };
+}
+
+function numero(valor: unknown): number {
+  return typeof valor === 'number' && Number.isFinite(valor) ? Math.max(0, valor) : 0;
 }
 
 export function traducir(error: unknown): FalloQuizPanel {

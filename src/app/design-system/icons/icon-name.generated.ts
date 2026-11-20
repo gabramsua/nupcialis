@@ -32,6 +32,7 @@ export type NpIconName =
   | 'check-circle'
   | 'chef-hat'
   | 'church'
+  | 'circle-dashed'
   | 'clock'
   | 'clock-countdown'
   | 'confetti'
@@ -43,6 +44,7 @@ export type NpIconName =
   | 'device-mobile'
   | 'diamond'
   | 'disco-ball'
+  | 'door-open'
   | 'dots-six-vertical'
   | 'dots-three'
   | 'download-simple'
@@ -53,6 +55,7 @@ export type NpIconName =
   | 'file-text'
   | 'first-aid'
   | 'fish'
+  | 'flag-checkered'
   | 'flower'
   | 'fork-knife'
   | 'funnel'
@@ -60,8 +63,10 @@ export type NpIconName =
   | 'gear'
   | 'gift'
   | 'grains'
+  | 'guitar'
   | 'hand-coins'
   | 'hand-heart'
+  | 'hands-clapping'
   | 'heart'
   | 'images'
   | 'info'
@@ -72,6 +77,8 @@ export type NpIconName =
   | 'lock-simple'
   | 'magnifying-glass'
   | 'map-pin'
+  | 'martini'
+  | 'microphone-stage'
   | 'money'
   | 'moon-stars'
   | 'music-notes'
@@ -79,6 +86,7 @@ export type NpIconName =
   | 'note-pencil'
   | 'palette'
   | 'pencil-simple'
+  | 'person-simple-walk'
   | 'plant'
   | 'playlist'
   | 'plus'
@@ -87,9 +95,11 @@ export type NpIconName =
   | 'seat'
   | 'share-network'
   | 'sliders-horizontal'
+  | 'sparkle'
   | 'spinner-gap'
   | 'star'
   | 'steering-wheel'
+  | 'suitcase'
   | 'sun'
   | 't-shirt'
   | 'table'
@@ -103,6 +113,7 @@ export type NpIconName =
   | 'user-circle'
   | 'user-plus'
   | 'users'
+  | 'users-three'
   | 'video-camera'
   | 'warning'
   | 'whatsapp-logo'
@@ -130,6 +141,16 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'moon-stars': "Recena",
   'sun': "Exterior",
   'tent': "Carpa",
+  'martini': "Cóctel",
+  'microphone-stage': "Discursos",
+  'users-three': "Llegada de invitados",
+  'hands-clapping': "Aplausos",
+  'door-open': "Entrada",
+  'sparkle': "Primer baile",
+  'person-simple-walk': "Llegada",
+  'flag-checkered': "Final",
+  'guitar': "Música en directo",
+  'suitcase': "Viaje de novios",
   'bus': "Autobús",
   'car': "Coche",
   'taxi': "Taxi",
@@ -165,6 +186,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'check-circle': "Confirmado",
   'x-circle': "No asiste",
   'clock-countdown': "Pendiente",
+  'circle-dashed': "Sin hacer",
   'warning': "Atención",
   'info': "Información",
   'prohibit': "Bloqueado",

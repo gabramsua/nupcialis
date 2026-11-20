@@ -27,6 +27,7 @@ import {
 } from '../../public-site/dress-code/dress-code';
 import { BodaStore } from '../boda.store';
 import { NpEditorRico } from '../web/editor-rico';
+import { NpInput } from '../../../design-system/components/field/input';
 
 type Lista = 'sugeridos' | 'evitar';
 
@@ -49,7 +50,7 @@ type Lista = 'sugeridos' | 'evitar';
  */
 @Component({
   selector: 'np-panel-dress-code',
-  imports: [TranslocoDirective, NpAlert, NpButton, NpIcon, NpEditorRico],
+  imports: [TranslocoDirective, NpAlert, NpButton, NpIcon, NpEditorRico, NpInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -180,6 +181,7 @@ type Lista = 'sugeridos' | 'evitar';
             @for (aviso of tips(); track $index) {
               <li>
                 <input
+                  npInput
                   type="text"
                   [value]="aviso"
                   [attr.maxlength]="maximoAviso"

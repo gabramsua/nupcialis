@@ -9,6 +9,7 @@
 import { MENSAJE_POR_DEFECTO } from './invitados/invitacion';
 import { SECCIONES_INICIALES } from '../public-site/secciones/secciones';
 import { DRESS_CODE_VACIO } from '../public-site/dress-code/dress-code';
+import { sanearAportacion } from '../public-site/regalos/regalos';
 import type { BodaDelPanel } from './boda';
 
 export const BODA_DE_PRUEBA: BodaDelPanel = {
@@ -32,6 +33,7 @@ export const BODA_DE_PRUEBA: BodaDelPanel = {
   secciones: SECCIONES_INICIALES,
   modulos: { publicSite: { enabled: true, visibility: 'visible' } },
   dressCode: DRESS_CODE_VACIO,
+  aportacion: sanearAportacion({}),
 };
 
 /**

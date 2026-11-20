@@ -8,6 +8,9 @@ import { SesionInvitado } from '../../core/firebase/sesion-invitado';
 import { PUERTA_RSVP } from '../../core/rsvp/rsvp-gateway';
 import { crearPuertaRsvpFirebase } from '../../core/firebase/rsvp-gateway.firebase';
 import { provideQuiz } from '../../core/quiz/quiz.providers';
+import { provideGaleria } from '../../core/galeria/galeria.providers';
+import { provideRegalos } from '../../core/regalos/regalos.providers';
+import { providePlaylist } from '../../core/playlist/playlist.providers';
 
 /**
  * La web pública solo necesita Firestore, para resolver el tenant y leer la
@@ -70,5 +73,60 @@ export const publicSiteRoutes: Routes = [
     ],
     resolve: { tenant: tenantResolver },
     loadComponent: () => import('./quiz/quiz-publico').then((m) => m.NpQuizPublico),
+  },
+  {
+    // La galería, con URL propia: es la página a la que se vuelve al día
+    // siguiente de la boda, y la que se pasa por el grupo de WhatsApp.
+    path: 'galeria',
+    providers: [
+      provideIconSprite('public'),
+      provideFirestore(),
+      provideFirebaseFunctions(),
+      provideAppCheck(),
+      SesionInvitado,
+      provideGaleria(),
+    ],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./galeria/galeria-publica').then((m) => m.NpGaleriaPublica),
+  },
+  {
+    // Los regalos, con URL propia y por el mismo motivo que la galería: no se
+    // pintan dentro de la web. Y por uno más, que es el que manda: el número
+    // de cuenta de la pareja no puede viajar en la proyección pública.
+    path: 'regalos',
+    providers: [
+      provideIconSprite('public'),
+      provideFirestore(),
+      provideFirebaseFunctions(),
+      provideAppCheck(),
+      SesionInvitado,
+      provideRegalos(),
+    ],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./regalos/regalos-publica').then((m) => m.NpRegalosPublica),
+  },
+  {
+    // La playlist, con URL propia: quién ha votado qué no es público, así que
+    // la lista llega por invocable y solo a quien está identificado.
+    path: 'playlist',
+    providers: [
+      provideIconSprite('public'),
+      provideFirestore(),
+      provideFirebaseFunctions(),
+      provideAppCheck(),
+      SesionInvitado,
+      providePlaylist(),
+    ],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./playlist/playlist-publica').then((m) => m.NpPlaylistPublica),
+  },
+  {
+    // El mapa, con URL propia por lo que pesa Leaflet: se descarga solo aquí.
+    // Sin Functions ni sesión de invitado: lo que enseña viene en la
+    // proyección pública, que ya está leída.
+    path: 'mapa',
+    providers: [provideIconSprite('public'), provideFirestore(), provideAppCheck()],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./mapa/mapa-publica').then((m) => m.NpMapaPublica),
   },
 ];

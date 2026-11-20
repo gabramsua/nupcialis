@@ -4,8 +4,12 @@ import {
   accionesDe,
   claveDeNombre,
   conIncidencias,
+  filtrarBodas,
+  hayFiltros,
   ordenPorDefecto,
+  SIN_FILTROS,
   type BodaEnListado,
+  type FiltrosDeBodas,
 } from './bodas';
 
 function boda(parcial: Partial<BodaEnListado>): BodaEnListado {
@@ -119,5 +123,61 @@ describe('accionesDe', () => {
         expect(accion.icono).toBeTruthy();
       }
     }
+  });
+});
+
+describe('filtrarBodas', () => {
+  const hoy = new Date(2027, 2, 10, 12);
+  const boda = (parcial: Partial<BodaEnListado> & { weddingId: string }): BodaEnListado => ({
+    slug: parcial.weddingId,
+    status: 'active',
+    plan: 'basic',
+    pareja: { partnerA: 'Ana', partnerB: 'Juan' },
+    weddingDate: new Date('2027-06-12T00:00:00Z'),
+    invitados: 0,
+    confirmados: 0,
+    authDomain: 'ok',
+    ...parcial,
+  });
+
+  const lista = [
+    boda({
+      weddingId: 'a',
+      pareja: { partnerA: 'María', partnerB: 'Gabriel' },
+      slug: 'mariaygabriel',
+    }),
+    boda({ weddingId: 'b', status: 'draft', weddingDate: new Date('2027-03-10T00:00:00Z') }),
+    boda({ weddingId: 'c', status: 'archived', weddingDate: new Date('2026-05-01T00:00:00Z') }),
+    boda({ weddingId: 'd', weddingDate: null }),
+  ];
+  const ids = (f: Partial<FiltrosDeBodas>) =>
+    filtrarBodas(lista, { ...SIN_FILTROS, ...f }, hoy).map((b) => b.weddingId);
+
+  it('sin filtros devuelve todas', () => {
+    expect(ids({})).toEqual(['a', 'b', 'c', 'd']);
+    expect(hayFiltros(SIN_FILTROS)).toBe(false);
+  });
+
+  it('por estado', () => {
+    expect(ids({ estado: 'draft' })).toEqual(['b']);
+    expect(ids({ estado: 'archived' })).toEqual(['c']);
+  });
+
+  it('por texto, sin tildes ni mayúsculas y en los dos nombres y el slug', () => {
+    expect(ids({ texto: 'maria' })).toEqual(['a']);
+    expect(ids({ texto: 'GABRIEL maría' })).toEqual(['a']);
+    expect(ids({ texto: 'mariaygab' })).toEqual(['a']);
+    expect(ids({ texto: 'zzz' })).toEqual([]);
+  });
+
+  it('próximas incluye la de hoy; pasadas, las anteriores; y las sin fecha aparte', () => {
+    expect(ids({ momento: 'proximas' })).toEqual(['a', 'b']);
+    expect(ids({ momento: 'pasadas' })).toEqual(['c']);
+    expect(ids({ momento: 'sin-fecha' })).toEqual(['d']);
+  });
+
+  it('los filtros se combinan', () => {
+    expect(ids({ estado: 'active', momento: 'proximas' })).toEqual(['a']);
+    expect(hayFiltros({ ...SIN_FILTROS, texto: ' x ' })).toBe(true);
   });
 });

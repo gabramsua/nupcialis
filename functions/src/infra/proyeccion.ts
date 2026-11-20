@@ -31,10 +31,11 @@ export async function reconstruirProyeccion(weddingId: string): Promise<void> {
   const datos = boda.data() as BodaParaProyectar | undefined;
   if (!datos) return;
 
-  const [faqs, cronologia, alojamientos] = await Promise.all([
+  const [faqs, cronologia, alojamientos, ubicaciones] = await Promise.all([
     base.collection(`weddings/${weddingId}/faqs`).get(),
     base.collection(`weddings/${weddingId}/timelineEvents`).get(),
     base.collection(`weddings/${weddingId}/accommodations`).get(),
+    base.collection(`weddings/${weddingId}/locations`).get(),
   ]);
 
   const nueva = proyeccionPublica(
@@ -42,6 +43,7 @@ export async function reconstruirProyeccion(weddingId: string): Promise<void> {
     faqs.docs.map((d) => ({ id: d.id, ...d.data() })),
     cronologia.docs.map((d) => ({ id: d.id, ...d.data() })),
     alojamientos.docs.map((d) => ({ id: d.id, ...d.data() })),
+    ubicaciones.docs.map((d) => ({ id: d.id, ...d.data() })),
   );
   const actual = (await sitio.get()).data();
 

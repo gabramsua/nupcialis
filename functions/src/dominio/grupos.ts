@@ -17,7 +17,7 @@
  * cliente. Por eso los grupos se escriben por función y no desde el navegador.
  */
 
-import { normalizarNombre, type Lado, LADOS } from './invitados';
+import { normalizarNombre } from './invitados';
 
 /**
  * Los colores que se pueden elegir. **Copia de la paleta categórica** del
@@ -53,18 +53,14 @@ export const MAX_NOMBRE_GRUPO = 60;
 export interface EntradaGrupo {
   readonly id?: unknown;
   readonly name?: unknown;
-  readonly side?: unknown;
   readonly photoAudience?: unknown;
-  readonly allowPublicOptIn?: unknown;
   readonly color?: unknown;
 }
 
 export interface GrupoValidado {
   readonly name: string;
   readonly normalizedName: string;
-  readonly side: Lado;
   readonly photoAudience: Audiencia;
-  readonly allowPublicOptIn: boolean;
   readonly color: ColorGrupo;
 }
 
@@ -173,12 +169,7 @@ export function validarGrupo(
     datos: {
       name,
       normalizedName,
-      side: LADOS.includes(entrada.side as Lado) ? (entrada.side as Lado) : 'both',
       photoAudience,
-      // Solo tiene sentido en un grupo restringido: en uno público todo lo que
-      // se sube ya lo ve todo el mundo. Se guarda `false` para no dejar un
-      // `true` dormido que despierte el día que el grupo pase a restringido.
-      allowPublicOptIn: photoAudience === 'restricted' && entrada.allowPublicOptIn === true,
       color: colorValido ? (colorPedido as ColorGrupo) : colorLibre(otros.map((g) => g.color)),
     },
   };

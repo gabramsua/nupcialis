@@ -28,6 +28,7 @@ import { AlojamientosStore } from '../alojamientos/alojamientos.store';
 import { sanearFaqs } from '../../public-site/faqs/faqs';
 import { sanearCronologia } from '../../public-site/cronologia/cronologia';
 import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * Editor de la web pública: secciones a un lado, la web de verdad al otro.
@@ -47,7 +48,15 @@ import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos'
  */
 @Component({
   selector: 'np-editor-secciones',
-  imports: [NgComponentOutlet, TranslocoDirective, NpAlert, NpButton, NpIcon, NpEditorRico],
+  imports: [
+    NgComponentOutlet,
+    TranslocoDirective,
+    NpAlert,
+    NpButton,
+    NpIcon,
+    NpEditorRico,
+    NpInput,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -205,6 +214,7 @@ import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos'
                         <p class="es__cargandoEditor">{{ t('panel.secciones.cargandoEditor') }}</p>
                       } @error {
                         <textarea
+                          npInput
                           rows="6"
                           [id]="idCampo(seccion, campo.nombre)"
                           [attr.maxlength]="campo.maximo"
@@ -214,6 +224,7 @@ import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos'
                       }
                     } @else if (campo.control === 'parrafo') {
                       <textarea
+                        npInput
                         rows="4"
                         [id]="idCampo(seccion, campo.nombre)"
                         [attr.maxlength]="campo.maximo"
@@ -222,6 +233,7 @@ import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos'
                       ></textarea>
                     } @else {
                       <input
+                        npInput
                         [id]="idCampo(seccion, campo.nombre)"
                         [type]="campo.control === 'hora' ? 'time' : 'text'"
                         [attr.maxlength]="campo.maximo"
@@ -402,16 +414,6 @@ import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos'
     }
     .es__campo label {
       color: var(--np-surface-text-muted);
-    }
-    .es__campo input,
-    .es__campo textarea {
-      min-block-size: var(--np-tap-target);
-      padding: var(--np-space-2) var(--np-space-3);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-md);
-      background: var(--np-surface-canvas);
-      color: inherit;
-      font: inherit;
     }
     .es__campo textarea {
       resize: vertical;

@@ -1,13 +1,27 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpIcon } from '../../../design-system/icons/icon';
 import { PUERTA_INVITADOS, type Invitado } from '../../../core/invitados/invitados-gateway';
-import { fechaLarga } from '../../../shared/fecha';
+import { PUERTA_TAREAS } from '../../../core/checklist/tareas-gateway';
+import { fechaLarga, fechaMedia } from '../../../shared/fecha';
 import { BodaStore } from '../boda.store';
 import { ICONO_MODULO, rutaDeModulo, type Modulo } from '../boda';
+import {
+  plazoDeTarea,
+  resumirTareas,
+  tareasUrgentes,
+  type TareaDelPanel,
+} from '../checklist/tareas';
 import { cifras, diasParaLaBoda, pendientes } from './pendientes';
 
 /**
@@ -25,6 +39,9 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
  * Primero móvil: una columna, las cifras grandes y lo pendiente en una lista
  * que se lee de un vistazo.
  */
+/** Cuántas tareas urgentes se enseñan en el inicio; el resto, en su pantalla. */
+const MAX_URGENTES = 3;
+
 @Component({
   selector: 'np-panel-resumen',
   imports: [RouterLink, TranslocoDirective, NpButton, NpIcon],
@@ -72,9 +89,9 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
         </dl>
 
         <!--
-          Lo que falta. No es una lista que la pareja mantenga —eso es el
-          módulo de checklist, que va en F4—: es lo que este panel puede ver
-          que está a medias, y se vacía sola según lo van haciendo.
+          Lo que falta. No es una lista que la pareja mantenga —eso son las
+          tareas, justo debajo—: es lo que este panel puede ver que está a
+          medias, y se vacía sola según lo van haciendo.
         -->
         <section class="re__pendientes">
           <h3>{{ t('panel.inicio.queFalta') }}</h3>
@@ -99,6 +116,48 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
             </ul>
           }
         </section>
+
+        <!--
+          Las tareas que queman: vencidas y de esta semana. Solo sale si el
+          módulo está encendido y hay tareas; lo demás está en su pantalla.
+        -->
+        @if (hayTareas()) {
+          <section class="re__tareas">
+            <h3>
+              {{ t('panel.inicio.tareas.titulo') }}
+              <a routerLink="/panel/checklist">{{ t('panel.inicio.tareas.verTodas') }}</a>
+            </h3>
+            @if (urgentes().length === 0) {
+              <p class="re__alDia">
+                <np-icon name="check-circle" weight="fill" />
+                {{
+                  t('panel.inicio.tareas.alDia', {
+                    hechas: resumenTareas().hechas,
+                    total: resumenTareas().total,
+                  })
+                }}
+              </p>
+            } @else {
+              <ul>
+                @for (tarea of urgentes(); track tarea.id) {
+                  <li [attr.data-vencida]="vencida(tarea)">
+                    <a routerLink="/panel/checklist">
+                      <np-icon [name]="vencida(tarea) ? 'warning' : 'clock-countdown'" />
+                      <span>
+                        {{ tarea.title }}
+                        <small>{{ plazo(tarea, t) }}</small>
+                      </span>
+                      <np-icon name="caret-right" />
+                    </a>
+                  </li>
+                }
+              </ul>
+              @if (masUrgentes() > 0) {
+                <p class="re__mas">{{ t('panel.inicio.tareas.mas', { n: masUrgentes() }) }}</p>
+              }
+            }
+          </section>
+        }
 
         <section class="re__atajos">
           <h3>{{ t('panel.inicio.atajos') }}</h3>
@@ -189,12 +248,14 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
       font-size: var(--np-text-lg);
       font-weight: var(--np-weight-regular);
     }
+    .re__tareas h3,
     .re__pendientes h3,
     .re__atajos h3 {
       margin: 0 0 var(--np-space-2);
       font-size: var(--np-text-base);
       font-weight: var(--np-weight-medium);
     }
+    .re__tareas ul,
     .re__pendientes ul {
       display: flex;
       flex-direction: column;
@@ -203,6 +264,7 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
       padding: 0;
       list-style: none;
     }
+    .re__tareas a,
     .re__pendientes a {
       display: flex;
       align-items: center;
@@ -216,6 +278,7 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
       font-size: var(--np-text-sm);
       text-decoration: none;
     }
+    .re__tareas a span,
     .re__pendientes a span {
       flex: 1;
     }
@@ -248,14 +311,74 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
     .re__enCamino small {
       opacity: 0.8;
     }
+    .re__tareas h3 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--np-space-3);
+    }
+    .re__tareas h3 a {
+      display: inline;
+      min-block-size: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      font-size: var(--np-text-sm);
+      font-weight: var(--np-weight-regular);
+    }
+    .re__tareas li small {
+      display: block;
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
+    }
+    .re__tareas li[data-vencida='true'] a {
+      border-inline-start: 4px solid var(--np-declined-border);
+    }
+    .re__tareas li[data-vencida='false'] a {
+      border-inline-start: 4px solid var(--np-pending-border);
+    }
+    .re__mas {
+      margin: var(--np-space-2) 0 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
+    }
   `,
 })
 export class PanelResumen {
   protected readonly store = inject(BodaStore);
   private readonly puerta = inject(PUERTA_INVITADOS);
+  /** Opcional: el inicio no depende de las tareas para pintarse. */
+  private readonly puertaTareas = inject(PUERTA_TAREAS, { optional: true });
+  private readonly ahora = new Date();
+  private tareasPedidas = false;
 
   private readonly invitados = signal<readonly Invitado[]>([]);
   protected readonly cargando = signal(true);
+
+  private readonly tareas = signal<readonly TareaDelPanel[]>([]);
+  protected readonly resumenTareas = computed(() => resumirTareas(this.tareas(), this.ahora));
+  protected readonly hayTareas = computed(
+    () => this.store.boda()?.modulos.checklist?.enabled === true && this.tareas().length > 0,
+  );
+  private readonly todasLasUrgentes = computed(() =>
+    tareasUrgentes(this.tareas(), this.ahora, 999),
+  );
+  protected readonly urgentes = computed(() => this.todasLasUrgentes().slice(0, MAX_URGENTES));
+  protected readonly masUrgentes = computed(
+    () => this.todasLasUrgentes().length - this.urgentes().length,
+  );
+
+  protected vencida(tarea: TareaDelPanel): boolean {
+    return plazoDeTarea(tarea, this.ahora).clave === 'vencio';
+  }
+
+  protected plazo(
+    tarea: TareaDelPanel,
+    t: (clave: string, params?: Record<string, unknown>) => string,
+  ): string {
+    const p = plazoDeTarea(tarea, this.ahora);
+    return t('panel.checklist.' + p.clave, { fecha: fechaMedia(p.fecha, 'es'), n: p.n });
+  }
 
   protected readonly cuenta = computed(() => cifras(this.invitados()));
   protected readonly loQueFalta = computed(() => pendientes(this.store.boda(), this.invitados()));
@@ -295,6 +418,22 @@ export class PanelResumen {
 
   constructor() {
     void this.cargar();
+
+    // Las tareas se piden cuando la boda ya está cargada y solo si el módulo
+    // está encendido: sin él no hay nada que enseñar ni permiso que gastar.
+    effect(() => {
+      const boda = this.store.boda();
+      if (!boda || this.tareasPedidas || !this.puertaTareas) return;
+      if (boda.modulos.checklist?.enabled !== true) return;
+      this.tareasPedidas = true;
+      void this.cargarTareas(boda.weddingId);
+    });
+  }
+
+  /** Si falla, el aviso simplemente no sale: el error de verdad está en su pantalla. */
+  private async cargarTareas(weddingId: string): Promise<void> {
+    const resultado = await this.puertaTareas?.listar(weddingId);
+    if (resultado?.ok) this.tareas.set(resultado.tareas);
   }
 
   /**

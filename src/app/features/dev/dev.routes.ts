@@ -1,7 +1,14 @@
+import { provideEstadisticasDeMuestra } from './previa-estadisticas';
 import { Routes } from '@angular/router';
 
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
-import { provideDoblesDelPanel, provideQuizDeMuestra } from './dobles-panel';
+import {
+  provideDoblesDelPanel,
+  provideGaleriaDeMuestra,
+  providePlaylistDeMuestra,
+  provideQuizDeMuestra,
+  provideRegalosDeMuestra,
+} from './dobles-panel';
 
 /**
  * Las páginas de desarrollo, detrás de un solo import diferido.
@@ -32,6 +39,42 @@ export const devRoutes: Routes = [
     path: 'quiz',
     providers: [provideIconSprite('public'), provideQuizDeMuestra()],
     loadComponent: () => import('../public-site/quiz/quiz-publico').then((m) => m.NpQuizPublico),
+  },
+  {
+    // La galería del invitado con fotos de muestra, sin Firebase ni Storage.
+    path: 'galeria',
+    providers: [provideIconSprite('public'), provideGaleriaDeMuestra()],
+    loadComponent: () =>
+      import('../public-site/galeria/galeria-publica').then((m) => m.NpGaleriaPublica),
+  },
+  {
+    // La playlist del invitado, en memoria y con el dominio del servidor.
+    path: 'playlist',
+    providers: [provideIconSprite('public'), providePlaylistDeMuestra()],
+    loadComponent: () =>
+      import('../public-site/playlist/playlist-publica').then((m) => m.NpPlaylistPublica),
+  },
+  {
+    // Las estadísticas del superadmin con cuatro bodas de muestra.
+    path: 'estadisticas',
+    providers: [provideIconSprite('panel'), provideEstadisticasDeMuestra()],
+    loadComponent: () =>
+      import('../superadmin/estadisticas/estadisticas-pantalla').then(
+        (m) => m.PantallaEstadisticas,
+      ),
+  },
+  {
+    // El mapa del invitado con tres sitios de muestra.
+    path: 'mapa',
+    providers: [provideIconSprite('public')],
+    loadComponent: () => import('./previa-mapa').then((m) => m.PreviaMapa),
+  },
+  {
+    // Los regalos del invitado, con una lista de muestra. Reservar funciona.
+    path: 'regalos',
+    providers: [provideIconSprite('public'), provideRegalosDeMuestra()],
+    loadComponent: () =>
+      import('../public-site/regalos/regalos-publica').then((m) => m.NpRegalosPublica),
   },
   {
     // Las pantallas de contenido del panel, con datos de muestra en memoria.

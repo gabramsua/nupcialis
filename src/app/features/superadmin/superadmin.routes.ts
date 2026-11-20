@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { provideAlta } from '../../core/alta/alta.providers';
+import { provideEstadisticas } from '../../core/superadmin/estadisticas.providers';
 import { provideAuth } from '../../core/auth/auth.providers';
 import { guardaSuperadmin } from '../../core/auth/guards';
 import { provideFirebaseAuth } from '../../core/firebase/auth.providers';
@@ -19,15 +20,23 @@ export const superadminRoutes: Routes = [
       provideFirebaseAuth(),
       provideAuth(),
       provideAlta(),
+      provideEstadisticas(),
     ],
     children: [
       {
         path: 'acceso',
+        data: { destino: '/superadmin' },
         loadComponent: () => import('../panel/login/login').then((m) => m.Login),
       },
       {
         path: 'sin-permiso',
         loadComponent: () => import('./acceso/sin-permiso').then((m) => m.SuperadminSinPermiso),
+      },
+      {
+        path: 'estadisticas',
+        canActivate: [guardaSuperadmin],
+        loadComponent: () =>
+          import('./estadisticas/estadisticas-pantalla').then((m) => m.PantallaEstadisticas),
       },
       {
         path: '',

@@ -10,7 +10,7 @@ import {
   type ResultadoEscrituraMesa,
 } from '../../../core/mesas/mesas-gateway';
 import { PUERTA_INVITADOS, type Invitado } from '../../../core/invitados/invitados-gateway';
-import { avisosDeMesas, resumenDeMesas, sentadosEn, sinMesa, type InvitadoSentado } from './mesas';
+import { avisosDeMesas, resumenDeMesas, type InvitadoSentado } from './mesas';
 
 type Estado = 'cargando' | 'lista' | 'error';
 
@@ -35,6 +35,8 @@ export class MesasStore {
   private readonly _fallo = signal<FalloMesas | null>(null);
 
   readonly mesas = this._mesas.asReadonly();
+  /** La lista entera, para lo que necesita más que el reparto (la exportación). */
+  readonly invitados = this._invitados.asReadonly();
   readonly estado = this._estado.asReadonly();
   readonly fallo = this._fallo.asReadonly();
 
@@ -43,12 +45,32 @@ export class MesasStore {
     this._invitados().map(paraSentar),
   );
 
-  readonly porSentar = computed(() => sinMesa(this.comoSentados()));
+  /**
+   * **Todos** los invitados sin mesa, vengan o no: la pareja quiere ver la
+   * lista entera y distinguir por color quién ha confirmado (D-47). Primero los
+   * confirmados, luego los que no han contestado y al final los que no vienen.
+   */
+  readonly porSentar = computed(() =>
+    this.comoSentados()
+      .filter((invitado) => invitado.tableId === null)
+      .sort(
+        (a, b) =>
+          rangoDeEstado(a.rsvpStatus) - rangoDeEstado(b.rsvpStatus) ||
+          a.fullName.localeCompare(b.fullName, 'es'),
+      ),
+  );
   readonly avisos = computed(() => avisosDeMesas(this._mesas(), this.comoSentados()));
   readonly resumen = computed(() => resumenDeMesas(this._mesas(), this.comoSentados()));
 
+  /** Quien está en la mesa, haya confirmado o no. */
   sentadosEnMesa(mesaId: string): readonly InvitadoSentado[] {
-    return sentadosEn(mesaId, this.comoSentados());
+    return this.comoSentados()
+      .filter((invitado) => invitado.tableId === mesaId)
+      .sort(
+        (a, b) =>
+          rangoDeEstado(a.rsvpStatus) - rangoDeEstado(b.rsvpStatus) ||
+          a.fullName.localeCompare(b.fullName, 'es'),
+      );
   }
 
   async cargar(): Promise<void> {
@@ -103,9 +125,16 @@ export class MesasStore {
   async sentar(guestIds: readonly string[], mesaId: string | null): Promise<boolean> {
     if (guestIds.length === 0) return true;
 
+    // Optimista: la ficha cambia de sitio al soltarla, sin esperar al servidor.
+    // Si falla, se vuelve a lo que había.
+    const antes = this._invitados();
+    const ids = new Set(guestIds);
+    this._invitados.set(antes.map((i) => (ids.has(i.id) ? { ...i, tableId: mesaId } : i)));
+
     const resultado = await this.sentarse.sentar(guestIds, mesaId);
 
     if (!resultado.ok) {
+      this._invitados.set(antes);
       this._fallo.set(resultado.fallo);
       return false;
     }
@@ -131,6 +160,11 @@ export class MesasStore {
     }
     return resultado;
   }
+}
+
+function rangoDeEstado(estado: string): number {
+  if (estado === 'confirmed') return 0;
+  return estado === 'declined' ? 2 : 1;
 }
 
 function paraSentar(invitado: Invitado): InvitadoSentado {

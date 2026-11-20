@@ -20,6 +20,7 @@ import { PUERTA_RESPUESTAS } from '../../../core/rsvp/respuestas-gateway';
 import { BodaStore } from '../boda.store';
 import { PreguntasStore } from './preguntas.store';
 import { resumirPregunta } from './resumen-respuestas';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /** Los tipos que la pareja puede elegir, en el orden en que se entienden. */
 const TIPOS: readonly TipoPregunta[] = [
@@ -68,6 +69,7 @@ const TIPOS: readonly TipoPregunta[] = [
     NpModal,
     NpStatusChip,
     NpIcon,
+    NpInput,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -101,7 +103,12 @@ const TIPOS: readonly TipoPregunta[] = [
         <div class="pr__plazo">
           <label>
             <span>{{ t('panel.rsvp.limite') }}</span>
-            <input type="date" [value]="limiteComoTexto()" (change)="cambiarLimite($event)" />
+            <input
+              npInput
+              type="date"
+              [value]="limiteComoTexto()"
+              (change)="cambiarLimite($event)"
+            />
             <small>{{ t('panel.rsvp.limiteAyuda') }}</small>
           </label>
           @if (limiteComoTexto()) {
@@ -209,12 +216,12 @@ const TIPOS: readonly TipoPregunta[] = [
             <form class="pr__form" [formGroup]="formulario" (ngSubmit)="guardar()">
               <label>
                 <span>{{ t('panel.rsvp.campo.etiqueta') }}</span>
-                <input formControlName="label" type="text" maxlength="120" />
+                <input npInput formControlName="label" type="text" maxlength="120" />
               </label>
 
               <label>
                 <span>{{ t('panel.rsvp.campo.ayuda') }}</span>
-                <input formControlName="helpText" type="text" maxlength="200" />
+                <input npInput formControlName="helpText" type="text" maxlength="200" />
                 <small>{{ t('panel.rsvp.campo.ayudaPista') }}</small>
               </label>
 
@@ -225,7 +232,7 @@ const TIPOS: readonly TipoPregunta[] = [
                   campo del invitado y cambiar el tipo lo dejaría con basura
                   dentro. Se reetiqueta y se desactiva, eso sí.
                 -->
-                <select formControlName="type">
+                <select npInput formControlName="type">
                   @for (tipo of tipos; track tipo) {
                     <option [value]="tipo" [selected]="formulario.controls.type.value === tipo">
                       {{ t('panel.rsvp.tipo.' + tipo) }}
@@ -240,14 +247,14 @@ const TIPOS: readonly TipoPregunta[] = [
               @if (pideOpciones()) {
                 <label>
                   <span>{{ t('panel.rsvp.campo.opciones') }}</span>
-                  <textarea formControlName="opciones" rows="5"></textarea>
+                  <textarea npInput formControlName="opciones" rows="5"></textarea>
                   <small>{{ t('panel.rsvp.campo.opcionesPista') }}</small>
                 </label>
               }
 
               <label>
                 <span>{{ t('panel.rsvp.campo.para') }}</span>
-                <select formControlName="target">
+                <select npInput formControlName="target">
                   @for (destino of destinos; track destino) {
                     <option
                       [value]="destino"
@@ -440,18 +447,6 @@ const TIPOS: readonly TipoPregunta[] = [
     .pr__plazo label > span {
       color: var(--np-surface-text-muted);
     }
-    .pr__form input[type='text'],
-    .pr__form select,
-    .pr__form textarea,
-    .pr__plazo input {
-      min-block-size: var(--np-tap-target);
-      padding: var(--np-space-2) var(--np-space-3);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-md);
-      background: var(--np-surface-canvas);
-      color: inherit;
-      font: inherit;
-    }
     .pr__form textarea {
       min-block-size: 6rem;
       resize: vertical;
@@ -461,7 +456,8 @@ const TIPOS: readonly TipoPregunta[] = [
       color: var(--np-surface-text-muted);
       font-size: var(--np-text-xs);
     }
-    .pr__casilla {
+    .pr__form .pr__casilla,
+    .pr__plazo .pr__casilla {
       flex-direction: row !important;
       align-items: center;
       gap: var(--np-space-3);

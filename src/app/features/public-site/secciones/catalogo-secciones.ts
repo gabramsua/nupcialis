@@ -70,6 +70,15 @@ export const TIPOS_EDITABLES: Record<TipoSeccion, TipoEditable> = {
   // El quiz vive en su propia página; aquí solo se decide si hay cartel y qué
   // pone (§8.7).
   quiz: { tipo: 'quiz', icono: 'game-controller', campos: campos('quiz') },
+  // Las fotos viven en su propia página (§8.5); aquí va su cartel.
+  galeria: { tipo: 'galeria', icono: 'images', campos: campos('galeria') },
+  // Los regalos viven en su propia página (§8.8) porque el número de cuenta no
+  // puede ir en la proyección pública; aquí va su cartel.
+  regalos: { tipo: 'regalos', icono: 'gift', campos: campos('regalos') },
+  // El mapa vive en su propia página (§8.6), que carga Leaflet; aquí va su cartel.
+  mapa: { tipo: 'mapa', icono: 'map-pin', campos: campos('mapa') },
+  // La playlist (§8.14) también: su cartel lleva a la página donde se vota.
+  playlist: { tipo: 'playlist', icono: 'music-notes', campos: campos('playlist') },
 };
 
 /**

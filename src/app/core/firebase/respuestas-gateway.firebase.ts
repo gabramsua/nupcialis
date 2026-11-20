@@ -10,9 +10,12 @@ import { inject } from '@angular/core';
 import { httpsCallable } from 'firebase/functions';
 
 import type {
+  FalloAlGuardar,
+  FalloDePregunta,
   FalloRespuestas,
   PuertaRespuestas,
   RespuestasDeInvitado,
+  ResultadoGuardarRespuesta,
   ResultadoRespuestas,
 } from '../rsvp/respuestas-gateway';
 import { TIPOS_PREGUNTA, type Pregunta, type TipoPregunta } from '../rsvp/rsvp-gateway';
@@ -45,6 +48,22 @@ export function crearPuertaRespuestasFirebase(): PuertaRespuestas {
         return { ok: false, fallo: traducir(error) };
       }
     },
+
+    async guardar(guestId, respuesta): Promise<ResultadoGuardarRespuesta> {
+      const setGuestRsvp = httpsCallable<unknown, unknown>(functions, 'setGuestRsvp');
+
+      try {
+        const resultado = await setGuestRsvp({ guestId, ...respuesta });
+        const estado = (resultado.data as Record<string, unknown> | null)?.['estado'];
+
+        return {
+          ok: true,
+          estado: estado === 'confirmed' || estado === 'declined' ? estado : 'pending',
+        };
+      } catch (error) {
+        return { ok: false, fallo: traducirAlGuardar(error) };
+      }
+    },
   };
 }
 
@@ -65,10 +84,21 @@ function aPregunta(cruda: unknown): readonly Pregunta[] {
       type: TIPOS_PREGUNTA.includes(tipo as TipoPregunta) ? (tipo as TipoPregunta) : 'text',
       options: Array.isArray(p['options']) ? p['options'].flatMap(aOpcion) : [],
       required: p['required'] === true,
-      visibleIf: null,
+      visibleIf: aCondicion(p['visibleIf']),
       order: typeof p['order'] === 'number' ? p['order'] : 0,
+      target:
+        p['target'] === 'guest' || p['target'] === 'companion' ? p['target'] : ('both' as const),
+      mapsTo: typeof p['mapsTo'] === 'string' && p['mapsTo'] !== '' ? p['mapsTo'] : null,
+      enabled: p['enabled'] !== false,
     },
   ];
+}
+
+function aCondicion(cruda: unknown): Pregunta['visibleIf'] {
+  if (cruda === null || typeof cruda !== 'object') return null;
+  const c = cruda as Record<string, unknown>;
+  const questionId = typeof c['questionId'] === 'string' ? c['questionId'] : '';
+  return questionId === '' ? null : { questionId, equals: c['equals'] ?? null };
 }
 
 function aOpcion(cruda: unknown): readonly { value: string; label: string }[] {
@@ -124,4 +154,26 @@ export function traducir(error: unknown): FalloRespuestas {
     default:
       return { tipo: 'error', mensaje: fallo.message ?? 'Error desconocido' };
   }
+}
+
+/** Lo de `guardar`: añade lo que solo ese caso puede decir. */
+export function traducirAlGuardar(error: unknown): FalloAlGuardar {
+  const fallo = (error ?? {}) as ErrorInvocable & { details?: unknown };
+
+  if (fallo.code === 'functions/not-found') return { tipo: 'no-existe' };
+
+  if (fallo.code === 'functions/invalid-argument') {
+    const detalles = (fallo.details ?? {}) as Record<string, unknown>;
+    const fallos = Array.isArray(detalles['fallos'])
+      ? detalles['fallos'].flatMap((f): readonly FalloDePregunta[] => {
+          const o = (f ?? {}) as Record<string, unknown>;
+          return typeof o['questionId'] === 'string' && typeof o['motivo'] === 'string'
+            ? [{ questionId: o['questionId'], motivo: o['motivo'] }]
+            : [];
+        })
+      : [];
+    return { tipo: 'no-valen', fallos };
+  }
+
+  return traducir(error);
 }

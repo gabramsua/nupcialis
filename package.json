@@ -30,6 +30,7 @@
     "watch": "ng build --watch --configuration development"
   },
   "dependencies": {
+    "@angular/cdk": "^22.3.0",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
@@ -39,6 +40,7 @@
     "@jsverse/transloco": "^8.4.0",
     "firebase": "^12.18.0",
     "jodit": "^4.19.14",
+    "leaflet": "^1.9.4",
     "ngx-jodit": "^3.2.3",
     "npm": "^11.19.1",
     "read-excel-file": "^9.3.14",
@@ -53,6 +55,7 @@
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@phosphor-icons/core": "^2.1.1",
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^26.5.0",
     "angular-eslint": "^22.5.0",
     "eslint": "^10.10.0",

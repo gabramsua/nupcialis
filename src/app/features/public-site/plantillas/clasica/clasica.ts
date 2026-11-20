@@ -7,6 +7,10 @@ import { NpCronologiaPublica } from '../../cronologia/cronologia-publica';
 import { NpAlojamientosPublicos } from '../../alojamientos/alojamientos-publicos';
 import { NpDressCodePublico } from '../../dress-code/dress-code-publico';
 import { NpQuizLlamada } from '../../quiz/quiz-llamada';
+import { NpGaleriaLlamada } from '../../galeria/galeria-llamada';
+import { NpRegalosLlamada } from '../../regalos/regalos-llamada';
+import { NpMapaLlamada } from '../../mapa/mapa-llamada';
+import { NpPlaylistLlamada } from '../../playlist/playlist-llamada';
 import { fechaLarga } from '../../../../shared/fecha';
 import {
   cuentaAtras,
@@ -35,6 +39,10 @@ import {
     NpAlojamientosPublicos,
     NpDressCodePublico,
     NpQuizLlamada,
+    NpGaleriaLlamada,
+    NpRegalosLlamada,
+    NpMapaLlamada,
+    NpPlaylistLlamada,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -125,6 +133,18 @@ import {
             }
             @case ('quiz') {
               <np-quiz-llamada />
+            }
+            @case ('galeria') {
+              <np-galeria-llamada />
+            }
+            @case ('regalos') {
+              <np-regalos-llamada />
+            }
+            @case ('mapa') {
+              <np-mapa-llamada />
+            }
+            @case ('playlist') {
+              <np-playlist-llamada />
             }
             @case ('evento') {
               <!--

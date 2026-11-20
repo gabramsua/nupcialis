@@ -38,7 +38,7 @@ const PARTIDA = {
       text: '¿Dónde nos conocimos?',
       difficulty: 1 as const,
       puntos: 10,
-      hint: 'Había arroz',
+      tienePista: true,
       opciones: ['En una boda', 'En el gimnasio', 'En el trabajo', 'En la playa'],
     },
     {
@@ -46,7 +46,7 @@ const PARTIDA = {
       text: '¿Quién pidió matrimonio?',
       difficulty: 2 as const,
       puntos: 20,
-      hint: null,
+      tienePista: false,
       opciones: ['Ella', 'Él', 'Los dos', 'El perro'],
     },
   ],
@@ -54,8 +54,6 @@ const PARTIDA = {
 
 const FINAL: PartidaTerminada = {
   points: 30,
-  aciertos: 2,
-  answeredCount: 2,
   total: 2,
   elapsedMs: 42_000,
   puesto: 7,
@@ -63,26 +61,11 @@ const FINAL: PartidaTerminada = {
     { id: 'r1', puesto: 1, displayName: 'Ana Ruiz', points: 120, esMio: false },
     { id: 'r2', puesto: 2, displayName: 'Pepe García', points: 110, esMio: false },
   ],
-  correcciones: [
-    {
-      id: 'p1',
-      text: '¿Dónde nos conocimos?',
-      correcta: 'En una boda',
-      elegida: 'En una boda',
-      acertada: true,
-    },
-    {
-      id: 'p2',
-      text: '¿Quién pidió matrimonio?',
-      correcta: 'Ella',
-      elegida: 'Él',
-      acertada: false,
-    },
-  ],
 };
 
 function montar(final: PartidaTerminada = FINAL, partida: ResultadoPartida | null = null) {
   const entregas: { gameId: string; respuestas: Record<string, string> }[] = [];
+  const pistasPedidas: string[] = [];
 
   const doble: PuertaQuiz = {
     async empezar() {
@@ -94,6 +77,10 @@ function montar(final: PartidaTerminada = FINAL, partida: ResultadoPartida | nul
     },
     async ranking() {
       return { ok: true, puestos: final.ranking, visible: true };
+    },
+    async pedirPista(_gameId, preguntaId) {
+      pistasPedidas.push(preguntaId);
+      return { ok: true, pista: 'Había arroz' };
     },
   };
 
@@ -120,6 +107,7 @@ function montar(final: PartidaTerminada = FINAL, partida: ResultadoPartida | nul
     fixture,
     raiz,
     entregas,
+    pistasPedidas,
     texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
     html: () => raiz.innerHTML,
     boton(texto: string) {
@@ -171,7 +159,7 @@ describe('el quiz del invitado', () => {
     expect(p.texto()).not.toContain('La buena era');
   });
 
-  it('al contestar la última, entrega lo elegido y enseña las correcciones', async () => {
+  it('al contestar la última, entrega lo elegido y enseña los puntos', async () => {
     const p = montar();
     await p.pulsar(p.boton('Jugar'));
     await p.pulsar(p.opciones()[0]!);
@@ -179,7 +167,67 @@ describe('el quiz del invitado', () => {
 
     expect(p.entregas).toEqual([{ gameId: 'g1', respuestas: { p1: 'En una boda', p2: 'Él' } }]);
     expect(p.texto()).toContain('30 puntos');
-    expect(p.texto()).toContain('La buena era: Ella');
+  });
+
+  /**
+   * El juego es un desafío: al terminar se enseñan los puntos y la posición,
+   * y **nunca** cuál era la correcta ni cuántas se han acertado.
+   */
+  it('al terminar no revela ninguna respuesta correcta', async () => {
+    const p = montar();
+    await p.pulsar(p.boton('Jugar'));
+    await p.pulsar(p.opciones()[0]!);
+    await p.pulsar(p.opciones()[1]!);
+
+    expect(p.texto()).not.toContain('La buena era');
+    expect(p.texto()).not.toContain('preguntas acertadas');
+    expect(p.raiz.querySelector('.qz__correcciones')).toBeNull();
+    expect(p.texto()).toContain('Puesto 7 del ranking');
+  });
+
+  describe('la pista', () => {
+    it('no está en la página hasta que se pide, y antes avisa de lo que cuesta', async () => {
+      const p = montar();
+      await p.pulsar(p.boton('Jugar'));
+
+      expect(p.html()).not.toContain('Había arroz');
+      expect(p.texto()).toContain('cuesta 5 puntos');
+
+      await p.pulsar(p.boton('Pedir una pista'));
+      expect(p.texto()).toContain('pasa a valer la mitad: 5 puntos en vez de 10');
+      // Todavía no se ha pedido nada: solo se ha avisado.
+      expect(p.pistasPedidas).toEqual([]);
+      expect(p.html()).not.toContain('Había arroz');
+    });
+
+    it('al aceptar, se pide al servidor y se enseña', async () => {
+      const p = montar();
+      await p.pulsar(p.boton('Jugar'));
+      await p.pulsar(p.boton('Pedir una pista'));
+      await p.pulsar(p.boton('Sí, dame la pista'));
+
+      expect(p.pistasPedidas).toEqual(['p1']);
+      expect(p.texto()).toContain('Había arroz');
+    });
+
+    it('si se arrepiente, no se pide ni se cobra', async () => {
+      const p = montar();
+      await p.pulsar(p.boton('Jugar'));
+      await p.pulsar(p.boton('Pedir una pista'));
+      await p.pulsar(p.boton('No, sigo sin ella'));
+
+      expect(p.pistasPedidas).toEqual([]);
+      expect(p.html()).not.toContain('Había arroz');
+    });
+
+    it('una pregunta sin pista no ofrece nada', async () => {
+      const p = montar();
+      await p.pulsar(p.boton('Jugar'));
+      await p.pulsar(p.opciones()[0]!);
+
+      expect(p.texto()).toContain('¿Quién pidió matrimonio?');
+      expect(p.texto()).not.toContain('Pedir una pista');
+    });
   });
 
   describe('el ranking', () => {

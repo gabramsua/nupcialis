@@ -49,9 +49,28 @@ export const guardaPanel: CanActivateFn = async () => {
       ? await cargarTenant(destino.slug, fuenteTenant)
       : null;
 
-  const weddingId = boda?.tipo === 'ok' ? boda.weddingId : null;
+  // El panel se abre también con la boda en borrador o archivada: es donde la
+  // pareja la prepara antes de publicar y la repasa después. Solo la web pública
+  // se cierra en esos estados.
+  const weddingId =
+    boda?.tipo === 'ok' || boda?.tipo === 'no-publicada' || boda?.tipo === 'archivada'
+      ? boda.weddingId
+      : null;
 
-  switch (accesoAlPanel(sesion, weddingId)) {
+  const resultado = accesoAlPanel(sesion, weddingId);
+
+  // Solo en desarrollo: cuando el panel te echa, la pantalla no dice por qué y
+  // la causa puede estar en tres sitios (sesión, claims, boda del host). Sin
+  // datos personales: ni correo ni identificadores.
+  if (!environment.production) {
+    console.warn(
+      `[Panel] Guarda del panel → ${resultado}.\n` +
+        `  sesión: rol=${sesion.rol}, weddingId en el token=${sesion.weddingId ?? 'ninguno'}\n` +
+        `  host: ${hostname} → boda=${boda?.tipo ?? 'no resuelta'}, weddingId del host=${weddingId ?? 'ninguno'}`,
+    );
+  }
+
+  switch (resultado) {
     case 'ok':
       return true;
     case 'sin-sesion':

@@ -63,6 +63,8 @@ interface PartidaGuardada {
   readonly preguntas: readonly PreguntaDelPanel[];
   readonly startedAt: Timestamp;
   readonly submitted: boolean;
+  /** Preguntas en las que pidió la pista: sus aciertos valen la mitad. */
+  readonly hintsUsed?: readonly string[];
 }
 
 interface Boda {
@@ -149,34 +151,59 @@ export const startQuiz = onCall(
   },
 );
 
-/** Qué era lo bueno y qué eligió, para la pantalla final. */
-export interface Correccion {
-  readonly id: string;
-  readonly text: string;
-  readonly correcta: string;
-  readonly elegida: string | null;
-  readonly acertada: boolean;
-}
+/**
+ * Da la pista de una pregunta de la partida en curso.
+ *
+ * **La pista no viaja con la pregunta**: pedirla cuesta la mitad de los puntos
+ * de esa pregunta, y el navegador no puede tenerla antes de que el invitado
+ * acepte pagarla. Aquí se apunta que la ha pedido —lo que decide la
+ * puntuación— y solo entonces se le devuelve el texto. Pedirla dos veces no
+ * cobra dos veces.
+ */
+export const getQuizHint = onCall(
+  { region: REGION, enforceAppCheck: EXIGIR_APP_CHECK },
+  async (peticion): Promise<{ readonly hint: string }> => {
+    const invitado = exigirInvitado(peticion);
+    const datos = await boda(invitado.weddingId);
+    exigirVerificado(invitado, datos.modo);
+
+    const cuerpo = (peticion.data ?? {}) as Record<string, unknown>;
+    const gameId = typeof cuerpo['gameId'] === 'string' ? cuerpo['gameId'] : '';
+    const questionId = typeof cuerpo['questionId'] === 'string' ? cuerpo['questionId'] : '';
+    if (gameId === '' || questionId === '') {
+      throw new HttpsError('invalid-argument', 'Falta la partida o la pregunta.');
+    }
+
+    const ref = db().doc(`weddings/${invitado.weddingId}/quizGames/${gameId}`);
+    const snap = await ref.get();
+    const partida = snap.data() as PartidaGuardada | undefined;
+
+    if (!snap.exists || !partida) throw new HttpsError('not-found', 'Esa partida no existe.');
+    if (partida.guestId !== invitado.guestId) {
+      throw new HttpsError('permission-denied', 'Esa partida no es tuya.');
+    }
+    if (partida.submitted === true) {
+      throw new HttpsError('failed-precondition', 'Esa partida ya está entregada.');
+    }
+
+    const pregunta = (partida.preguntas ?? []).find((p) => p.id === questionId);
+    if (!pregunta || pregunta.hint === null) {
+      throw new HttpsError('not-found', 'Esa pregunta no tiene pista.');
+    }
+
+    await ref.update({ hintsUsed: FieldValue.arrayUnion(questionId) });
+    return { hint: pregunta.hint };
+  },
+);
 
 export interface PartidaTerminada {
   readonly points: number;
-  readonly aciertos: number;
-  readonly answeredCount: number;
   readonly total: number;
   readonly elapsedMs: number;
   /** Su puesto en el ranking, o `null` si el ranking está apagado. */
   readonly puesto: number | null;
   /** Para pintar la pantalla final sin otra llamada. */
   readonly ranking: readonly FilaRanking[];
-  /**
-   * Las respuestas correctas, **y solo ahora**.
-   *
-   * Durante la partida no salen de aquí (regla de oro 4), pero al entregarla
-   * ya no hay nada que proteger: la partida queda marcada y no se puede volver
-   * a enviar. Y es lo que hace que apetezca jugar otra vez, que es el juego:
-   * saber cuál se falló.
-   */
-  readonly correcciones: readonly Correccion[];
 }
 
 /**
@@ -232,7 +259,8 @@ export const submitQuiz = onCall(
     }
 
     const preguntas = partida.preguntas ?? [];
-    const puntos = puntuar(preguntas, respuestas);
+    const conPista = new Set(partida.hintsUsed ?? []);
+    const puntos = puntuar(preguntas, respuestas, conPista);
 
     const invitadoRef = base.doc(`weddings/${invitado.weddingId}/guests/${invitado.guestId}`);
     const invitadoSnap = await invitadoRef.get();
@@ -261,6 +289,25 @@ export const submitQuiz = onCall(
 
     lote.update(ref, { submitted: true });
 
+    // Estadística por pregunta: cuántos la contestan, cuántos la aciertan y
+    // cuántos piden la pista. En su propia colección y escrita solo por aquí:
+    // la pareja la lee (para ver cuáles son fáciles y cuáles difíciles), pero
+    // no puede tocarla, ni se pierde al editar la pregunta.
+    for (const pregunta of preguntas) {
+      const elegida = respuestas[pregunta.id];
+      if (typeof elegida !== 'string' || elegida === '') continue;
+
+      lote.set(
+        base.doc(`weddings/${invitado.weddingId}/quizStats/${pregunta.id}`),
+        {
+          asked: FieldValue.increment(1),
+          correct: FieldValue.increment(elegida === pregunta.correctAnswer ? 1 : 0),
+          hints: FieldValue.increment(conPista.has(pregunta.id) ? 1 : 0),
+        },
+        { merge: true },
+      );
+    }
+
     lote.set(
       invitadoRef,
       {
@@ -282,25 +329,14 @@ export const submitQuiz = onCall(
       ? await leerRanking(invitado.weddingId, invitado.guestId)
       : [];
 
+    // Solo los puntos y la posición. **No se revela cuál era la correcta**, ni
+    // cuántas ha acertado: el juego es un desafío y las respuestas no se cuentan.
     return {
       points: puntos.points,
-      aciertos: puntos.aciertos,
-      answeredCount: puntos.answeredCount,
       total: preguntas.length,
       elapsedMs,
       puesto: tabla.find((fila) => fila.esMio)?.puesto ?? null,
       ranking: tabla,
-      correcciones: preguntas.map((pregunta) => {
-        const elegida = respuestas[pregunta.id];
-        const texto = typeof elegida === 'string' && elegida !== '' ? elegida : null;
-        return {
-          id: pregunta.id,
-          text: pregunta.text,
-          correcta: pregunta.correctAnswer,
-          elegida: texto,
-          acertada: texto === pregunta.correctAnswer,
-        };
-      }),
     };
   },
 );

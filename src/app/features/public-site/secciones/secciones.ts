@@ -24,6 +24,10 @@ export const TIPOS_SECCION = [
   'alojamientos',
   'dressCode',
   'quiz',
+  'galeria',
+  'regalos',
+  'mapa',
+  'playlist',
 ] as const;
 export type TipoSeccion = (typeof TIPOS_SECCION)[number];
 
@@ -61,6 +65,19 @@ export const CAMPOS_POR_TIPO: Record<TipoSeccion, Readonly<Record<string, number
   // El quiz (§8.7) no se pinta dentro de la página: esta sección es el cartel
   // que lleva a `/quiz`, que es donde está el juego.
   quiz: { titulo: 80 },
+  // Y la galería (§8.5), que tampoco se pinta dentro: esta sección es el
+  // cartel que lleva a su página.
+  galeria: { titulo: 80 },
+  // Y los regalos (§8.8). Tampoco se pintan dentro: el número de cuenta no
+  // puede viajar en la proyección pública, así que esta sección es el cartel
+  // que lleva a la página, y la página la sirve una función a quien se
+  // identifica.
+  regalos: { titulo: 80 },
+  // Y el mapa (§8.6): esta sección es el cartel que lleva a su página, donde
+  // Leaflet se carga solo para quien la abre.
+  mapa: { titulo: 80 },
+  // La playlist (§8.14), igual: el cartel que lleva a su página.
+  playlist: { titulo: 80 },
 };
 
 /**
@@ -82,6 +99,10 @@ export const CAMPOS_RICOS: Record<TipoSeccion, readonly string[]> = {
   alojamientos: [],
   dressCode: [],
   quiz: [],
+  galeria: [],
+  regalos: [],
+  mapa: [],
+  playlist: [],
 };
 
 export function esCampoRico(tipo: TipoSeccion, campo: string): boolean {
@@ -232,10 +253,38 @@ export const SECCIONES_INICIALES: readonly Seccion[] = [
     fields: { titulo: 'El juego de la boda' },
   },
   {
+    id: 'galeria',
+    type: 'galeria',
+    enabled: false,
+    order: 9,
+    fields: { titulo: 'Las fotos' },
+  },
+  {
+    id: 'regalos',
+    type: 'regalos',
+    enabled: false,
+    order: 10,
+    fields: { titulo: 'Regalos' },
+  },
+  {
+    id: 'mapa',
+    type: 'mapa',
+    enabled: false,
+    order: 11,
+    fields: { titulo: 'Cómo llegar' },
+  },
+  {
+    id: 'playlist',
+    type: 'playlist',
+    enabled: false,
+    order: 12,
+    fields: { titulo: 'La música' },
+  },
+  {
     id: 'contacto',
     type: 'texto',
     enabled: false,
-    order: 9,
+    order: 13,
     fields: { titulo: 'Contacto', texto: '' },
   },
 ];

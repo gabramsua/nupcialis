@@ -23,10 +23,21 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": ["leaflet"],
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "leaflet.css",
+                "input": "node_modules/leaflet/dist",
+                "output": "/vendor/leaflet"
+              },
+              {
+                "glob": "jodit.min.css",
+                "input": "node_modules/jodit/es2021",
+                "output": "/vendor/jodit"
               }
             ],
             "styles": ["src/styles.scss"]

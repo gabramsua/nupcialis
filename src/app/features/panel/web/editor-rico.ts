@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { NgxJoditComponent, type JoditConfig } from 'ngx-jodit';
 
 /**
@@ -20,6 +21,26 @@ import { NgxJoditComponent, type JoditConfig } from 'ngx-jodit';
  * el arranque del panel ni, por supuesto, la web pública. Lo vigila
  * `arranque-publico.spec.ts`.
  */
+/**
+ * La hoja de estilos de Jodit, enlazada al abrir el editor.
+ *
+ * **Sin ella el editor sale sin tema**: la barra sin botones con forma, el cuerpo
+ * sin marco, los menús desplegables a pelo. Es lo que se veía. Se copia a
+ * `/vendor/jodit` en la compilación (`angular.json`) y se enlaza aquí, **no** en
+ * `styles.scss`: pesa unos 60 kB y la web pública no tiene por qué cargarlos.
+ */
+const HOJA_JODIT = '/vendor/jodit/jodit.min.css';
+
+function enlazarHojaDeJodit(documento: Document): void {
+  if (documento.querySelector('link[data-jodit]')) return;
+
+  const enlace = documento.createElement('link');
+  enlace.rel = 'stylesheet';
+  enlace.href = HOJA_JODIT;
+  enlace.dataset['jodit'] = '1';
+  documento.head.appendChild(enlace);
+}
+
 @Component({
   selector: 'np-editor-rico',
   imports: [NgxJoditComponent],
@@ -31,24 +52,46 @@ import { NgxJoditComponent, type JoditConfig } from 'ngx-jodit';
     :host {
       display: block;
     }
-    /* La barra y el marco, con los tokens del sistema: Jodit trae su propio
-       gris y aquí dentro desentona. */
-    :host ::ng-deep .jodit-container {
-      border-color: var(--np-surface-border);
+    /* El tema de Jodit (su hoja oficial, que se enlaza al abrir el editor) con
+       los tokens del sistema: marco, barra y cuerpo como el resto de campos. */
+    :host ::ng-deep .jodit-container:not(.jodit_inline) {
+      border: 1px solid var(--np-surface-border);
       border-radius: var(--np-radius-md);
-      background: var(--np-surface-canvas);
+      background: var(--np-surface-surface);
       font-family: inherit;
+      overflow: hidden;
     }
-    :host ::ng-deep .jodit-toolbar__box {
+    :host ::ng-deep .jodit-container:not(.jodit_inline):focus-within {
+      outline: 2px solid var(--np-info-solid);
+      outline-offset: 1px;
+    }
+    :host ::ng-deep .jodit-toolbar__box:not(:empty) {
+      background: var(--np-surface-canvas);
+      border-block-end: 1px solid var(--np-surface-border);
+      padding-inline: var(--np-space-1);
+    }
+    :host ::ng-deep .jodit-workplace {
       background: var(--np-surface-surface);
     }
     :host ::ng-deep .jodit-wysiwyg {
       min-block-size: 8rem;
+      padding: var(--np-space-3);
       color: var(--np-surface-text);
+      font: inherit;
+      line-height: 1.55;
+    }
+    :host ::ng-deep .jodit-wysiwyg p {
+      margin-block: 0 var(--np-space-2);
     }
   `,
 })
 export class NpEditorRico {
+  private readonly documento = inject(DOCUMENT);
+
+  constructor() {
+    enlazarHojaDeJodit(this.documento);
+  }
+
   readonly valor = input('');
   /** Hasta dónde puede escribir. El mismo tope que aplica el servidor. */
   readonly maximo = input(5000);

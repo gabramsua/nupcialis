@@ -28,6 +28,7 @@ import {
   mensajeDeInvitacion,
   puedeEntrar,
 } from './invitacion';
+import { NpInput } from '../../../design-system/components/field/input';
 
 /**
  * Mandarle la invitación a una persona.
@@ -43,7 +44,7 @@ import {
  */
 @Component({
   selector: 'np-compartir-invitado',
-  imports: [TranslocoDirective, NpAlert, NpButton, NpModal, NpIcon],
+  imports: [TranslocoDirective, NpAlert, NpButton, NpModal, NpIcon, NpInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -79,7 +80,12 @@ import {
 
           <label>
             <span>{{ t('panel.invitar.mensaje') }}</span>
-            <textarea rows="7" [value]="mensaje()" (input)="editarMensaje($event)"></textarea>
+            <textarea
+              npInput
+              rows="7"
+              [value]="mensaje()"
+              (input)="editarMensaje($event)"
+            ></textarea>
             <small>{{ t('panel.invitar.mensajePista') }}</small>
           </label>
 
@@ -122,7 +128,12 @@ import {
             <p>{{ t('panel.invitar.plantilla.ayuda') }}</p>
             <label>
               <span class="cmp__oculto">{{ t('panel.invitar.plantilla.abrir') }}</span>
-              <textarea rows="7" [value]="plantilla()" (input)="editarPlantilla($event)"></textarea>
+              <textarea
+                npInput
+                rows="7"
+                [value]="plantilla()"
+                (input)="editarPlantilla($event)"
+              ></textarea>
             </label>
             <p class="cmp__marcadores">
               @for (marcador of marcadores; track marcador) {
@@ -187,14 +198,6 @@ import {
     }
     .cmp label > span {
       color: var(--np-surface-text-muted);
-    }
-    .cmp textarea {
-      padding: var(--np-space-2) var(--np-space-3);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-md);
-      background: var(--np-surface-canvas);
-      color: inherit;
-      font: inherit;
     }
     .cmp small {
       color: var(--np-surface-text-muted);

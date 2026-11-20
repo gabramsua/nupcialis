@@ -4,7 +4,12 @@ import {
   makeEnvironmentProviders,
   provideEnvironmentInitializer,
 } from '@angular/core';
-import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check';
+import {
+  ReCaptchaEnterpriseProvider,
+  getToken,
+  initializeAppCheck,
+  type AppCheck,
+} from 'firebase/app-check';
 
 import { environment } from '../../../environments/environment';
 import { FIREBASE_APP } from './firebase.providers';
@@ -105,6 +110,35 @@ function tokenDeDepuracion(): string | true {
   return true;
 }
 
+/**
+ * Dice, en claro, que el token de depuración de este origen no está registrado.
+ *
+ * Sin esto el síntoma es un `403` de `exchangeDebugToken` en la consola, que no
+ * dice qué hacer, seguido de un `401` en toda llamada a una función: el panel
+ * «no carga» y no hay nada en pantalla que explique por qué. Solo en
+ * desarrollo, que es donde existe el token de depuración.
+ */
+async function avisarSiNoEstaRegistrado(appCheck: AppCheck): Promise<void> {
+  const explicacion =
+    `[App Check] ${self.location.origin}: el token de depuración NO está registrado en Firebase.\n` +
+    'Hasta que lo esté, toda llamada a una Cloud Function responderá 401 y el panel no cargará.\n' +
+    'Dos salidas:\n' +
+    '  1. Reutiliza el que ya tengas registrado: abre esta página con\n' +
+    '     ?appcheck=<tu-uuid-registrado>  (se guarda para este subdominio).\n' +
+    '  2. Registra el token que Firebase imprime arriba: Consola de Firebase →\n' +
+    '     App Check → Apps → tu app → ⋮ → Administrar tokens de depuración.\n' +
+    'Si el token SÍ está registrado y sigue el 403, mira las restricciones de la\n' +
+    'clave de API (Google Cloud → Credenciales): tienen que permitir\n' +
+    '`*.localhost:4200` y la API «Firebase App Check».';
+
+  try {
+    const resultado = await getToken(appCheck, false);
+    if (!resultado.token) console.error(explicacion);
+  } catch {
+    console.error(explicacion);
+  }
+}
+
 export function provideAppCheck(): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideEnvironmentInitializer(() => {
@@ -130,13 +164,15 @@ export function provideAppCheck(): EnvironmentProviders {
           tokenDeDepuracion();
       }
 
-      initializeAppCheck(app, {
+      const appCheck = initializeAppCheck(app, {
         provider: new ReCaptchaEnterpriseProvider(clave),
         // Renueva el token solo. El SDK no lo hace por defecto: sin esto caduca
         // y la pareja se encuentra errores raros a media tarde sin haber hecho
         // nada.
         isTokenAutoRefreshEnabled: true,
       });
+
+      if (!environment.production) void avisarSiNoEstaRegistrado(appCheck);
 
       yaInicializado = true;
     }),

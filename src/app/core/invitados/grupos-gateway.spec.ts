@@ -13,9 +13,7 @@ function grupo(id: string, extra: Partial<Grupo> = {}): Grupo {
   return {
     id,
     name: id,
-    side: 'both',
     photoAudience: 'public',
-    allowPublicOptIn: false,
     color: 'rosa',
     order: 0,
     porDefecto: false,

@@ -24,7 +24,6 @@ import {
   type ResultadoGuardadoGrupo,
   type ResultadoOrdenGrupos,
 } from '../invitados/grupos-gateway';
-import type { Lado } from '../invitados/invitados-gateway';
 import { FIRESTORE } from './firestore.providers';
 import { FIREBASE_FUNCTIONS } from './functions.providers';
 
@@ -92,15 +91,12 @@ export function crearPuertaGruposFirebase(): PuertaGrupos {
 }
 
 const COLORES = NP_CATEGORIAS.map((c) => c.id);
-const LADOS: readonly Lado[] = ['A', 'B', 'both'];
 
 export function aGrupo(id: string, d: Record<string, unknown>): Grupo {
   return {
     id,
     name: typeof d['name'] === 'string' ? d['name'] : '',
-    side: LADOS.includes(d['side'] as Lado) ? (d['side'] as Lado) : 'both',
     photoAudience: d['photoAudience'] === 'restricted' ? 'restricted' : 'public',
-    allowPublicOptIn: d['allowPublicOptIn'] === true,
     color: COLORES.includes(d['color'] as NpCategoria)
       ? (d['color'] as NpCategoria)
       : (COLORES[0] as NpCategoria),

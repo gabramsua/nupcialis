@@ -6,8 +6,9 @@ import type { ColoresPaleta } from '../public-site/paletas/paletas';
 import type { Seccion } from '../public-site/secciones/secciones';
 import { menuDeModulos, modulosNoVisibles, type BodaDelPanel } from './boda';
 import { crearFuenteBodaFirestore } from './boda.firestore';
-import type { DressCodeParaGuardar } from './boda.firestore';
+import type { AportacionParaGuardar, DressCodeParaGuardar } from './boda.firestore';
 import { sanearDressCode } from '../public-site/dress-code/dress-code';
+import { sanearAportacion } from '../public-site/regalos/regalos';
 
 type Estado = 'cargando' | 'lista' | 'sin-boda' | 'error';
 
@@ -149,6 +150,27 @@ export class BodaStore {
         ...boda,
         dressCode: sanearDressCode({ ...dress }),
       });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /**
+   * Guarda la aportación: IBAN, Bizum y el mensaje de la pareja (§8.8).
+   *
+   * Se guarda lo tecleado y se sanea para pintarlo: si el IBAN está mal, el
+   * panel lo avisa y la pareja sigue viendo lo que escribió, que es lo único
+   * con lo que puede corregirlo.
+   */
+  async guardarAportacion(aportacion: AportacionParaGuardar): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarAportacion(boda.weddingId, aportacion);
+      this._boda.set({ ...boda, aportacion: sanearAportacion({ ...aportacion }) });
       return true;
     } catch (error) {
       this._error.set(error instanceof Error ? error.message : String(error));

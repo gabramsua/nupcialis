@@ -42,6 +42,7 @@ describe('campos de sistema: los mueve el servidor, no la pareja', () => {
     ['ownerUids', { ownerUids: ['owner-boda-ana-juan'] }],
     ['slug', { slug: 'otro-slug' }],
     ['createdAt', { createdAt: new Date(0) }],
+    ['limits', { limits: { maxPhotos: 1000000 } }],
   ])('NO puede escribir %s', async (_campo, payload) => {
     const db = ownerOf(env, WEDDING_A);
     await assertFails(updateDoc(doc(db, 'weddings', WEDDING_A), payload));

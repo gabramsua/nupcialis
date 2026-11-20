@@ -12,9 +12,9 @@ _Actualizado el 2026-11-16. Se revisa cada vez que se cierra un bloque._
 | ----------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
 | **F0** Fundaciones                  | Hecha en lo que bloquea | Infraestructura de producción (tres proyectos, hosting wildcard) y datos de cobro en el alta |
 | **F1** Núcleo vendible              | **En curso**            | Ver el desglose de abajo                                                                     |
-| **F2** Banquete, ubicaciones y día  | **En curso**            | Mapa (bloqueado por `D-04`), mesas, dress code y las sueltas de `TAREAS.md`                  |
-| **F3** Participación de invitados   | Sin empezar             | Todo                                                                                         |
-| **F4** Gestión interna de la pareja | Sin empezar             | Todo                                                                                         |
+| **F2** Banquete, ubicaciones y día  | **En curso**            | Mapa (hecho, con Leaflet + OSM), mesas, dress code y las sueltas de `TAREAS.md`              |
+| **F3** Participación de invitados   | **En curso**            | Galería, quiz, regalos y playlist hechos; falta el libro de firmas                           |
+| **F4** Gestión interna de la pareja | **En curso**            | Tareas hechas; faltan presupuesto, proveedores y regalos recibidos (este último ya está)     |
 | **F5** Comercialización             | Sin empezar             | Todo. No bloquea la primera venta                                                            |
 
 **F1, bloque a bloque**, en el orden en que se van a hacer:
@@ -66,8 +66,8 @@ porque ninguna configuración de módulo se copia a la proyección.
 
 Del dress code faltan a propósito el **moodboard** (`F2.5b`) y las indicaciones
 por rol o grupo (`F2.5c`), apuntadas en `D-38`. El **mapa** (`F2.3`) está
-bloqueado por `D-04` y arrastra los enlaces `locationId` de la cronología y de
-los alojamientos.
+hecho con Leaflet y OpenStreetMap (`D-04`, a validar); quedan los enlaces
+`locationId` de la cronología y de los alojamientos.
 
 ---
 
@@ -138,7 +138,7 @@ vacío, con el aislamiento demostrado por tests.
 ### F0.6 Provisioning
 
 - `provisionWedding`: transacción de slug y documento, creación de cuentas, claims y semillas.
-- Semillas: preguntas de fábrica del RSVP, banco de ejemplo del quiz, plantilla de checklist con fechas relativas, FAQ de fábrica, grupo por defecto de audiencia pública.
+- Semillas: preguntas de fábrica del RSVP, plantilla de checklist con fechas relativas, FAQ de fábrica, grupo por defecto de audiencia pública.
 - `syncPublicProjection` y `recomputeCounters` como triggers.
 - Log de auditoría.
 

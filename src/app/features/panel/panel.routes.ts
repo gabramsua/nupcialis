@@ -22,11 +22,23 @@ import { PreguntasStore } from './rsvp/preguntas.store';
 import { FaqsStore } from './faqs/faqs.store';
 import { CronologiaStore } from './cronologia/cronologia.store';
 import { AlojamientosStore } from './alojamientos/alojamientos.store';
+import { UbicacionesStore } from './mapa/ubicaciones.store';
+import { TareasStore } from './checklist/tareas.store';
+import { PlaylistStore } from './playlist/playlist.store';
+import { providePlaylistDelPanel } from '../../core/playlist/playlist-panel.providers';
+import { provideTareas } from '../../core/checklist/tareas.providers';
+import { provideUbicaciones } from '../../core/mapa/ubicaciones.providers';
 import { provideQuizDelPanel } from '../../core/quiz/quiz-admin.providers';
 import { provideMesas } from '../../core/mesas/mesas.providers';
+import { provideGaleriaDelPanel } from '../../core/galeria/galeria-panel.providers';
+import { provideRegalosDelPanel } from '../../core/regalos/regalos-panel.providers';
+import { provideRecibidos } from '../../core/regalos/recibidos.providers';
 import { MesasStore } from './mesas/mesas.store';
 import { PreguntasQuizStore } from './quiz/preguntas-quiz.store';
 import { RankingQuizStore } from './quiz/ranking-quiz.store';
+import { GaleriaPanelStore } from './galeria/galeria.store';
+import { RegalosStore } from './regalos/regalos.store';
+import { RecibidosStore } from './regalos/recibidos.store';
 
 export const panelRoutes: Routes = [
   {
@@ -46,8 +58,14 @@ export const panelRoutes: Routes = [
       provideFaqs(),
       provideCronologia(),
       provideAlojamientos(),
+      provideUbicaciones(),
+      provideTareas(),
+      providePlaylistDelPanel(),
       provideQuizDelPanel(),
       provideMesas(),
+      provideGaleriaDelPanel(),
+      provideRegalosDelPanel(),
+      provideRecibidos(),
       providePreguntas(),
       provideRespuestas(),
       BodaStore,
@@ -128,6 +146,26 @@ export const panelRoutes: Routes = [
               import('./alojamientos/alojamientos').then((m) => m.PanelAlojamientos),
           },
           {
+            // El módulo se llama `map` y la ruta como él: el menú del panel
+            // enlaza a `/panel/<modulo>`.
+            path: 'map',
+            providers: [UbicacionesStore],
+            loadComponent: () => import('./mapa/mapa-panel').then((m) => m.PanelMapa),
+          },
+          {
+            // El módulo se llama `checklist` y la ruta como él.
+            path: 'checklist',
+            providers: [TareasStore],
+            loadComponent: () =>
+              import('./checklist/checklist-panel').then((m) => m.PanelChecklist),
+          },
+          {
+            // El módulo se llama `playlist` y la ruta como él.
+            path: 'playlist',
+            providers: [PlaylistStore],
+            loadComponent: () => import('./playlist/playlist-panel').then((m) => m.PanelPlaylist),
+          },
+          {
             // El módulo es `dressCode` y la ruta se llama como él, en minúsculas
             // con guion: el menú enlaza a lo que diga `RUTA_MODULO`.
             path: 'dress-code',
@@ -146,6 +184,27 @@ export const panelRoutes: Routes = [
             path: 'quiz/ranking',
             providers: [RankingQuizStore],
             loadComponent: () => import('./quiz/ranking-quiz').then((m) => m.PanelRankingQuiz),
+          },
+          {
+            // El módulo se llama `gallery` y la ruta como él: el menú del
+            // panel enlaza a `/panel/<modulo>`.
+            path: 'gallery',
+            providers: [GaleriaPanelStore],
+            loadComponent: () => import('./galeria/galeria-panel').then((m) => m.PanelGaleria),
+          },
+          {
+            // El módulo se llama `gifts` y la ruta como él.
+            path: 'gifts',
+            providers: [RegalosStore],
+            loadComponent: () => import('./regalos/regalos-panel').then((m) => m.PanelRegalos),
+          },
+          {
+            // Cuelga de `gifts` porque es el mismo módulo por el otro lado: ahí
+            // está lo que se pide y aquí lo que ha llegado. Así el menú sigue
+            // marcando «Regalos» mientras se apunta.
+            path: 'gifts/recibidos',
+            providers: [RecibidosStore],
+            loadComponent: () => import('./regalos/recibidos-panel').then((m) => m.PanelRecibidos),
           },
           {
             // El módulo se llama `tables` y la ruta como él.

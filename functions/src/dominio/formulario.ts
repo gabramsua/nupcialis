@@ -243,6 +243,12 @@ export function validarRespuestas(
   preguntas: readonly Pregunta[],
   enviadas: Respuestas,
   esAcompanante = false,
+  /**
+   * `false` solo cuando contesta la pareja **por** el invitado: la abuela le
+   * dice por teléfono que sí viene y no se sabe aún qué menú querrá. Lo que se
+   * contesta se valida igual de estricto; lo que falta no es un fallo.
+   */
+  exigirObligatorias = true,
 ): Validacion {
   const suyas = preguntasPara(preguntas, esAcompanante);
   const aVista = visibles(suyas, enviadas);
@@ -254,6 +260,7 @@ export function validarRespuestas(
     const resultado = validarUna(pregunta, enviadas[pregunta.id]);
 
     if ('motivo' in resultado) {
+      if (resultado.motivo === 'obligatoria' && !exigirObligatorias) continue;
       fallos.push({ questionId: pregunta.id, motivo: resultado.motivo });
       continue;
     }

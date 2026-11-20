@@ -16,24 +16,12 @@ export interface PartidaNueva {
   readonly preguntas: readonly PreguntaDeJuego[];
 }
 
-/** Qué era lo bueno y qué eligió. Llega solo al entregar la partida. */
-export interface Correccion {
-  readonly id: string;
-  readonly text: string;
-  readonly correcta: string;
-  readonly elegida: string | null;
-  readonly acertada: boolean;
-}
-
 export interface PartidaTerminada {
   readonly points: number;
-  readonly aciertos: number;
-  readonly answeredCount: number;
   readonly total: number;
   readonly elapsedMs: number;
   readonly puesto: number | null;
   readonly ranking: readonly FilaRanking[];
-  readonly correcciones: readonly Correccion[];
 }
 
 export type FalloQuiz =
@@ -55,6 +43,9 @@ export type ResultadoEntrega =
   | { readonly ok: true; readonly resultado: PartidaTerminada }
   | { readonly ok: false; readonly fallo: FalloQuiz };
 
+export type ResultadoPista =
+  { readonly ok: true; readonly pista: string } | { readonly ok: false; readonly fallo: FalloQuiz };
+
 export type ResultadoRanking =
   | { readonly ok: true; readonly puestos: readonly FilaRanking[]; readonly visible: boolean }
   | { readonly ok: false; readonly fallo: FalloQuiz };
@@ -64,6 +55,12 @@ export interface PuertaQuiz {
   /** `respuestas` es `{ idDePregunta: textoElegido }`. */
   entregar(gameId: string, respuestas: Readonly<Record<string, string>>): Promise<ResultadoEntrega>;
   ranking(): Promise<ResultadoRanking>;
+  /**
+   * El texto de la pista de una pregunta. **Cuesta la mitad de los puntos de esa
+   * pregunta**, y el servidor lo apunta al pedirla: llamar a esto es aceptar el
+   * precio, así que la pantalla avisa antes.
+   */
+  pedirPista(gameId: string, preguntaId: string): Promise<ResultadoPista>;
 }
 
 export const PUERTA_QUIZ = new InjectionToken<PuertaQuiz>('PUERTA_QUIZ');

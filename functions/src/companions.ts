@@ -142,7 +142,6 @@ export const addCompanion = onCall<EntradaAcompanante>(
       nickname: '',
       phone,
       phoneLast4: ultimos4(phone),
-      email: null,
       // El lado y los grupos son del titular: ni el lado ni la audiencia de las
       // fotos los elige un invitado.
       side: 'both',

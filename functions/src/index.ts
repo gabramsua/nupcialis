@@ -20,12 +20,23 @@ export { getInviteLink } from './invite-links';
 export { deleteGuest, listGuests, upsertGuest } from './guests';
 export { importGuests } from './import-guests';
 export { provisionWedding } from './provision-wedding';
-export { listQuizRanking, startQuiz, submitQuiz } from './quiz';
+export { getQuizHint, listQuizRanking, startQuiz, submitQuiz } from './quiz';
 export { clearQuizRanking, listQuizPlays } from './quiz-admin';
 export { assignGuestsToTable } from './tables';
+export { clearGallery, deletePhoto, listPhotos, uploadPhoto } from './gallery';
+export { getGifts, releaseGift, reserveGift } from './gifts';
+export { listPlaylist, suggestSong, voteSong } from './playlist';
 export { recomputeCounters } from './recompute-counters';
 export { listRsvpAnswers } from './rsvp-answers';
 export { getRsvpForm, submitRsvp } from './rsvp';
+export { setGuestRsvp } from './rsvp-pareja';
+export { getAdminStats, setWeddingLimits } from './estadisticas';
 export { setUserClaims } from './set-user-claims';
 export { setWeddingStatus } from './set-wedding-status';
-export { syncPublicFaqs, syncPublicProjection, syncPublicTimeline } from './sync-public-projection';
+export {
+  syncPublicAccommodations,
+  syncPublicFaqs,
+  syncPublicLocations,
+  syncPublicProjection,
+  syncPublicTimeline,
+} from './sync-public-projection';

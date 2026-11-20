@@ -17,6 +17,7 @@ import { MENSAJE_POR_DEFECTO } from './invitados/invitacion';
 import { FIRESTORE } from '../../core/firebase/firestore.providers';
 import { CLAVES_PALETA, type ColoresPaleta } from '../public-site/paletas/paletas';
 import { sanearSecciones, type Seccion } from '../public-site/secciones/secciones';
+import { sanearAportacion } from '../public-site/regalos/regalos';
 import {
   sanearDressCode,
   type DressCodePublico,
@@ -52,6 +53,15 @@ export interface FuenteBoda {
   guardarMensajeInvitacion(weddingId: string, mensaje: string): Promise<void>;
   /** El dress code (§8.11), que vive en la configuración de su módulo. */
   guardarDressCode(weddingId: string, dress: DressCodeParaGuardar): Promise<void>;
+  guardarAportacion(weddingId: string, aportacion: AportacionParaGuardar): Promise<void>;
+}
+
+/** Lo que la pantalla de regalos manda guardar. Tal cual lo teclea la pareja. */
+export interface AportacionParaGuardar {
+  readonly iban: string;
+  readonly titular: string;
+  readonly bizum: string;
+  readonly mensaje: string;
 }
 
 /** Lo que la pantalla del dress code manda guardar. */
@@ -140,6 +150,22 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
         'modules.dressCode.config.suggestedColors': dress.suggestedColors as string[],
         'modules.dressCode.config.avoidColors': dress.avoidColors as string[],
         'modules.dressCode.config.tips': dress.tips as string[],
+      });
+    },
+
+    async guardarAportacion(weddingId: string, aportacion: AportacionParaGuardar): Promise<void> {
+      // Campo a campo bajo `content.gifts`, no el objeto entero: `content`
+      // guarda también las secciones, y escribirlo completo se las llevaría.
+      //
+      // Se guarda **lo que la pareja ha escrito**, sin normalizar: si el IBAN
+      // está mal, tiene que poder volver a su panel y ver lo que puso para
+      // arreglarlo, no un hueco en blanco. Quien decide qué se publica es
+      // `sanearAportacion`, en el servidor y al servirlo.
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        'content.gifts.iban': aportacion.iban,
+        'content.gifts.titular': aportacion.titular,
+        'content.gifts.bizum': aportacion.bizum,
+        'content.gifts.mensaje': aportacion.mensaje,
       });
     },
 
@@ -246,6 +272,7 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
     secciones: sanearSecciones(seccionesDe(datos['content'])),
     modulos: modulos(datos['modules']),
     dressCode: dressCodeDe(datos['modules']),
+    aportacion: sanearAportacion(aportacionDe(datos['content'])),
     rsvpDeadline: fechaLimiteRsvp(datos['modules']),
     allowGuestAddedCompanions: datos['allowGuestAddedCompanions'] === true,
   };
@@ -258,6 +285,13 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
  * no tener ninguno, y equivocarse aquí no da un error, da un formulario que se
  * cierra solo o que no se cierra nunca.
  */
+/** `content.gifts`, que puede no existir. */
+export function aportacionDe(contenido: unknown): unknown {
+  return contenido !== null && typeof contenido === 'object'
+    ? (contenido as Record<string, unknown>)['gifts']
+    : undefined;
+}
+
 export function fechaLimiteRsvp(valor: unknown): Date | null {
   const nivel = (dato: unknown, clave: string): unknown =>
     dato !== null && typeof dato === 'object'

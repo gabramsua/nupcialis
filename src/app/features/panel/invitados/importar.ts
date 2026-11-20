@@ -28,6 +28,7 @@ import {
   plantillaCsv,
   type Columna,
 } from './plantilla';
+import { NpInput } from '../../../design-system/components/field/input';
 
 type Paso = 'origen' | 'mapeo' | 'resultado';
 
@@ -45,7 +46,7 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
  */
 @Component({
   selector: 'np-importar-invitados',
-  imports: [RouterLink, TranslocoDirective, NpAlert, NpButton, NpStatusChip, NpIcon],
+  imports: [RouterLink, TranslocoDirective, NpAlert, NpButton, NpStatusChip, NpIcon, NpInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -118,6 +119,7 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
               <label class="imp__campo">
                 <span class="imp__oculto">{{ t('panel.importar.pegar.titulo') }}</span>
                 <textarea
+                  npInput
                   rows="6"
                   [placeholder]="t('panel.importar.pegar.ejemplo')"
                   [value]="pegado()"
@@ -168,7 +170,7 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
                         mapeo era correcto por dentro y la pareja leía «No
                         importar esta columna» en las cuatro.
                       -->
-                      <select (change)="cambiarMapeo(columna, $event)">
+                      <select npInput (change)="cambiarMapeo(columna, $event)">
                         <option value="" [selected]="mapeo()[columna] === null">
                           {{ t('panel.importar.noImportar') }}
                         </option>
@@ -391,13 +393,6 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
     .imp__campo textarea,
     .imp__columnas select {
       inline-size: 100%;
-      min-block-size: var(--np-tap-target);
-      padding: var(--np-space-2) var(--np-space-3);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-md);
-      background: var(--np-surface-canvas);
-      color: inherit;
-      font: inherit;
     }
     /* Primero móvil: una columna por fila, con su muestra debajo. */
     .imp__columnas {

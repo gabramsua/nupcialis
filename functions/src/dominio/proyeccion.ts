@@ -18,6 +18,7 @@ import { sanearHtml } from './html';
 import { MAX_RESPUESTA, sanearFaqs, type FaqPublica } from './faqs';
 import { sanearCronologia, type HitoPublico } from './cronologia';
 import { sanearAlojamientos, type AlojamientoPublico } from './alojamientos';
+import { sanearUbicaciones, type UbicacionPublica } from './ubicaciones';
 import {
   DRESS_CODE_VACIO,
   MAX_DESCRIPCION_DRESS,
@@ -114,6 +115,12 @@ export interface ProyeccionPublica {
     readonly cronologia: readonly HitoPublico[];
     /** Los alojamientos para los invitados de fuera (§8.10). */
     readonly alojamientos: readonly AlojamientoPublico[];
+    /**
+     * Los sitios del mapa (§8.6), solo los visibles para invitados y con
+     * coordenadas de verdad. Lo apuntado como interno —dónde aparcan los
+     * proveedores— se queda fuera **aquí**.
+     */
+    readonly ubicaciones: readonly UbicacionPublica[];
     /**
      * El dress code (§8.11).
      *
@@ -241,6 +248,7 @@ export function proyeccionPublica(
   faqs: unknown = [],
   cronologia: unknown = [],
   alojamientos: unknown = [],
+  ubicaciones: unknown = [],
 ): ProyeccionPublica {
   const tema = boda.theme ?? {};
   return {
@@ -288,6 +296,7 @@ export function proyeccionPublica(
       // tiempo que se lee de un vistazo no hay sitio para párrafos con formato.
       cronologia: sanearCronologia(cronologia),
       alojamientos: sanearAlojamientos(alojamientos),
+      ubicaciones: sanearUbicaciones(ubicaciones),
       dressCode: dressCodePublico(boda.modules),
     },
     // Solo `true` cuenta como sí. Cualquier otra cosa —ausente, corrupta, una

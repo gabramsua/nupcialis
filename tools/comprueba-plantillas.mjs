@@ -44,17 +44,23 @@ export function ficheros(directorio) {
 export function sospechosos(codigo) {
   const lineas = [];
 
-  for (const apertura of codigo.matchAll(/(?:template|styles):\s*`/g)) {
+  for (const apertura of codigo.matchAll(/(template|styles):\s*`/g)) {
     let i = apertura.index + apertura[0].length;
     let cierre = null;
 
+    // Cada bloque tiene **su** forma de comentario y solo esa. Mezclarlas
+    // daba un falso positivo que costó un rato: `accept="image/*"` en una
+    // plantilla abría un comentario de CSS que no se cerraba nunca, y a
+    // partir de ahí todo el fichero parecía estar dentro de un comentario.
+    const esPlantilla = apertura[1] === 'template';
+
     while (i < codigo.length) {
-      if (cierre === null && codigo.startsWith('<!--', i)) {
+      if (cierre === null && esPlantilla && codigo.startsWith('<!--', i)) {
         cierre = '-->';
         i += 4;
         continue;
       }
-      if (cierre === null && codigo.startsWith('/*', i)) {
+      if (cierre === null && !esPlantilla && codigo.startsWith('/*', i)) {
         cierre = '*/';
         i += 2;
         continue;

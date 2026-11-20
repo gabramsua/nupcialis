@@ -20,12 +20,12 @@ import {
   type PreguntaDeJuego,
 } from '../../features/public-site/quiz/quiz';
 import type {
-  Correccion,
   FalloQuiz,
   PartidaTerminada,
   PuertaQuiz,
   ResultadoEntrega,
   ResultadoPartida,
+  ResultadoPista,
   ResultadoRanking,
 } from '../quiz/quiz-gateway';
 import { FIREBASE_FUNCTIONS } from './functions.providers';
@@ -54,14 +54,13 @@ function aPregunta(valor: unknown): PreguntaDeJuego | null {
   if (id === '' || opciones.length === 0) return null;
 
   const difficulty = esDificultad(p['difficulty']) ? p['difficulty'] : 1;
-  const hint = texto(p['hint']);
 
   return {
     id,
     text: texto(p['text']),
     difficulty,
     puntos: PUNTOS[difficulty],
-    hint: hint === '' ? null : hint,
+    tienePista: p['tienePista'] === true,
     opciones,
   };
 }
@@ -89,28 +88,6 @@ function puestos(valor: unknown): readonly FilaRanking[] {
   const datos = (valor ?? {}) as Record<string, unknown>;
   const lista = Array.isArray(datos['puestos']) ? datos['puestos'] : [];
   return lista.map(aPuesto).filter((p): p is FilaRanking => p !== null);
-}
-
-function correcciones(valor: unknown): readonly Correccion[] {
-  if (!Array.isArray(valor)) return [];
-
-  return valor.flatMap((crudo) => {
-    if (crudo === null || typeof crudo !== 'object') return [];
-    const c = crudo as Record<string, unknown>;
-    const id = texto(c['id']);
-    if (id === '') return [];
-
-    const elegida = texto(c['elegida']);
-    return [
-      {
-        id,
-        text: texto(c['text']),
-        correcta: texto(c['correcta']),
-        elegida: elegida === '' ? null : elegida,
-        acertada: c['acertada'] === true,
-      },
-    ];
-  });
 }
 
 export function crearPuertaQuizFirebase(): PuertaQuiz {
@@ -148,16 +125,26 @@ export function crearPuertaQuizFirebase(): PuertaQuiz {
 
         const resultado: PartidaTerminada = {
           points: numero(datos['points']),
-          aciertos: numero(datos['aciertos']),
-          answeredCount: numero(datos['answeredCount']),
           total: numero(datos['total']),
           elapsedMs: numero(datos['elapsedMs']),
           puesto: typeof datos['puesto'] === 'number' ? datos['puesto'] : null,
           ranking: puestos({ puestos: datos['ranking'] }),
-          correcciones: correcciones(datos['correcciones']),
         };
 
         return { ok: true, resultado };
+      } catch (error) {
+        return { ok: false, fallo: traducirQuiz(error) };
+      }
+    },
+
+    async pedirPista(gameId: string, preguntaId: string): Promise<ResultadoPista> {
+      const getQuizHint = httpsCallable<unknown, unknown>(functions, 'getQuizHint');
+
+      try {
+        const respuesta = await getQuizHint({ gameId, questionId: preguntaId });
+        const datos = (respuesta.data ?? {}) as Record<string, unknown>;
+        const pista = texto(datos['hint']);
+        return pista === '' ? { ok: false, fallo: { tipo: 'error' } } : { ok: true, pista };
       } catch (error) {
         return { ok: false, fallo: traducirQuiz(error) };
       }

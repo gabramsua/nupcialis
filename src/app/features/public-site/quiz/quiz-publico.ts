@@ -12,7 +12,6 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { NpIcon } from '../../../design-system/icons/icon';
 import {
   PUERTA_QUIZ,
-  type Correccion,
   type FalloQuiz,
   type PartidaNueva,
   type PartidaTerminada,
@@ -109,16 +108,44 @@ type Fase = 'portada' | 'cargando' | 'jugando' | 'entregando' | 'final';
                   }
                 </ul>
 
-                @if (pregunta.hint) {
-                  @if (pistaALaVista()) {
+                <!--
+                  La pista **cuesta la mitad de los puntos de esta pregunta** y
+                  se avisa antes de darla. El texto no viaja con la pregunta: se
+                  pide al servidor al aceptar, que es quien apunta el descuento.
+                -->
+                @if (pregunta.tienePista) {
+                  @if (pistaDe(pregunta.id); as pista) {
                     <p class="qz__pista">
                       <np-icon name="info" />
-                      {{ pregunta.hint }}
+                      {{ pista }}
                     </p>
+                  } @else if (confirmandoPista()) {
+                    <div class="qz__aviso" role="alert">
+                      <p>
+                        {{
+                          t('publico.quiz.pistaAviso', {
+                            puntos: pregunta.puntos,
+                            mitad: pregunta.puntos / 2,
+                          })
+                        }}
+                      </p>
+                      <div class="qz__avisoBotones">
+                        <button type="button" class="qz__verPista" (click)="pedirPista()">
+                          {{ t('publico.quiz.pistaSi') }}
+                        </button>
+                        <button
+                          type="button"
+                          class="qz__verPista"
+                          (click)="confirmandoPista.set(false)"
+                        >
+                          {{ t('publico.quiz.pistaNo') }}
+                        </button>
+                      </div>
+                    </div>
                   } @else {
-                    <button type="button" class="qz__verPista" (click)="pistaALaVista.set(true)">
+                    <button type="button" class="qz__verPista" (click)="confirmandoPista.set(true)">
                       <np-icon name="info" />
-                      {{ t('publico.quiz.pista') }}
+                      {{ t('publico.quiz.pista', { mitad: pregunta.puntos / 2 }) }}
                     </button>
                   }
                 }
@@ -137,28 +164,9 @@ type Fase = 'portada' | 'cargando' | 'jugando' | 'entregando' | 'final';
                   <np-icon name="trophy" weight="fill" />
                   <strong>{{ t('publico.quiz.puntos', { puntos: fin.points }) }}</strong>
                 </p>
-                <p class="qz__aciertos">
-                  {{ t('publico.quiz.aciertos', { aciertos: fin.aciertos, total: fin.total }) }}
-                </p>
                 @if (fin.puesto !== null) {
                   <p class="qz__puesto">{{ t('publico.quiz.puesto', { puesto: fin.puesto }) }}</p>
                 }
-
-                <ul class="qz__correcciones">
-                  @for (correccion of fin.correcciones; track correccion.id) {
-                    <li [class.qz__correccion--fallada]="!correccion.acertada">
-                      <p class="qz__correccionQue">
-                        <np-icon [name]="correccion.acertada ? 'check-circle' : 'x-circle'" />
-                        <span>{{ correccion.text }}</span>
-                      </p>
-                      @if (!correccion.acertada) {
-                        <p class="qz__correccionBuena">
-                          {{ t('publico.quiz.era', { respuesta: correccion.correcta }) }}
-                        </p>
-                      }
-                    </li>
-                  }
-                </ul>
 
                 <button type="button" class="qz__boton" (click)="empezar()">
                   <np-icon name="confetti" />
@@ -351,38 +359,24 @@ type Fase = 'portada' | 'cargando' | 'jugando' | 'entregando' | 'final';
       color: var(--qz-acento);
       font-size: 1.6rem;
     }
-    .qz__aciertos,
     .qz__puesto {
       margin: 0;
       text-align: center;
     }
-    .qz__correcciones {
+    .qz__aviso {
+      margin: 1rem 0 0;
+      padding: 0.75rem 1rem;
+      border: 1px solid currentColor;
+      border-radius: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .qz__aviso p {
+      margin: 0 0 0.5rem;
+    }
+    .qz__avisoBotones {
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin: 1rem 0;
-      padding: 0;
-      list-style: none;
-      font-size: 0.95rem;
-    }
-    .qz__correccionQue {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      margin: 0;
-    }
-    .qz__correccionQue np-icon {
-      flex: none;
-      margin-block-start: 0.15em;
-    }
-    /* La fallada se marca con icono, con el texto de la buena debajo y con
-       opacidad: el color por sí solo no cuenta (§9.1). */
-    .qz__correccion--fallada {
-      opacity: 0.95;
-    }
-    .qz__correccionBuena {
-      margin: 0.15rem 0 0 1.6rem;
-      font-weight: 600;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
     }
     .qz__ranking h3 {
       margin: 1.5rem 0 0.75rem;
@@ -450,7 +444,10 @@ export class NpQuizPublico {
   protected readonly fase = signal<Fase>('portada');
   protected readonly fallo = signal<FalloQuiz | null>(null);
   protected readonly resultado = signal<PartidaTerminada | null>(null);
-  protected readonly pistaALaVista = signal(false);
+  /** Está viendo el aviso «la pista cuesta la mitad». */
+  protected readonly confirmandoPista = signal(false);
+  /** Las pistas ya pedidas en esta partida, por pregunta. */
+  private readonly pistas = signal<Record<string, string>>({});
 
   private readonly partida = signal<PartidaNueva | null>(null);
   protected readonly indice = signal(0);
@@ -476,7 +473,8 @@ export class NpQuizPublico {
     this.resultado.set(null);
     this.respuestas.set({});
     this.indice.set(0);
-    this.pistaALaVista.set(false);
+    this.confirmandoPista.set(false);
+    this.pistas.set({});
 
     const resultado = await this.puerta.empezar();
 
@@ -501,7 +499,7 @@ export class NpQuizPublico {
     if (!pregunta) return;
 
     this.respuestas.update((previas) => ({ ...previas, [pregunta.id]: opcion }));
-    this.pistaALaVista.set(false);
+    this.confirmandoPista.set(false);
 
     if (this.indice() + 1 < this.total()) {
       this.indice.update((n) => n + 1);
@@ -538,9 +536,28 @@ export class NpQuizPublico {
     return fin.ranking.some((puesto) => puesto.esMio);
   }
 
-  /** Expuesto para la prueba: las correcciones tal como se pintan. */
-  protected correcciones(): readonly Correccion[] {
-    return this.resultado()?.correcciones ?? [];
+  protected pistaDe(preguntaId: string): string | null {
+    return this.pistas()[preguntaId] ?? null;
+  }
+
+  /**
+   * Acepta el precio y pide la pista. El servidor apunta que se ha pedido
+   * (lo que decide la puntuación) y devuelve el texto.
+   */
+  protected async pedirPista(): Promise<void> {
+    const partida = this.partida();
+    const pregunta = this.actual();
+    if (!partida || !pregunta) return;
+
+    const resultado = await this.puerta.pedirPista(partida.gameId, pregunta.id);
+    this.confirmandoPista.set(false);
+
+    if (!resultado.ok) {
+      this.fallo.set(resultado.fallo);
+      return;
+    }
+
+    this.pistas.update((previas) => ({ ...previas, [pregunta.id]: resultado.pista }));
   }
 
   protected rankingDe(fin: PartidaTerminada): readonly FilaRanking[] {

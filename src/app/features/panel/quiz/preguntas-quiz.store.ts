@@ -4,6 +4,7 @@ import { SessionStore } from '../../../core/auth/session.store';
 import {
   PUERTA_PREGUNTAS_QUIZ,
   type DatosPregunta,
+  type EstadisticaDePregunta,
   type FalloQuizPanel,
   type PreguntaDelPanel,
   type ResultadoEscritura,
@@ -19,11 +20,14 @@ export class PreguntasQuizStore {
   private readonly puerta = inject(PUERTA_PREGUNTAS_QUIZ);
 
   private readonly _preguntas = signal<readonly PreguntaDelPanel[]>([]);
+  private readonly _estadisticas = signal<Readonly<Record<string, EstadisticaDePregunta>>>({});
   private readonly _estado = signal<Estado>('cargando');
   private readonly _fallo = signal<FalloQuizPanel | null>(null);
 
   readonly preguntas = this._preguntas.asReadonly();
   readonly estado = this._estado.asReadonly();
+  /** Cuánta gente ha contestado cada pregunta y cuánta la ha acertado, por id. */
+  readonly estadisticas = this._estadisticas.asReadonly();
   readonly fallo = this._fallo.asReadonly();
 
   /**
@@ -49,6 +53,7 @@ export class PreguntasQuizStore {
 
     if (resultado.ok) {
       this._preguntas.set(resultado.preguntas);
+      this._estadisticas.set(resultado.estadisticas ?? {});
       this._fallo.set(null);
       this._estado.set('lista');
     } else {

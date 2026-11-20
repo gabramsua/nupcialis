@@ -21,7 +21,6 @@ export interface Invitado {
   readonly fullName: string;
   readonly nickname: string;
   readonly phone: string | null;
-  readonly email: string | null;
   readonly side: Lado;
   readonly ageGroup: Edad;
   readonly groupIds: readonly string[];
@@ -48,7 +47,6 @@ export interface DatosInvitado {
   readonly fullName: string;
   readonly nickname?: string;
   readonly phone?: string;
-  readonly email?: string;
   readonly side?: Lado;
   readonly ageGroup?: Edad;
   readonly groupIds?: readonly string[];
@@ -59,6 +57,11 @@ export interface DatosInvitado {
   readonly groupNames?: readonly string[];
   readonly maxCompanions?: number;
   readonly notes?: string;
+  /**
+   * Con quién viene. Ausente: no se toca. Un id: viene con ese titular (el
+   * servidor le da sus grupos). `null`: viene por su cuenta.
+   */
+  readonly invitedById?: string | null;
 }
 
 export interface CampoInvalido {
@@ -78,6 +81,11 @@ export type FalloInvitado =
    */
   | { readonly tipo: 'duplicado'; readonly id: string; readonly motivo: 'telefono' | 'nombre' }
   | { readonly tipo: 'con-acompanantes'; readonly cuantos: number }
+  /** No se puede enlazar con ese titular: ver `validarVinculo` en el servidor. */
+  | {
+      readonly tipo: 'vinculo-invalido';
+      readonly motivo: 'no-existe' | 'uno-mismo' | 'es-acompanante' | 'tiene-acompanantes';
+    }
   | { readonly tipo: 'sin-permiso' }
   | { readonly tipo: 'sin-verificar' }
   | { readonly tipo: 'error'; readonly mensaje: string };
@@ -255,6 +263,22 @@ export function porGrupo(
 ): readonly Invitado[] {
   if (groupId === null) return invitados;
   return invitados.filter((invitado) => invitado.groupIds.includes(groupId));
+}
+
+/**
+ * Un titular y los que vienen con él, para saltar de uno a otros.
+ *
+ * Con el titular o con cualquiera de sus acompañantes se llega a la misma
+ * familia. Un acompañante cuyo titular ya no está (no debería pasar: el
+ * servidor no deja borrar a quien trae gente) se queda solo en vez de
+ * desaparecer.
+ */
+export function deLaFamilia(
+  invitados: readonly Invitado[],
+  titularId: string | null,
+): readonly Invitado[] {
+  if (titularId === null) return invitados;
+  return invitados.filter((i) => i.id === titularId || i.invitedById === titularId);
 }
 
 /**

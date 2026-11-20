@@ -109,6 +109,32 @@ describe('quizGames: una partida en curso no es de nadie más que de la función
   });
 });
 
+describe('quizStats: la estadística de cada pregunta la escribe el servidor', () => {
+  it('la pareja la lee', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertSucceeds(getDocs(collection(db, 'weddings', WEDDING_A, 'quizStats')));
+  });
+
+  it('nadie la escribe: falsearía las etiquetas de fácil y difícil', async () => {
+    for (const db of [ownerOf(env, WEDDING_A), guestOf(env, WEDDING_A, 'invitado-a1')]) {
+      await assertFails(
+        setDoc(doc(db, 'weddings', WEDDING_A, 'quizStats', 'donde'), { asked: 99, correct: 99 }),
+      );
+    }
+  });
+
+  it('un invitado no la lee, ni la pareja de otra boda', async () => {
+    await assertFails(
+      getDocs(
+        collection(guestOf(env, WEDDING_A, 'invitado-a1'), 'weddings', WEDDING_A, 'quizStats'),
+      ),
+    );
+    await assertFails(
+      getDocs(collection(ownerOf(env, WEDDING_B), 'weddings', WEDDING_A, 'quizStats')),
+    );
+  });
+});
+
 describe('quizResults: la puntuación la escribe el servidor', () => {
   it('la pareja lee el historial de su boda', async () => {
     const db = ownerOf(env, WEDDING_A);

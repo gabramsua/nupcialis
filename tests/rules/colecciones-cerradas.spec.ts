@@ -1,5 +1,5 @@
 import { RulesTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, getDocs, collection, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, setDoc, updateDoc } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { GUEST_A1, WEDDING_A, createTestEnv, guestOf, ownerOf, superadmin } from './helpers';
 
@@ -27,6 +27,18 @@ beforeEach(async () => {
     });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'quizResults', 'r1'), { points: 10 });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'giftsReceived', 'g1'), { amount: 200 });
+    await setDoc(doc(db, 'weddings', WEDDING_A, 'gifts', 'cafetera'), {
+      titulo: 'Una cafetera decente',
+      reservedBy: 'otro-invitado',
+    });
+    await setDoc(doc(db, 'weddings', WEDDING_A, 'locations', 'proveedores'), {
+      name: 'Aparcamiento de proveedores',
+      visibleToGuests: false,
+    });
+    await setDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'despacito'), {
+      title: 'Despacito',
+      votes: ['otro-invitado'],
+    });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'guestAccessLog', 'l1'), { ip: '1.2.3.4' });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'loginAttempts', 'abc'), { intentos: 9 });
   });
@@ -104,6 +116,89 @@ describe('giftsReceived: el dato más sensible del producto', () => {
     const db = guestOf(env, WEDDING_A);
     await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'giftsReceived', 'g1')));
     await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'giftsReceived')));
+  });
+});
+
+describe('locations: lo visible llega por la proyección, no por lectura directa', () => {
+  it('la pareja las lee y las escribe', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertSucceeds(getDoc(doc(db, 'weddings', WEDDING_A, 'locations', 'proveedores')));
+    await assertSucceeds(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'locations', 'iglesia'), { name: 'Iglesia' }),
+    );
+  });
+
+  /**
+   * `visibleToGuests` solo protege si el invitado no puede consultar la
+   * colección: lo que la pareja apuntó como interno —dónde aparcan los
+   * proveedores— estaría a una lectura de distancia.
+   */
+  it('un invitado NO ve los sitios internos de la pareja', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'locations', 'proveedores')));
+    await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'locations')));
+  });
+});
+
+describe('playlistSuggestions: la lista la sirve listPlaylist, no una lectura directa', () => {
+  it('la pareja las lee y las escribe, que es quien decide qué suena', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertSucceeds(
+      getDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'despacito')),
+    );
+    await assertSucceeds(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'despacito'), {
+        title: 'Despacito',
+        status: 'accepted',
+      }),
+    );
+  });
+
+  /** `votes` guarda los `guestId`: leer la colección es saber quién votó qué. */
+  it('un invitado NO lee quién ha votado cada canción', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'despacito')));
+    await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'playlistSuggestions')));
+  });
+
+  /** Votar es un `update` con su `guestId`: pasa por `voteSong`, no por aquí. */
+  it('un invitado NO escribe directamente: ni vota ni vacía la lista', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'nueva'), { title: 'X' }),
+    );
+    await assertFails(
+      updateDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'despacito'), { votes: [] }),
+    );
+  });
+});
+
+describe('gifts: la lista la sirve getGifts, no una lectura directa', () => {
+  it('la pareja la lee y la escribe, que es su lista', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertSucceeds(getDoc(doc(db, 'weddings', WEDDING_A, 'gifts', 'cafetera')));
+    await assertSucceeds(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'gifts', 'otro'), { titulo: 'Un viaje' }),
+    );
+  });
+
+  /**
+   * El fallo que esto evita: `reservedBy` vive en el documento, y la reserva
+   * es anónima para el resto de invitados (§8.8). Una regla puede negar una
+   * escritura, pero no esconder un campo de una lectura; en cuanto el invitado
+   * lee la colección, sabe quién ha cogido cada cosa.
+   */
+  it('un invitado NO lee quién ha reservado qué', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'gifts', 'cafetera')));
+    await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'gifts')));
+  });
+
+  it('y tampoco reserva escribiendo él el campo', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'gifts', 'cafetera'), { reservedBy: GUEST_A1 }),
+    );
   });
 });
 

@@ -108,3 +108,60 @@ export function accionesDe(status: EstadoBoda): readonly AccionSobreBoda[] {
 export function conIncidencias(bodas: readonly BodaEnListado[]): number {
   return bodas.filter((boda) => boda.authDomain === 'pending').length;
 }
+
+export type FiltroDeEstado = 'todas' | EstadoBoda;
+/** Por la fecha de la boda: las que están por delante, las que ya pasaron, o sin fecha. */
+export type FiltroDeMomento = 'todas' | 'proximas' | 'pasadas' | 'sin-fecha';
+
+export interface FiltrosDeBodas {
+  readonly texto: string;
+  readonly estado: FiltroDeEstado;
+  readonly momento: FiltroDeMomento;
+}
+
+export const SIN_FILTROS: FiltrosDeBodas = { texto: '', estado: 'todas', momento: 'todas' };
+
+export function hayFiltros(filtros: FiltrosDeBodas): boolean {
+  return filtros.texto.trim() !== '' || filtros.estado !== 'todas' || filtros.momento !== 'todas';
+}
+
+/** Minúsculas y sin tildes: «maria» tiene que encontrar «María». */
+function plano(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Las bodas que cumplen los filtros.
+ *
+ * El texto busca en los dos nombres y en la dirección, que es como se las
+ * conoce en el día a día. «Próximas» incluye **hoy**: una boda que es hoy no ha
+ * pasado todavía. `weddingDate` es medianoche UTC del día (ver
+ * `shared/zona-horaria.ts`), así que se compara contra el día de hoy en UTC.
+ */
+export function filtrarBodas(
+  bodas: readonly BodaEnListado[],
+  filtros: FiltrosDeBodas,
+  hoy: Date,
+): readonly BodaEnListado[] {
+  const busqueda = plano(filtros.texto);
+  const inicioDeHoy = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+  return bodas.filter((boda) => {
+    if (filtros.estado !== 'todas' && boda.status !== filtros.estado) return false;
+
+    if (filtros.momento !== 'todas') {
+      const fecha = boda.weddingDate?.getTime() ?? null;
+      if (filtros.momento === 'sin-fecha' && fecha !== null) return false;
+      if (filtros.momento === 'proximas' && (fecha === null || fecha < inicioDeHoy)) return false;
+      if (filtros.momento === 'pasadas' && (fecha === null || fecha >= inicioDeHoy)) return false;
+    }
+
+    if (busqueda === '') return true;
+    const pajar = plano(`${boda.pareja.partnerA} ${boda.pareja.partnerB} ${boda.slug}`);
+    return busqueda.split(/\s+/).every((palabra) => pajar.includes(palabra));
+  });
+}

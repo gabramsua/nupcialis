@@ -1,6 +1,10 @@
 import { InjectionToken } from '@angular/core';
 
-import type { Dificultad, PreguntaDelPanel } from '../../features/public-site/quiz/quiz';
+import type {
+  Dificultad,
+  EstadisticaDePregunta,
+  PreguntaDelPanel,
+} from '../../features/public-site/quiz/quiz';
 
 /**
  * El quiz, del lado de la pareja (§8.7).
@@ -22,7 +26,12 @@ export type FalloQuizPanel =
   | { readonly tipo: 'error'; readonly mensaje: string };
 
 export type ResultadoPreguntas =
-  | { readonly ok: true; readonly preguntas: readonly PreguntaDelPanel[] }
+  | {
+      readonly ok: true;
+      readonly preguntas: readonly PreguntaDelPanel[];
+      /** Por id de pregunta. Ausente en las que nadie ha contestado aún. */
+      readonly estadisticas?: Readonly<Record<string, EstadisticaDePregunta>>;
+    }
   | { readonly ok: false; readonly fallo: FalloQuizPanel };
 
 export type ResultadoEscritura =
@@ -85,4 +94,4 @@ export function resumenDeJuego(jugadores: readonly JugadorDelQuiz[]): {
   };
 }
 
-export type { Dificultad, PreguntaDelPanel };
+export type { Dificultad, EstadisticaDePregunta, PreguntaDelPanel };

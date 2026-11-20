@@ -17,6 +17,7 @@ const SITIO: SitioPublico = {
   faqs: [],
   cronologia: [],
   alojamientos: [],
+  ubicaciones: [],
   dressCode: DRESS_CODE_VACIO,
   modulos: { rsvp: 'visible' },
 };
@@ -90,12 +91,20 @@ describe('cargarTenant', () => {
     expect(r.tipo).toBe('no-publicada');
   });
 
+  it('en borrador conserva el id: el panel de la pareja tiene que abrirse', async () => {
+    const r = await cargarTenant(
+      'mariaygabriel',
+      fuente(SLUGS, { w1: { ...SITIO, status: 'draft' } }),
+    );
+    expect(r).toEqual({ tipo: 'no-publicada', weddingId: 'w1' });
+  });
+
   it('una boda archivada lo dice', async () => {
     const r = await cargarTenant(
       'mariaygabriel',
       fuente(SLUGS, { w1: { ...SITIO, status: 'archived' } }),
     );
-    expect(r.tipo).toBe('archivada');
+    expect(r).toEqual({ tipo: 'archivada', weddingId: 'w1' });
   });
 
   it('un slug que apunta a una boda sin proyección pública es un error, no un 404', async () => {

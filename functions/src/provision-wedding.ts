@@ -45,7 +45,6 @@ import {
   CHECKLIST_PLANTILLA,
   FAQS_FABRICA,
   GRUPO_POR_DEFECTO,
-  PREGUNTAS_QUIZ_FABRICA,
   PREGUNTAS_RSVP_FABRICA,
   fechaLimiteTarea,
   tareasAplicables,
@@ -297,13 +296,6 @@ function sembrar(t: Transaction, bodaRef: DocumentReference, datos: DatosAlta): 
     t.create(bodaRef.collection('faqs').doc(), { ...faq });
   }
 
-  for (const pregunta of PREGUNTAS_QUIZ_FABRICA) {
-    t.create(bodaRef.collection('quizQuestions').doc(), {
-      ...pregunta,
-      wrongAnswers: [...pregunta.wrongAnswers],
-    });
-  }
-
   const hoy = new Date();
   const tareas = tareasAplicables(datos.weddingDate, hoy, CHECKLIST_PLANTILLA);
   tareas.forEach((tarea, indice) => {
@@ -357,7 +349,10 @@ async function conEnlacesDeAcceso(
   cuentas: readonly { email: string; uid: string; nueva: boolean }[],
   slug: string,
 ): Promise<readonly CuentaCreada[]> {
-  const url = `https://${dominioDeBoda(slug, DOMINIO_BASE)}/panel`;
+  // Al login del panel, no a `/panel`: quien acaba de poner su contraseña no
+  // tiene sesión todavía, y `/panel` sin sesión depende de que el router lo
+  // redirija. Yendo directos al acceso no hay nada que pueda desviarlo.
+  const url = `https://${dominioDeBoda(slug, DOMINIO_BASE)}/panel/acceso`;
 
   return Promise.all(
     cuentas.map(async (cuenta) => {
