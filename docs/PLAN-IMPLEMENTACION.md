@@ -4,7 +4,70 @@ Documento de ejecución. Qué se construye, en qué orden y cuándo se considera
 terminado. El _qué_ y el _por qué_ están en `REQUISITOS.md`; aquí está el _cómo_ y
 el _cuándo_.
 
-**Estado actual: F0 sin empezar.**
+## Dónde estamos
+
+_Actualizado el 2026-11-16. Se revisa cada vez que se cierra un bloque._
+
+| Fase                                | Estado                  | Qué falta                                                                                    |
+| ----------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
+| **F0** Fundaciones                  | Hecha en lo que bloquea | Infraestructura de producción (tres proyectos, hosting wildcard) y datos de cobro en el alta |
+| **F1** Núcleo vendible              | **En curso**            | Ver el desglose de abajo                                                                     |
+| **F2** Banquete, ubicaciones y día  | **En curso**            | Mapa (hecho, con Leaflet + OSM), mesas, dress code y las sueltas de `TAREAS.md`              |
+| **F3** Participación de invitados   | **En curso**            | Galería, quiz, regalos y playlist hechos; falta el libro de firmas                           |
+| **F4** Gestión interna de la pareja | **En curso**            | Tareas hechas; faltan presupuesto, proveedores y regalos recibidos (este último ya está)     |
+| **F5** Comercialización             | Sin empezar             | Todo. No bloquea la primera venta                                                            |
+
+**F1, bloque a bloque**, en el orden en que se van a hacer:
+
+| #   | Bloque                                                                         | Estado |
+| --- | ------------------------------------------------------------------------------ | ------ |
+| 1   | Web pública: plantillas, paleta, portada, secciones y edición con vista previa | Hecho  |
+| 2   | Lista de invitados: alta, búsqueda, resumen                                    | Hecho  |
+| 3   | Importación desde CSV o pegando, con plantilla y previsualización              | Hecho  |
+| 4   | Grupos, con candado para las fotos y el grupo de todos                         | Hecho  |
+| 5   | **Acceso de invitados**: modos A, B y C, `guestLogin`, contadores de acceso    | Hecho  |
+| 6   | Enlace por invitado y compartir por WhatsApp                                   | Hecho  |
+| 7   | Formulario de confirmación (RSVP) dinámico                                     | Hecho  |
+| 8   | Acompañantes añadidos por el invitado (`addCompanion`)                         | Hecho  |
+| 9   | Exportación a Excel para el catering                                           | Hecho  |
+| 10  | Texto enriquecido en la web pública, con saneado en servidor                   | Hecho  |
+
+El acceso va antes que el enlace por WhatsApp aunque en `TAREAS.md` apareciera
+después: el enlace lleva al invitado a una pantalla donde tiene que poder
+entrar, y el RSVP y los acompañantes necesitan saber quién es.
+
+**Los nueve bloques están cerrados**, y encima de ellos ya están hechas las
+tareas sueltas que les faltaban: filtrar por grupo y ordenar los grupos, el
+cupo de acompañantes en lote, el aviso de a quién han apuntado los invitados,
+«Quién ha entrado» (el registro de accesos), las respuestas del formulario en
+el panel y en la hoja de cálculo, y los dos niveles de sesión de D-34 con su
+«¿no eres tú?» en la web del invitado.
+
+**Los diez bloques están cerrados**, el décimo el 2026-11-13 al confirmarse
+D-03. Lo único que queda de F1 es la **comprobación en el navegador** con una
+boda de prueba: cargar cien invitados, mandarles el enlace, entrar como
+invitado, confirmar con acompañantes y exportar para el catering. Es lo que
+convierte «los tests pasan» en «F1 está terminada», y no lo puedo hacer yo.
+
+**F1 está terminada cuando** una pareja de prueba carga 100 invitados, los invita
+por WhatsApp, ellos entran, confirman con acompañantes y la pareja exporta la
+lista para el catering.
+
+**F2 está empezada** mientras esa comprobación espera, porque no depende de
+ella. Hechos los cuatro módulos de contenido del plan básico que salían «En camino»
+en el menú de la pareja: **preguntas frecuentes** (`F2.1`), **cronología del
+día** (`F2.2`), **alojamientos** (`F2.4`) y **dress code** (`F2.5`). Los tres
+primeros con el mismo patrón —dominio compartido en copia literal entre
+funciones y cliente, lo publicable viajando en la proyección pública y la
+colección cerrada al invitado en las reglas, con su batería de aislamiento—; el
+dress code es la excepción porque no es una lista: vive en
+`modules.dressCode.config` y lo que se publica se construye campo a campo,
+porque ninguna configuración de módulo se copia a la proyección.
+
+Del dress code faltan a propósito el **moodboard** (`F2.5b`) y las indicaciones
+por rol o grupo (`F2.5c`), apuntadas en `D-38`. El **mapa** (`F2.3`) está
+hecho con Leaflet y OpenStreetMap (`D-04`, a validar); quedan los enlaces
+`locationId` de la cronología y de los alojamientos.
 
 ---
 
@@ -75,7 +138,7 @@ vacío, con el aislamiento demostrado por tests.
 ### F0.6 Provisioning
 
 - `provisionWedding`: transacción de slug y documento, creación de cuentas, claims y semillas.
-- Semillas: preguntas de fábrica del RSVP, banco de ejemplo del quiz, plantilla de checklist con fechas relativas, FAQ de fábrica, grupo por defecto de audiencia pública.
+- Semillas: preguntas de fábrica del RSVP, plantilla de checklist con fechas relativas, FAQ de fábrica, grupo por defecto de audiencia pública.
 - `syncPublicProjection` y `recomputeCounters` como triggers.
 - Log de auditoría.
 
@@ -83,6 +146,10 @@ vacío, con el aislamiento demostrado por tests.
 
 - `panel-shell` con navegación por módulos, mostrando solo los activos.
 - `admin-shell` de superadmin con listado de bodas, alta y registro de accesos de los novios.
+- **Datos de cobro por boda desde el primer alta**: plan, importe cobrado, método,
+  fecha y proveedor si lo hubiera. Aunque la bandeja de solicitudes sea de F5,
+  registrar qué se cobró por cada boda hace falta desde la primera venta, y
+  añadirlo después obliga a rellenar a mano lo ya vendido (D-25, D-26).
 - Resumen inicial del panel de la pareja, todavía sin datos reales.
 
 **Terminado cuando:** se da de alta una boda desde superadmin, entran las dos cuentas
@@ -152,13 +219,34 @@ y cierra los agradecimientos desde el panel.
 
 ---
 
-## F5 — Escala comercial
+## F5 — Comercialización
 
-- Alta self-service con Stripe y webhook que invoca `provisionWedding`.
-- Planes `basic` y `premium` con módulos por plan.
+Ya no hay self-service: sin alta de autónomo no hay pasarela de pago, así que la
+activación la hace una persona (D-25). Lo que se automatiza es todo lo que rodea
+a esa persona.
+
+- Landing comercial en `nupcialis.com` con los dos planes y sus precios.
+- **Formulario público de solicitud** (`createWeddingRequest`): valida el slug,
+  calcula el precio con la tarifa que corresponda y congela el importe. Es, junto
+  a `guestLogin`, la única escritura pública del sistema: App Check y límite por
+  IP obligatorios.
+- Pantalla de confirmación con la referencia y **el número de Bizum, que no
+  aparece en ninguna otra parte de la web**.
+- **Enlaces de proveedor** (`/alta?ref=CODIGO`): el mismo formulario, etiquetado.
+  Sin cuentas, sin rol nuevo, sin acceso a nada (D-26).
+- **Aviso por Telegram** al superadmin cuando entra una solicitud. El token vive
+  en Secret Manager, nunca en el repositorio.
+- **Bandeja de solicitudes** en el panel de superadmin, con búsqueda por importe y
+  por nombre, no solo por referencia: nadie escribe bien el concepto de un Bizum.
+- **Liquidación por proveedor**: saldo pendiente y cierre de varias solicitudes de
+  una vez.
+- `purgeOldRequests`: las solicitudes que nunca cuajan se borran a los seis meses.
 - WhatsApp Business API para invitaciones y recordatorios.
 - Plano real de finca como extra.
-- Landing comercial en `nupcialis.com`.
+
+**Nada de esto bloquea la primera venta.** Con `provisionWedding` y el panel de
+superadmin de F0.7 ya se puede dar de alta una boda cobrada por Bizum; F5 es lo
+que evita llevarlo en una libreta a partir de la tercera.
 
 ---
 

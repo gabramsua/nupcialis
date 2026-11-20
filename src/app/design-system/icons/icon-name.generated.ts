@@ -4,7 +4,9 @@
 /** Nombres del set curado. Un icono fuera de esta lista no compila. */
 export type NpIconName =
   | 'airplane'
+  | 'archive'
   | 'arrow-left'
+  | 'arrows-clockwise'
   | 'baby'
   | 'balloon'
   | 'bank'
@@ -25,13 +27,16 @@ export type NpIconName =
   | 'champagne'
   | 'chart-bar'
   | 'chart-pie-slice'
+  | 'chat-circle-text'
   | 'check'
   | 'check-circle'
   | 'chef-hat'
   | 'church'
+  | 'circle-dashed'
   | 'clock'
   | 'clock-countdown'
   | 'confetti'
+  | 'copy'
   | 'cow'
   | 'credit-card'
   | 'crown-simple'
@@ -39,6 +44,7 @@ export type NpIconName =
   | 'device-mobile'
   | 'diamond'
   | 'disco-ball'
+  | 'door-open'
   | 'dots-six-vertical'
   | 'dots-three'
   | 'download-simple'
@@ -49,6 +55,7 @@ export type NpIconName =
   | 'file-text'
   | 'first-aid'
   | 'fish'
+  | 'flag-checkered'
   | 'flower'
   | 'fork-knife'
   | 'funnel'
@@ -56,17 +63,22 @@ export type NpIconName =
   | 'gear'
   | 'gift'
   | 'grains'
+  | 'guitar'
   | 'hand-coins'
   | 'hand-heart'
+  | 'hands-clapping'
   | 'heart'
   | 'images'
   | 'info'
   | 'leaf'
+  | 'link-simple'
   | 'list'
   | 'list-checks'
   | 'lock-simple'
   | 'magnifying-glass'
   | 'map-pin'
+  | 'martini'
+  | 'microphone-stage'
   | 'money'
   | 'moon-stars'
   | 'music-notes'
@@ -74,6 +86,7 @@ export type NpIconName =
   | 'note-pencil'
   | 'palette'
   | 'pencil-simple'
+  | 'person-simple-walk'
   | 'plant'
   | 'playlist'
   | 'plus'
@@ -82,9 +95,11 @@ export type NpIconName =
   | 'seat'
   | 'share-network'
   | 'sliders-horizontal'
+  | 'sparkle'
   | 'spinner-gap'
   | 'star'
   | 'steering-wheel'
+  | 'suitcase'
   | 'sun'
   | 't-shirt'
   | 'table'
@@ -95,8 +110,10 @@ export type NpIconName =
   | 'trophy'
   | 'upload-simple'
   | 'user'
+  | 'user-circle'
   | 'user-plus'
   | 'users'
+  | 'users-three'
   | 'video-camera'
   | 'warning'
   | 'whatsapp-logo'
@@ -124,6 +141,16 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'moon-stars': "Recena",
   'sun': "Exterior",
   'tent': "Carpa",
+  'martini': "Cóctel",
+  'microphone-stage': "Discursos",
+  'users-three': "Llegada de invitados",
+  'hands-clapping': "Aplausos",
+  'door-open': "Entrada",
+  'sparkle': "Primer baile",
+  'person-simple-walk': "Llegada",
+  'flag-checkered': "Final",
+  'guitar': "Música en directo",
+  'suitcase': "Viaje de novios",
   'bus': "Autobús",
   'car': "Coche",
   'taxi': "Taxi",
@@ -147,6 +174,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'crown-simple': "Padrinos",
   'hand-heart': "Testigos",
   'steering-wheel': "Chófer",
+  'user-circle': "Quién eres",
   'leaf': "Vegetariano",
   'plant': "Vegano",
   'grains': "Sin gluten",
@@ -158,6 +186,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'check-circle': "Confirmado",
   'x-circle': "No asiste",
   'clock-countdown': "Pendiente",
+  'circle-dashed': "Sin hacer",
   'warning': "Atención",
   'info': "Información",
   'prohibit': "Bloqueado",
@@ -189,6 +218,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'plus': "Añadir",
   'pencil-simple': "Editar",
   'trash': "Eliminar",
+  'archive': "Archivar",
   'magnifying-glass': "Buscar",
   'funnel': "Filtrar",
   'dots-three': "Más acciones",
@@ -211,4 +241,8 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'images': "Galería",
   'note-pencil': "Libro de firmas",
   'playlist': "Playlist",
+  'copy': "Copiar",
+  'link-simple': "Enlace",
+  'arrows-clockwise': "Cambiar el enlace",
+  'chat-circle-text': "Respuestas",
 };

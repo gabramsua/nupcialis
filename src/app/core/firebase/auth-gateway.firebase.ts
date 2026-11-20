@@ -56,6 +56,20 @@ export function crearPuertaAuthFirebase(): PuertaAuth {
       await signInWithEmailAndPassword(auth, email, password);
     },
 
+    /**
+     * Acceso con Google, en ventana emergente.
+     *
+     * Emergente y no redirección a propósito: la redirección pierde el estado
+     * de la página y, con el bloqueo de cookies de terceros de los navegadores
+     * actuales, falla en más sitios de los que arregla.
+     *
+     * El servidor de desarrollo sirve
+     * `Cross-Origin-Opener-Policy: same-origin-allow-popups` (ver
+     * `angular.json`). Sin esa cabecera el navegador impide que la página lea
+     * `window.closed` de la emergente, que es como el SDK detecta que la han
+     * cerrado, y el acceso se queda colgado sin decir nada. En producción hay
+     * que servir la misma cabecera.
+     */
     async entrarConGoogle() {
       const proveedor = new GoogleAuthProvider();
       // Fuerza el selector de cuenta. Sin esto, quien tenga varias cuentas de

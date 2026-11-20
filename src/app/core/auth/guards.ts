@@ -15,22 +15,62 @@ import { SessionStore } from './session.store';
  * Firestore no le dejan leer nada. Esto evita enseñar un panel que no va a
  * poder cargar datos, y llevar a cada uno donde le corresponde.
  */
+/**
+ * Todo lo que necesita inyección, resuelto de una vez.
+ *
+ * **Se llama antes del primer `await` y no hay excepciones.** `inject()` solo
+ * funciona dentro del contexto de inyección, y ese contexto se pierde en cuanto
+ * la función cede el control: al volver del `await`, un `inject()` lanza
+ * `NG0203`. Estaba pasando —la fuente de tenant se creaba después de esperar a
+ * la sesión— y el panel de la pareja no llegaba a abrirse nunca, con un error
+ * que no menciona ni el panel ni la sesión.
+ *
+ * Agrupar las dependencias aquí es lo que hace visible la regla: si alguien
+ * añade una inyección, la añade en este sitio, que está antes del `await` por
+ * construcción.
+ */
+function dependenciasDelPanel() {
+  return {
+    router: inject(Router),
+    store: inject(SessionStore),
+    hostname: inject(DOCUMENT).location.hostname,
+    fuenteTenant: crearFuenteTenantFirestore(),
+  };
+}
+
 export const guardaPanel: CanActivateFn = async () => {
-  const router = inject(Router);
-  const store = inject(SessionStore);
-  const { hostname } = inject(DOCUMENT).location;
+  const { router, store, hostname, fuenteTenant } = dependenciasDelPanel();
 
   const sesion = await store.esperar();
 
   const destino = resolverTenant(hostname, environment.rootDomain);
   const boda =
     destino.superficie === 'boda' && destino.slug
-      ? await cargarTenant(destino.slug, crearFuenteTenantFirestore())
+      ? await cargarTenant(destino.slug, fuenteTenant)
       : null;
 
-  const weddingId = boda?.tipo === 'ok' ? boda.weddingId : null;
+  // El panel se abre también con la boda en borrador o archivada: es donde la
+  // pareja la prepara antes de publicar y la repasa después. Solo la web pública
+  // se cierra en esos estados.
+  const weddingId =
+    boda?.tipo === 'ok' || boda?.tipo === 'no-publicada' || boda?.tipo === 'archivada'
+      ? boda.weddingId
+      : null;
 
-  switch (accesoAlPanel(sesion, weddingId)) {
+  const resultado = accesoAlPanel(sesion, weddingId);
+
+  // Solo en desarrollo: cuando el panel te echa, la pantalla no dice por qué y
+  // la causa puede estar en tres sitios (sesión, claims, boda del host). Sin
+  // datos personales: ni correo ni identificadores.
+  if (!environment.production) {
+    console.warn(
+      `[Panel] Guarda del panel → ${resultado}.\n` +
+        `  sesión: rol=${sesion.rol}, weddingId en el token=${sesion.weddingId ?? 'ninguno'}\n` +
+        `  host: ${hostname} → boda=${boda?.tipo ?? 'no resuelta'}, weddingId del host=${weddingId ?? 'ninguno'}`,
+    );
+  }
+
+  switch (resultado) {
     case 'ok':
       return true;
     case 'sin-sesion':
@@ -53,6 +93,9 @@ export const guardaSuperadmin: CanActivateFn = async () => {
     case 'sin-sesion':
       return router.createUrlTree(['/superadmin/acceso']);
     default:
-      return router.createUrlTree(['/']);
+      // A una pantalla que lo explica, no a la raíz: el acceso funcionó y lo
+      // que falta es el claim. Mandar a la raíz dejaba un «no encontramos esta
+      // boda» que no tiene nada que ver y hace perder media hora.
+      return router.createUrlTree(['/superadmin/sin-permiso']);
   }
 };

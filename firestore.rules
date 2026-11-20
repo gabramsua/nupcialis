@@ -36,7 +36,7 @@ service cloud.firestore {
     // Campos que mueve el servidor y la pareja no puede tocar.
     function noSystemFields() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt']);
+        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt', 'limits']);
     }
 
     // ---------- colecciones raíz ----------
@@ -87,50 +87,123 @@ service cloud.firestore {
         allow write: if false;           // lo escribe guestLogin
       }
 
+      // Contador de intentos de acceso por IP, que lleva guestLogin. Cerrado a
+      // todo el mundo, la pareja incluida: poder leerlo o borrarlo desde el
+      // navegador sería poder quitarse de encima el límite de intentos.
+      match /loginAttempts/{id} { allow read, write: if false; }
+
       match /budgetItems/{id}    { allow read, write: if isOwner(wid); }
       match /vendors/{id}        { allow read, write: if isOwner(wid); }
       match /checklistItems/{id} { allow read, write: if isOwner(wid); }
 
       // ---- lectura para invitados, escritura solo de la pareja ----
 
+      // guestGroups se lee directamente pero se escribe por función
+      // (upsertGroup, deleteGroup). Dos invariantes —nadie en dos grupos
+      // restringidos, ningún invitado apuntando a un grupo borrado— necesitan
+      // mirar los invitados, y los invitados están cerrados al cliente.
       match /guestGroups/{id}    { allow read: if isOwner(wid) || isGuestOf(wid);
-                                   allow write: if isOwner(wid); }
+                                   allow write: if false; }
       match /tables/{id}         { allow read: if isOwner(wid) || isGuestOf(wid);
                                    allow write: if isOwner(wid); }
-      match /locations/{id}      { allow read: if isOwner(wid) || isGuestOf(wid);
+      // El invitado **no lee los sitios de aquí**: los visibles le llegan por la
+      // proyección pública. Si pudiera consultar la colección vería también los
+      // que la pareja apuntó como internos —dónde aparcan los proveedores—, y
+      // `visibleToGuests` no protegería nada.
+      match /locations/{id}      { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
-      match /faqs/{id}           { allow read: if isOwner(wid) || isGuestOf(wid);
+      // Las preguntas frecuentes **no las lee el invitado de aquí**: las lee de
+      // la proyección pública, donde llegan ya saneadas y solo las que tienen
+      // respuesta escrita. Dos motivos: en una boda abierta no hay sesión de
+      // invitado con la que leer nada, y una pregunta a medio escribir —o
+      // apagada— no tiene por qué estar al alcance de una consulta directa.
+      match /faqs/{id}           { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
-      match /accommodations/{id} { allow read: if isOwner(wid) || isGuestOf(wid);
+      // Igual que las preguntas y la cronología: lo publicable le llega al
+      // invitado por la proyección, que es lo único que puede leer una boda
+      // abierta, y lo que está a medio apuntar se queda aquí.
+      match /accommodations/{id} { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
       match /weddingParty/{id}   { allow read: if isOwner(wid) || isGuestOf(wid);
                                    allow write: if isOwner(wid); }
-      match /timelineEvents/{id} { allow read: if isOwner(wid) || isGuestOf(wid);
+      // La cronología **tampoco la lee el invitado de aquí**: lo visible le
+      // llega por la proyección pública, y lo interno —la hora a la que llega
+      // el fotógrafo, el montaje— se queda en esta colección, que es de la
+      // pareja. Una regla no puede filtrar por `visibleToGuests` en una
+      // consulta de lista, así que la única forma honesta de cumplir §8.13 es
+      // que el invitado no lea aquí.
+      match /timelineEvents/{id} { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
-      match /formQuestions/{id}  { allow read: if isOwner(wid) || isGuestOf(wid);
-                                   allow write: if isOwner(wid); }
-      match /gifts/{id}          { allow read: if isOwner(wid) || isGuestOf(wid);
+      // Las preguntas del formulario las escribe la pareja desde su panel. Lo
+      // único que no puede hacer es borrar las de sistema (REQUISITOS §8.2):
+      // otras partes del producto dependen de su `mapsTo` —la del menú alimenta
+      // la exportación al catering—, así que se desactivan, no se borran. Y
+      // tampoco puede quitarles el `isSystem`, que sería borrarlas en dos pasos.
+      match /formQuestions/{id} {
+        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow create: if isOwner(wid);
+        allow update: if isOwner(wid)
+                      && (resource.data.isSystem != true
+                          || request.resource.data.isSystem == true);
+        allow delete: if isOwner(wid) && resource.data.isSystem != true;
+      }
+      // La lista de regalos **el invitado no la lee de aquí**: se la sirve
+      // `getGifts`. Dos motivos. El primero, que la reserva es anónima para el
+      // resto (§8.8) y `reservedBy` vive en el documento: una regla puede
+      // negar una escritura, no esconder un campo de una lectura. El segundo,
+      // que reservar sin pisar la reserva de otro es una transacción y no un
+      // `update`, así que la escritura del invitado tampoco podía ir aquí.
+      match /gifts/{id}          { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
 
       // ---- quiz ----
       //
-      // Las puntuaciones las escribe submitQuizResult tras corregir en
-      // servidor. Si el cliente pudiera escribir aquí, cualquiera se pone
-      // primero en el ranking desde la consola del navegador.
+      // Las tres colecciones están cerradas al invitado, y cada una por su
+      // motivo. Todo lo que necesita para jugar le llega por `startQuiz`,
+      // `submitQuiz` y `listQuizRanking`.
+      //
+      // quizQuestions: **llevan la respuesta correcta dentro**. Dejar que un
+      // invitado leyera esta colección sería dejarle leer las respuestas antes
+      // de contestar, y entonces la corrección en servidor (regla de oro 4) no
+      // serviría de nada: el tramposo no falsea la puntuación, la saca bien.
       match /quizQuestions/{id} {
-        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow read: if isOwner(wid);
         allow write: if isOwner(wid);
       }
+      // quizGames: una partida en curso, con sus preguntas enteras. Mismo
+      // motivo, y además no es de nadie más que de la función.
+      match /quizGames/{id} {
+        allow read, write: if false;
+      }
+      // quizStats: cuántos contestan y cuántos aciertan cada pregunta. Lo
+      // escribe solo `submitQuiz`; la pareja lo lee para ver qué preguntas
+      // salen fáciles o difíciles. Escribirlo desde el cliente falsearía las
+      // etiquetas, y el invitado no tiene por qué leerlo.
+      match /quizStats/{id} {
+        allow read: if isOwner(wid);
+        allow write: if false;
+      }
+      // quizResults: lo escribe la función tras corregir. Si el cliente pudiera
+      // escribir aquí, cualquiera se pone primero desde la consola del
+      // navegador, y la corrección en servidor (regla de oro 4) no serviría de
+      // nada. Leerla tampoco: guarda el `guestId` y los tiempos de cada
+      // partida, y el ranking que ve el invitado pasa por `listQuizRanking`,
+      // que devuelve el nombre y los puntos y nada más (D-11).
       match /quizResults/{id} {
-        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow read: if isOwner(wid);
         allow write: if false;
       }
 
       // ---- contenidos moderados de invitados ----
 
+      // La playlist la sirve `listPlaylist`, no una lectura directa: cada
+      // canción guarda los `guestId` de quien la votó, y una regla puede negar
+      // una lectura pero no esconder un campo de ella. Con la colección
+      // abierta, cualquier invitado sabría quién ha votado qué. Proponer y
+      // votar pasan por `suggestSong` y `voteSong`.
       match /playlistSuggestions/{id} {
-        allow read: if isOwner(wid) || isGuestOf(wid);
-        allow write: if isOwner(wid);    // el alta del invitado pasa por función
+        allow read: if isOwner(wid);
+        allow write: if isOwner(wid);
       }
       match /guestbookEntries/{id} {
         allow read: if isOwner(wid) || isGuestOf(wid);

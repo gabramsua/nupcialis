@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpCard } from '../../../design-system/components/card/card';
@@ -86,6 +87,13 @@ import { traducirErrorAuth } from '../../../core/firebase/auth-gateway.firebase'
 export class Login {
   private readonly puerta = inject(PUERTA_AUTH);
   private readonly router = inject(Router);
+  /**
+   * A dónde se va tras entrar. Esta pantalla sirve a la pareja y al superadmin,
+   * y mandar a los dos a `/panel` dejaba al superadmin en la landing: en el
+   * dominio raíz `/panel` no es el de ninguna boda. Lo decide la ruta.
+   */
+  private readonly destino =
+    (inject(ActivatedRoute).snapshot.data['destino'] as string | undefined) ?? '/panel';
 
   protected readonly MENSAJES = MENSAJES_AUTH;
   protected readonly cargando = signal(false);
@@ -131,7 +139,13 @@ export class Login {
     this.enviadoRecuperacion.set(false);
     try {
       await accion();
-      await this.router.navigate(['/panel']);
+      const llegado = await this.router.navigate([this.destino]);
+      if (!environment.production) {
+        console.warn(
+          `[Login] Entrada correcta. Navegación a ${this.destino}: ${llegado ? 'hecha' : 'cancelada'}. ` +
+            `URL ahora: ${this.router.url}`,
+        );
+      }
     } catch (e) {
       this.error.set(traducirErrorAuth((e as { code?: unknown })?.code));
     } finally {

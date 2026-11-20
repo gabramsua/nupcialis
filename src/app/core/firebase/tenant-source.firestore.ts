@@ -1,6 +1,21 @@
 import { inject } from '@angular/core';
 import { Timestamp, doc, getDoc } from 'firebase/firestore';
-import { EntradaSlug, FuenteTenant, SitioPublico } from '../tenant/tenant-source';
+import {
+  EntradaSlug,
+  FuenteTenant,
+  NombresPareja,
+  PaletaMarca,
+  SitioPublico,
+  TemaPublico,
+  type VisibilidadModulo,
+} from '../tenant/tenant-source';
+import { esModoAcceso } from '../acceso/acceso';
+import { sanearSecciones } from '../../features/public-site/secciones/secciones';
+import { sanearFaqs } from '../../features/public-site/faqs/faqs';
+import { sanearCronologia } from '../../features/public-site/cronologia/cronologia';
+import { sanearAlojamientos } from '../../features/public-site/alojamientos/alojamientos';
+import { sanearUbicaciones } from '../../features/public-site/mapa/ubicaciones';
+import { dressCodePublicado } from '../../features/public-site/dress-code/dress-code';
 import { FIRESTORE } from './firestore.providers';
 
 /**
@@ -44,11 +59,112 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         // Igual que arriba: si el estado no se reconoce, se queda en borrador.
         // Ante la duda, una web de boda no se publica sola.
         status: status === 'active' || status === 'archived' ? status : 'draft',
-        coupleNames: typeof datos['coupleNames'] === 'string' ? datos['coupleNames'] : '',
+        coupleNames: nombres(datos['coupleNames']),
         weddingDate:
           datos['weddingDate'] instanceof Timestamp ? datos['weddingDate'].toDate() : null,
+        // Se deja pasar la cadena tal cual: quien sabe si «17:00» es una hora
+        // válida es `horaDeReloj`, y una hora corrupta se comporta como sin
+        // hora, no rompe la portada.
+        weddingTime: typeof datos['weddingTime'] === 'string' ? datos['weddingTime'] : null,
+        timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
         locale: typeof datos['locale'] === 'string' ? datos['locale'] : 'es',
+        theme: tema(datos['theme']),
+        indexable: datos['indexable'] === true,
+        modulos: modulos(datos['modules']),
+        // Ante un valor que no reconocemos, abierta. Una boda que pidiera
+        // identificarse por un dato corrupto dejaría fuera a sus invitados sin
+        // que nadie lo hubiera decidido.
+        guestAccessMode: esModoAcceso(datos['guestAccessMode']) ? datos['guestAccessMode'] : 'open',
+        // Se vuelve a sanear en el cliente aunque el servidor ya lo haya hecho.
+        // No es desconfianza del servidor: es que este documento puede haber
+        // sido escrito por una versión anterior de la función, y una web de
+        // boda no puede romperse por un despliegue a medias.
+        secciones: sanearSecciones(secciones(datos['content'])),
+        faqs: sanearFaqs(dentroDeContent(datos['content'], 'faqs')),
+        cronologia: sanearCronologia(dentroDeContent(datos['content'], 'cronologia')),
+        alojamientos: sanearAlojamientos(dentroDeContent(datos['content'], 'alojamientos')),
+        ubicaciones: sanearUbicaciones(dentroDeContent(datos['content'], 'ubicaciones')),
+        // El HTML de la descripción ya viene saneado del servidor: aquí solo
+        // se comprueba la forma, como con todo lo que llega de Firestore.
+        dressCode: dressCodePublicado(dentroDeContent(datos['content'], 'dressCode')),
       };
     },
   };
+}
+
+/**
+ * Los nombres de la pareja, tal como los escribe `syncPublicProjection`.
+ *
+ * Un documento a medio escribir no puede tumbar la portada: si falta un nombre
+ * se queda vacío y la web sigue mostrando la fecha, que es lo que el invitado
+ * ha venido a ver.
+ */
+/** El array de secciones dentro de `content`, sin suponer que exista. */
+function secciones(valor: unknown): unknown {
+  return dentroDeContent(valor, 'sections');
+}
+
+function dentroDeContent(valor: unknown, clave: string): unknown {
+  if (valor === null || typeof valor !== 'object') return null;
+  return (valor as Record<string, unknown>)[clave];
+}
+
+function nombres(valor: unknown): NombresPareja {
+  const par = typeof valor === 'object' && valor !== null ? (valor as Record<string, unknown>) : {};
+  return {
+    partnerA: typeof par['partnerA'] === 'string' ? par['partnerA'] : '',
+    partnerB: typeof par['partnerB'] === 'string' ? par['partnerB'] : '',
+  };
+}
+
+/**
+ * El tema de la boda.
+ *
+ * Un `templateId` desconocido no se corrige aquí: se deja pasar tal cual y lo
+ * resuelve el catálogo de plantillas, que es quien sabe cuáles existen. Esta
+ * capa comprueba formas, no reglas de negocio.
+ */
+function tema(valor: unknown): TemaPublico {
+  const t = valor !== null && typeof valor === 'object' ? (valor as Record<string, unknown>) : {};
+  return {
+    templateId: typeof t['templateId'] === 'string' ? t['templateId'] : '',
+    palette: paleta(t['palette']),
+    heroImagePath: typeof t['heroImagePath'] === 'string' ? t['heroImagePath'] : null,
+    heroImageUrl: typeof t['heroImageUrl'] === 'string' ? t['heroImageUrl'] : null,
+  };
+}
+
+const CLAVES_PALETA = ['primary', 'secondary', 'background', 'surface', 'text', 'accent'] as const;
+
+/**
+ * La paleta solo vale si está completa.
+ *
+ * Media paleta produce una portada a medio pintar, con tres colores de la
+ * pareja y tres de la plantilla, que es peor que la plantilla entera. O están
+ * los seis o no hay paleta.
+ */
+function paleta(valor: unknown): PaletaMarca | null {
+  if (valor === null || typeof valor !== 'object') return null;
+  const p = valor as Record<string, unknown>;
+
+  const completa = CLAVES_PALETA.every((clave) => typeof p[clave] === 'string' && p[clave] !== '');
+  if (!completa) return null;
+
+  return Object.fromEntries(CLAVES_PALETA.map((c) => [c, p[c]])) as unknown as PaletaMarca;
+}
+
+/**
+ * La visibilidad de cada módulo, sin creerse nada.
+ *
+ * Lo que no se reconozca es `hidden`: un módulo que apareciera por un dato
+ * corrupto enseñaría al invitado una puerta que no lleva a ningún sitio.
+ */
+function modulos(valor: unknown): Readonly<Record<string, VisibilidadModulo>> {
+  if (valor === null || typeof valor !== 'object') return {};
+
+  const salida: Record<string, VisibilidadModulo> = {};
+  for (const [modulo, estado] of Object.entries(valor as Record<string, unknown>)) {
+    salida[modulo] = estado === 'visible' || estado === 'soon' ? estado : 'hidden';
+  }
+  return salida;
 }

@@ -140,7 +140,7 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 - [ ] `B3.2` En los tres: Firestore en modo nativo, **región europea** (`eur3` o `europe-west1`). **Esto no se puede cambiar después:** la ubicación de Firestore se fija al crearla.
 - [ ] `B3.3` Activar Storage en la misma región.
 - [ ] `B3.4` Activar Authentication con email/contraseña y Google.
-- [ ] `B3.5` Plan Blaze en `staging` y `prod`. `dev` puede quedarse en Spark si se trabaja con emuladores.
+- [ ] `B3.5` Plan Blaze en los tres proyectos. Sin emuladores (D-33), `dev` también necesita Blaze: las Cloud Functions no se despliegan en Spark.
 - [ ] `B3.6` App Check con reCAPTCHA Enterprise, en modo de solo monitorización al principio.
 - [ ] `B3.7` Registrar la app web en cada proyecto y guardarme las claves de configuración.
 - [ ] `B3.8` Presupuesto y alertas de facturación en Google Cloud. **No te saltes esto:** Blaze es pago por uso y una función mal escrita en bucle se nota en la factura.
@@ -167,8 +167,7 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 - [ ] `B5.2` `npm i -g @angular/cli firebase-tools`.
 - [ ] `B5.3` `firebase login` y comprobar acceso a los tres proyectos.
 - [ ] `B5.4` `gh` autenticado, si quieres que yo pueda crear ramas y PRs.
-- [ ] `B5.5` Java runtime, que lo necesitan los emuladores de Firestore.
-- [ ] `B5.6` Verificar que `firebase emulators:start` levanta y responde.
+- [ ] `B5.5` Java runtime. Ya solo lo necesita `npm run test:rules`, que en el día a día corre en el CI.
 
 ## Bloque 6 · Spikes de verificación — **C**
 
@@ -200,5 +199,181 @@ S-2 ──> D-12 ──> F0.2 (sistema visual) ──> todo lo demás
 y depende de una decisión de diez minutos. El dominio, en cambio, no bloquea nada
 hasta que haya algo que desplegar.
 
-**Se puede empezar F0.1 hoy mismo** con emuladores, sin dominio, sin Vercel y sin
-proyectos de Firebase creados. Solo hace falta el repositorio.
+**Se puede empezar F0.1 hoy mismo** sin dominio y sin Vercel: basta el
+repositorio y el proyecto de Firebase.
+
+---
+
+## Bloque 7 · Cerrar el alta de bodas contra Firebase de verdad — **G**, con dos herramientas mías
+
+El alta ya no pasa por un script: está el formulario del panel de superadmin.
+Desde D-33 todo se prueba contra Firebase directamente, así que este bloque dejó
+de ser una excepción y es, sencillamente, cómo se trabaja.
+
+El orden es este, y el primer punto lo bloquea todo.
+
+1. **Activar el plan Blaze.** Sin él no se despliega ninguna Cloud Function, y
+   sin funciones no hay alta. Pendiente de la verificación de los datos de pago.
+   Nada de lo que sigue se puede hacer antes.
+2. `npm run deploy:rules` — esto sí funciona hoy, sin Blaze.
+3. `npm run deploy:functions`.
+4. **Concederte el superadmin.** El claim no lo otorga ninguna pantalla del
+   producto a propósito, así que va a mano:
+
+   ```bash
+   # descarga la clave de cuenta de servicio y guárdala FUERA del repositorio
+   export GOOGLE_APPLICATION_CREDENTIALS=/ruta/fuera/del/repo/clave.json
+   node functions/tools/dar-superadmin.mjs tu-correo@ejemplo.com
+   ```
+
+   Si la cuenta todavía no existe en el proyecto, añade `--crear` y el script la
+   crea y devuelve un enlace para que pongas la contraseña. La alternativa es
+   levantar la app con `npm start`, entrar en
+   `localhost:4200/superadmin/acceso` y pulsar «Entrar con Google»: eso también
+   crea la cuenta, y `localhost` ya está en los dominios autorizados de fábrica.
+
+   El script se niega a arrancar si la clave está dentro del repositorio:
+   es público, y esa clave abre el proyecto entero sin caducidad ni segundo
+   factor. **Bórrala al terminar.**
+
+5. **Levantar la aplicación**, que ya habla con el proyecto de Firebase:
+
+   ```bash
+   npm start
+   ```
+
+   Entra por `localhost:4200/superadmin` y da de alta una boda desde el
+   formulario. Con eso queda probado de verdad el camino entero: transacción del
+   slug, semillas, cuentas de Auth, claims y **el alta del subdominio en los
+   dominios autorizados**.
+
+6. **Comprobar en la consola de Firebase** que el subdominio de esa boda aparece
+   en Authentication → Settings → Authorized domains. Ese es el único punto que
+   cierra F0.6.X.
+
+**Si el acceso con Google abre la ventana y la cierra sin entrar**, mira la
+consola: `Cross-Origin-Opener-Policy policy would block the window.closed call`.
+El servidor de desarrollo servía una política que impide a la página leer si la
+ventana emergente se ha cerrado, que es justo como lo detecta el SDK de Firebase,
+y el acceso se quedaba colgado sin decir nada. Ya está puesta la cabecera
+`same-origin-allow-popups` en `angular.json`; basta con reiniciar `ng serve`.
+**En producción hay que servir esa misma cabecera** (en Vercel, `headers` de
+`vercel.json`), o el acceso con Google fallará igual para las parejas.
+
+### «Cannot determine backend specification. Timeout after 10000»
+
+Si `npm run deploy:functions` muere con esto:
+
+```
+Error: User code failed to load. Cannot determine backend specification.
+Timeout after 10000.
+```
+
+**No es que el código falle.** Antes de desplegar, la CLI carga
+`functions/lib/index.js` en un proceso aparte para averiguar qué funciones hay,
+y le da diez segundos. Cargar `firebase-admin` y `firebase-functions` son
+cientos de ficheros, y justo antes la CLI ha hecho un `npm ci` que los ha dejado
+todos fríos: en Windows, con el antivirus escaneando cada uno la primera vez que
+se lee, pasar de diez segundos es lo normal. En Linux el mismo `index.js` carga
+en menos de un segundo.
+
+Ya está resuelto en el repositorio: `npm run deploy:functions` pasa por
+`tools/desplegar-functions.mjs`, que sube `FUNCTIONS_DISCOVERY_TIMEOUT` a 120
+segundos. Si te lo encuentras con la CLI a pelo:
+
+```bash
+FUNCTIONS_DISCOVERY_TIMEOUT=120 firebase deploy --only functions
+```
+
+**Si aun con 120 segundos falla, entonces sí es el código.** Significa que algo
+en el ámbito global de alguna función hace trabajo pesado o llamadas de red al
+cargarse, y eso se arregla moviéndolo a `onInit()`, no subiendo el número. Para
+verlo, lo que enseña el error de verdad es:
+
+```bash
+firebase deploy --only functions --debug
+```
+
+Y para comprobar que el problema no es nuestro, esto tiene que cargar rápido y
+sin lanzar:
+
+```bash
+node -e "require('./functions/lib/index.js')"
+```
+
+### App Check: el 401 de `provisionWedding`
+
+Si el alta responde **401 Unauthorized**, no es tu sesión ni tus claims: es App
+Check. Las funciones lo exigen fuera del emulador y el navegador no manda ningún
+token hasta que se configura.
+
+**La clave de App Check no es ninguna de las que ya tienes en el entorno.** El
+`apiKey` y el `appId` de `environment.*.ts` son la configuración web de Firebase
+y llevan ahí desde el primer día; App Check necesita **otra clave distinta**, la
+de reCAPTCHA, en el campo `appCheckSiteKey`. Mientras ese campo esté a `null`, la
+aplicación no inicializa App Check y toda invocable responde 401. Confundirlas es
+el despiste que cuesta la tarde.
+
+Usamos **reCAPTCHA Enterprise**, no v3: la consola de Firebase ya solo ofrece
+Enterprise al registrar una app nueva. v3 no está formalmente obsoleto, pero
+Google dice que las integraciones nuevas vayan a Enterprise, y la consola no te
+deja crear la clave de v3 aunque quisieras.
+
+Tres pasos, una vez:
+
+1. **Crea la clave.** Consola de Firebase → **App Check** → pestaña **Apps** →
+   tu app web → **Registrar** → **reCAPTCHA Enterprise**. Si no tienes clave
+   todavía, el enlace te lleva a Google Cloud → reCAPTCHA → **Crear clave**, y
+   ahí lo que importa es:
+   - Tipo de plataforma: **sitio web**.
+   - Tipo de clave: **basada en puntuación** (_score-based_), **no** casilla. Una
+     clave de casilla haría aparecer el «no soy un robot» a los invitados de la
+     boda, que es exactamente lo que no queremos.
+   - Dominios: `nupcialis.com` y los subdominios que uses. **No añadas
+     `localhost`**: Google no lo permite en una clave de producción, y para local
+     está el paso 3.
+2. **Pega la clave** en `appCheckSiteKey` de `src/environments/environment.real.ts`
+   (y en `environment.ts`, `environment.staging.ts` y `environment.prod.ts` cuando
+   toque). **No es un secreto**: viaja en el bundle de cualquier visitante, igual
+   que el resto de la configuración web de Firebase.
+3. **Token de depuración para `localhost`.** Como la clave no cubre `localhost`,
+   en desarrollo la aplicación activa sola el proveedor de depuración. Arranca
+   `npm start`, abre la consola del navegador y busca una línea con un
+   UUID: es el token. Regístralo en **App Check → Apps → tu app → los tres puntos
+   → Administrar tokens de depuración**.
+
+   **Un token por origen, y esto muerde.** El SDK lo guarda en el almacenamiento
+   del navegador, que está separado por origen: `mms.localhost` no comparte nada
+   con `localhost` ni con `otraboda.localhost`. Cada subdominio con el que
+   pruebes genera el suyo, y sin registrar responde **401** en toda llamada a una
+   función — que es como se ve: «No se ha podido cargar la lista».
+
+   Para no ir a la consola una vez por boda de prueba, **reutiliza un token**:
+   abre el subdominio nuevo con el parámetro y se queda guardado ahí.
+
+   ```
+   http://mms.localhost:4200/panel?appcheck=TU-UUID-REGISTRADO
+   ```
+
+   **El parámetro se queda en la barra hasta que navegues a otro sitio.** Se
+   intentó quitarlo por código y el router de Angular lo devuelve: reescribe la
+   URL desde su propio estado en cuanto termina la navegación inicial. No
+   compensa pelearse con eso por estética — hace falta una vez por subdominio y
+   a partir de ahí se navega sin él. Para olvidarlo:
+   `localStorage.removeItem('np-appcheck-debug-token')`.
+
+   **El token no va en el repositorio**, ni siquiera en `environment.real.ts`:
+   salta App Check entero y este repositorio es público.
+
+Después de eso, recarga y el alta debería pasar.
+
+**Dos cosas que van a chirriar en el paso 5 y son esperables.** El acceso con
+contraseña funciona desde `<slug>.localhost`, pero el de Google no: ese host no
+está en los dominios autorizados. Es la regla 8 vista de cerca. Y las funciones
+invocables exigen App Check siempre, así que desde `localhost` hace falta un
+token de depuración registrado (abajo, y en `functions/README.md`).
+
+**Lo que escribas trabajando se queda.** No hay emuladores que reiniciar
+(D-33): reutiliza las bodas de prueba que ya existan en vez de dar de alta una
+nueva cada vez, porque cada alta consume un dominio autorizado y ese límite
+Firebase no lo documenta (§11).

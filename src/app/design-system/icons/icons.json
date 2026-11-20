@@ -83,6 +83,56 @@
           "id": "tent",
           "etiqueta": "Carpa",
           "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "martini",
+          "etiqueta": "Cóctel",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "microphone-stage",
+          "etiqueta": "Discursos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "users-three",
+          "etiqueta": "Llegada de invitados",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "hands-clapping",
+          "etiqueta": "Aplausos",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "door-open",
+          "etiqueta": "Entrada",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "sparkle",
+          "etiqueta": "Primer baile",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "person-simple-walk",
+          "etiqueta": "Llegada",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "flag-checkered",
+          "etiqueta": "Final",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "guitar",
+          "etiqueta": "Música en directo",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "suitcase",
+          "etiqueta": "Viaje de novios",
+          "surfaces": ["public", "panel"]
         }
       ]
     },
@@ -208,6 +258,11 @@
           "id": "steering-wheel",
           "etiqueta": "Chófer",
           "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "user-circle",
+          "etiqueta": "Quién eres",
+          "surfaces": ["public", "panel"]
         }
       ]
     },
@@ -275,6 +330,11 @@
           "surfaces": ["public", "panel"]
         },
         {
+          "id": "circle-dashed",
+          "etiqueta": "Sin hacer",
+          "surfaces": ["panel"]
+        },
+        {
           "id": "warning",
           "etiqueta": "Atención",
           "surfaces": ["public", "panel"]
@@ -302,7 +362,7 @@
         {
           "id": "lock-simple",
           "etiqueta": "Privado",
-          "surfaces": ["panel"]
+          "surfaces": ["public", "panel"]
         }
       ]
     },
@@ -442,6 +502,11 @@
         {
           "id": "trash",
           "etiqueta": "Eliminar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "archive",
+          "etiqueta": "Archivar",
           "surfaces": ["panel"]
         },
         {
@@ -553,6 +618,26 @@
           "id": "playlist",
           "etiqueta": "Playlist",
           "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "copy",
+          "etiqueta": "Copiar",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "link-simple",
+          "etiqueta": "Enlace",
+          "surfaces": ["public", "panel"]
+        },
+        {
+          "id": "arrows-clockwise",
+          "etiqueta": "Cambiar el enlace",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "chat-circle-text",
+          "etiqueta": "Respuestas",
+          "surfaces": ["panel"]
         }
       ]
     }

@@ -61,7 +61,15 @@ module.exports = tseslint.config(
     //    grep— sin forzar una carpeta que acabaría siendo un cajón de sastre.
     //  - los tests de reglas necesitan el SDK crudo para ejercitarlas: su
     //    trabajo es precisamente atacar Firestore como lo haría un cliente.
-    files: ['src/app/core/firebase/**/*.ts', '**/*.firestore.ts', 'tests/**/*.ts'],
+    //  - la prueba de un adaptador es parte del adaptador: para comprobar que
+    //    una fecha se lee bien hace falta construir un `Timestamp` de verdad,
+    //    porque la comprobación es un `instanceof`.
+    files: [
+      'src/app/core/firebase/**/*.ts',
+      '**/*.firestore.ts',
+      '**/*.firestore.spec.ts',
+      'tests/**/*.ts',
+    ],
     rules: { 'no-restricted-imports': 'off' },
   },
   {

@@ -1,6 +1,5 @@
 import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
-import { provideIconSprite } from './design-system/icons/icon-sprite.providers';
 
 /**
  * Solo `loadChildren`. Este fichero no puede importar nada de Firebase.
@@ -12,17 +11,14 @@ import { provideIconSprite } from './design-system/icons/icon-sprite.providers';
  * 122 kB comprimidos de SDK que un invitado no llega a usar.
  */
 export const routes: Routes = [
-  // Catálogo del sistema visual. Fuera de producción: su chunk existe pero
-  // nadie lo carga, porque la ruta ni siquiera se registra.
+  // Páginas de desarrollo: catálogo del sistema visual y las dos de muestra.
+  // Fuera de producción: su chunk existe pero nadie lo carga, porque la ruta
+  // ni siquiera se registra.
   ...(isDevMode()
     ? [
         {
-          path: 'dev/ds',
-          providers: [provideIconSprite('panel')],
-          loadComponent: () =>
-            import('./features/design-system-catalog/design-system-catalog').then(
-              (m) => m.DesignSystemCatalog,
-            ),
+          path: 'dev',
+          loadChildren: () => import('./features/dev/dev.routes').then((m) => m.devRoutes),
         },
       ]
     : []),

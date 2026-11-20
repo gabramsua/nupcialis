@@ -45,6 +45,14 @@ import { NpIcon } from '../../icons/icon';
       background: var(--np-surface-surface);
       color: var(--np-surface-text);
     }
+    /* En un móvil bajo, un formulario largo no cabe: el cuerpo se desplaza y la
+       cabecera y los botones se quedan donde se ven. Sin esto, «Guardar» queda
+       por debajo del borde y hay que adivinar que se puede bajar. */
+    dialog[open] {
+      display: flex;
+      flex-direction: column;
+      max-block-size: calc(100dvh - 2rem);
+    }
     dialog::backdrop {
       background: rgb(0 0 0 / 45%);
     }
@@ -72,7 +80,14 @@ import { NpIcon } from '../../icons/icon';
       color: inherit;
       cursor: pointer;
     }
+    header,
+    footer {
+      flex: none;
+    }
     .np-modal__cuerpo {
+      flex: 1 1 auto;
+      min-block-size: 0;
+      overflow-y: auto;
       padding: var(--np-space-4);
     }
     footer:has(*) {

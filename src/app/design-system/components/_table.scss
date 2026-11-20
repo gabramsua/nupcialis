@@ -53,7 +53,20 @@
 }
 
 // En móvil no se fuerza el zoom: la tabla desplaza dentro de su contenedor.
+//
+// Una tabla de siete columnas no cabe en 360 px y no hay forma de que quepa. Lo
+// que sí se puede evitar es que desborde la página entera y deje media tabla
+// cortada sin manera de llegar a ella: aquí se desplaza la tabla, no el
+// documento. `min-inline-size` impide que las columnas se aplasten hasta ser
+// ilegibles antes de empezar a desplazarse.
 .np-table-scroll {
+  inline-size: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  // Sin esto, el anillo de foco de los botones de la última fila se recorta.
+  padding-block-end: var(--np-space-1);
+
+  .np-table {
+    min-inline-size: 46rem;
+  }
 }

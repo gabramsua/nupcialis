@@ -1,12 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { cargarTenant } from './tenant-loader';
+import { cargarTenant, type ResultadoTenant } from './tenant-loader';
 import { EntradaSlug, FuenteTenant, SitioPublico } from './tenant-source';
+import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-code';
 
 const SITIO: SitioPublico = {
   status: 'active',
-  coupleNames: 'María y Gabriel',
+  coupleNames: { partnerA: 'María', partnerB: 'Gabriel' },
+  theme: { templateId: 'clasica', palette: null, heroImagePath: null, heroImageUrl: null },
   weddingDate: new Date('2027-06-12'),
+  weddingTime: '17:00',
+  timezone: 'Europe/Madrid',
   locale: 'es',
+  indexable: false,
+  guestAccessMode: 'open',
+  secciones: [],
+  faqs: [],
+  cronologia: [],
+  alojamientos: [],
+  ubicaciones: [],
+  dressCode: DRESS_CODE_VACIO,
+  modulos: { rsvp: 'visible' },
 };
 
 function fuente(
@@ -78,12 +91,20 @@ describe('cargarTenant', () => {
     expect(r.tipo).toBe('no-publicada');
   });
 
+  it('en borrador conserva el id: el panel de la pareja tiene que abrirse', async () => {
+    const r = await cargarTenant(
+      'mariaygabriel',
+      fuente(SLUGS, { w1: { ...SITIO, status: 'draft' } }),
+    );
+    expect(r).toEqual({ tipo: 'no-publicada', weddingId: 'w1' });
+  });
+
   it('una boda archivada lo dice', async () => {
     const r = await cargarTenant(
       'mariaygabriel',
       fuente(SLUGS, { w1: { ...SITIO, status: 'archived' } }),
     );
-    expect(r.tipo).toBe('archivada');
+    expect(r).toEqual({ tipo: 'archivada', weddingId: 'w1' });
   });
 
   it('un slug que apunta a una boda sin proyección pública es un error, no un 404', async () => {
@@ -97,5 +118,15 @@ describe('cargarTenant', () => {
     // "no encontrada", no.
     const r = await cargarTenant('mariaygabriel', fuente(SLUGS, { w1: SITIO }, true));
     expect(r.tipo).toBe('error');
+  });
+});
+
+describe('la landing no es una boda que falta', () => {
+  // Confundirlas hacía que `nupcialis.com` —la página que vende el producto—
+  // contestara «no encontramos esta boda». Lo resuelve `tenantResolver`, pero
+  // el tipo tiene que existir para que no haya dónde volver a mezclarlas.
+  it('el resultado de landing es un tipo propio', () => {
+    const landing: ResultadoTenant = { tipo: 'landing' };
+    expect(landing.tipo).not.toBe('no-encontrada');
   });
 });

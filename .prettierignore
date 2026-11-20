@@ -12,3 +12,6 @@ coverage/
 node_modules/
 .angular/
 package-lock.json
+
+# El compilado de las funciones lo genera tsc.
+functions/lib/

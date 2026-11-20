@@ -6,7 +6,6 @@ export const environment: AppEnvironment = {
   name: 'staging',
   production: false,
   rootDomain: 'staging.nupcialis.com',
-  useEmulators: false,
   firebase: {
     apiKey: 'PENDIENTE',
     authDomain: 'nupcialis-staging.firebaseapp.com',

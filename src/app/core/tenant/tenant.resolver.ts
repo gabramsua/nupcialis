@@ -16,6 +16,12 @@ export const tenantResolver: ResolveFn<ResultadoTenant> = async () => {
   const { hostname } = inject(DOCUMENT).location;
   const destino = resolverTenant(hostname, environment.rootDomain);
 
+  // El dominio raíz no es una boda mal escrita: es la landing. Un subdominio
+  // reservado o desconocido sí se comporta como inexistente, a propósito.
+  if (destino.superficie === 'landing') {
+    return { tipo: 'landing' } as const;
+  }
+
   if (destino.superficie !== 'boda' || !destino.slug) {
     return { tipo: 'no-encontrada' } as const;
   }
