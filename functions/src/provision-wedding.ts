@@ -42,7 +42,6 @@ import { proyeccionPublica, type BodaParaProyectar } from './dominio/proyeccion'
 import { SECCIONES_INICIALES } from './dominio/secciones';
 import { CONTADORES_VACIOS } from './dominio/contadores';
 import {
-  CHECKLIST_PLANTILLA,
   FAQS_FABRICA,
   GRUPO_POR_DEFECTO,
   PREGUNTAS_RSVP_FABRICA,
@@ -51,6 +50,7 @@ import {
 } from './dominio/semillas';
 import { DOMINIO_BASE, EXIGIR_APP_CHECK, REGION, auth, db } from './firebase';
 import { auditar } from './infra/auditoria';
+import { plantillasParaAlta } from './catalogo';
 import { autorizarDominio } from './infra/identity-toolkit';
 import { exigirSuperadmin } from './infra/permisos';
 
@@ -77,6 +77,8 @@ export interface RespuestaAlta {
   readonly avisos: readonly string[];
 }
 
+type Plantillas = Awaited<ReturnType<typeof plantillasParaAlta>>;
+
 export const provisionWedding = onCall<Partial<EntradaAlta>, Promise<RespuestaAlta>>(
   { region: REGION, enforceAppCheck: EXIGIR_APP_CHECK },
   async (peticion) => {
@@ -93,11 +95,14 @@ export const provisionWedding = onCall<Partial<EntradaAlta>, Promise<RespuestaAl
 
     const cuentas = await cuentasDeLaPareja(datos.emails);
     const weddingId = db().collection('weddings').doc().id;
+    // Se leen **antes** de la transacción: dentro solo se escribe.
+    const plantillas = await plantillasParaAlta();
 
     await crearBoda(
       weddingId,
       datos,
       cuentas.map((c) => c.uid),
+      plantillas,
     );
 
     // Los claims van después de la transacción a propósito: un claim que apunta
@@ -198,6 +203,7 @@ async function crearBoda(
   weddingId: string,
   datos: DatosAlta,
   ownerUids: readonly string[],
+  plantillas: Plantillas,
 ): Promise<void> {
   const firestore = db();
   const slugRef = firestore.collection('slugs').doc(datos.slug);
@@ -222,7 +228,7 @@ async function crearBoda(
 
     t.create(slugRef, { weddingId, status: 'active', createdAt: FieldValue.serverTimestamp() });
     t.create(bodaRef, documentoDeBoda(datos, ownerUids));
-    sembrar(t, bodaRef, datos);
+    sembrar(t, bodaRef, datos, plantillas);
   });
 }
 
@@ -240,6 +246,9 @@ function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
     // contratar: quien vende el servicio no tiene por qué saber a qué hora es
     // la ceremonia, y a menudo aún no está decidida.
     weddingTime: null,
+    // Civil o religiosa. Por ahora solo se guarda y se enseña; qué cambia según
+    // el tipo (p. ej. tareas del cursillo prematrimonial) está en D-49.
+    ceremonyType: datos.ceremonyType,
     timezone: datos.timezone,
     locale: datos.locale,
     ownerUids: [...ownerUids],
@@ -266,7 +275,12 @@ function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
 }
 
 /** Las semillas. Todas dentro de la transacción que crea la boda. */
-function sembrar(t: Transaction, bodaRef: DocumentReference, datos: DatosAlta): void {
+function sembrar(
+  t: Transaction,
+  bodaRef: DocumentReference,
+  datos: DatosAlta,
+  plantillas: Plantillas,
+): void {
   const boda: BodaParaProyectar = {
     ...documentoDeBoda(datos, []),
     weddingDate: Timestamp.fromDate(datos.weddingDate),
@@ -296,8 +310,10 @@ function sembrar(t: Transaction, bodaRef: DocumentReference, datos: DatosAlta): 
     t.create(bodaRef.collection('faqs').doc(), { ...faq });
   }
 
+  sembrarUbicaciones(t, bodaRef, datos);
+
   const hoy = new Date();
-  const tareas = tareasAplicables(datos.weddingDate, hoy, CHECKLIST_PLANTILLA);
+  const tareas = tareasAplicables(datos.weddingDate, hoy, plantillas.tareas);
   tareas.forEach((tarea, indice) => {
     t.create(bodaRef.collection('checklistItems').doc(), {
       title: tarea.title,
@@ -314,6 +330,54 @@ function sembrar(t: Transaction, bodaRef: DocumentReference, datos: DatosAlta): 
       color: null,
       order: indice + 1,
       createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  // Las partidas del presupuesto: copia de las originales del superadmin. La
+  // pareja las edita, añade o borra sin que eso toque el catálogo.
+  plantillas.partidas.forEach((partida, indice) => {
+    t.create(bodaRef.collection('budgetItems').doc(), {
+      category: partida.category,
+      concept: partida.concept,
+      estimatedCents: partida.estimatedCents,
+      actualCents: 0,
+      paid: false,
+      dueDate: null,
+      vendorId: null,
+      icon: '',
+      color: null,
+      notes: '',
+      order: indice + 1,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+/**
+ * Los dos sitios que pide el alta, como fichas del mapa.
+ *
+ * Con id fijo (`ceremonia`, `banquete`) para que la pareja los encuentre y los
+ * edite en su sitio en lugar de duplicarlos. Sin pin, `coords` queda a `null` y
+ * la proyección no los publica hasta que se coloque (ver ubicaciones).
+ */
+function sembrarUbicaciones(t: Transaction, bodaRef: DocumentReference, datos: DatosAlta): void {
+  const sitios = [
+    { id: 'ceremonia', type: 'ceremonia', lugar: datos.ceremonyPlace },
+    { id: 'banquete', type: 'banquete', lugar: datos.receptionPlace },
+  ] as const;
+
+  sitios.forEach(({ id, type, lugar }, indice) => {
+    if (lugar === null) return;
+    t.create(bodaRef.collection('locations').doc(id), {
+      type,
+      name: lugar.name,
+      address: lugar.address,
+      coords: lugar.lat !== null && lugar.lng !== null ? { lat: lugar.lat, lng: lugar.lng } : null,
+      description: '',
+      time: null,
+      order: indice + 1,
+      visibleToGuests: true,
+      icon: '',
     });
   });
 }

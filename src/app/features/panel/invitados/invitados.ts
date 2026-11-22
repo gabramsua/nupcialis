@@ -7,16 +7,19 @@ import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpEmptyState } from '../../../design-system/components/empty-state/empty-state';
 import { NpModal } from '../../../design-system/components/modal/modal';
-import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
 import { NpIcon } from '../../../design-system/icons/icon';
-import { dosRestringidos, type Grupo } from '../../../core/invitados/grupos-gateway';
+import { dosRestringidos } from '../../../core/invitados/grupos-gateway';
 import {
   PUERTA_INVITADOS,
   apuntadosHacePoco,
   filtrarInvitados,
   deLaFamilia,
   porGrupo,
+  ordenarInvitados,
   ordenarPorNombre,
+  CAMPOS_DE_ORDEN,
+  type CampoOrden,
+  type Sentido,
   porVista,
   resumirInvitados,
   type DatosInvitado,
@@ -32,12 +35,14 @@ import { nombreDeMesaPorId } from '../mesas/exportar-mesas';
 import { BodaStore } from '../boda.store';
 import { NpCompartirInvitado } from './compartir';
 import { NpRespuestaDeInvitado } from '../rsvp/respuesta-de-invitado';
+import { NpRespuestaEnLote } from './respuesta-en-lote';
 import { NpCupoEnLote } from './cupo-en-lote';
 import { NpFiltroGrupos } from './filtro-grupos';
 import { hojas, nombreDelFichero, type RespuestasDelFormulario } from './exportacion';
 import { descargarXlsx } from './exportar-xlsx';
 import { PUERTA_RESPUESTAS } from '../../../core/rsvp/respuestas-gateway';
 import { NpGrupoChip } from './grupo-chip';
+import { NpListaInvitados, ladoDeInvitado } from './lista-invitados';
 import { GruposStore } from './grupos.store';
 import { NpInput } from '../../../design-system/components/field/input';
 
@@ -70,11 +75,12 @@ type Carga = 'cargando' | 'lista' | 'error';
     NpButton,
     NpEmptyState,
     NpModal,
-    NpStatusChip,
     NpIcon,
     NpGrupoChip,
+    NpListaInvitados,
     NpCompartirInvitado,
     NpRespuestaDeInvitado,
+    NpRespuestaEnLote,
     NpCupoEnLote,
     NpFiltroGrupos,
     NpInput,
@@ -219,6 +225,10 @@ type Carga = 'cargando' | 'lista' | 'error';
             pulsarlo, que es la única confirmación que hace falta cuando el
             cambio es un número y se puede deshacer.
           -->
+          @if (visibles().length > 0) {
+            <np-respuesta-en-lote [ids]="idsVisibles()" (hecho)="recargar()" />
+          }
+
           @if (destinatariosDelCupo().length > 0 && !familiaDe()) {
             <np-cupo-en-lote
               [ids]="idsDelCupo()"
@@ -245,125 +255,56 @@ type Carga = 'cargando' | 'lista' | 'error';
                 [title]="t('panel.invitados.sinResultados')"
               />
             } @else {
-              <ul class="inv__lista">
-                @for (invitado of visibles(); track invitado.id) {
-                  <li class="inv__tarjeta">
-                    <div class="inv__quien">
-                      <span class="inv__nombre">{{ invitado.fullName }}</span>
-                      @if (invitado.phone; as telefono) {
-                        <span class="inv__dato">{{ telefono }}</span>
+              @if (!familiaDe()) {
+                <div class="inv__orden">
+                  <label>
+                    <span>{{ t('panel.invitados.orden.etiqueta') }}</span>
+                    <select npInput [value]="orden().campo" (change)="ordenarPor($event)">
+                      @for (campo of camposDeOrden; track campo) {
+                        <option [value]="campo" [selected]="orden().campo === campo">
+                          {{ t('panel.invitados.orden.campo.' + campo) }}
+                        </option>
                       }
-                      <!--
-                        Quién lo trae, con nombre. «Es acompañante» a secas
-                        obliga a la pareja a adivinar de quién, que es justo lo
-                        que necesita saber para sentarlos juntos.
-                      -->
-                      @if (invitado.isCompanion) {
-                        @if (quienLoTrae(invitado); as titular) {
-                          <button
-                            type="button"
-                            class="inv__enlace"
-                            (click)="verFamilia(invitado.invitedById)"
-                          >
-                            <np-icon name="user-plus" />
-                            {{ t('panel.invitados.loTrae', { nombre: titular }) }}
-                          </button>
-                        } @else {
-                          <span class="inv__dato">
-                            <np-icon name="user-plus" />
-                            {{ t('panel.invitados.esAcompanante') }}
-                          </span>
-                        }
-                      }
-                      @if (cuantosTrae(invitado); as cuantos) {
-                        <button type="button" class="inv__enlace" (click)="verFamilia(invitado.id)">
-                          <np-icon name="users" />
-                          {{ t('panel.invitados.trae', { n: cuantos }) }}
-                        </button>
-                      }
-                      @let suyos = gruposDe(invitado);
-                      @if (suyos.length > 0) {
-                        <span class="inv__grupos">
-                          @for (grupo of suyos; track grupo.id) {
-                            <np-grupo-chip
-                              [grupo]="grupo"
-                              [etiquetaRestringido]="t('panel.grupos.restringido')"
-                            />
-                          }
-                        </span>
-                      }
-                    </div>
-
-                    <div class="inv__estados">
-                      <np-status-chip
-                        [status]="colorRsvp(invitado)"
-                        [label]="t('panel.invitados.rsvp.' + invitado.rsvpStatus)"
-                      />
-                      @if (invitado.loginCount === 0) {
-                        <np-status-chip
-                          status="pending"
-                          [label]="t('panel.invitados.noHaEntrado')"
-                        />
-                      }
-                    </div>
-
-                    <div class="inv__acciones">
-                      @if (!invitado.isCompanion) {
-                        <button
-                          npButton
-                          size="sm"
-                          variant="ghost"
-                          type="button"
-                          (click)="nuevo(invitado)"
-                        >
-                          <np-icon name="user-plus" />
-                          {{ t('panel.invitados.anadirAcompanante') }}
-                        </button>
-                      }
-                      <button
-                        npButton
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        (click)="respondiendoPor.set(invitado)"
-                      >
-                        <np-icon name="check-circle" />
-                        {{ t('panel.respuestaPareja.abrir') }}
-                      </button>
-                      <button
-                        npButton
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        (click)="compartir(invitado)"
-                      >
-                        <np-icon name="whatsapp-logo" />
-                        {{ t('panel.invitar.compartir') }}
-                      </button>
-                      <button
-                        npButton
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        (click)="editar(invitado)"
-                      >
-                        <np-icon name="pencil-simple" />
-                        {{ t('common.edit') }}
-                      </button>
-                      <button
-                        npButton
-                        size="sm"
-                        variant="ghost"
-                        type="button"
-                        (click)="pedirBorrado(invitado)"
-                      >
-                        <np-icon name="trash" />
-                        {{ t('common.delete') }}
-                      </button>
-                    </div>
-                  </li>
-                }
-              </ul>
+                    </select>
+                  </label>
+                  <button
+                    npButton
+                    size="sm"
+                    variant="ghost"
+                    type="button"
+                    [attr.aria-label]="
+                      t('panel.invitados.orden.cambiarSentido', {
+                        sentido: t('panel.invitados.orden.' + orden().sentido),
+                      })
+                    "
+                    (click)="cambiarSentido()"
+                  >
+                    <np-icon [name]="orden().sentido === 'asc' ? 'caret-up' : 'caret-down'" />
+                    {{ t('panel.invitados.orden.' + orden().sentido) }}
+                  </button>
+                  <span class="inv__cuenta" aria-live="polite">
+                    {{
+                      t('panel.invitados.orden.cuenta', {
+                        n: visibles().length,
+                        total: todos().length,
+                      })
+                    }}
+                  </span>
+                </div>
+              }
+              <np-lista-invitados
+                [invitados]="visibles()"
+                [grupos]="grupos.grupos()"
+                [nombres]="porId()"
+                [traen]="acompanantesPorTitular()"
+                [pareja]="pareja()"
+                (familia)="verFamilia($event)"
+                (acompanante)="nuevo($event)"
+                (responder)="respondiendoPor.set($event)"
+                (compartir)="compartir($event)"
+                (editar)="editar($event)"
+                (borrar)="pedirBorrado($event)"
+              />
             }
           }
         }
@@ -612,23 +553,6 @@ type Carga = 'cargando' | 'lista' | 'error';
       flex-wrap: wrap;
       gap: var(--np-space-2);
     }
-    /* «Trae a 2» y «Lo trae Ana» son botones con pinta de dato: llevan a la
-       familia entera. Subrayado al pasar para que se note que se pulsan. */
-    .inv__enlace {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--np-space-1);
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--np-surface-text);
-      font: inherit;
-      font-size: var(--np-text-sm);
-      cursor: pointer;
-    }
-    .inv__enlace:hover {
-      text-decoration: underline;
-    }
     .inv__resumen {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
@@ -671,6 +595,24 @@ type Carga = 'cargando' | 'lista' | 'error';
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
+    .inv__orden {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: var(--np-space-2) var(--np-space-3);
+    }
+    .inv__orden label {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-1);
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
+    }
+    .inv__cuenta {
+      margin-inline-start: auto;
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
+    }
     .inv__buscador {
       display: flex;
       align-items: center;
@@ -691,50 +633,6 @@ type Carga = 'cargando' | 'lista' | 'error';
     }
     .inv__buscador input:focus {
       outline: none;
-    }
-    .inv__lista {
-      display: flex;
-      flex-direction: column;
-      gap: var(--np-space-2);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    /* Una tarjeta por invitado: en 360 px una tabla de ocho columnas es un
-       carrusel horizontal, y esto se lee de un vistazo. */
-    .inv__tarjeta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--np-space-2) var(--np-space-3);
-      padding: var(--np-space-3) var(--np-space-4);
-      border: 1px solid var(--np-surface-border);
-      border-radius: var(--np-radius-lg);
-      background: var(--np-surface-surface);
-    }
-    .inv__quien {
-      display: flex;
-      flex: 1;
-      min-inline-size: 10rem;
-      flex-direction: column;
-      gap: var(--np-space-1);
-    }
-    .inv__nombre {
-      font-weight: var(--np-weight-medium);
-    }
-    .inv__dato {
-      display: flex;
-      align-items: center;
-      gap: var(--np-space-1);
-      font-size: var(--np-text-sm);
-      color: var(--np-surface-text-muted);
-    }
-    .inv__estados,
-    .inv__acciones {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--np-space-2);
     }
     .inv__form {
       display: flex;
@@ -759,11 +657,6 @@ type Carga = 'cargando' | 'lista' | 'error';
       block-size: 1px;
       overflow: hidden;
       clip-path: inset(50%);
-    }
-    .inv__grupos {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--np-space-1);
     }
     .inv__form fieldset {
       display: flex;
@@ -908,11 +801,11 @@ export class Invitados {
    * lectura directa (regla 2), así que no hay otra consulta que hacer, y
    * recorrer la lista una vez por invitado sería cuadrático con mil invitados.
    */
-  private readonly porId = computed(
+  protected readonly porId = computed(
     () => new Map(this.todos().map((i) => [i.id, i.nickname || i.fullName])),
   );
 
-  private readonly acompanantesPorTitular = computed(() => {
+  protected readonly acompanantesPorTitular = computed(() => {
     const cuenta = new Map<string, number>();
     for (const invitado of this.todos()) {
       if (invitado.invitedById === null) continue;
@@ -920,12 +813,6 @@ export class Invitados {
     }
     return cuenta;
   });
-
-  /** El nombre de quien lo trae, o `null` si ya no está en la lista. */
-  protected quienLoTrae(invitado: Invitado): string | null {
-    if (invitado.invitedById === null) return null;
-    return this.porId().get(invitado.invitedById) ?? null;
-  }
 
   /** Cuántos trae, o `null` para que la plantilla no pinte un cero. */
   protected cuantosTrae(invitado: Invitado): number | null {
@@ -998,13 +885,36 @@ export class Invitados {
       ];
     }
 
-    return ordenarPorNombre(
+    const { campo, sentido } = this.orden();
+    return ordenarInvitados(
       porGrupo(
         porVista(filtrarInvitados(this.todos(), this.busqueda()), this.vista()),
         this.grupoElegido(),
       ),
+      campo,
+      sentido,
+      this.grupos.grupos().map((g) => g.id),
     );
   });
+
+  protected readonly camposDeOrden = CAMPOS_DE_ORDEN;
+  protected readonly pareja = computed(() => this.boda.boda()?.pareja ?? null);
+
+  /** Por qué se ordena la lista y en qué sentido. Por nombre, de la A a la Z, de entrada. */
+  protected readonly orden = signal<{ readonly campo: CampoOrden; readonly sentido: Sentido }>({
+    campo: 'nombre',
+    sentido: 'asc',
+  });
+
+  protected ordenarPor(evento: Event): void {
+    const campo = (evento.target as HTMLSelectElement).value as CampoOrden;
+    if (!CAMPOS_DE_ORDEN.includes(campo)) return;
+    this.orden.set({ campo, sentido: 'asc' });
+  }
+
+  protected cambiarSentido(): void {
+    this.orden.update((o) => ({ ...o, sentido: o.sentido === 'asc' ? 'desc' : 'asc' }));
+  }
 
   /** Los que pueden ser titulares de este invitado: cualquiera menos él y los acompañantes. */
   protected readonly candidatosATitular = computed(() => {
@@ -1078,6 +988,8 @@ export class Invitados {
     this.visibles().filter((invitado) => !invitado.isCompanion),
   );
 
+  protected readonly idsVisibles = computed(() => this.visibles().map((invitado) => invitado.id));
+
   protected readonly idsDelCupo = computed(() =>
     this.destinatariosDelCupo().map((invitado) => invitado.id),
   );
@@ -1145,12 +1057,6 @@ export class Invitados {
   protected mensajeError(): string {
     const f = this.fallo();
     return f?.tipo === 'error' ? f.mensaje : '';
-  }
-
-  /** Verde confirmado, rojo declinado, ámbar pendiente. Siempre con etiqueta. */
-  protected colorRsvp(invitado: Invitado): 'confirmed' | 'declined' | 'pending' {
-    if (invitado.rsvpStatus === 'confirmed') return 'confirmed';
-    return invitado.rsvpStatus === 'declined' ? 'declined' : 'pending';
   }
 
   protected buscar(evento: Event): void {
@@ -1249,17 +1155,9 @@ export class Invitados {
     );
   }
 
-  /** Sus grupos, en el orden de la pareja. Los que ya no existen no se pintan. */
-  protected gruposDe(invitado: Invitado): readonly Grupo[] {
-    return this.grupos.grupos().filter((g) => invitado.groupIds.includes(g.id));
-  }
-
   /** «De María», «De Gabriel», «De los dos». */
   protected ladoDe(lado: Lado, t: (clave: string, params?: object) => string): string {
-    const pareja = this.boda.boda()?.pareja;
-    if (lado === 'A' && pareja?.partnerA) return t('panel.lado.de', { nombre: pareja.partnerA });
-    if (lado === 'B' && pareja?.partnerB) return t('panel.lado.de', { nombre: pareja.partnerB });
-    return t('panel.lado.' + lado);
+    return ladoDeInvitado(lado, this.boda.boda()?.pareja, t);
   }
 
   protected cerrar(): void {

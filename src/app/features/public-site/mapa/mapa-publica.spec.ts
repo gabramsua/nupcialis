@@ -42,6 +42,7 @@ function tenant(ubicaciones: readonly UbicacionPublica[]): ResultadoTenant {
       alojamientos: [],
       ubicaciones,
       dressCode: DRESS_CODE_VACIO,
+      historia: [],
       modulos: {},
     },
   };

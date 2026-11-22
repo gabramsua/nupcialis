@@ -52,6 +52,33 @@ service cloud.firestore {
       allow write: if false;             // solo Admin SDK
     }
 
+    // Cobros de Nupcialis a las parejas (S1.3e). Es contabilidad de Gabriel: ni
+    // la pareja ni nadie más la ve, y solo se escribe desde las funciones, que
+    // validan el importe y dejan rastro en auditLog.
+    match /payments/{paymentId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // Qué recordatorios de después de la boda ya se han enviado (S1.3f).
+    match /reminderMarks/{markId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // Catálogos del superadmin: las tareas y el presupuesto «originales» que se
+    // copian a cada boda nueva, y las preguntas sugeridas del quiz. Solo se
+    // escriben desde las funciones (validan y dejan rastro). Las tareas y el
+    // presupuesto solo los lee el superadmin: el alta los copia desde servidor.
+    // Las preguntas sugeridas las lee también **cualquier pareja** —es lo que
+    // pinta «Sugerencias» en su quiz—; llevan respuestas de muestra, no las de
+    // ninguna boda, así que no hay nada que filtrar.
+    match /catalog/{tipo}/items/{itemId} {
+      allow read: if isSuperadmin()
+        || (tipo == 'quiz' && signedIn() && request.auth.token.role == 'owner');
+      allow write: if false;             // solo Admin SDK
+    }
+
     // ---------- una boda ----------
 
     match /weddings/{wid} {

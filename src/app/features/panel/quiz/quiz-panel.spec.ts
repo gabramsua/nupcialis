@@ -15,6 +15,8 @@ import {
   type PuertaPreguntasQuiz,
   type PuertaRankingQuiz,
 } from '../../../core/quiz/quiz-admin-gateway';
+import { PUERTA_CATALOGOS, type PuertaCatalogos } from '../../../core/superadmin/catalogos-gateway';
+import type { PreguntaDeCatalogo } from '../../superadmin/catalogos/catalogos';
 import { abrirDialogosEnPruebas } from '../invitados/dobles.testing';
 import { PanelPreguntasQuiz } from './preguntas-quiz';
 import { PreguntasQuizStore } from './preguntas-quiz.store';
@@ -53,9 +55,24 @@ function pregunta(parcial: Partial<PreguntaDelPanel> & { id: string }): Pregunta
   };
 }
 
+/** El catálogo de sugerencias, doblado: solo las preguntas importan aquí. */
+function catalogoCon(preguntas: readonly PreguntaDeCatalogo[]): PuertaCatalogos {
+  const vacio = async () => ({ ok: true as const, datos: [] });
+  const nada = async () => ({ ok: true as const, datos: null });
+  return {
+    tareas: vacio,
+    partidas: vacio,
+    preguntas: async () => ({ ok: true as const, datos: preguntas }),
+    guardar: nada,
+    borrar: nada,
+    cargarDeFabrica: async () => ({ ok: true as const, datos: { creados: 0 } }),
+  };
+}
+
 function montarPreguntas(
   preguntas: readonly PreguntaDelPanel[],
   estadisticas: Record<string, { asked: number; correct: number; hints: number }> = {},
+  sugeridas: readonly PreguntaDeCatalogo[] = [],
 ) {
   const guardadas: DatosPregunta[] = [];
 
@@ -83,6 +100,7 @@ function montarPreguntas(
       provideIconSprite('panel'),
       provideRouter([]),
       { provide: PUERTA_PREGUNTAS_QUIZ, useValue: doble },
+      { provide: PUERTA_CATALOGOS, useValue: catalogoCon(sugeridas) },
       { provide: SessionStore, useValue: { weddingId: () => 'w1' } },
       PreguntasQuizStore,
     ],
@@ -414,5 +432,69 @@ describe('quién ha jugado', () => {
 
     expect(p.escrituras).toEqual([]);
     expect(p.texto()).toContain('No tiene vuelta atrás');
+  });
+});
+
+describe('sugerencias del superadmin', () => {
+  const sugerida = (parcial: Partial<PreguntaDeCatalogo> & { id: string }): PreguntaDeCatalogo => ({
+    text: '¿En qué ciudad nos conocimos?',
+    correctAnswer: 'Madrid',
+    wrongAnswers: ['Sevilla', 'Bilbao', 'Cádiz'],
+    difficulty: 1,
+    hint: null,
+    order: 1,
+    enabled: true,
+    ...parcial,
+  });
+
+  it('ofrece las sugerencias encendidas y no las apagadas', async () => {
+    const p = montarPreguntas([], {}, [
+      sugerida({ id: 's1' }),
+      sugerida({ id: 's2', text: 'Apagada', enabled: false }),
+    ]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('Preguntas sugeridas');
+    expect(p.texto()).toContain('¿En qué ciudad nos conocimos?');
+    expect(p.texto()).not.toContain('Apagada');
+  });
+
+  /** Las respuestas de las sugerencias son de muestra: no pueden jugarse sin revisar. */
+  it('«Añadir a nuestro quiz» la copia apagada, para que la pareja ponga sus respuestas', async () => {
+    const p = montarPreguntas([], {}, [sugerida({ id: 's1' })]);
+    await p.asentar();
+    await p.pulsar(p.boton('Añadir a nuestro quiz'));
+
+    expect(p.escrituras).toHaveLength(1);
+    expect(p.escrituras[0]).toMatchObject({
+      text: '¿En qué ciudad nos conocimos?',
+      correctAnswer: 'Madrid',
+      wrongAnswers: ['Sevilla', 'Bilbao', 'Cádiz'],
+      enabled: false,
+    });
+    expect(p.texto()).toContain('Añadida a vuestro quiz');
+  });
+
+  it('una pregunta ya añadida no se vuelve a ofrecer (aunque cambien tildes o signos)', async () => {
+    const existente = pregunta({ id: 'a', text: 'en que ciudad nos conocimos' });
+    const p = montarPreguntas([existente], {}, [sugerida({ id: 's1' })]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('Ya está en vuestro quiz');
+    expect(p.boton('Añadir a nuestro quiz')).toBeUndefined();
+  });
+
+  it('una pregunta por revisar no cuenta como jugable y lo dice', async () => {
+    const p = montarPreguntas([
+      pregunta({ id: 'a' }),
+      pregunta({ id: 'b' }),
+      pregunta({ id: 'c' }),
+      pregunta({ id: 'd', enabled: false }),
+    ]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('3 de 4');
+    expect(p.texto()).toContain('Por revisar');
+    expect(p.texto()).toContain('1 por revisar');
   });
 });

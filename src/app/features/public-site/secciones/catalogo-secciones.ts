@@ -79,6 +79,8 @@ export const TIPOS_EDITABLES: Record<TipoSeccion, TipoEditable> = {
   mapa: { tipo: 'mapa', icono: 'map-pin', campos: campos('mapa') },
   // La playlist (§8.14) también: su cartel lleva a la página donde se vota.
   playlist: { tipo: 'playlist', icono: 'music-notes', campos: campos('playlist') },
+  // Nuestra historia (cinco apartados) vive en su página; aquí va su cartel.
+  historia: { tipo: 'historia', icono: 'book-open', campos: campos('historia') },
 };
 
 /**

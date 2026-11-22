@@ -30,6 +30,7 @@ const TENANT: ResultadoTenant = {
     cronologia: [],
     alojamientos: [],
     dressCode: DRESS_CODE_VACIO,
+    historia: [],
     modulos: {},
     ubicaciones: sanearUbicaciones([
       {

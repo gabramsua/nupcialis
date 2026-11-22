@@ -5,6 +5,7 @@ import type { HitoPublico } from '../../features/public-site/cronologia/cronolog
 import type { AlojamientoPublico } from '../../features/public-site/alojamientos/alojamientos';
 import type { UbicacionPublica } from '../../features/public-site/mapa/ubicaciones';
 import type { DressCodePublico } from '../../features/public-site/dress-code/dress-code';
+import type { ApartadoPublicoDeHistoria } from '../../features/public-site/historia/historia';
 
 /**
  * Puerto de datos del tenant.
@@ -101,6 +102,8 @@ export interface SitioPublico {
   readonly ubicaciones: readonly UbicacionPublica[];
   /** El dress code (§8.11). Vacío si el módulo está apagado. */
   readonly dressCode: DressCodePublico;
+  /** «Nuestra historia»: apartados ya saneados. Vacío si no hay nada escrito. */
+  readonly historia: readonly ApartadoPublicoDeHistoria[];
   /**
    * Qué módulos están a la vista, tal y como los publica la proyección.
    *

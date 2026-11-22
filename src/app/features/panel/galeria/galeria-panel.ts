@@ -8,6 +8,7 @@ import { NpField } from '../../../design-system/components/field/field';
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpIcon } from '../../../design-system/icons/icon';
 import type { FalloGaleria, FotoPublica } from '../../../core/galeria/galeria-panel-gateway';
+import { NpGaleriaPrevia } from './galeria-previa';
 import { GaleriaPanelStore } from './galeria.store';
 import { NpInput } from '../../../design-system/components/field/input';
 
@@ -28,7 +29,17 @@ const PALABRA_VACIAR = 'VACIAR';
  */
 @Component({
   selector: 'np-panel-galeria',
-  imports: [TranslocoDirective, NpAlert, NpButton, NpEmptyState, NpField, NpModal, NpIcon, NpInput],
+  imports: [
+    TranslocoDirective,
+    NpAlert,
+    NpButton,
+    NpEmptyState,
+    NpField,
+    NpGaleriaPrevia,
+    NpModal,
+    NpIcon,
+    NpInput,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -58,6 +69,13 @@ const PALABRA_VACIAR = 'VACIAR';
             } @else {
               <p class="pg__resumen">
                 {{ t(claveResumen(), { n: store.cuantas() }) }}
+              </p>
+
+              <p class="pg__previa">
+                <button npButton variant="secondary" type="button" (click)="previa.set(true)">
+                  <np-icon name="eye" />
+                  {{ t('panel.galeria.previa.boton') }}
+                </button>
               </p>
 
               <ul class="pg__rejilla">
@@ -116,6 +134,23 @@ const PALABRA_VACIAR = 'VACIAR';
               </p>
             }
           }
+        }
+
+        @if (previa()) {
+          <np-modal
+            [open]="true"
+            [heading]="t('panel.galeria.previa.titulo')"
+            (closed)="previa.set(false)"
+          >
+            <p class="pg__previaAyuda">{{ t('panel.galeria.previa.ayuda') }}</p>
+            <np-galeria-previa [fotos]="store.fotos()" [hayMas]="store.hayMas()" />
+
+            <div np-modal-actions>
+              <button npButton variant="ghost" type="button" (click)="previa.set(false)">
+                {{ t('common.close') }}
+              </button>
+            </div>
+          </np-modal>
         }
 
         @if (aBorrar(); as foto) {
@@ -206,6 +241,14 @@ const PALABRA_VACIAR = 'VACIAR';
       color: var(--np-surface-text-muted);
       font-size: var(--np-text-sm);
     }
+    .pg__previa {
+      margin: var(--np-space-3) 0;
+    }
+    .pg__previaAyuda {
+      margin: 0 0 var(--np-space-3);
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
+    }
     .pg__vaciar {
       display: flex;
       margin: var(--np-space-4) 0 0;
@@ -289,6 +332,7 @@ export class PanelGaleria {
 
   protected readonly aBorrar = signal<FotoPublica | null>(null);
   protected readonly borrando = signal<string | null>(null);
+  protected readonly previa = signal(false);
   protected readonly vaciando = signal(false);
   protected readonly vaciandoYa = signal(false);
   protected readonly escrito = signal('');

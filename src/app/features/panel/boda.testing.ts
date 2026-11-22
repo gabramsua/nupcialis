@@ -21,6 +21,7 @@ export const BODA_DE_PRUEBA: BodaDelPanel = {
   weddingDate: new Date('2027-06-12T00:00:00.000Z'),
   weddingTime: '17:00',
   timezone: 'Europe/Madrid',
+  ceremonyType: 'civil',
   guestAccessMode: 'open',
   inviteMessage: MENSAJE_POR_DEFECTO,
   rsvpDeadline: null,

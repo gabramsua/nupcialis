@@ -495,6 +495,8 @@ export class EditorSecciones {
       faqs: sanearFaqs(this.faqs.faqs()),
       cronologia: sanearCronologia(this.cronologia.hitos()),
       alojamientos: sanearAlojamientos(this.alojamientos.alojamientos()),
+      // La vista previa del editor no trae el mapa: los «Cómo llegar» salen en la web.
+      ubicaciones: [],
       dressCode: boda?.dressCode ?? DRESS_CODE_VACIO,
     };
   });

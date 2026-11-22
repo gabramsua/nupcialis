@@ -117,6 +117,7 @@ function bodaOk(modo: ModoAcceso): ResultadoTenant {
       alojamientos: [],
       ubicaciones: [],
       dressCode: DRESS_CODE_VACIO,
+      historia: [],
       modulos: { rsvp: 'visible' },
       locale: 'es',
       theme: { templateId: 'clasica', palette: null, heroImagePath: null, heroImageUrl: null },

@@ -129,4 +129,13 @@ export const publicSiteRoutes: Routes = [
     resolve: { tenant: tenantResolver },
     loadComponent: () => import('./mapa/mapa-publica').then((m) => m.NpMapaPublica),
   },
+  {
+    // Nuestra historia, con URL propia: son cinco apartados con fotos y no
+    // tienen por qué viajar con la portada. Lo que enseña viene en la
+    // proyección pública, así que no hace falta Functions ni sesión.
+    path: 'historia',
+    providers: [provideIconSprite('public'), provideFirestore(), provideAppCheck()],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./historia/historia-publica').then((m) => m.NpHistoriaPublica),
+  },
 ];

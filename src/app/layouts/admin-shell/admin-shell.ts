@@ -7,9 +7,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { PUERTA_ALTA } from '../../core/alta/alta-gateway';
+import { PUERTA_AUTH } from '../../core/auth/auth-gateway';
 import {
   accionesDe,
   claveDeNombre,
@@ -82,9 +83,35 @@ type Carga = 'cargando' | 'lista' | 'error';
             <np-icon name="chart-bar" />
             {{ t('superadmin.estadisticas.enlace') }}
           </a>
+          <a class="np-admin__ver" routerLink="/superadmin/finanzas">
+            <np-icon name="currency-eur" />
+            {{ t('superadmin.finanzas.enlace') }}
+          </a>
+          <a class="np-admin__ver" routerLink="/superadmin/recordatorios">
+            <np-icon name="bell" />
+            {{ t('superadmin.recordatorios.enlace') }}
+          </a>
+          <a class="np-admin__ver" routerLink="/superadmin/catalogos">
+            <np-icon name="list-checks" />
+            {{ t('superadmin.catalogos.enlace') }}
+          </a>
+          <button
+            npButton
+            variant="ghost"
+            type="button"
+            [loading]="completando()"
+            (click)="completarBodas()"
+          >
+            <np-icon name="arrows-clockwise" />
+            {{ t('superadmin.completar.boton') }}
+          </button>
           <button npButton type="button" (click)="abrirAlta()">
             <np-icon name="plus" />
             {{ t('superadmin.alta.abrir') }}
+          </button>
+          <button npButton variant="ghost" type="button" (click)="salir()">
+            <np-icon name="sign-out" />
+            {{ t('superadmin.salir') }}
           </button>
         </div>
       </header>
@@ -134,14 +161,24 @@ type Carga = 'cargando' | 'lista' | 'error';
                     total: todas().length,
                   })
                 }}
-                @if (hayFiltros(filtros())) {
-                  <button npButton variant="ghost" size="sm" type="button" (click)="limpiar()">
-                    <np-icon name="x" />
-                    {{ t('superadmin.bodas.filtro.limpiar') }}
-                  </button>
-                }
+                <button
+                  npButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  [disabled]="!hayFiltros(filtros())"
+                  (click)="limpiar()"
+                >
+                  <np-icon name="x" />
+                  {{ t('superadmin.bodas.filtro.limpiar') }}
+                </button>
               </p>
             </div>
+          }
+          @if (avisoCompletar(); as aviso) {
+            <np-alert [status]="aviso.ok ? 'confirmed' : 'declined'">
+              <p>{{ aviso.texto }}</p>
+            </np-alert>
           }
           @switch (carga()) {
             @case ('cargando') {
@@ -175,7 +212,7 @@ type Carga = 'cargando' | 'lista' | 'error';
                   desplaza dentro de su caja en vez de desbordar la página.
                 -->
                 <div class="np-table-scroll">
-                  <table npSortable class="np-table">
+                  <table npSortable class="np-table np-admin__tabla">
                     <thead>
                       <tr>
                         <th npSortHeader="nombres">{{ t('superadmin.bodas.columna.pareja') }}</th>
@@ -195,9 +232,12 @@ type Carga = 'cargando' | 'lista' | 'error';
                       @for (boda of bodas(); track boda.weddingId) {
                         <tr>
                           <td>
-                            <div class="np-admin__pareja">
+                            <a
+                              class="np-admin__pareja"
+                              [routerLink]="['/superadmin/bodas', boda.weddingId]"
+                            >
                               {{ t('publico.pareja', boda.pareja) }}
-                            </div>
+                            </a>
                             @if (boda.authDomain === 'pending') {
                               <!--
                               El aviso viaja pegado a la boda, no a un contador
@@ -387,17 +427,48 @@ type Carga = 'cargando' | 'lista' | 'error';
     .np-admin__buscar {
       flex: 1 1 14rem;
     }
+    /* Los desplegables no se ajustan a la opción elegida: si lo hicieran, cambiar
+       de «Todas» a «Pendiente de autorizar» movería todo lo que tienen al lado. */
+    .np-admin__filtros select {
+      inline-size: 12rem;
+    }
     .np-admin__cuenta {
       display: flex;
       align-items: center;
       gap: var(--np-space-2);
       margin: 0;
       min-block-size: 2.75rem;
+      min-inline-size: 11rem;
       font-size: var(--np-text-sm);
       color: var(--np-surface-text-muted);
     }
     .np-admin__pareja {
       font-weight: var(--np-weight-medium);
+    }
+    /* Columnas de ancho fijo: con el reparto automático, filtrar cambiaba el
+       contenido más largo de cada columna y toda la tabla se redistribuía. */
+    .np-admin__tabla {
+      table-layout: fixed;
+      min-inline-size: 60rem;
+    }
+    .np-admin__tabla td {
+      overflow-wrap: anywhere;
+    }
+    .np-admin__tabla th:nth-child(1) {
+      inline-size: 22%;
+    }
+    .np-admin__tabla th:nth-child(2) {
+      inline-size: 14%;
+    }
+    .np-admin__tabla th:nth-child(3) {
+      inline-size: 12%;
+    }
+    .np-admin__tabla th:nth-child(4),
+    .np-admin__tabla th:nth-child(6) {
+      inline-size: 9%;
+    }
+    .np-admin__tabla th:nth-child(5) {
+      inline-size: 11%;
     }
     .np-admin__incidencia {
       display: flex;
@@ -434,6 +505,8 @@ type Carga = 'cargando' | 'lista' | 'error';
 export class AdminShell {
   private readonly fuente = crearFuenteBodasFirestore();
   private readonly puerta = inject(PUERTA_ALTA);
+  private readonly i18n = inject(TranslocoService);
+  private readonly auth = inject(PUERTA_AUTH);
 
   /**
    * La tabla guarda el estado de ordenación; ordenar las filas es de aquí.
@@ -453,6 +526,12 @@ export class AdminShell {
     readonly accion: AccionSobreBoda;
   } | null>(null);
   protected readonly cambiando = signal<string | null>(null);
+
+  protected readonly completando = signal(false);
+  protected readonly avisoCompletar = signal<{
+    readonly ok: boolean;
+    readonly texto: string;
+  } | null>(null);
 
   /** Boda cuya publicación se rechazó, y por qué. Se pinta bajo sus botones. */
   protected readonly noPublicable = signal<string | null>(null);
@@ -517,6 +596,13 @@ export class AdminShell {
 
   protected cerrarAlta(): void {
     this.altaAbierta.set(false);
+  }
+
+  protected async salir(): Promise<void> {
+    await this.auth.salir();
+    // Recarga completa y no navegación del router: se tira con ella todo lo que
+    // el superadmin había cargado en memoria (correos, cobros).
+    location.assign('/superadmin/acceso');
   }
 
   protected async recargar(): Promise<void> {
@@ -589,6 +675,29 @@ export class AdminShell {
 
     this.mensajeError.set(resultado.mensaje);
     this.carga.set('error');
+  }
+
+  /** Añade a las bodas existentes los módulos nuevos. Se puede repetir sin miedo. */
+  protected async completarBodas(): Promise<void> {
+    this.completando.set(true);
+    this.avisoCompletar.set(null);
+    const resultado = await this.puerta.completarBodas();
+    this.completando.set(false);
+
+    if (!resultado.ok) {
+      this.avisoCompletar.set({ ok: false, texto: resultado.mensaje });
+      return;
+    }
+    const texto =
+      resultado.actualizadas === 0
+        ? this.i18n.translate('superadmin.completar.alDia', { n: resultado.revisadas })
+        : this.i18n.translate('superadmin.completar.hecho', {
+            n: resultado.actualizadas,
+            modulos: resultado.modulosAnadidos,
+            secciones: resultado.seccionesAnadidas,
+          });
+    this.avisoCompletar.set({ ok: true, texto });
+    if (resultado.actualizadas > 0) await this.recargar();
   }
 
   protected async reintentarDominio(boda: BodaEnListado): Promise<void> {

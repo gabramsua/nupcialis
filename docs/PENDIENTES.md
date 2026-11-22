@@ -5,52 +5,55 @@ tropieza con una de estas, se para y se pregunta.
 
 Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 
-| ID   | Decisión                                                                   | Bloquea                          | Estado                                                       |
-| ---- | -------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------ |
-| D-01 | Ciclo de vida post-boda: cuánto vive la web y los datos, renovación, purga | F5, RGPD                         | abierta                                                      |
-| D-02 | Precio y planes: qué módulos son `basic` y cuáles `premium`                | F5                               | abierta                                                      |
-| D-03 | Librería del editor de texto enriquecido                                   | F1                               | **decidida 2026-09-08: Jodit con `ngx-jodit`**               |
-| D-04 | Confirmar librería de mapas (Leaflet/MapLibre frente a Google Maps)        | F2                               | **elegida: Leaflet + OSM; pendiente de validar**             |
-| D-05 | Email transaccional: proveedor y si entra en el producto                   | F5                               | abierta                                                      |
-| D-06 | WhatsApp Business API                                                      | F5                               | abierta                                                      |
-| D-07 | Dominio propio de la pareja                                                | —                                | abierta                                                      |
-| D-08 | PWA e instalación en el móvil del invitado                                 | —                                | abierta                                                      |
-| D-09 | Comportamiento de los módulos con identidad en modo de acceso abierto      | F3                               | abierta                                                      |
-| D-10 | Plano real de la finca                                                     | F5                               | abierta                                                      |
-| D-11 | Repeticiones del quiz: valor por defecto y qué muestra el ranking          | F3                               | **decidida 2026-11-16**                                      |
-| D-12 | Familia de iconos base                                                     | **F0**                           | **decidida 2026-09-08: Phosphor**                            |
-| D-13 | Reserva de regalos sin identidad en modo abierto                           | F3                               | abierta                                                      |
-| D-14 | Consentimiento para publicar fotos de terceros en Personas importantes     | F2, RGPD                         | abierta                                                      |
-| D-15 | Dominio definitivo                                                         | **Bloque 1 de puesta en marcha** | **decidida 2026-09-08: `nupcialis.com`, comprado**           |
-| D-16 | Dónde vive el panel de la pareja                                           | F0.3, F0.4                       | **decidida 2026-09-08: subdominio de la boda**               |
-| D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo              | F0.1                             | **decidida 2026-09-08: SDK modular directo**                 |
-| D-18 | Cómo se cargan los servicios de Firebase                                   | F0.1                             | **decidida 2026-09-08: por ruta, en chunks diferidos**       |
-| D-19 | Dónde se importa el SDK de Firestore                                       | F0.3                             | **decidida 2026-09-08: en ficheros `*.firestore.ts`**        |
-| D-20 | Maquetación de la web pública según el plan                                | F0.6, F1                         | **decidida 2026-09-10: básico onepage, extendido multipage** |
-| D-21 | Qué determina el precio                                                    | F5                               | **decidida 2026-09-10: el plan, no los módulos**             |
-| D-22 | Borrador a nivel de módulo                                                 | F0.6, F1                         | **decidida 2026-09-10: `hidden` · `soon` · `visible`**       |
-| D-23 | Dónde se configuran planes y precios                                       | F0.7                             | **decidida 2026-09-10: editables desde el superadmin**       |
-| D-24 | Cinco decisiones tomadas al implementar el alta                            | F0.6                             | **pendiente de validar**                                     |
-| D-25 | Cómo se cobra sin pasarela de pago                                         | F5, landing                      | **decidida 2026-09-14: Bizum y activación manual**           |
-| D-26 | Proveedores que comercializan la web y liquidan aparte                     | F5                               | **decidida 2026-09-14: tarifa mayorista, sin acceso**        |
-| D-27 | Publicar una boda: quién puede, hacia dónde y con qué mínimo               | F0.7                             | **pendiente de validar**                                     |
-| D-28 | La hora de la boda la pone la pareja, no el alta                           | F0.7                             | **decidida 2026-09-16**                                      |
-| D-29 | Secciones: lo que se implementó y lo que se dejó fuera                     | PL.7                             | **pendiente de validar**                                     |
-| D-30 | Importación: lo que se dejó fuera a propósito                              | F1.2                             | **pendiente de validar**                                     |
-| D-31 | Grupos: escritura por función, doble pertenencia y grupo de todos          | F1.3                             | **resuelta 2026-09-21**                                      |
-| D-32 | Acceso de invitados: lo decidido al implementarlo                          | F1.7                             | **pendiente de validar**                                     |
-| D-33 | Se quitan los emuladores: todo se prueba contra Firebase                   | —                                | **decidida 2026-11-10**                                      |
-| D-34 | Enlaces de invitación que entren solos, sin teclear nada                   | F1.4                             | **decidida 2026-11-12: opción 3, acceso mixto**              |
-| D-35 | RSVP: lo decidido al implementarlo                                         | F1.8                             | **pendiente de validar**                                     |
-| D-36 | Acompañantes: lo decidido al implementarlo                                 | F1.5                             | **pendiente de validar**                                     |
-| D-37 | Librería de hojas de cálculo                                               | F1.6                             | **pendiente de validar**                                     |
-| D-41 | Playlist: lo decidido al implementarla                                     | F3.4                             | **pendiente de validar**                                     |
-| D-42 | Estadísticas y límites del superadmin: lo decidido al implementarlos       | F3.1d                            | **pendiente de validar**                                     |
-| D-43 | Tareas de la pareja: lo decidido al implementarlas                         | F4.1                             | **pendiente de validar**                                     |
-| D-44 | Smoke test 1: arreglos y orden del backlog                                 | S1                               | **pendiente de validar**                                     |
-| D-45 | La pareja contesta por el invitado: lo decidido al implementarlo           | F1.8h                            | **pendiente de validar**                                     |
-| D-46 | Acompañantes desde el panel y pulido del timeline/FAQ/editor               | F1.5d                            | **pendiente de validar**                                     |
-| D-47 | Tanda de 18 puntos (quiz, grupos, mesas, tareas…) y lo que he apartado     | S2                               | **pendiente de validar**                                     |
+| ID   | Decisión                                                                        | Bloquea                          | Estado                                                       |
+| ---- | ------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------ |
+| D-01 | Ciclo de vida post-boda: cuánto vive la web y los datos, renovación, purga      | F5, RGPD                         | abierta                                                      |
+| D-02 | Precio y planes: qué módulos son `basic` y cuáles `premium`                     | F5                               | abierta                                                      |
+| D-03 | Librería del editor de texto enriquecido                                        | F1                               | **decidida 2026-09-08: Jodit con `ngx-jodit`**               |
+| D-04 | Confirmar librería de mapas (Leaflet/MapLibre frente a Google Maps)             | F2                               | **elegida: Leaflet + OSM; pendiente de validar**             |
+| D-05 | Email transaccional: proveedor y si entra en el producto                        | F5                               | abierta                                                      |
+| D-06 | WhatsApp Business API                                                           | F5                               | abierta                                                      |
+| D-07 | Dominio propio de la pareja                                                     | —                                | abierta                                                      |
+| D-08 | PWA e instalación en el móvil del invitado                                      | —                                | abierta                                                      |
+| D-09 | Comportamiento de los módulos con identidad en modo de acceso abierto           | F3                               | abierta                                                      |
+| D-10 | Plano real de la finca                                                          | F5                               | abierta                                                      |
+| D-11 | Repeticiones del quiz: valor por defecto y qué muestra el ranking               | F3                               | **decidida 2026-11-16**                                      |
+| D-12 | Familia de iconos base                                                          | **F0**                           | **decidida 2026-09-08: Phosphor**                            |
+| D-13 | Reserva de regalos sin identidad en modo abierto                                | F3                               | abierta                                                      |
+| D-14 | Consentimiento para publicar fotos de terceros en Personas importantes          | F2, RGPD                         | abierta                                                      |
+| D-15 | Dominio definitivo                                                              | **Bloque 1 de puesta en marcha** | **decidida 2026-09-08: `nupcialis.com`, comprado**           |
+| D-16 | Dónde vive el panel de la pareja                                                | F0.3, F0.4                       | **decidida 2026-09-08: subdominio de la boda**               |
+| D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo                   | F0.1                             | **decidida 2026-09-08: SDK modular directo**                 |
+| D-18 | Cómo se cargan los servicios de Firebase                                        | F0.1                             | **decidida 2026-09-08: por ruta, en chunks diferidos**       |
+| D-19 | Dónde se importa el SDK de Firestore                                            | F0.3                             | **decidida 2026-09-08: en ficheros `*.firestore.ts`**        |
+| D-20 | Maquetación de la web pública según el plan                                     | F0.6, F1                         | **decidida 2026-09-10: básico onepage, extendido multipage** |
+| D-21 | Qué determina el precio                                                         | F5                               | **decidida 2026-09-10: el plan, no los módulos**             |
+| D-22 | Borrador a nivel de módulo                                                      | F0.6, F1                         | **decidida 2026-09-10: `hidden` · `soon` · `visible`**       |
+| D-23 | Dónde se configuran planes y precios                                            | F0.7                             | **decidida 2026-09-10: editables desde el superadmin**       |
+| D-24 | Cinco decisiones tomadas al implementar el alta                                 | F0.6                             | **pendiente de validar**                                     |
+| D-25 | Cómo se cobra sin pasarela de pago                                              | F5, landing                      | **decidida 2026-09-14: Bizum y activación manual**           |
+| D-26 | Proveedores que comercializan la web y liquidan aparte                          | F5                               | **decidida 2026-09-14: tarifa mayorista, sin acceso**        |
+| D-27 | Publicar una boda: quién puede, hacia dónde y con qué mínimo                    | F0.7                             | **pendiente de validar**                                     |
+| D-28 | La hora de la boda la pone la pareja, no el alta                                | F0.7                             | **decidida 2026-09-16**                                      |
+| D-29 | Secciones: lo que se implementó y lo que se dejó fuera                          | PL.7                             | **pendiente de validar**                                     |
+| D-30 | Importación: lo que se dejó fuera a propósito                                   | F1.2                             | **pendiente de validar**                                     |
+| D-31 | Grupos: escritura por función, doble pertenencia y grupo de todos               | F1.3                             | **resuelta 2026-09-21**                                      |
+| D-32 | Acceso de invitados: lo decidido al implementarlo                               | F1.7                             | **pendiente de validar**                                     |
+| D-33 | Se quitan los emuladores: todo se prueba contra Firebase                        | —                                | **decidida 2026-11-10**                                      |
+| D-34 | Enlaces de invitación que entren solos, sin teclear nada                        | F1.4                             | **decidida 2026-11-12: opción 3, acceso mixto**              |
+| D-35 | RSVP: lo decidido al implementarlo                                              | F1.8                             | **pendiente de validar**                                     |
+| D-36 | Acompañantes: lo decidido al implementarlo                                      | F1.5                             | **pendiente de validar**                                     |
+| D-37 | Librería de hojas de cálculo                                                    | F1.6                             | **pendiente de validar**                                     |
+| D-41 | Playlist: lo decidido al implementarla                                          | F3.4                             | **pendiente de validar**                                     |
+| D-42 | Estadísticas y límites del superadmin: lo decidido al implementarlos            | F3.1d                            | **pendiente de validar**                                     |
+| D-43 | Tareas de la pareja: lo decidido al implementarlas                              | F4.1                             | **pendiente de validar**                                     |
+| D-44 | Smoke test 1: arreglos y orden del backlog                                      | S1                               | **pendiente de validar**                                     |
+| D-45 | La pareja contesta por el invitado: lo decidido al implementarlo                | F1.8h                            | **pendiente de validar**                                     |
+| D-46 | Acompañantes desde el panel y pulido del timeline/FAQ/editor                    | F1.5d                            | **pendiente de validar**                                     |
+| D-47 | Tanda de 18 puntos (quiz, grupos, mesas, tareas…) y lo que he apartado          | S2                               | **pendiente de validar**                                     |
+| D-48 | Superadmin (ficha, restablecimiento, cobros, recordatorios) y lo apartado       | S1.3e/f/g, S1.6b, S1.7           | **pendiente de validar**                                     |
+| D-49 | Tanda 20: civil/religiosa, lugares, catálogos, presupuesto, historia            | S3                               | **pendiente de validar**                                     |
+| D-50 | Tanda 21: lista de invitados en acordeón, «mismo sitio», módulos a bodas viejas | S3b, F1.3f                       | **pendiente de validar**                                     |
 
 ---
 
@@ -1392,3 +1395,201 @@ necesitara su respuesta**. Primero lo que he decidido yo; después, lo apartado.
   test.
 - Siguen sin respuesta: vista previa de la **galería** y confirmación **masiva**
   (F1.8i/j). Las bodas viejas conservan las 5 preguntas vacías del quiz.
+
+### D-48 · Superadmin: ficha de boda, restablecimiento, cobros y recordatorios — **pendiente de validar**
+
+Hecho mientras Gabriel no estaba, con la instrucción de **apartar lo que
+necesitara su respuesta**. Va junto con la vista previa de la galería, la
+respuesta en lote y los enlaces de ubicación, que no abrían decisiones.
+
+**Decidido y hecho**
+
+1. **Restablecimiento (`S1.6b`).** El Admin SDK **solo genera** el enlace, no lo
+   envía, y la fase 1 no tiene proveedor de correo. Por eso el botón _genera y
+   enseña_ el enlace para copiarlo y pasarlo por WhatsApp (el alta ya hacía lo
+   mismo). Solo se acepta una cuenta que esté en `ownerUids` de esa boda; sin eso
+   la función sería «el enlace de cualquier cuenta». El enlace **no se guarda ni
+   entra en el log**: en el log queda quién lo pidió y para quién. Los correos
+   salen de Firebase Auth, no se copian a Firestore. El teléfono solo sale si la
+   cuenta lo tiene (hoy las cuentas de pareja no lo piden).
+2. **Ficha de boda (`S1.7`).** `/superadmin/bodas/:id`, al pulsar el nombre de la
+   pareja en el listado. Una sola función (`getWeddingFile`) junta resumen,
+   contactos, cobros y las **últimas 100 entradas** de `auditLog` de esa boda.
+   Necesita un **índice compuesto nuevo** (`auditLog`: `weddingId` + `createdAt`),
+   que va en `firestore.indexes.json`. Una acción que la pantalla no conoce se
+   enseña con su nombre técnico, no se esconde.
+3. **Cobros (`S1.3e`).** Colección raíz `payments`: importe **en céntimos**
+   (entero, 1 a 10 000 000), concepto, método (`bizum`, `transferencia`,
+   `efectivo`, `otro`), estado (`pending`/`paid`), fecha de cobro (obligatoria si
+   está cobrado, prohibida si no), número de factura y notas. Lo valida y lo
+   escribe el servidor y deja rastro en el log; las reglas la cierran a todo el
+   mundo salvo lectura del superadmin (con test de aislamiento). **No inventa
+   precios** (D-02 sigue abierta) y **no emite facturas**: solo guarda el número
+   de la que emites tú fuera. CSV con `;` y coma decimal, con BOM para Excel, y
+   las celdas que parecen fórmula se neutralizan.
+4. **Recordatorios (`S1.3f`).** Cuatro avisos por boda **activa**, a los **60
+   días** de la fecha: _agradecimiento_ y _encuesta_ (a la pareja), _aviso de
+   fotos y cierre_ (a la pareja) y _cerrar la boda_ (tarea tuya). Salen dos
+   semanas antes de que toquen y se quedan hasta marcarlos. Las marcas viven en
+   `reminderMarks` (solo superadmin). Las bodas en borrador, archivadas o sin
+   fecha no generan nada. **No se envía nada**: la pantalla da el texto con los
+   nombres y la dirección de la boda para copiar.
+
+**Apartado: necesita tu respuesta**
+
+- **Plazo exacto de los recordatorios.** «A los 2 meses» lo he fijado en 60 días
+  y los cuatro el mismo día. ¿Quieres que el cierre llegue más tarde que el
+  agradecimiento (p. ej. agradecimiento a las 2 semanas, cierre a los 2 meses)?
+  Está en una constante (`DIAS_HASTA_RECORDATORIO`).
+- **Textos de los avisos.** Los he redactado yo (tono cercano, tuteo en plural
+  a la pareja). Revísalos; están en `superadmin.recordatorios.texto.*`. La
+  encuesta no lleva enlace porque no hay formulario: ¿Google Forms, Typeform?
+- **Cuánto se conservan los datos tras el cierre** (qué pasa con fotos e
+  invitados al archivar). El texto de «cierre» no promete un plazo; sin la
+  decisión (REQUISITOS §9.4) no puedo escribirlo ni automatizarlo.
+- **`S1.3g` Notificaciones push/correo:** apartada hasta elegir proveedor de
+  correo (§11.5). Con él, el envío automático de estos avisos es pequeño: el
+  texto y el estado ya existen.
+- **Cobros:** ¿hace falta distinguir IVA/base imponible, o un cobro por plan
+  basta? Hoy es un único importe. Y, como el límite es 2 000 cobros por
+  consulta, si llegas a más hay que paginar.
+- **Cuentas de pareja con varios correos o sin correo:** la ficha las lista todas;
+  quien no tiene correo no tiene botón de enlace.
+
+### D-49 · Tanda 20: civil o religiosa, lugares, catálogos, presupuesto y «Nuestra historia» — **pendiente de validar**
+
+Hecha mientras Gabriel no estaba. Todo lo de abajo lo he **supuesto yo**; nada
+bloquea, pero quiero que lo valides.
+
+**Civil o religiosa y lugares**
+
+1. **Civil/religiosa** es un dato **obligatorio** del alta (por defecto, civil),
+   se guarda en `ceremonyType`, la pareja lo edita en «Datos de la boda» y se
+   muestra. **No cambia nada más** (ni tareas, ni textos): ver pregunta 1.
+2. **Lugares en el alta, opcionales.** Ceremonia y celebración se buscan con
+   **OpenStreetMap/Nominatim** (el mapa del producto es OSM, D-04) o **pegando un
+   enlace largo de Google Maps** (saco las coordenadas del enlace; los enlaces
+   cortos `maps.app.goo.gl` **no** se resuelven). Sin buscar, se pone el pin
+   después desde `/panel/map`. Se crean como ubicaciones `ceremonia` y
+   `banquete`, visibles para invitados.
+3. **Editable desde el panel de la pareja:** nombres, fecha (la fecha **no mueve**
+   las fechas de las tareas ya sembradas), tipo de ceremonia, hora y los lugares.
+   **No editables:** correos, slug y plan.
+
+**Catálogos del superadmin (tareas, presupuesto, quiz)**
+
+4. `/superadmin/catalogos` con tres pestañas y CRUD. **Catálogo sin tocar =
+   usar las de fábrica**; con elementos, manda el catálogo (aunque estén todos
+   desactivados, que entonces siembra nada). «Cargar los de fábrica» solo
+   funciona con el catálogo vacío.
+5. **Cambiar el catálogo no toca las bodas ya creadas**: es una copia al alta.
+6. **Presupuesto** no existía en el panel de la pareja: he hecho uno básico
+   (`/panel/budget`, solo plan extendido): partidas por categoría, estimado/real,
+   pagada, totales, CSV. Dinero en céntimos. Las 17 partidas de fábrica las he
+   escrito yo; cantidades orientativas, **revísalas**.
+7. **Sugerencias del quiz:** las preguntas del catálogo **no se copian solas**;
+   en el panel salen con «Añadir a nuestro quiz». Se añaden **desactivadas y con
+   la etiqueta «Por revisar»** hasta que la pareja edita las respuestas y las
+   activa (una sugerencia con la respuesta correcta puesta por nosotros no debe
+   jugarse sin mirar).
+
+**Nuestra historia**
+
+8. Cinco apartados fijos con Jodit y hasta **dos fotos por apartado**, que van
+   **debajo del texto** de cada uno (mi lectura de «entre cada sección los novios
+   podrán subir una o dos fotos»). Solo plan extendido. Página propia `/historia`.
+9. El apartado 4 lo he titulado **«Nuestro mejor viaje»**; «nuestro lugar para
+   estar juntos» queda en la ayuda de la pantalla.
+10. La sección «Nuestra historia» de texto libre que nacía con cada boda pasa a
+    ser el **cartel** que lleva a esta página (solo en bodas nuevas).
+11. **Las bodas extendidas que ya existen no tienen `modules.story`** (los
+    módulos se fijan en el alta): hay que añadírselo a mano. Ver pregunta 3.
+
+**Otros arreglos de la tanda**
+
+12. **Cerrar sesión** en los dos paneles (vuelve al acceso de su panel).
+13. **Filtros del superadmin** ya no cambian el ancho (`scrollbar-gutter: stable`
+    y filtros con tamaño fijo).
+
+**Apartado: necesita tu respuesta**
+
+1. ¿**Civil o religiosa** debe cambiar algo más? Por ejemplo, la plantilla de
+   tareas (cursillo prematrimonial, papeles del juzgado) o el texto de la
+   portada. Hoy solo se guarda y se muestra.
+2. ¿Casilla **«la ceremonia y la celebración son en el mismo sitio»** en el alta,
+   para no escribirlo dos veces?
+3. ¿Cómo activo **«Nuestra historia» y el presupuesto en las bodas extendidas
+   ya creadas**? Propongo un botón en la ficha del superadmin «Añadir módulos
+   nuevos», o un script único. Mientras tanto no salen en su menú.
+4. ¿Las fotos de la historia, **debajo del texto** de cada apartado, o prefieres
+   un bloque de fotos aparte entre apartados?
+
+---
+
+### D-50 · Tanda 21: lista de invitados en acordeón, «mismo sitio» y módulos nuevos en bodas ya creadas — **pendiente de validar**
+
+Respuestas de Gabriel a las preguntas de D-49 (1: algunas tareas serán de la
+civil, **sin prisa**; 2: la casilla, sí, **solo civil**; 3: **añadirlos
+directamente**; 4: probará él las fotos; 5: «Nuestro mejor viaje» vale) y el
+rediseño de la lista de invitados que pidió.
+
+**Lista de invitados**
+
+1. **Una línea por invitado**, no una tarjeta: número, nombre, grupos (chips de
+   color con su nombre) y respuesta (chip con color y texto). Con unos 200 por
+   boda, la tarjeta grande obligaba a desplazarse mucho.
+2. **Acordeón** (botón con `aria-expanded` y `aria-controls`): al abrir una fila
+   salen teléfono, mote, lado, edad, acompañantes que puede traer, menú,
+   alergias, notas, «no ha entrado», los enlaces a su familia y las cinco
+   acciones (acompañante, respuesta, compartir, editar, borrar). **Se pueden
+   tener varias abiertas** y hay «Plegar todos». Es un componente propio
+   (`np-lista-invitados`), no un componente del design system: si otra pantalla
+   lo pide, se promueve.
+3. **Numeración** = posición en **lo que se ve** (1..N tras filtros y orden), no
+   un identificador fijo del invitado. Si lo quieres fijo (el «nº 37» siempre el
+   mismo), es otro dato; pregunta 1.
+4. **Orden**: por nombre, respuesta (confirmados, pendientes, no vienen), grupo
+   (en el orden de grupos de la pareja; **quien no tiene grupo va siempre al
+   final**) y fecha de alta (los anteriores a ese dato, como más antiguos); en
+   los dos sentidos. Al cambiar de criterio vuelve a ascendente. Los empates se
+   deshacen por nombre.
+5. **Filtro por grupos**: ya existía (`np-filtro-grupos`, con cuántos hay en cada
+   uno) y se mantiene tal cual; se combina con las cifras de arriba, el buscador
+   y el orden. En la vista de **una familia** (titular + acompañantes) el orden y
+   el filtro se ignoran, como antes, y el selector de orden se esconde.
+6. En la fila cerrada, un acompañante lleva «Lo trae Ana» como **texto**; el
+   enlace que lleva a la familia está dentro de la fila abierta («Ver su
+   familia»). Un botón dentro de otro botón no es HTML válido.
+7. No se guarda qué filas estaban abiertas al recargar.
+
+**Casilla «ceremonia y celebración en el mismo sitio»**
+
+8. Solo sale con ceremonia **civil**. Marcada, se pide **un solo lugar** y viaja
+   a las **dos** fichas del mapa (`ceremonia` y `banquete`) con los mismos datos.
+   Si luego se elige religiosa, se ignora. **Consecuencia que conviene que
+   mires:** en el mapa público saldrán dos tarjetas iguales; la pareja puede
+   borrar una desde `/panel/map`. Pregunta 2.
+
+**Módulos nuevos en las bodas ya creadas**
+
+9. Función `completeWeddings` (solo superadmin, con auditoría) y botón **«Añadir
+   módulos nuevos»** en la cabecera del superadmin. Revisa todas las bodas y
+   **añade solo lo que falta**: los `modules.*` ausentes con el valor inicial de
+   su plan (en extendido, `story` y `budget` entran **activos y visibles**; en
+   básico, apagados) y el cartel de «Nuestra historia» en las secciones
+   (**apagado**: la pareja decide anunciarlo). **No pisa nada** de lo que ya
+   decidió la pareja y se puede repetir sin miedo (si no hay nada que añadir
+   dice «ya tienen todos los módulos»).
+10. **No toca las tareas ni las partidas** de las bodas viejas: el catálogo se
+    copia al alta (D-49.5) y meterlo después duplicaría lo que la pareja ya
+    haya hecho a mano.
+
+**Apartado: necesita tu respuesta**
+
+1. ¿Quieres un **número fijo** por invitado (que no cambie al filtrar u
+   ordenar), por ejemplo para cruzar con una hoja de papel? Hoy es la posición
+   en la lista que ves.
+2. Con «mismo sitio», ¿prefieres **una sola ficha** en el mapa público (la de la
+   ceremonia, con el nombre de los dos) en vez de dos tarjetas iguales?
+3. Tareas propias de la civil («buscar maestro de ceremonias»): quedan para
+   cuando lo pidas, como dijiste.

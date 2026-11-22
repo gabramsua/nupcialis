@@ -19,6 +19,8 @@ export interface HitoDelPanel {
   readonly description: string;
   readonly icon: IconoHito;
   readonly color: ColorHito;
+  /** Id de la ubicación del mapa donde es, o `null` (F2.2b). */
+  readonly locationId: string | null;
   readonly order: number;
   /** `false` es un hito **interno**: no se publica. */
   readonly visibleToGuests: boolean;
@@ -32,6 +34,7 @@ export interface DatosHito {
   readonly description: string;
   readonly icon: IconoHito;
   readonly color: ColorHito;
+  readonly locationId: string | null;
   readonly order: number;
   readonly visibleToGuests: boolean;
 }

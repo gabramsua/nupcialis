@@ -25,6 +25,15 @@ service firebase.storage {
                    && request.resource.size < 10 * 1024 * 1024;
     }
 
+    // Las fotos de «Nuestra historia»: públicas como la portada (las pinta la
+    // web de la boda), y solo las sube y borra la pareja de esa boda.
+    match /weddings/{wid}/story/{file} {
+      allow read: if true;
+      allow create, update: if isOwner(wid) && isImage()
+                            && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isOwner(wid);
+    }
+
     // La galería no se lee directamente: las URLs las entrega listPhotos, que
     // es quien decide la visibilidad según el grupo de quien pregunta.
     match /weddings/{wid}/gallery/{photoId}/{file} {

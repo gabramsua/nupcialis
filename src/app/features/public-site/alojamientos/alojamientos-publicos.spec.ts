@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
+import type { UbicacionPublica } from '../mapa/ubicaciones';
 import { NpAlojamientosPublicos } from './alojamientos-publicos';
 import type { AlojamientoPublico } from './alojamientos';
 
@@ -40,12 +41,16 @@ function sitio(parcial: Partial<AlojamientoPublico> & { id: string }): Alojamien
     blockedRooms: null,
     bookingDeadline: null,
     recommended: false,
+    locationId: null,
     order: 1,
     ...parcial,
   };
 }
 
-async function montar(alojamientos: readonly AlojamientoPublico[]) {
+async function montar(
+  alojamientos: readonly AlojamientoPublico[],
+  ubicaciones: readonly UbicacionPublica[] = [],
+) {
   TestBed.configureTestingModule({
     imports: [
       TranslocoTestingModule.forRoot({
@@ -58,6 +63,7 @@ async function montar(alojamientos: readonly AlojamientoPublico[]) {
 
   const fixture = TestBed.createComponent(NpAlojamientosPublicos);
   fixture.componentRef.setInput('alojamientos', alojamientos);
+  fixture.componentRef.setInput('ubicaciones', ubicaciones);
   fixture.detectChanges();
 
   const raiz = fixture.nativeElement as HTMLElement;
@@ -65,6 +71,36 @@ async function montar(alojamientos: readonly AlojamientoPublico[]) {
 }
 
 describe('los alojamientos en la web', () => {
+  it('un alojamiento enlazado con el mapa lleva su «Cómo llegar»', async () => {
+    const p = await montar(
+      [sitio({ id: 'a', name: 'Hotel Centro', locationId: 'hotel' })],
+      [
+        {
+          id: 'hotel',
+          type: 'alojamiento',
+          name: 'Hotel Centro',
+          address: '',
+          lat: 40.95,
+          lng: -4.12,
+          description: '',
+          time: null,
+          order: 1,
+        },
+      ],
+    );
+
+    const enlace = [...p.raiz.querySelectorAll('a')].find((a) =>
+      a.textContent?.includes('Cómo llegar'),
+    ) as HTMLAnchorElement;
+    expect(enlace.href).toContain('destination=40.95,-4.12');
+  });
+
+  it('sin ubicación publicada no hay enlace al mapa', async () => {
+    const p = await montar([sitio({ id: 'a', name: 'Hotel Centro', locationId: 'borrado' })]);
+
+    expect(p.texto()).not.toContain('Cómo llegar');
+  });
+
   it('enseña el nombre, el tipo, el precio y la distancia', async () => {
     const p = await montar([
       sitio({ id: 'central', name: 'Hotel Central', pricePerNight: 85, distanceKm: 4.5 }),

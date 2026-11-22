@@ -80,9 +80,20 @@ describe('sanearCronologia', () => {
         description: '',
         icon: 'church',
         color: 'rosa',
+        locationId: null,
         order: 1,
       },
     ]);
+  });
+
+  it('conserva el enlace con la ubicación del mapa, y lo limpia si no es un id', () => {
+    const salida = sanearCronologia([
+      hito({ id: 'a', locationId: 'iglesia' }),
+      hito({ id: 'b', time: '18:00', locationId: '   ' }),
+      hito({ id: 'c', time: '19:00', locationId: 42 }),
+    ]);
+
+    expect(salida.map((h) => h.locationId)).toEqual(['iglesia', null, null]);
   });
 
   /**

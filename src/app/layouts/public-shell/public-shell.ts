@@ -372,6 +372,7 @@ export class PublicShell {
         faqs: [],
         cronologia: [],
         alojamientos: [],
+        ubicaciones: [],
         dressCode: DRESS_CODE_VACIO,
       };
     }
@@ -386,6 +387,7 @@ export class PublicShell {
       faqs: t.sitio.faqs,
       cronologia: t.sitio.cronologia,
       alojamientos: t.sitio.alojamientos,
+      ubicaciones: t.sitio.ubicaciones,
       dressCode: t.sitio.dressCode,
     };
   });

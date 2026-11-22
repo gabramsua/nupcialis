@@ -23,6 +23,7 @@ import {
   webValida,
   type TipoAlojamiento,
 } from '../../public-site/alojamientos/alojamientos';
+import { NpSelectorDeUbicacion } from '../mapa/selector-de-ubicacion';
 import { AlojamientosStore } from './alojamientos.store';
 import { NpInput } from '../../../design-system/components/field/input';
 
@@ -55,6 +56,7 @@ import { NpInput } from '../../../design-system/components/field/input';
     NpStatusChip,
     NpIcon,
     NpInput,
+    NpSelectorDeUbicacion,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -281,6 +283,11 @@ import { NpInput } from '../../../design-system/components/field/input';
                 </label>
               </div>
 
+              <np-selector-de-ubicacion
+                [value]="formulario.controls.locationId.value"
+                (valueChange)="formulario.controls.locationId.setValue($event)"
+              />
+
               <label class="al__casilla">
                 <input formControlName="recommended" type="checkbox" />
                 <span>{{ t('panel.alojamientos.campo.recomendado') }}</span>
@@ -475,6 +482,7 @@ export class PanelAlojamientos {
     blockedRooms: [null as number | null],
     bookingDeadline: [''],
     recommended: [false],
+    locationId: [''],
     enabled: [true],
   });
 
@@ -564,6 +572,7 @@ export class PanelAlojamientos {
       blockedRooms: null,
       bookingDeadline: '',
       recommended: false,
+      locationId: '',
       enabled: true,
     });
     this.editando.set('nuevo');
@@ -582,6 +591,7 @@ export class PanelAlojamientos {
       blockedRooms: sitio.blockedRooms,
       bookingDeadline: sitio.bookingDeadline ?? '',
       recommended: sitio.recommended,
+      locationId: sitio.locationId ?? '',
       enabled: sitio.enabled,
     });
     this.editando.set(sitio);
@@ -615,6 +625,7 @@ export class PanelAlojamientos {
       blockedRooms: positivo(valores.blockedRooms),
       bookingDeadline: valores.bookingDeadline === '' ? null : valores.bookingDeadline,
       recommended: valores.recommended,
+      locationId: valores.locationId === '' ? null : valores.locationId,
       enabled: valores.enabled,
       // El orden dentro de su grupo. Los recomendados van antes en cualquier caso.
       order: nuevo ? this.store.alojamientos().length + 1 : cual.order,

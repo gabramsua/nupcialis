@@ -14,7 +14,13 @@
 
 import { MODULOS, type Modulo, type Visibilidad } from './planes';
 import { CAMPOS_POR_TIPO, esCampoRico, sanearSecciones, type Seccion } from './secciones';
-import { sanearHtml } from './html';
+import { sanearHtml, tieneContenido } from './html';
+import {
+  MAX_TEXTO_HISTORIA,
+  historiaConContenido,
+  sanearHistoria,
+  type ApartadoPublicoDeHistoria,
+} from './historia';
 import { MAX_RESPUESTA, sanearFaqs, type FaqPublica } from './faqs';
 import { sanearCronologia, type HitoPublico } from './cronologia';
 import { sanearAlojamientos, type AlojamientoPublico } from './alojamientos';
@@ -40,6 +46,7 @@ export const MODULOS_PUBLICOS: readonly Modulo[] = [
   'accommodation',
   'dressCode',
   'weddingParty',
+  'story',
 ];
 
 export type EstadoBoda = 'draft' | 'active' | 'archived';
@@ -132,6 +139,11 @@ export interface ProyeccionPublica {
      * lista blanca, como todo lo demás de aquí.
      */
     readonly dressCode: DressCodePublico;
+    /**
+     * «Nuestra historia»: los cinco apartados con el texto ya saneado y las
+     * fotos sin su ruta de Storage. **Vacío** si no hay nada escrito.
+     */
+    readonly historia: readonly ApartadoPublicoDeHistoria[];
   };
   /** Si la pareja quiere salir en buscadores. Por defecto, no. Ver §8.1. */
   readonly indexable: boolean;
@@ -165,6 +177,26 @@ function conHtmlSaneado(seccion: Seccion): Seccion {
   }
 
   return { ...seccion, fields };
+}
+
+/**
+ * La historia, reconstruida con lista blanca. El HTML se sanea aquí, justo
+ * antes de publicarse (regla de oro 5), y la ruta de Storage de las fotos no
+ * sale: es de la pareja.
+ */
+function historiaPublica(content: unknown): readonly ApartadoPublicoDeHistoria[] {
+  const story =
+    content !== null && typeof content === 'object'
+      ? (content as Record<string, unknown>)['story']
+      : undefined;
+
+  const apartados = sanearHistoria(story).map((a) => ({
+    clave: a.clave,
+    html: sanearHtml(a.html, MAX_TEXTO_HISTORIA),
+    fotos: a.fotos.map((f) => ({ url: f.url })),
+  }));
+
+  return historiaConContenido(apartados, tieneContenido) ? apartados : [];
 }
 
 function secciones(content: unknown): unknown {
@@ -243,6 +275,24 @@ function dressCodePublico(modules: BodaParaProyectar['modules']): DressCodePubli
  * `faqs` llega aparte porque vive en una subcolección y esta función es pura:
  * quien la llama es el trigger, que sí sabe leer de Firestore.
  */
+/**
+ * Un enlace con el mapa solo vale si esa ubicación **se publica**.
+ *
+ * La pareja puede borrar una ubicación, ocultarla a los invitados o dejarla sin
+ * pin; el hito o el alojamiento se quedan con su id y el invitado no tendría a
+ * dónde ir. Aquí se cruza con lo que de verdad sale en `ubicaciones`, que es lo
+ * único que ve la web, y lo que no encaja se queda sin enlace.
+ */
+export function conEnlaceValido<T extends { readonly locationId: string | null }>(
+  elementos: readonly T[],
+  ubicaciones: readonly UbicacionPublica[],
+): readonly T[] {
+  const publicas = new Set(ubicaciones.map((u) => u.id));
+  return elementos.map((e) =>
+    e.locationId !== null && !publicas.has(e.locationId) ? { ...e, locationId: null } : e,
+  );
+}
+
 export function proyeccionPublica(
   boda: BodaParaProyectar,
   faqs: unknown = [],
@@ -251,6 +301,7 @@ export function proyeccionPublica(
   ubicaciones: unknown = [],
 ): ProyeccionPublica {
   const tema = boda.theme ?? {};
+  const ubicacionesPublicas = sanearUbicaciones(ubicaciones);
   return {
     slug: cadena(boda.slug, ''),
     status: estado(boda.status),
@@ -294,10 +345,11 @@ export function proyeccionPublica(
       })),
       // La descripción de un hito es texto plano, no HTML: en una línea de
       // tiempo que se lee de un vistazo no hay sitio para párrafos con formato.
-      cronologia: sanearCronologia(cronologia),
-      alojamientos: sanearAlojamientos(alojamientos),
-      ubicaciones: sanearUbicaciones(ubicaciones),
+      cronologia: conEnlaceValido(sanearCronologia(cronologia), ubicacionesPublicas),
+      alojamientos: conEnlaceValido(sanearAlojamientos(alojamientos), ubicacionesPublicas),
+      ubicaciones: ubicacionesPublicas,
       dressCode: dressCodePublico(boda.modules),
+      historia: historiaPublica(boda.content),
     },
     // Solo `true` cuenta como sí. Cualquier otra cosa —ausente, corrupta, una
     // cadena 'true'— deja la boda fuera de Google, que es el fallo seguro.

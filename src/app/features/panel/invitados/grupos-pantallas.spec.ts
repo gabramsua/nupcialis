@@ -184,7 +184,7 @@ describe('la lista de invitados, con grupos', () => {
     // Solo la tarjeta: los nombres de todos los grupos salen además arriba,
     // en la fila que filtra por grupo.
     const tarjeta =
-      (fixture.nativeElement as HTMLElement).querySelector('.inv__tarjeta')?.textContent ?? '';
+      (fixture.nativeElement as HTMLElement).querySelector('.lst__fila')?.textContent ?? '';
     expect(tarjeta).toContain('Universidad');
     expect(tarjeta).toContain('Familia');
     // Pádel existe pero Ana no está en él.
@@ -213,7 +213,7 @@ describe('la lista de invitados, con grupos', () => {
     const raiz = fixture.nativeElement as HTMLElement;
 
     const nombres = () =>
-      [...raiz.querySelectorAll('.inv__nombre')].map((n) => n.textContent?.trim() ?? '');
+      [...raiz.querySelectorAll('.lst__nombre')].map((n) => n.textContent?.trim() ?? '');
 
     expect(nombres()).toEqual(['Ana Ruiz', 'Borja Gil']);
 
@@ -309,7 +309,7 @@ describe('la lista de invitados, con grupos', () => {
     verlos.click();
     await asentar(fixture);
 
-    expect([...raiz.querySelectorAll('.inv__nombre')].map((n) => n.textContent?.trim())).toEqual([
+    expect([...raiz.querySelectorAll('.lst__nombre')].map((n) => n.textContent?.trim())).toEqual([
       'Eva Mora',
     ]);
   });

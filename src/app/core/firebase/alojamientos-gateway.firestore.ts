@@ -50,6 +50,10 @@ function aAlojamiento(id: string, datos: Record<string, unknown>): AlojamientoDe
     blockedRooms: numero(datos['blockedRooms']),
     bookingDeadline: fechaLimiteValida(datos['bookingDeadline']),
     recommended: datos['recommended'] === true,
+    locationId:
+      typeof datos['locationId'] === 'string' && datos['locationId'].trim() !== ''
+        ? datos['locationId'].trim()
+        : null,
     order: numero(datos['order']) ?? 0,
     // Ausente es activo, igual que en el servidor.
     enabled: datos['enabled'] !== false,
@@ -114,8 +118,8 @@ export function crearPuertaAlojamientosFirestore(): PuertaAlojamientos {
           recommended: datos.recommended,
           order: datos.order,
           enabled: datos.enabled,
-          // Para enlazar con el mapa (§8.6), que todavía no existe.
-          locationId: null,
+          // La ubicación del mapa donde está (§8.6), o `null`.
+          locationId: datos.locationId,
         };
 
         if (datos.id) {

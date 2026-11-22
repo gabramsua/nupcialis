@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../design-system/icons/icon';
+import { enlaceParaLlegar, type UbicacionPublica } from '../mapa/ubicaciones';
 import {
   plazoDeReserva,
   sanearAlojamientos,
@@ -99,6 +100,12 @@ import {
                   <a [href]="'tel:' + sitio.phone">
                     <np-icon name="device-mobile" />
                     {{ t('publico.alojamientos.llamar') }}
+                  </a>
+                }
+                @if (sitioDe(sitio); as lugar) {
+                  <a [href]="llegar(lugar)" target="_blank" rel="noopener noreferrer">
+                    <np-icon name="map-pin" />
+                    {{ t('publico.alojamientos.llegar') }}
                   </a>
                 }
                 @if (sitio.website) {
@@ -211,6 +218,19 @@ import {
 })
 export class NpAlojamientosPublicos {
   readonly alojamientos = input.required<readonly AlojamientoPublico[]>();
+  /** Las ubicaciones publicadas: de ahí sale el «Cómo llegar» de cada alojamiento (F2.4b). */
+  readonly ubicaciones = input<readonly UbicacionPublica[]>([]);
+
+  private readonly porId = computed(() => new Map(this.ubicaciones().map((u) => [u.id, u])));
+
+  /** El sitio del mapa enlazado, solo si **está publicado**. */
+  protected sitioDe(sitio: AlojamientoPublico): UbicacionPublica | null {
+    return sitio.locationId === null ? null : (this.porId().get(sitio.locationId) ?? null);
+  }
+
+  protected llegar(lugar: UbicacionPublica): string {
+    return enlaceParaLlegar(lugar);
+  }
 
   /**
    * Se vuelve a sanear en el cliente, como las demás listas publicadas: el

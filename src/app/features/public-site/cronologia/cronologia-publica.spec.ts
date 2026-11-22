@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
+import type { UbicacionPublica } from '../mapa/ubicaciones';
 import { NpCronologiaPublica } from './cronologia-publica';
 import type { HitoPublico } from './cronologia';
 
@@ -30,12 +31,16 @@ function hito(id: string, time: string, parcial: Partial<HitoPublico> = {}): Hit
     description: '',
     icon: 'clock',
     color: 'rosa',
+    locationId: null,
     order: 1,
     ...parcial,
   };
 }
 
-async function montar(cronologia: readonly HitoPublico[]) {
+async function montar(
+  cronologia: readonly HitoPublico[],
+  ubicaciones: readonly UbicacionPublica[] = [],
+) {
   TestBed.configureTestingModule({
     imports: [
       TranslocoTestingModule.forRoot({
@@ -48,13 +53,47 @@ async function montar(cronologia: readonly HitoPublico[]) {
 
   const fixture = TestBed.createComponent(NpCronologiaPublica);
   fixture.componentRef.setInput('cronologia', cronologia);
+  fixture.componentRef.setInput('ubicaciones', ubicaciones);
   fixture.detectChanges();
 
   const raiz = fixture.nativeElement as HTMLElement;
   return { fixture, raiz, texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '' };
 }
 
+const IGLESIA: UbicacionPublica = {
+  id: 'iglesia',
+  type: 'ceremonia',
+  name: 'Iglesia de San Pedro',
+  address: '',
+  lat: 40.9481,
+  lng: -4.1184,
+  description: '',
+  time: null,
+  order: 1,
+};
+
 describe('la cronología en la web', () => {
+  it('un hito enlazado con el mapa lleva su «Cómo llegar»', async () => {
+    const p = await montar(
+      [hito('ceremonia', '17:00', { title: 'Ceremonia', locationId: 'iglesia' })],
+      [IGLESIA],
+    );
+
+    const enlace = p.raiz.querySelector('a.cr__llegar') as HTMLAnchorElement;
+    expect(enlace.textContent).toContain('Cómo llegar a Iglesia de San Pedro');
+    expect(enlace.href).toContain('destination=40.9481,-4.1184');
+    expect(enlace.rel).toContain('noopener');
+  });
+
+  it('sin ubicación publicada no pinta un enlace al vacío', async () => {
+    const p = await montar(
+      [hito('a', '17:00', { locationId: 'borrada' }), hito('b', '18:00')],
+      [IGLESIA],
+    );
+
+    expect(p.raiz.querySelector('a.cr__llegar')).toBeNull();
+  });
+
   it('pinta cada hito con su hora', async () => {
     const p = await montar([
       hito('ceremonia', '17:00', { title: 'Ceremonia', description: 'En la ermita' }),

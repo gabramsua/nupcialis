@@ -11,6 +11,16 @@ import { InjectionToken } from '@angular/core';
 
 export type PlanContratado = 'basic' | 'extended';
 
+export type TipoDeCeremonia = 'civil' | 'religious';
+
+/** Un sitio del alta. Sin pin, `lat` y `lng` van a `null`. */
+export interface LugarParaAlta {
+  readonly name: string;
+  readonly address: string;
+  readonly lat: number | null;
+  readonly lng: number | null;
+}
+
 export interface DatosDeAlta {
   readonly slug: string;
   readonly partnerA: string;
@@ -19,6 +29,10 @@ export interface DatosDeAlta {
   readonly weddingDate: string;
   readonly emails: readonly string[];
   readonly plan: PlanContratado;
+  readonly ceremonyType: TipoDeCeremonia;
+  /** `null`: aún no se sabe; la pareja lo pone después desde el mapa. */
+  readonly ceremonyPlace: LugarParaAlta | null;
+  readonly receptionPlace: LugarParaAlta | null;
 }
 
 export interface CuentaDeAlta {
@@ -77,6 +91,17 @@ export type ResultadoEstado =
   | { readonly ok: true; readonly status: EstadoBoda; readonly cambiado: boolean }
   | { readonly ok: false; readonly motivos: readonly string[]; readonly mensaje: string };
 
+/** Lo que hizo «poner al día las bodas»: cuántas se tocaron y qué se añadió. */
+export type ResultadoCompletar =
+  | {
+      readonly ok: true;
+      readonly revisadas: number;
+      readonly actualizadas: number;
+      readonly modulosAnadidos: number;
+      readonly seccionesAnadidas: number;
+    }
+  | { readonly ok: false; readonly mensaje: string };
+
 export interface PuertaAlta {
   crearBoda(datos: DatosDeAlta): Promise<ResultadoAlta>;
   /** Reintento del alta del subdominio en Firebase Auth. Ver regla 8. */
@@ -89,6 +114,11 @@ export interface PuertaAlta {
    * `updateDoc`.
    */
   cambiarEstado(weddingId: string, status: EstadoBoda): Promise<ResultadoEstado>;
+  /**
+   * Añade a las bodas ya creadas los módulos y secciones que el producto ganó
+   * después, sin tocar lo que la pareja ya decidió. Idempotente.
+   */
+  completarBodas(): Promise<ResultadoCompletar>;
 }
 
 export const PUERTA_ALTA = new InjectionToken<PuertaAlta>('PUERTA_ALTA');

@@ -12,6 +12,17 @@
 import type { Plan } from './planes';
 import { normalizarSlug, validarSlug, type SlugInvalido } from './slug';
 
+export const TIPOS_CEREMONIA = ['civil', 'religious'] as const;
+export type TipoCeremonia = (typeof TIPOS_CEREMONIA)[number];
+
+/** Un sitio de la boda tal y como llega del alta. Sin pin, `lat` y `lng` son `null`. */
+export interface LugarDeAlta {
+  readonly name: string;
+  readonly address: string;
+  readonly lat: number | null;
+  readonly lng: number | null;
+}
+
 export interface EntradaAlta {
   readonly slug: string;
   readonly partnerA: string;
@@ -19,6 +30,9 @@ export interface EntradaAlta {
   readonly weddingDate: string;
   readonly emails: readonly string[];
   readonly plan: Plan;
+  readonly ceremonyType?: TipoCeremonia;
+  readonly ceremonyPlace?: Partial<LugarDeAlta> | null;
+  readonly receptionPlace?: Partial<LugarDeAlta> | null;
   readonly locale?: string;
   readonly timezone?: string;
 }
@@ -30,6 +44,10 @@ export interface DatosAlta {
   readonly weddingDate: Date;
   readonly emails: readonly string[];
   readonly plan: Plan;
+  readonly ceremonyType: TipoCeremonia;
+  /** `null`: no se ha dicho todavía; la pareja lo pone desde su panel. */
+  readonly ceremonyPlace: LugarDeAlta | null;
+  readonly receptionPlace: LugarDeAlta | null;
   readonly locale: string;
   readonly timezone: string;
 }
@@ -45,7 +63,12 @@ export type MotivoAlta =
       readonly campo: 'emails';
       readonly motivo: 'ausente' | 'no-es-email' | 'duplicado' | 'demasiados';
     }
-  | { readonly campo: 'plan'; readonly motivo: 'desconocido' };
+  | { readonly campo: 'plan'; readonly motivo: 'desconocido' }
+  | { readonly campo: 'ceremonia'; readonly motivo: 'desconocida' }
+  | {
+      readonly campo: 'lugarCeremonia' | 'lugarCelebracion';
+      readonly motivo: 'sin-nombre' | 'demasiado-largo' | 'coordenadas';
+    };
 
 export type ResultadoAlta =
   | { readonly ok: true; readonly datos: DatosAlta }
@@ -54,6 +77,8 @@ export type ResultadoAlta =
 const NOMBRE_MAX = 60;
 const ANIOS_MAX = 5;
 const EMAILS_MAX = 2;
+const LUGAR_NOMBRE_MAX = 120;
+const LUGAR_DIRECCION_MAX = 240;
 
 /**
  * Comprobación de email deliberadamente laxa.
@@ -108,7 +133,17 @@ export function validarAlta(bruto: Partial<EntradaAlta> | undefined, hoy: Date):
     motivos.push({ campo: 'plan', motivo: 'desconocido' });
   }
 
-  if (motivos.length > 0 || !fecha.ok || !emails.ok) {
+  const tipo = entrada.ceremonyType;
+  if (tipo !== 'civil' && tipo !== 'religious') {
+    motivos.push({ campo: 'ceremonia', motivo: 'desconocida' });
+  }
+
+  const ceremonia = lugarDeAlta(entrada.ceremonyPlace);
+  if (!ceremonia.ok) motivos.push({ campo: 'lugarCeremonia', motivo: ceremonia.motivo });
+  const celebracion = lugarDeAlta(entrada.receptionPlace);
+  if (!celebracion.ok) motivos.push({ campo: 'lugarCelebracion', motivo: celebracion.motivo });
+
+  if (motivos.length > 0 || !fecha.ok || !emails.ok || !ceremonia.ok || !celebracion.ok) {
     return { ok: false, motivos };
   }
 
@@ -121,10 +156,54 @@ export function validarAlta(bruto: Partial<EntradaAlta> | undefined, hoy: Date):
       weddingDate: fecha.fecha,
       emails: emails.emails,
       plan: plan as Plan,
+      ceremonyType: tipo as TipoCeremonia,
+      ceremonyPlace: ceremonia.lugar,
+      receptionPlace: celebracion.lugar,
       locale: texto(entrada.locale) || 'es',
       timezone: texto(entrada.timezone) || 'Europe/Madrid',
     },
   };
+}
+
+type ResultadoLugar =
+  | { readonly ok: true; readonly lugar: LugarDeAlta | null }
+  | { readonly ok: false; readonly motivo: 'sin-nombre' | 'demasiado-largo' | 'coordenadas' };
+
+/**
+ * Un sitio del alta. Es **opcional**: quien da de alta no siempre sabe aún dónde
+ * será, y la pareja lo pone después con el pin del mapa. Ausente, o con todo
+ * vacío, es `null`; a medias (dirección sin nombre) es un error, porque la
+ * ubicación pública necesita un nombre que enseñar.
+ */
+export function lugarDeAlta(valor: unknown): ResultadoLugar {
+  if (valor === undefined || valor === null) return { ok: true, lugar: null };
+  if (typeof valor !== 'object') return { ok: false, motivo: 'sin-nombre' };
+  const v = valor as Record<string, unknown>;
+
+  const name = texto(v['name']);
+  const address = texto(v['address']);
+  const sinPin = (v['lat'] ?? null) === null && (v['lng'] ?? null) === null;
+  if (name === '' && address === '' && sinPin) return { ok: true, lugar: null };
+
+  if (name === '') return { ok: false, motivo: 'sin-nombre' };
+  if (name.length > LUGAR_NOMBRE_MAX || address.length > LUGAR_DIRECCION_MAX) {
+    return { ok: false, motivo: 'demasiado-largo' };
+  }
+
+  if (sinPin) return { ok: true, lugar: { name, address, lat: null, lng: null } };
+
+  const { lat, lng } = v;
+  const valida =
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180 &&
+    !(lat === 0 && lng === 0);
+  if (!valida) return { ok: false, motivo: 'coordenadas' };
+
+  return { ok: true, lugar: { name, address, lat, lng } };
 }
 
 type ResultadoFecha =

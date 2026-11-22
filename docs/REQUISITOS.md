@@ -219,14 +219,14 @@ ayer paga lo de ayer.
 
 Operación atómica, ejecutada por una Cloud Function `provisionWedding` invocada por el superadmin desde la ficha de una solicitud.
 
-Entrada: nombres de la pareja, slug deseado, fecha de la boda, emails de las dos cuentas, plan contratado.
+Entrada: nombres de la pareja, slug deseado, fecha de la boda, **tipo de ceremonia (civil o religiosa, obligatorio)**, emails de las dos cuentas, plan contratado y, opcionalmente, **el lugar de la ceremonia y el de la celebración** (nombre y dirección, con pin si se buscaron en el mapa o se pegó un enlace de Google Maps; si no, se pone el pin después desde el panel).
 
 Pasos:
 
 1. Validar y normalizar el slug; comprobar que no está reservado.
 2. En una **transacción**: crear `slugs/{slug}` y el documento `weddings/{weddingId}`. Si el slug ya existe, la operación falla completa y se propone una alternativa.
 3. Sembrar la configuración por defecto: plantilla, paleta, módulos activos según el plan, modo de acceso `open`.
-   Además se siembran: las **preguntas de fábrica del formulario de RSVP**, la **plantilla de checklist** con fechas relativas a la fecha de la boda y un **grupo por defecto** de audiencia pública.
+   Además se siembran: las **preguntas de fábrica del formulario de RSVP**, la **plantilla de checklist** con fechas relativas a la fecha de la boda, las **partidas de presupuesto** de la plantilla, las **ubicaciones** `ceremonia` y `banquete` si se dieron en el alta, y un **grupo por defecto** de audiencia pública. Las tareas y las partidas salen del **catálogo del superadmin** (`catalog/{tipo}/items`, §8.17) y, si está vacío, de las de fábrica; son una **copia de la pareja**: editarlas no afecta a otras bodas, y la siguiente boda vuelve a recibir las originales.
 4. Crear la proyección pública `weddings/{weddingId}/public/site`.
 5. Crear o localizar las cuentas de Firebase Auth de los dos emails y asignarles los claims.
 6. **Dar de alta `<slug>.nupcialis.com` en los dominios autorizados de Firebase Auth**, mediante el Identity Toolkit Admin API v2 (`PATCH admin/v2/projects/{projectId}/config`) con cuenta de servicio. Firebase Auth no admite comodines ahí, así que sin este paso el acceso con Google no funcionaría en la boda nueva. Es una lectura del listado actual, más el dominio, y un patch del conjunto completo.
@@ -275,6 +275,19 @@ auditLog/{entryId}
 ```
 
 Solo superadmin. Recoge tanto las acciones del superadmin como los **accesos de los novios al panel**.
+
+```
+payments/{paymentId}
+  weddingId, amountCents (entero), concept, method: 'bizum' | 'transferencia' | 'efectivo' | 'otro'
+  status: 'pending' | 'paid', paidOn: 'YYYY-MM-DD' | null, invoiceNumber, notes
+  createdAt, updatedAt
+
+reminderMarks/{weddingId}__{key}
+  weddingId, key: 'agradecimiento' | 'encuesta' | 'cierre-pareja' | 'cierre-superadmin'
+  sentBy, sentAt
+```
+
+`payments` es el libro de cobros de Nupcialis a las parejas y `reminderMarks` recuerda qué avisos de después de la boda se han enviado. Las dos: **solo lectura del superadmin, escritura solo desde funciones** (`savePayment`, `deletePayment`, `markReminderSent`), con test de aislamiento. Ver §8.18.
 
 ```
 weddingRequests/{requestId}
@@ -330,6 +343,7 @@ weddings/{weddingId}
   couple: { partnerA: string, partnerB: string }
   weddingDate: Timestamp      // medianoche UTC del día; lo fija el alta
   weddingTime: string | null  // '17:00', hora de reloj; la fija la pareja
+  ceremonyType: 'civil' | 'religious'  // se elige en el alta; la pareja lo edita (D-49)
   timezone: string            // 'Europe/Madrid'
   locale: string              // 'es'
   ownerUids: string[]
@@ -358,6 +372,7 @@ weddings/{weddingId}
     accommodation: { enabled, config }
     dressCode:   { enabled, config }
     weddingParty:{ enabled, config }
+    story:       { enabled, config }   // «Nuestra historia», solo plan extendido (§8.19)
     budget:      { enabled, config }
     vendors:     { enabled, config }
     checklist:   { enabled, config }
@@ -572,7 +587,7 @@ vendors/{id}                                                          -> §8.16
 checklistItems/{id}                                                   -> §8.17
 playlistSuggestions/{id}   title, artist, suggestedBy, votes[], status
 guestbookEntries/{id}      guestId, authorName, message, status, createdAt
-budgetItems/{id}           category, concept, estimatedCost, actualCost, paid, dueDate, vendorId, icon, color, notes
+budgetItems/{id}           category, concept, estimatedCents, actualCents (céntimos, enteros), paid, dueDate, vendorId, icon, color, notes, order
 
 guestAccessLog/{id}
   guestId, mode, ip, userAgent, createdAt
@@ -580,6 +595,10 @@ guestAccessLog/{id}
 loginAttempts/{hashDeIp}       // lo lleva guestLogin; cerrado a todos, pareja incluida
   intentos, desde, bloqueos, bloqueadoHasta, actualizadoEn
 ```
+
+**Catálogos del superadmin** (raíz): `catalog/{tipo}/items/{id}` con `tipo` ∈ `tasks`, `budget`, `quiz`. Lectura solo del superadmin (y de los `owner`, únicamente `quiz`, para las sugerencias); escritura solo por funciones (`saveCatalogItem`, `deleteCatalogItem`, `loadFactoryCatalog`).
+
+**Nuestra historia** no tiene colección: vive en el documento de la boda, `content.story.{conocemos|beso|recuerdo|viaje|pedida} = { html, fotos: [{ url, path }] }` (§8.19).
 
 El dress code no tiene colección propia: vive en `modules.dressCode.config`, con su moodboard en Storage, porque es un contenido único por boda y no una lista.
 
@@ -603,6 +622,7 @@ Declarados en `firestore.indexes.json`. Los previsibles:
 
 ```
 weddings/{weddingId}/hero/...
+weddings/{weddingId}/story/{fichero}.jpg      // fotos de «Nuestra historia»: lectura pública, escribe y borra solo el owner (≤10 MB, imagen)
 weddings/{weddingId}/gallery/{photoId}/original.jpg
 weddings/{weddingId}/gallery/{photoId}/thumb.jpg
 weddings/{weddingId}/vendors/{vendorId}/{contrato}.pdf
@@ -677,35 +697,42 @@ match /weddings/{wid} {
 
 Solo como pegamento. Todas con App Check activado.
 
-| Función                               | Tipo                                  | Responsabilidad                                                                                                                                                                    |
-| ------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createWeddingRequest`                | callable (público)                    | Crear una solicitud desde el formulario de contratación. App Check y límite por IP: es la única escritura pública del sistema junto a `guestLogin`                                 |
-| `activateRequest`                     | callable (superadmin)                 | Revalidar el slug de una solicitud y lanzar `provisionWedding` con sus datos. Si el slug se ha ocupado, devuelve alternativas en vez de fallar                                     |
-| `settleRequests`                      | callable (superadmin)                 | Marcar como cobradas una o varias solicitudes. Con un proveedor, cierra su liquidación de golpe                                                                                    |
-| `notifyNewRequest`                    | trigger Firestore                     | Aviso por Telegram al superadmin cuando entra una solicitud. El token del bot vive en Secret Manager, **nunca en el repositorio, que es público**                                  |
-| `purgeOldRequests`                    | programada                            | Borrar a los seis meses las solicitudes que nunca llegaron a boda                                                                                                                  |
-| `provisionWedding`                    | callable (superadmin)                 | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo)                                                                     |
-| `setUserClaims`                       | callable (superadmin)                 | Asignar o revocar `weddingId` y `role`                                                                                                                                             |
-| `authorizeWeddingDomain`              | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch                  |
-| `guestLogin`                          | callable (público)                    | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`**                                                               |
-| `listAccessLog`                       | callable (owner)                      | Registro de accesos para la pareja: une los nombres (que `guests` no se lee de fuera), baja el `user-agent` a «Android · Chrome» y **no devuelve la IP**. Las últimas 300 entradas |
-| `upsertGroup` / `deleteGroup`         | callable (owner)                      | Crear, editar y borrar grupos cuidando que nadie quede en dos restringidos y que un borrado no deje invitados apuntando a la nada. Ver §5.4                                        |
-| `reorderGroups`                       | callable (owner)                      | El orden de los grupos que decide la pareja, en una sola escritura. Ignora ids que ya no existen y no pierde los que no venían en la lista                                         |
-| `addCompanion`                        | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                                              |
-| `setCompanionQuota`                   | callable (owner)                      | Poner el mismo cupo de acompañantes a una lista de invitados, en lotes. Omite acompañantes; bajar el cupo no borra a nadie                                                         |
-| `submitRsvp`                          | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                                       |
-| `listPhotos`                          | callable (guest)                      | Una página de 24 fotos, de la última a la primera, con el cursor en el `createdAt` de la última servida. Devuelve solo lo que ese invitado puede ver                               |
-| `uploadPhoto`                         | callable (guest verificado)           | Guarda grande y miniatura (las dos vienen ya reducidas del navegador) y escribe el documento. Asignará `audienceGroupId` cuando entren los grupos                                  |
-| `deletePhoto`                         | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera. Borra también los dos ficheros de Storage                                                                                     |
-| `clearGallery`                        | callable (owner)                      | Vaciar la galería entera. Solo la pareja, y pidiendo confirmación escrita en el panel                                                                                              |
-| `submitQuizResult`                    | callable (guest)                      | Corregir el cuestionario **en servidor** y guardar la puntuación                                                                                                                   |
-| `logOwnerAccess`                      | trigger / callable                    | Registrar en `auditLog` cada entrada de un novio al panel                                                                                                                          |
-| `syncPublicProjection`                | trigger Firestore                     | Mantener `public/site` al día                                                                                                                                                      |
-| `recomputeCounters`                   | trigger Firestore                     | Mantener `counters`                                                                                                                                                                |
-| ~~`onPhotoUploaded`~~                 | —                                     | No existe: la miniatura la hace el **navegador** con un `canvas` y la manda en la misma llamada que la grande. Ver §8.5                                                            |
-| ~~`sanitizeRichContent`~~             | —                                     | No existe como función aparte: el saneado del HTML vive en `dominio/html.ts` y lo aplica `syncPublicProjection`, que ya reconstruye `content` con lista blanca. Ver §8.1           |
-| `exportGuests`                        | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                                      |
-| `archiveWeddings` / `scheduledBackup` | programadas                           | Ciclo de vida y copias                                                                                                                                                             |
+| Función                                                      | Tipo                                  | Responsabilidad                                                                                                                                                                    |
+| ------------------------------------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createWeddingRequest`                                       | callable (público)                    | Crear una solicitud desde el formulario de contratación. App Check y límite por IP: es la única escritura pública del sistema junto a `guestLogin`                                 |
+| `activateRequest`                                            | callable (superadmin)                 | Revalidar el slug de una solicitud y lanzar `provisionWedding` con sus datos. Si el slug se ha ocupado, devuelve alternativas en vez de fallar                                     |
+| `settleRequests`                                             | callable (superadmin)                 | Marcar como cobradas una o varias solicitudes. Con un proveedor, cierra su liquidación de golpe                                                                                    |
+| `notifyNewRequest`                                           | trigger Firestore                     | Aviso por Telegram al superadmin cuando entra una solicitud. El token del bot vive en Secret Manager, **nunca en el repositorio, que es público**                                  |
+| `purgeOldRequests`                                           | programada                            | Borrar a los seis meses las solicitudes que nunca llegaron a boda                                                                                                                  |
+| `provisionWedding`                                           | callable (superadmin)                 | Alta atómica: slug, documento, cuentas, claims, semillas (checklist, preguntas de formulario, quiz de ejemplo)                                                                     |
+| `setUserClaims`                                              | callable (superadmin)                 | Asignar o revocar `weddingId` y `role`                                                                                                                                             |
+| `getWeddingFile`                                             | callable (superadmin)                 | Ficha de una boda: resumen, correos de la pareja (de Firebase Auth), últimas 100 entradas de `auditLog` y cobros                                                                   |
+| `generateCoupleResetLink`                                    | callable (superadmin)                 | Genera el enlace de restablecimiento de una cuenta **de esa boda**; no envía nada y no guarda el enlace                                                                            |
+| `listPayments`, `savePayment`, `deletePayment`               | callable (superadmin)                 | Libro de cobros (S1.3e); importe en céntimos, todo auditado                                                                                                                        |
+| `getReminders`, `markReminderSent`                           | callable (superadmin)                 | Avisos de después de la boda y su marca de enviado (S1.3f)                                                                                                                         |
+| `saveCatalogItem`, `deleteCatalogItem`, `loadFactoryCatalog` | callable (superadmin)                 | CRUD de los catálogos de tareas, presupuesto y preguntas del quiz (D-49); `loadFactoryCatalog` solo si el catálogo está vacío                                                      |
+| `completeWeddings`                                           | callable (superadmin)                 | Añade a las bodas ya creadas los `modules.*` y el cartel de «Nuestra historia» que les falten, sin pisar lo que la pareja decidió (D-50). Idempotente                              |
+| `setGuestsRsvp`                                              | callable (pareja)                     | Respuesta en lote (F1.8i/j): estado de hasta 500 invitados a la vez                                                                                                                |
+| `authorizeWeddingDomain`                                     | interna, usada por `provisionWedding` | Añadir `<slug>.nupcialis.com` a los dominios autorizados de Firebase Auth vía Identity Toolkit Admin API. Idempotente: lee el listado, añade si falta, hace patch                  |
+| `guestLogin`                                                 | callable (público)                    | Verificar identidad en modos B y C, emitir custom token, **incrementar `loginCount` y escribir en `guestAccessLog`**                                                               |
+| `listAccessLog`                                              | callable (owner)                      | Registro de accesos para la pareja: une los nombres (que `guests` no se lee de fuera), baja el `user-agent` a «Android · Chrome» y **no devuelve la IP**. Las últimas 300 entradas |
+| `upsertGroup` / `deleteGroup`                                | callable (owner)                      | Crear, editar y borrar grupos cuidando que nadie quede en dos restringidos y que un borrado no deje invitados apuntando a la nada. Ver §5.4                                        |
+| `reorderGroups`                                              | callable (owner)                      | El orden de los grupos que decide la pareja, en una sola escritura. Ignora ids que ya no existen y no pierde los que no venían en la lista                                         |
+| `addCompanion`                                               | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                                              |
+| `setCompanionQuota`                                          | callable (owner)                      | Poner el mismo cupo de acompañantes a una lista de invitados, en lotes. Omite acompañantes; bajar el cupo no borra a nadie                                                         |
+| `submitRsvp`                                                 | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                                       |
+| `listPhotos`                                                 | callable (guest)                      | Una página de 24 fotos, de la última a la primera, con el cursor en el `createdAt` de la última servida. Devuelve solo lo que ese invitado puede ver                               |
+| `uploadPhoto`                                                | callable (guest verificado)           | Guarda grande y miniatura (las dos vienen ya reducidas del navegador) y escribe el documento. Asignará `audienceGroupId` cuando entren los grupos                                  |
+| `deletePhoto`                                                | callable (guest/owner)                | Borrado propio; los novios pueden borrar cualquiera. Borra también los dos ficheros de Storage                                                                                     |
+| `clearGallery`                                               | callable (owner)                      | Vaciar la galería entera. Solo la pareja, y pidiendo confirmación escrita en el panel                                                                                              |
+| `submitQuizResult`                                           | callable (guest)                      | Corregir el cuestionario **en servidor** y guardar la puntuación                                                                                                                   |
+| `logOwnerAccess`                                             | trigger / callable                    | Registrar en `auditLog` cada entrada de un novio al panel                                                                                                                          |
+| `syncPublicProjection`                                       | trigger Firestore                     | Mantener `public/site` al día                                                                                                                                                      |
+| `recomputeCounters`                                          | trigger Firestore                     | Mantener `counters`                                                                                                                                                                |
+| ~~`onPhotoUploaded`~~                                        | —                                     | No existe: la miniatura la hace el **navegador** con un `canvas` y la manda en la misma llamada que la grande. Ver §8.5                                                            |
+| ~~`sanitizeRichContent`~~                                    | —                                     | No existe como función aparte: el saneado del HTML vive en `dominio/html.ts` y lo aplica `syncPublicProjection`, que ya reconstruye `content` con lista blanca. Ver §8.1           |
+| `exportGuests`                                               | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                                      |
+| `archiveWeddings` / `scheduledBackup`                        | programadas                           | Ciclo de vida y copias                                                                                                                                                             |
 
 **Nota sobre `submitQuizResult`:** la corrección tiene que ocurrir en servidor. Si el cliente envía "he sacado 300 puntos", cualquiera gana el ranking desde la consola del navegador. El cliente envía las respuestas elegidas; la función las compara con `correctAnswer` y calcula la puntuación. El prototipo actual corrige en cliente y escribe el ranking directamente; esto es una mejora consciente sobre él.
 
@@ -822,6 +849,7 @@ Cómo está hecho (implementado el 2026-11-13):
 - **La pareja asigna acompañantes** (D-46). Desde la tarjeta de un titular, «Añadir acompañante» abre el alta ya enlazada; en la ficha de cualquiera, «Viene con» lo cuelga de un titular o lo suelta. El acompañante hereda los grupos del titular. Sin cadenas: un acompañante no puede traer a nadie, y quien trae gente no puede pasar a ser acompañante. «Trae a N» y «Lo trae X» llevan a la familia entera.
 
 - **La pareja contesta por el invitado** (`setGuestRsvp`, D-45). Hay gente mayor que no entra en la web y gente que no contesta aunque se le insista: lo dicen por teléfono o por WhatsApp y lo tiene que poder apuntar quien organiza la boda. Desde cada invitado de la lista, botón «Respuesta»: tres botones —viene, no viene, sin contestar— con color, icono y texto, y debajo el resto de preguntas del formulario.
+- **Respuesta en lote** (`setGuestsRsvp`, F1.8i/j). Con los mismos filtros de la lista (por grupo, por titular, por búsqueda), «Respuesta» marca **viene / no viene / sin contestar** a todos los que se ven, hasta 500 por llamada. Pide confirmar y dice a cuántos afecta. Solo cambia el estado, nunca las respuestas del formulario; quien pasa a «viene» entra en el grupo de todos. Queda en el registro de auditoría.
   - **Solo el estado, solo el estado.** Si únicamente se cambia si viene o no, es lo único que se guarda: el resto de lo que el invitado hubiera contestado no se toca. Si se toca alguna pregunta, se mandan las respuestas y **se reemplazan**, como cuando contesta el invitado.
   - **Se validan igual que las del invitado** —tipos, opciones, largos, visibilidad condicional—, con una diferencia: **no se exigen las obligatorias**, porque la pareja apunta lo que sabe («viene», y el menú ya se verá). Y **no hay plazo**: el plazo es para el invitado.
   - **Deja el documento igual que `submitRsvp`**: `rsvpAnswers`, los campos mapeados y `rsvpStatus`, así que contadores, mesas y exportación al catering lo ven. «Sin contestar» devuelve el invitado a pendiente y vacía `rsvpAt`.
@@ -843,6 +871,7 @@ Cómo está hecho (implementado el 2026-11-13):
   - **También se puede subir el `.xlsx` tal cual** (F1.2b), que es como la mitad de las parejas tiene su lista. Se lee **solo la primera hoja**: en la hoja de una boda las demás son el reparto de mesas a medias o una copia vieja, e importarlas metería duplicados. Las fechas llegan en ISO y no como número de serie, y las decenas de filas vacías que Excel arrastra al final se descartan antes de contar.
 
 - Asignación de **grupos** (§5.4), con indicación visual de cuáles son de audiencia restringida.
+- **La lista del panel es un acordeón numerado (D-50).** Una línea por invitado —número, nombre, grupos, respuesta— y, al abrirla, teléfono, mote, lado, edad, cupo, menú, alergias, notas y las acciones. Se ordena por nombre, respuesta, grupo o fecha de alta (en los dos sentidos; sin grupo, siempre al final) y se filtra por grupo, por cifra y por texto. El número es la posición en lo que se ve.
 - **Enlace de invitación por invitado y botón de compartir por WhatsApp** con mensaje predefinido y editable.
   - **El enlace abre la web, y solo eso** (D-34, opción 3): lleva un token por invitado y entra con nivel `enlace`. Para confirmar, elegir menú o apuntar acompañantes se le piden los cuatro dígitos. Ver §3.3 para el detalle del token y de los dos niveles.
   - **A quien llega por un enlace reenviado no se le enseña nada de esa persona**: ni sus respuestas, ni su menú, ni lo que escribió a los novios. El formulario no se lee sin verificarse.
@@ -927,6 +956,8 @@ Además:
 - **El visor** ocupa la pantalla, se cierra con `Escape` o con la equis, y pasa de foto con las flechas del teclado y con los dos botones de las esquinas, que en el móvil caen justo donde está el pulgar.
 - **En el panel**, `/panel/gallery`: la misma rejilla, con el nombre de quien subió cada foto debajo, borrado de cualquiera y vaciado de la galería entera escribiendo la palabra `VACIAR`. Es moderación **a posteriori**: se publica y se quita si hace falta.
 - Quedan para después: la cola de aprobación, la denuncia, la descarga en ZIP, `srcset` en WebP y las audiencias por grupo.
+
+- **Vista previa (hecha, F3.1e):** en el panel de la galería, un botón enseña cómo la ve un invitado: rejilla de miniaturas y visor con flechas, con las mismas fotos, **sin subir ni borrar**. Es una maqueta, no la página pública montada (esa necesita sesión de invitado).
 
 ### 8.6 Mapa interactivo
 
@@ -1105,6 +1136,8 @@ lo que el servidor va a rechazar. De la web solo se admiten `http` y `https`:
 un `javascript:` en el sitio donde la web pública pinta un enlace es el mismo
 agujero que el saneador evita en los textos (§9.3).
 
+- **Enlace con el mapa (hecho, F2.4b):** cada alojamiento puede apuntar a una ubicación del mapa (`locationId`, §8.6), con el mismo selector que la cronología. En la web sale «Cómo llegar» con el enlace de navegación; si la ubicación no es pública, se publica sin enlace.
+
 ### 8.11 Dress code
 
 - Descripción del código de vestimenta con texto enriquecido.
@@ -1191,7 +1224,7 @@ Cómo está hecho (implementado el 2026-11-13):
 - **La boda acaba de madrugada.** Las horas anteriores a las 6:00 cuentan como del día siguiente: «04:00» va después de «23:30», no antes. Sin esto, la barra libre aparecería antes de la ceremonia y los avisos dirían cualquier cosa.
 - **Avisos de solapes y huecos** (§8.13) con los nombres de los hitos, y calculados **también sobre los internos**: un solape entre el montaje y la ceremonia es justo el error que hay que cazar. Un hueco es un rato de **dos horas o más**: hora y media entre el cóctel y el banquete es la vida normal de una boda. Son avisos, no errores: una boda tiene cosas que pasan a la vez.
 - Los **iconos son una lista cerrada** del set curado, presentes en los dos sprites, y los **colores salen de la paleta de categorías** del sistema visual: aquí no se inventa ninguno. El color nunca viaja solo —al lado van el icono, la hora y, si es interno, su etiqueta—.
-- Lo que **todavía no está**: el selector del enlace con una ubicación del mapa (`locationId`); el mapa ya existe (§8.6), falta enseñarlo en esta pantalla (`F2.2b`).
+- **Enlace con el mapa (hecho, F2.2b):** cada hito puede apuntar a una ubicación del mapa (`locationId`, §8.6). En la web sale «Cómo llegar» con el enlace de navegación. Si esa ubicación no es pública, la proyección deja `locationId` en `null` y el hito se publica sin enlace; el servidor valida el id.
 
 ### 8.14 Playlist colaborativa
 
@@ -1248,6 +1281,8 @@ weddings/{weddingId}/vendors/{id}
 - **Asignación a tareas del checklist** (§8.17): una tarea puede colgar de un proveedor, y la ficha del proveedor muestra sus tareas abiertas. Es lo que convierte la lista de proveedores en una herramienta de seguimiento y no en una agenda de teléfonos.
 - Estado de cada proveedor con su color, visible de un vistazo.
 
+**Lo que hay hecho (D-49):** `/panel/budget` (plan extendido): partidas agrupadas por categoría con estimado, real, vencimiento y «pagada» (se refleja al tocar y se deshace si falla), totales y desviación, y exportación a CSV con `;` y BOM para Excel. Todo en **céntimos**. Nace con las partidas del **catálogo del superadmin** (mismo comportamiento que las tareas, §8.17). No hay aún presupuesto objetivo, colores por categoría ni proveedores.
+
 ### 8.17 Checklist
 
 ```
@@ -1269,6 +1304,8 @@ weddings/{weddingId}/checklistItems/{id}
 
 **Lo que hay hecho (F4.1):** la pantalla `/panel/checklist` y el aviso del inicio. El **estado no se guarda**: se calcula contra «hoy» a partir de `done` y `dueDate` (vencida si el día ya pasó, «esta semana» hasta siete días, próxima, sin fecha, hecha). El filtro por persona enseña **las suyas y las de los dos**. Quedan para después las vinculaciones a proveedor y partida (no hay aún pantalla de proveedores ni de presupuesto) y recalcular las fechas de la plantilla si cambia la boda.
 
+**Catálogo de originales (D-49):** el superadmin gestiona en `/superadmin/catalogos` las tareas originales (CRUD), que se **vuelcan a cada boda nueva** y luego cada pareja edita a su gusto. Cambiar el catálogo **no toca las bodas ya creadas**. Con el catálogo sin tocar se usan las de fábrica; un catálogo con todo desactivado siembra nada.
+
 ### 8.18 Panel de superadmin
 
 - Listado de bodas con slug, estado, fecha, plan, invitados y última actividad.
@@ -1279,7 +1316,27 @@ weddings/{weddingId}/checklistItems/{id}
 - Métricas agregadas: bodas activas, altas del mes, almacenamiento consumido, partidas de quiz, accesos de invitados.
 - **Estadísticas y límites por boda** (`/superadmin/estadisticas`): los totales de arriba y una fila por boda con fotos frente a su tope, invitados, partidas de quiz y accesos. El superadmin fija el **tope de fotos** de una boda (entero de 1 a 5000, o «por defecto»), que se escribe por `setWeddingLimits` —nunca desde el navegador: `limits` es campo de sistema— y queda en el registro de auditoría con el valor anterior y el nuevo. El almacenamiento es una **estimación** (fotos × 0,3 MB). Se miden como mucho 200 bodas por consulta, y los conteos son por agregación (`count()`) para que mirar esto cueste céntimos.
 
-**Lo que hay hecho (F3.1d):** estadísticas y tope de fotos. Otros límites por boda (invitados, mesas) no existen todavía.
+- **Ficha de boda** (`/superadmin/bodas/:id`, S1.7): resumen, **contacto de la pareja** (correos de Firebase Auth, último acceso), cobros y las **últimas 100 entradas** del registro de auditoría de esa boda.
+- **Recuperar el acceso de la pareja** (S1.6b): desde la ficha, «Enlace de restablecimiento» (`generateCoupleResetLink`) genera el enlace de Firebase Auth y lo enseña para copiarlo. **No se envía ningún correo** (no hay proveedor, §11.5): lo pasa Gabriel. Solo vale para cuentas que sean de esa boda; el enlace no se guarda ni se escribe en el log.
+- **Cobros** (`/superadmin/finanzas`, S1.3e): libro por boda con importe en céntimos, método, estado, fecha de cobro, número de factura y notas; totales de cobrado y pendiente, filtros por boda y estado, y **exportación a CSV** de lo que se ve. No hay pasarela de pago, no emite facturas y no fija precios (D-02).
+- **Recordatorios** (`/superadmin/recordatorios`, S1.3f): a los **60 días** de la boda, para cada boda activa, el correo de agradecimiento, la encuesta de satisfacción, el aviso a la pareja de que puede bajar las fotos y de que la web se cierra, y la tarea de cierre para el superadmin. Se enseñan dos semanas antes, con el texto listo para copiar, y se **marcan como enviados** a mano. No se envía nada.
+
+**Lo que hay hecho (F3.1d, S1.3e/f, S1.6b, S1.7):** estadísticas y tope de fotos, ficha de boda, restablecimiento, cobros y recordatorios. Otros límites por boda (invitados, mesas) y las notificaciones automáticas (S1.3g) no existen todavía.
+
+### 8.19 Nuestra historia
+
+Solo plan extendido (`modules.story`), con página propia `/historia` en la web pública y cartel en la home (sección de tipo `historia`, en el sitio de la antigua sección de texto «Nuestra historia»).
+
+Cinco apartados **fijos**, en este orden: _Nos conocemos desde_, _El primer beso_, _Nuestro mejor recuerdo_, _Nuestro mejor viaje_ y _La pedida_. Cada uno lleva un texto enriquecido (el mismo Jodit acotado del resto de la web, hasta 4 000 caracteres) y **hasta dos fotos**, que se pintan debajo del texto, entre un apartado y el siguiente.
+
+```
+weddings/{weddingId}.content.story.{clave} = { html, fotos: [ { url, path } ] }
+```
+
+- El HTML se sanea **en el servidor** al proyectarlo (regla de oro 5). Las fotos solo pueden ser URLs de descarga de Firebase Storage (lista blanca) y a la web pública **no llega la `path`**.
+- La proyección publica `content.historia` como lista de los cinco apartados, o `[]` si no hay nada escrito ni subido. Un apartado vacío no se pinta.
+- Las fotos van a `weddings/{id}/story/` (§5.12), se reducen en el navegador antes de subir, y al quitarlas se borra primero la referencia y después el fichero.
+- Panel: `/panel/story`, cada apartado se guarda por separado.
 
 ---
 

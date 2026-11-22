@@ -131,7 +131,7 @@ describe('acompañantes en la lista', () => {
     maxCompanions: 0,
   };
 
-  async function conLista(invitados: readonly Invitado[]) {
+  async function conLista(invitados: readonly Invitado[], abrirTodas = false) {
     const puerta: PuertaInvitados = {
       async listar() {
         return { ok: true, invitados };
@@ -182,6 +182,13 @@ describe('acompañantes en la lista', () => {
     await new Promise((listo) => setTimeout(listo, 0));
     fixture.detectChanges();
 
+    if (abrirTodas) {
+      (fixture.nativeElement as HTMLElement)
+        .querySelectorAll<HTMLButtonElement>('.lst__cabecera')
+        .forEach((b) => b.click());
+      fixture.detectChanges();
+    }
+
     return (fixture.nativeElement as HTMLElement).textContent?.replace(/\s+/g, ' ') ?? '';
   }
 
@@ -190,7 +197,7 @@ describe('acompañantes en la lista', () => {
   });
 
   it('y al titular, a cuántos trae', async () => {
-    expect(await conLista([MARIA, ANA])).toContain('Trae a 1');
+    expect(await conLista([MARIA, ANA], true)).toContain('Trae a 1');
   });
 
   /** Puede pasar: la pareja borra al titular y deja al acompañante. */
@@ -256,7 +263,11 @@ describe('la familia de un invitado', () => {
                   loTrae: 'Lo trae {{nombre}}',
                   trae: 'Trae a {{n}}',
                   anadirAcompanante: 'Añadir acompañante',
-                  familia: { titulo: 'Mirando una familia', verTodos: 'Ver toda la lista' },
+                  familia: {
+                    titulo: 'Mirando una familia',
+                    verTodos: 'Ver toda la lista',
+                    ver: 'Ver su familia',
+                  },
                 },
               },
             },
@@ -283,10 +294,20 @@ describe('la familia de un invitado', () => {
   }
 
   const texto = (f: ComponentFixture<Invitados>) =>
-    ((f.nativeElement as HTMLElement).querySelector('.inv__lista')?.textContent ?? '').replace(
+    ((f.nativeElement as HTMLElement).querySelector('.lst')?.textContent ?? '').replace(
       /\s+/g,
       ' ',
     );
+
+  /** Abre la fila de un invitado: los datos y las acciones están en el acordeón. */
+  function abrir(f: ComponentFixture<Invitados>, nombre: string) {
+    const fila = Array.from((f.nativeElement as HTMLElement).querySelectorAll('.lst__fila')).find(
+      (t) => t.querySelector('.lst__nombre')?.textContent?.trim() === nombre,
+    );
+    expect(fila, nombre).toBeTruthy();
+    fila!.querySelector<HTMLButtonElement>('.lst__cabecera')!.click();
+    f.detectChanges();
+  }
 
   function pulsar(f: ComponentFixture<Invitados>, contiene: string) {
     const boton = Array.from((f.nativeElement as HTMLElement).querySelectorAll('button')).find(
@@ -301,6 +322,7 @@ describe('la familia de un invitado', () => {
     const f = await montarLista();
     expect(texto(f)).toContain('Luis');
 
+    abrir(f, 'María');
     pulsar(f, 'Trae a 1');
     expect(texto(f)).toContain('María');
     expect(texto(f)).toContain('Ana');
@@ -314,25 +336,31 @@ describe('la familia de un invitado', () => {
   it('desde el acompañante se llega a la misma familia', async () => {
     const f = await montarLista();
 
-    pulsar(f, 'Lo trae María');
+    abrir(f, 'Ana');
+    pulsar(f, 'Ver su familia');
     expect(texto(f)).toContain('Ana');
     expect(texto(f)).not.toContain('Luis');
   });
 
   it('«Añadir acompañante» solo se ofrece a los titulares', async () => {
     const f = await montarLista();
-    const botones = Array.from((f.nativeElement as HTMLElement).querySelectorAll('.inv__tarjeta'))
+    (f.nativeElement as HTMLElement)
+      .querySelectorAll<HTMLButtonElement>('.lst__cabecera')
+      .forEach((b) => b.click());
+    f.detectChanges();
+    const botones = Array.from((f.nativeElement as HTMLElement).querySelectorAll('.lst__fila'))
       .filter((t) => t.textContent?.includes('Añadir acompañante'))
-      .map((t) => t.querySelector('.inv__nombre')?.textContent?.trim());
+      .map((t) => t.querySelector('.lst__nombre')?.textContent?.trim());
 
     expect(botones).toEqual(['Luis', 'María']);
   });
 
   it('el alta desde un titular nace como su acompañante y se queda mirando la familia', async () => {
     const f = await montarLista();
+    abrir(f, 'Luis');
     const tarjeta = Array.from(
-      (f.nativeElement as HTMLElement).querySelectorAll('.inv__tarjeta'),
-    ).find((t) => t.querySelector('.inv__nombre')?.textContent?.trim() === 'Luis')!;
+      (f.nativeElement as HTMLElement).querySelectorAll('.lst__fila'),
+    ).find((t) => t.querySelector('.lst__nombre')?.textContent?.trim() === 'Luis')!;
     const boton = Array.from(tarjeta.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Añadir acompañante'),
     )!;
@@ -413,7 +441,7 @@ describe('filtrar por la cifra de la cabecera', () => {
     const raiz = fixture.nativeElement as HTMLElement;
 
     return {
-      nombres: () => [...raiz.querySelectorAll('.inv__nombre')].map((n) => n.textContent?.trim()),
+      nombres: () => [...raiz.querySelectorAll('.lst__nombre')].map((n) => n.textContent?.trim()),
       pulsar(indice: number) {
         [...raiz.querySelectorAll<HTMLButtonElement>('.inv__cifra')][indice]!.click();
         fixture.detectChanges();
@@ -448,5 +476,157 @@ describe('filtrar por la cifra de la cabecera', () => {
     p.pulsar(1);
 
     expect(p.nombres()).toEqual(['Ana Viene', 'Borja Falta']);
+  });
+});
+
+/**
+ * La lista en acordeón: una línea numerada por invitado, los datos y las
+ * acciones al abrirla, y la posibilidad de ordenarla.
+ */
+describe('la lista, en acordeón y ordenable', () => {
+  const ANA: Invitado = {
+    ...INVITADO_DE_PRUEBA,
+    id: 'a',
+    fullName: 'Ana Viene',
+    phone: '+34600111222',
+    rsvpStatus: 'declined',
+  };
+  const BORJA: Invitado = {
+    ...INVITADO_DE_PRUEBA,
+    id: 'b',
+    fullName: 'Borja Falta',
+    phone: null,
+    rsvpStatus: 'confirmed',
+    notes: 'Alérgico a las nueces',
+  };
+  const CARLA: Invitado = {
+    ...INVITADO_DE_PRUEBA,
+    id: 'c',
+    fullName: 'Carla Duda',
+    phone: null,
+    rsvpStatus: 'pending',
+  };
+
+  async function montar() {
+    const puerta: PuertaInvitados = {
+      async listar() {
+        return { ok: true, invitados: [CARLA, ANA, BORJA] };
+      },
+      async importar() {
+        throw new Error('no se usa');
+      },
+      async guardar() {
+        throw new Error('no se usa');
+      },
+      async cupoEnLote() {
+        return { ok: true as const, cambiados: 0, omitidos: 0 };
+      },
+      async borrar() {
+        throw new Error('no se usa');
+      },
+    };
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: { es: {} },
+          translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+        }),
+      ],
+      providers: [
+        provideIconSprite('panel'),
+        provideRouter([]),
+        { provide: PUERTA_RESPUESTAS, useValue: PUERTA_RESPUESTAS_FALSA },
+        { provide: PUERTA_INVITADOS, useValue: puerta },
+        { provide: BodaStore, useValue: bodaStoreFalso() },
+        { provide: GruposStore, useValue: gruposStoreFalso() },
+      ],
+    });
+    const fixture = TestBed.createComponent(Invitados);
+    fixture.detectChanges();
+    await new Promise((listo) => setTimeout(listo, 0));
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+    return {
+      raiz,
+      nombres: () => [...raiz.querySelectorAll('.lst__nombre')].map((n) => n.textContent?.trim()),
+      numeros: () => [...raiz.querySelectorAll('.lst__num')].map((n) => n.textContent?.trim()),
+      cabecera: (indice: number) =>
+        raiz.querySelectorAll<HTMLButtonElement>('.lst__cabecera')[indice]!,
+      cambiar: () => fixture.detectChanges(),
+      ordenarPor(campo: string) {
+        const select = raiz.querySelector<HTMLSelectElement>('.inv__orden select')!;
+        select.value = campo;
+        select.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+      },
+      cambiarSentido() {
+        raiz.querySelector<HTMLButtonElement>('.inv__orden button')!.click();
+        fixture.detectChanges();
+      },
+    };
+  }
+
+  it('numera a los invitados según salen en la lista, de 1 a N', async () => {
+    const p = await montar();
+    expect(p.numeros()).toEqual(['1', '2', '3']);
+    expect(p.nombres()).toEqual(['Ana Viene', 'Borja Falta', 'Carla Duda']);
+  });
+
+  it('cerrada, la fila no enseña datos ni acciones; abierta sí, y se vuelve a cerrar', async () => {
+    const p = await montar();
+    const cabecera = p.cabecera(0);
+
+    expect(cabecera.getAttribute('aria-expanded')).toBe('false');
+    expect(p.raiz.querySelector('.lst__detalle')).toBeNull();
+    expect(p.raiz.textContent).not.toContain('+34600111222');
+
+    cabecera.click();
+    p.cambiar();
+    expect(cabecera.getAttribute('aria-expanded')).toBe('true');
+    const detalle = p.raiz.querySelector('.lst__detalle');
+    expect(detalle?.textContent).toContain('+34600111222');
+    expect(detalle?.querySelectorAll('.lst__acciones button').length).toBeGreaterThanOrEqual(4);
+    expect(cabecera.getAttribute('aria-controls')).toBe(detalle?.id);
+
+    cabecera.click();
+    p.cambiar();
+    expect(cabecera.getAttribute('aria-expanded')).toBe('false');
+    expect(p.raiz.querySelector('.lst__detalle')).toBeNull();
+  });
+
+  it('se pueden tener abiertas varias a la vez, y «plegar todos» las cierra', async () => {
+    const p = await montar();
+    p.cabecera(0).click();
+    p.cabecera(1).click();
+    p.cambiar();
+    expect(p.raiz.querySelectorAll('.lst__detalle')).toHaveLength(2);
+
+    const plegar = [...p.raiz.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('plegarTodo'),
+    )!;
+    plegar.click();
+    p.cambiar();
+    expect(p.raiz.querySelectorAll('.lst__detalle')).toHaveLength(0);
+  });
+
+  it('ordena por respuesta, cambia el sentido y renumera sobre lo que se ve', async () => {
+    const p = await montar();
+
+    p.ordenarPor('estado');
+    expect(p.nombres()).toEqual(['Borja Falta', 'Carla Duda', 'Ana Viene']);
+    expect(p.numeros()).toEqual(['1', '2', '3']);
+
+    p.cambiarSentido();
+    expect(p.nombres()).toEqual(['Ana Viene', 'Carla Duda', 'Borja Falta']);
+    expect(p.numeros()).toEqual(['1', '2', '3']);
+  });
+
+  it('al cambiar de criterio se vuelve al sentido ascendente', async () => {
+    const p = await montar();
+    p.cambiarSentido();
+    expect(p.nombres()).toEqual(['Carla Duda', 'Borja Falta', 'Ana Viene']);
+
+    p.ordenarPor('nombre');
+    expect(p.nombres()).toEqual(['Ana Viene', 'Borja Falta', 'Carla Duda']);
   });
 });

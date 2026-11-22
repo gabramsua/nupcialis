@@ -51,6 +51,8 @@ export interface AlojamientoPublico {
   readonly bookingDeadline: string | null;
   /** Los recomendados van primero y lo dicen. */
   readonly recommended: boolean;
+  /** Dónde está en el mapa (§8.6), si la pareja lo ha enlazado. `null` si no se publica. */
+  readonly locationId: string | null;
   readonly order: number;
 }
 
@@ -160,6 +162,7 @@ export function sanearAlojamientos(valor: unknown): readonly AlojamientoPublico[
       blockedRooms: numero(a['blockedRooms'], 500),
       bookingDeadline: fechaLimiteValida(a['bookingDeadline']),
       recommended: a['recommended'] === true,
+      locationId: texto(a['locationId'], 60) || null,
       order: typeof a['order'] === 'number' && Number.isFinite(a['order']) ? a['order'] : 0,
     });
   }

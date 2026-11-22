@@ -88,6 +88,9 @@ const DATOS: ResultadoRespuestas = {
 
 async function montar(resultado: ResultadoRespuestas = DATOS) {
   const doble: PuertaRespuestas = {
+    async guardarEnLote() {
+      return { ok: true as const, cambiados: 0, omitidos: 0 };
+    },
     async guardar() {
       return { ok: true as const, estado: 'confirmed' as const };
     },

@@ -39,6 +39,9 @@ const ES = JSON.parse(readFileSync('public/i18n/es.json', 'utf8')) as Record<str
 
 /** Por defecto, nadie ha contestado: el aviso de cambio de tipo no salta. */
 let respuestasFalsas: PuertaRespuestas = {
+  async guardarEnLote() {
+    return { ok: true as const, cambiados: 0, omitidos: 0 };
+  },
   async guardar() {
     return { ok: true as const, estado: 'confirmed' as const };
   },
@@ -244,6 +247,9 @@ describe('el editor del formulario', () => {
    */
   it('avisa de cuántas respuestas hay antes de cambiar el tipo', async () => {
     respuestasFalsas = {
+      async guardarEnLote() {
+        return { ok: true as const, cambiados: 0, omitidos: 0 };
+      },
       async guardar() {
         return { ok: true as const, estado: 'confirmed' as const };
       },
@@ -303,6 +309,9 @@ describe('el editor del formulario', () => {
     expect(p.puerta.guardados.at(-1)?.type).toBe('text');
 
     respuestasFalsas = {
+      async guardarEnLote() {
+        return { ok: true as const, cambiados: 0, omitidos: 0 };
+      },
       async guardar() {
         return { ok: true as const, estado: 'confirmed' as const };
       },

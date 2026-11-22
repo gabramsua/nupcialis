@@ -30,6 +30,7 @@ import {
   type Dificultad,
 } from '../../public-site/quiz/quiz';
 import { PreguntasQuizStore } from './preguntas-quiz.store';
+import { SugerenciasQuiz } from './sugerencias-quiz';
 import { buscarPreguntas } from './buscar-preguntas';
 import { NpInput } from '../../../design-system/components/field/input';
 
@@ -57,6 +58,7 @@ import { NpInput } from '../../../design-system/components/field/input';
     NpAlert,
     NpButton,
     NpEmptyState,
+    SugerenciasQuiz,
     NpModal,
     NpStatusChip,
     NpIcon,
@@ -222,6 +224,11 @@ import { NpInput } from '../../../design-system/components/field/input';
                       <span class="qp__estados">
                         <np-status-chip status="declined" [label]="t('panel.quiz.aMedias')" />
                       </span>
+                    } @else if (!pregunta.enabled) {
+                      <span class="qp__estados">
+                        <np-status-chip status="pending" [label]="t('panel.quiz.porRevisar')" />
+                        <small>{{ t('panel.quiz.porRevisarAyuda') }}</small>
+                      </span>
                     }
 
                     <div class="qp__botones">
@@ -262,6 +269,8 @@ import { NpInput } from '../../../design-system/components/field/input';
             }
           }
         }
+
+        <np-sugerencias-quiz />
 
         @if (editando(); as cual) {
           <np-modal
@@ -605,6 +614,13 @@ export class PanelPreguntasQuiz {
     if (this.store.preguntas().length > 0 && jugables < MIN_POR_PARTIDA) {
       avisos.push(
         `Con ${jugables} ${jugables === 1 ? 'pregunta' : 'preguntas'} listas no se puede jugar: hacen falta al menos ${MIN_POR_PARTIDA}.`,
+      );
+    }
+
+    const porRevisar = this.store.porRevisar().length;
+    if (porRevisar > 0) {
+      avisos.push(
+        `Hay ${porRevisar} por revisar, venidas de las sugerencias. No se juegan hasta que cambiéis sus respuestas por las vuestras y las guardéis.`,
       );
     }
 

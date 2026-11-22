@@ -94,6 +94,11 @@ export interface HitoPublico {
   readonly description: string;
   readonly icon: IconoHito;
   readonly color: ColorHito;
+  /**
+   * Dónde es, si la pareja lo ha enlazado con una ubicación del mapa (§8.6).
+   * La proyección lo deja en `null` si esa ubicación no se publica.
+   */
+  readonly locationId: string | null;
   readonly order: number;
 }
 
@@ -126,6 +131,12 @@ export function minutosDelDia(hora: unknown): number | null {
 function texto(valor: unknown, maximo: number): string {
   if (typeof valor !== 'string') return '';
   return valor.replace(/\r\n/g, '\n').trim().slice(0, maximo);
+}
+
+/** El id de la ubicación enlazada, o `null`. Solo se enlaza por id: nada que mostrar. */
+function idDeUbicacion(valor: unknown): string | null {
+  const id = texto(valor, 60);
+  return id === '' ? null : id;
 }
 
 function horaValida(valor: unknown): string | null {
@@ -174,6 +185,7 @@ export function sanearCronologia(valor: unknown): readonly HitoPublico[] {
       description: texto(h['description'], MAX_DESCRIPCION),
       icon: esIconoHito(h['icon']) ? h['icon'] : 'clock',
       color: esColorHito(h['color']) ? h['color'] : 'rosa',
+      locationId: idDeUbicacion(h['locationId']),
       order: typeof h['order'] === 'number' && Number.isFinite(h['order']) ? h['order'] : 0,
     });
   }

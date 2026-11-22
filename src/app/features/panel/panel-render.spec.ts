@@ -5,6 +5,7 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 import { describe, expect, it } from 'vitest';
 
 import { FIREBASE_STORAGE } from '../../core/firebase/storage.providers';
+import { PUERTA_CATALOGOS, type PuertaCatalogos } from '../../core/superadmin/catalogos-gateway';
 import { PUERTA_INVITADOS, type PuertaInvitados } from '../../core/invitados/invitados-gateway';
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
 import { BodaStore } from './boda.store';
@@ -128,6 +129,9 @@ class BodaStoreFalso {
   async guardarSecciones(): Promise<boolean> {
     return true;
   }
+  async guardarDatos(): Promise<boolean> {
+    return true;
+  }
   async guardarHora(): Promise<boolean> {
     return true;
   }
@@ -163,6 +167,7 @@ function montar(componente: Type<unknown>) {
       { provide: PUERTA_ALOJAMIENTOS, useValue: PUERTA_ALOJAMIENTOS_FALSA },
       AlojamientosStore,
       { provide: PUERTA_PREGUNTAS_QUIZ, useValue: PUERTA_PREGUNTAS_QUIZ_FALSA },
+      { provide: PUERTA_CATALOGOS, useValue: PUERTA_CATALOGOS_FALSA },
       PreguntasQuizStore,
       { provide: PUERTA_RANKING_QUIZ, useValue: PUERTA_RANKING_QUIZ_FALSA },
       RankingQuizStore,
@@ -241,6 +246,27 @@ const PUERTA_SENTAR_FALSA: PuertaSentar = {
   },
 };
 
+const PUERTA_CATALOGOS_FALSA: PuertaCatalogos = {
+  async tareas() {
+    return { ok: true, datos: [] };
+  },
+  async partidas() {
+    return { ok: true, datos: [] };
+  },
+  async preguntas() {
+    return { ok: true, datos: [] };
+  },
+  async guardar() {
+    return { ok: true, datos: null };
+  },
+  async borrar() {
+    return { ok: true, datos: null };
+  },
+  async cargarDeFabrica() {
+    return { ok: true, datos: { creados: 0 } };
+  },
+};
+
 const PUERTA_PREGUNTAS_QUIZ_FALSA: PuertaPreguntasQuiz = {
   async listar() {
     return { ok: true as const, preguntas: [] };
@@ -281,6 +307,9 @@ const PUERTA_ACCESOS_FALSA: PuertaAccesos = {
 };
 
 const PUERTA_RESPUESTAS_FALSA: PuertaRespuestas = {
+  async guardarEnLote() {
+    return { ok: true as const, cambiados: 0, omitidos: 0 };
+  },
   async guardar() {
     return { ok: true as const, estado: 'confirmed' as const };
   },
@@ -361,6 +390,8 @@ describe('con la boda todavía sin cargar', () => {
         { provide: PUERTA_ALOJAMIENTOS, useValue: PUERTA_ALOJAMIENTOS_FALSA },
         AlojamientosStore,
         { provide: PUERTA_PREGUNTAS_QUIZ, useValue: PUERTA_PREGUNTAS_QUIZ_FALSA },
+        { provide: PUERTA_CATALOGOS, useValue: PUERTA_CATALOGOS_FALSA },
+        { provide: PUERTA_CATALOGOS, useValue: PUERTA_CATALOGOS_FALSA },
         PreguntasQuizStore,
         { provide: PUERTA_RANKING_QUIZ, useValue: PUERTA_RANKING_QUIZ_FALSA },
         RankingQuizStore,

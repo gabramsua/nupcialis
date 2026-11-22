@@ -36,6 +36,10 @@ function hora(valor: unknown): string | null {
   return minutosDelDia(valor) === null ? null : (valor as string).trim();
 }
 
+function idDeUbicacion(valor: unknown): string | null {
+  return typeof valor === 'string' && valor.trim() !== '' ? valor.trim() : null;
+}
+
 function aHito(id: string, datos: Record<string, unknown>): HitoDelPanel {
   const icono = datos['icon'];
   const color = datos['color'];
@@ -48,6 +52,7 @@ function aHito(id: string, datos: Record<string, unknown>): HitoDelPanel {
     description: texto(datos['description']),
     icon: esIconoHito(icono) ? icono : 'clock',
     color: esColorHito(color) ? color : 'rosa',
+    locationId: idDeUbicacion(datos['locationId']),
     order: typeof datos['order'] === 'number' ? datos['order'] : 0,
     // Ausente es visible, igual que en el servidor: lo interno se marca.
     visibleToGuests: datos['visibleToGuests'] !== false,
@@ -117,9 +122,8 @@ export function crearPuertaCronologiaFirestore(): PuertaCronologia {
           color: datos.color,
           order: datos.order,
           visibleToGuests: datos.visibleToGuests,
-          // En el modelo está para enlazar con el mapa (§8.6), que todavía no
-          // existe. Se escribe a `null` para no dejar el campo ausente.
-          locationId: null,
+          // La ubicación del mapa donde es (§8.6), o `null`.
+          locationId: datos.locationId,
         };
 
         if (datos.id) {

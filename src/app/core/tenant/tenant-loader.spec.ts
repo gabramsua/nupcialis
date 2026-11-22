@@ -19,6 +19,7 @@ const SITIO: SitioPublico = {
   alojamientos: [],
   ubicaciones: [],
   dressCode: DRESS_CODE_VACIO,
+  historia: [],
   modulos: { rsvp: 'visible' },
 };
 

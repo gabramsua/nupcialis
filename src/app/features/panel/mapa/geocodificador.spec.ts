@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { buscarDireccion, leerResultados, urlDeBusqueda } from './geocodificador';
+import {
+  buscarDireccion,
+  coordenadasDeEnlace,
+  leerResultados,
+  urlDeBusqueda,
+} from './geocodificador';
 
 describe('el buscador de direcciones', () => {
   it('pide a Nominatim un máximo de cinco resultados en español', () => {
@@ -70,5 +75,36 @@ describe('el buscador de direcciones', () => {
 
     expect(await buscarDireccion('Segovia', sinRed)).toEqual({ ok: false, motivo: 'red' });
     expect(await buscarDireccion('Segovia', caido)).toEqual({ ok: false, motivo: 'red' });
+  });
+});
+
+describe('los enlaces de Google Maps pegados', () => {
+  it('lee las coordenadas de las formas largas', () => {
+    const esperado = { lat: 40.4168, lng: -3.7038 };
+    expect(
+      coordenadasDeEnlace('https://www.google.com/maps/place/Madrid/@40.4168,-3.7038,12z/data=x'),
+    ).toEqual(esperado);
+    expect(
+      coordenadasDeEnlace('https://www.google.com/maps/place/X/data=!3d40.4168!4d-3.7038'),
+    ).toEqual(esperado);
+    expect(coordenadasDeEnlace('https://maps.google.com/?q=40.4168,-3.7038')).toEqual(esperado);
+    expect(coordenadasDeEnlace('https://maps.google.com/?ll=40.4168%2C-3.7038')).toEqual(esperado);
+  });
+
+  it('no inventa nada con lo que no es un enlace o no trae coordenadas', () => {
+    expect(coordenadasDeEnlace('Plaza Mayor, Segovia')).toBeNull();
+    expect(coordenadasDeEnlace('https://maps.app.goo.gl/abc123')).toBeNull();
+    expect(coordenadasDeEnlace('https://www.google.com/maps/@0,0,12z')).toBeNull();
+    expect(coordenadasDeEnlace('https://www.google.com/maps/@95.1,10.2,12z')).toBeNull();
+  });
+
+  it('buscarDireccion resuelve un enlace sin llamar a la red', async () => {
+    const pedir = vi.fn();
+    const r = await buscarDireccion('https://www.google.com/maps/@40.5,-3.5,15z', pedir);
+    expect(pedir).not.toHaveBeenCalled();
+    expect(r).toEqual({
+      ok: true,
+      resultados: [{ nombre: '40.50000, -3.50000', lat: 40.5, lng: -3.5 }],
+    });
   });
 });

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { emailsDeAlta, fechaDeBoda, sugerirSlugs, validarAlta, type EntradaAlta } from './alta';
+import {
+  emailsDeAlta,
+  fechaDeBoda,
+  lugarDeAlta,
+  sugerirSlugs,
+  validarAlta,
+  type EntradaAlta,
+} from './alta';
 
 const HOY = new Date('2026-09-10T12:00:00Z');
 
@@ -11,6 +18,7 @@ const VALIDA: EntradaAlta = {
   weddingDate: '2027-06-12T00:00:00.000Z',
   emails: ['maria@example.com', 'gabriel@example.com'],
   plan: 'extended',
+  ceremonyType: 'civil',
 };
 
 function motivos(entrada: Partial<EntradaAlta>) {
@@ -54,18 +62,78 @@ describe('validarAlta', () => {
         weddingDate: 'ayer',
         emails: [],
         plan: 'oro' as never,
+        ceremonyType: 'otra' as never,
       },
       HOY,
     );
     expect(resultado.ok).toBe(false);
     if (resultado.ok) return;
     expect(resultado.motivos.map((m) => m.campo).sort()).toEqual([
+      'ceremonia',
       'emails',
       'fecha',
       'nombres',
       'plan',
       'slug',
     ]);
+  });
+
+  it('exige saber si la boda es civil o religiosa', () => {
+    expect(motivos({ ceremonyType: undefined })).toContainEqual({
+      campo: 'ceremonia',
+      motivo: 'desconocida',
+    });
+    const religiosa = validarAlta({ ...VALIDA, ceremonyType: 'religious' }, HOY);
+    expect(religiosa.ok && religiosa.datos.ceremonyType).toBe('religious');
+  });
+
+  it('los lugares son opcionales y llegan como null', () => {
+    const resultado = validarAlta(VALIDA, HOY);
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    expect(resultado.datos.ceremonyPlace).toBeNull();
+    expect(resultado.datos.receptionPlace).toBeNull();
+  });
+
+  it('acepta los lugares, con o sin pin, y los limpia', () => {
+    const resultado = validarAlta(
+      {
+        ...VALIDA,
+        ceremonyPlace: {
+          name: '  Iglesia  de San Juan ',
+          address: 'Calle Mayor 1',
+          lat: 40.4,
+          lng: -3.7,
+        },
+        receptionPlace: { name: 'Finca Los Olivos' },
+      },
+      HOY,
+    );
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    expect(resultado.datos.ceremonyPlace).toEqual({
+      name: 'Iglesia de San Juan',
+      address: 'Calle Mayor 1',
+      lat: 40.4,
+      lng: -3.7,
+    });
+    expect(resultado.datos.receptionPlace).toEqual({
+      name: 'Finca Los Olivos',
+      address: '',
+      lat: null,
+      lng: null,
+    });
+  });
+
+  it('señala cuál de los dos lugares está mal', () => {
+    expect(motivos({ ceremonyPlace: { name: '', address: 'Calle Mayor 1' } })).toContainEqual({
+      campo: 'lugarCeremonia',
+      motivo: 'sin-nombre',
+    });
+    expect(motivos({ receptionPlace: { name: 'Finca', lat: 95, lng: 0 } })).toContainEqual({
+      campo: 'lugarCelebracion',
+      motivo: 'coordenadas',
+    });
   });
 
   it('rechaza una entrada vacía sin explotar', () => {
@@ -164,5 +232,39 @@ describe('sugerirSlugs', () => {
   // inválida y el alta volvería a fallar con el nombre que acabamos de proponer.
   it('no propone alternativas que no pasarían la validación', () => {
     expect(sugerirSlugs('a'.repeat(39), new Set(), 2027)).toEqual([]);
+  });
+});
+
+describe('lugarDeAlta', () => {
+  it('ausente o todo vacío es «sin decir»', () => {
+    expect(lugarDeAlta(undefined)).toEqual({ ok: true, lugar: null });
+    expect(lugarDeAlta(null)).toEqual({ ok: true, lugar: null });
+    expect(lugarDeAlta({ name: ' ', address: '', lat: null, lng: null })).toEqual({
+      ok: true,
+      lugar: null,
+    });
+  });
+
+  it('no admite un pin a medias ni en 0,0', () => {
+    expect(lugarDeAlta({ name: 'A', lat: 40 })).toEqual({ ok: false, motivo: 'coordenadas' });
+    expect(lugarDeAlta({ name: 'A', lat: 0, lng: 0 })).toEqual({
+      ok: false,
+      motivo: 'coordenadas',
+    });
+    expect(lugarDeAlta({ name: 'A', lat: '40', lng: '-3' })).toEqual({
+      ok: false,
+      motivo: 'coordenadas',
+    });
+  });
+
+  it('limita la longitud del nombre y la dirección', () => {
+    expect(lugarDeAlta({ name: 'a'.repeat(121) })).toEqual({
+      ok: false,
+      motivo: 'demasiado-largo',
+    });
+    expect(lugarDeAlta({ name: 'a', address: 'b'.repeat(241) })).toEqual({
+      ok: false,
+      motivo: 'demasiado-largo',
+    });
   });
 });

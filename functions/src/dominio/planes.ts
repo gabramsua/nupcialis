@@ -28,6 +28,7 @@ export const MODULOS = [
   'accommodation',
   'dressCode',
   'weddingParty',
+  'story',
   'budget',
   'vendors',
   'checklist',
@@ -56,7 +57,7 @@ export interface ConfigModulo {
  * plan básico es de una sola página por definición. No se pueden apilar
  * trescientas fotos ni un juego interactivo dentro de un scroll continuo.
  */
-export const SOLO_EXTENDIDO: readonly Modulo[] = ['gallery', 'quiz'];
+export const SOLO_EXTENDIDO: readonly Modulo[] = ['gallery', 'quiz', 'story'];
 
 /** El básico arranca con lo imprescindible; el resto se activa desde el panel. */
 const ACTIVOS_BASICO: readonly Modulo[] = [
@@ -79,6 +80,7 @@ const ACTIVOS_EXTENDIDO: readonly Modulo[] = [
   'accommodation',
   'dressCode',
   'weddingParty',
+  'story',
   'budget',
   'vendors',
   'checklist',

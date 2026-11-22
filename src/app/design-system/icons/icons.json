@@ -638,6 +638,16 @@
           "id": "chat-circle-text",
           "etiqueta": "Respuestas",
           "surfaces": ["panel"]
+        },
+        {
+          "id": "sign-out",
+          "etiqueta": "Cerrar sesión",
+          "surfaces": ["panel"]
+        },
+        {
+          "id": "book-open",
+          "etiqueta": "Historia",
+          "surfaces": ["panel", "public"]
         }
       ]
     }

@@ -14,11 +14,13 @@ export { listAccessLog } from './access-log';
 export { authorizeWeddingDomain } from './authorize-wedding-domain';
 export { addCompanion, deleteCompanion } from './companions';
 export { setCompanionQuota } from './companion-quota';
+export { completeWeddings } from './completar-bodas';
 export { deleteGroup, reorderGroups, upsertGroup } from './groups';
 export { guestLinkLogin, guestLogin, verifyGuest } from './guest-login';
 export { getInviteLink } from './invite-links';
 export { deleteGuest, listGuests, upsertGuest } from './guests';
 export { importGuests } from './import-guests';
+export { deleteCatalogItem, loadFactoryCatalog, saveCatalogItem } from './catalogo';
 export { provisionWedding } from './provision-wedding';
 export { getQuizHint, listQuizRanking, startQuiz, submitQuiz } from './quiz';
 export { clearQuizRanking, listQuizPlays } from './quiz-admin';
@@ -30,7 +32,17 @@ export { recomputeCounters } from './recompute-counters';
 export { listRsvpAnswers } from './rsvp-answers';
 export { getRsvpForm, submitRsvp } from './rsvp';
 export { setGuestRsvp } from './rsvp-pareja';
+export { setGuestsRsvp } from './respuesta-lote';
 export { getAdminStats, setWeddingLimits } from './estadisticas';
+export {
+  deletePayment,
+  generateCoupleResetLink,
+  getReminders,
+  getWeddingFile,
+  listPayments,
+  markReminderSent,
+  savePayment,
+} from './superadmin-boda';
 export { setUserClaims } from './set-user-claims';
 export { setWeddingStatus } from './set-wedding-status';
 export {

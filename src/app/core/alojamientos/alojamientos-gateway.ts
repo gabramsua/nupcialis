@@ -23,6 +23,8 @@ export interface AlojamientoDelPanel {
   /** Solo el día, en ISO: `'2027-05-01'`. */
   readonly bookingDeadline: string | null;
   readonly recommended: boolean;
+  /** Id de la ubicación del mapa donde está, o `null` (F2.4b). */
+  readonly locationId: string | null;
   readonly order: number;
   readonly enabled: boolean;
 }

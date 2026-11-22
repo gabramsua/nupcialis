@@ -147,6 +147,48 @@ describe('proyeccionPublica', () => {
         ...extra,
       });
 
+      /**
+       * Un «Cómo llegar» a una ubicación que no se publica sería un enlace al
+       * vacío: se borró, se ocultó a los invitados o no tiene pin.
+       */
+      it('el enlace de un hito o un alojamiento solo vale si esa ubicación se publica', () => {
+        const hito = (id: string, locationId: string) => ({
+          id,
+          time: '17:00',
+          title: `Hito ${id}`,
+          locationId,
+        });
+        const aloj = (id: string, locationId: string) => ({
+          id,
+          name: `Hotel ${id}`,
+          category: 'hotel',
+          enabled: true,
+          locationId,
+        });
+
+        const publico = proyeccionPublica(
+          BODA,
+          [],
+          [hito('a', 'ceremonia'), hito('b', 'oculta'), hito('c', 'borrada')],
+          [aloj('x', 'ceremonia'), aloj('y', 'sinpin')],
+          [
+            sitio({}),
+            sitio({ id: 'oculta', name: 'Oculta', visibleToGuests: false }),
+            sitio({ id: 'sinpin', name: 'Sin pin', coords: null }),
+          ],
+        );
+
+        expect(publico.content.cronologia.map((h) => h.locationId)).toEqual([
+          'ceremonia',
+          null,
+          null,
+        ]);
+        expect(publico.content.alojamientos.map((a) => a.locationId).sort()).toEqual([
+          'ceremonia',
+          null,
+        ]);
+      });
+
       /** El punto donde la pareja deja el coche de los proveedores no es de los invitados. */
       it('publica solo lo visible y con pin, y no lo interno', () => {
         const publico = proyeccionPublica(
@@ -198,6 +240,68 @@ describe('proyeccionPublica', () => {
 
       expect(publico.content.dressCode.descripcion).not.toContain('script');
       expect(publico.content.dressCode.descripcion).toContain('Elegante');
+    });
+  });
+
+  describe('nuestra historia', () => {
+    const FOTO =
+      'https://firebasestorage.googleapis.com/v0/b/x/o/weddings%2Fw1%2Fstory%2Fa.jpg?alt=media';
+
+    it('sin nada escrito publica la lista vacía, no cinco apartados en blanco', () => {
+      expect(proyeccionPublica(BODA).content.historia).toEqual([]);
+      expect(
+        proyeccionPublica({ ...BODA, content: { story: { beso: { html: '<p><br></p>' } } } })
+          .content.historia,
+      ).toEqual([]);
+    });
+
+    it('publica los cinco apartados en orden, con el texto saneado y sin la ruta de Storage', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        content: {
+          story: {
+            beso: {
+              html: '<p>Fue en <b>Lisboa</b><script>robar()</script></p>',
+              fotos: [{ url: FOTO, path: 'weddings/w1/story/a.jpg' }],
+            },
+          },
+        },
+      });
+
+      expect(publico.content.historia.map((a) => a.clave)).toEqual([
+        'conocemos',
+        'beso',
+        'recuerdo',
+        'viaje',
+        'pedida',
+      ]);
+      const beso = publico.content.historia[1];
+      expect(beso.html).toContain('Lisboa');
+      expect(beso.html).not.toContain('script');
+      expect(beso.fotos).toEqual([{ url: FOTO }]);
+      expect(contieneClave(publico, 'path')).toBe(false);
+    });
+
+    it('descarta las fotos que no son de Storage y se queda con dos como mucho', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        content: {
+          story: {
+            pedida: {
+              html: '<p>Sí</p>',
+              fotos: [
+                { url: 'javascript:alert(1)', path: '' },
+                { url: 'https://ejemplo.com/a.jpg', path: '' },
+                { url: FOTO, path: '' },
+                { url: FOTO + '&b', path: '' },
+                { url: FOTO + '&c', path: '' },
+              ],
+            },
+          },
+        },
+      });
+
+      expect(publico.content.historia[4].fotos.map((f) => f.url)).toEqual([FOTO, FOTO + '&b']);
     });
   });
 

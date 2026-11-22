@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { provideAlta } from '../../core/alta/alta.providers';
+import { provideCatalogos } from '../../core/superadmin/catalogos.providers';
+import { provideGestion } from '../../core/superadmin/gestion.providers';
 import { provideEstadisticas } from '../../core/superadmin/estadisticas.providers';
 import { provideAuth } from '../../core/auth/auth.providers';
 import { guardaSuperadmin } from '../../core/auth/guards';
@@ -21,6 +23,8 @@ export const superadminRoutes: Routes = [
       provideAuth(),
       provideAlta(),
       provideEstadisticas(),
+      provideGestion(),
+      provideCatalogos(),
     ],
     children: [
       {
@@ -37,6 +41,28 @@ export const superadminRoutes: Routes = [
         canActivate: [guardaSuperadmin],
         loadComponent: () =>
           import('./estadisticas/estadisticas-pantalla').then((m) => m.PantallaEstadisticas),
+      },
+      {
+        path: 'finanzas',
+        canActivate: [guardaSuperadmin],
+        loadComponent: () => import('./gestion/finanzas-pantalla').then((m) => m.PantallaFinanzas),
+      },
+      {
+        path: 'recordatorios',
+        canActivate: [guardaSuperadmin],
+        loadComponent: () =>
+          import('./gestion/recordatorios-pantalla').then((m) => m.PantallaRecordatorios),
+      },
+      {
+        path: 'catalogos',
+        canActivate: [guardaSuperadmin],
+        loadComponent: () =>
+          import('./catalogos/catalogos-pantalla').then((m) => m.PantallaCatalogos),
+      },
+      {
+        path: 'bodas/:id',
+        canActivate: [guardaSuperadmin],
+        loadComponent: () => import('./gestion/ficha-boda').then((m) => m.FichaBoda),
       },
       {
         path: '',

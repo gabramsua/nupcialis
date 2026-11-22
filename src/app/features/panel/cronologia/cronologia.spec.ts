@@ -13,6 +13,7 @@ import {
 } from '../../../core/cronologia/cronologia-gateway';
 import { ordenarHitos } from '../../../core/firebase/cronologia-gateway.firestore';
 import { abrirDialogosEnPruebas } from '../invitados/dobles.testing';
+import { proveerUbicacionesDePrueba } from '../mapa/ubicaciones.testing';
 import { PanelCronologia } from './cronologia';
 import { CronologiaStore } from './cronologia.store';
 
@@ -41,6 +42,7 @@ function hito(parcial: Partial<HitoDelPanel> & { id: string }): HitoDelPanel {
     description: '',
     icon: 'clock',
     color: 'rosa',
+    locationId: null,
     order: 1,
     visibleToGuests: true,
     ...parcial,
@@ -77,6 +79,7 @@ async function montar(hitos: readonly HitoDelPanel[]) {
       { provide: PUERTA_CRONOLOGIA, useValue: doble },
       { provide: SessionStore, useValue: { weddingId: () => 'w1' } },
       CronologiaStore,
+      ...proveerUbicacionesDePrueba(),
     ],
   });
 
@@ -92,6 +95,10 @@ async function montar(hitos: readonly HitoDelPanel[]) {
     raiz,
     guardados,
     borrados,
+    async asentar() {
+      await new Promise((listo) => setTimeout(listo, 0));
+      fixture.detectChanges();
+    },
     texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
     fichas: () => [...raiz.querySelectorAll('.cr__ficha')],
     boton(dentro: Element, texto: string) {
@@ -148,10 +155,58 @@ describe('la cronología en el panel', () => {
         description: '',
         icon: 'clock',
         color: 'rosa',
+        locationId: null,
         order: 2,
         visibleToGuests: false,
       },
     ]);
+  });
+
+  it('enlaza un hito con una ubicación del mapa y lo guarda', async () => {
+    const p = await montar([hito({ id: 'ceremonia', title: 'Ceremonia' })]);
+    await p.pulsar(p.boton(p.fichas()[0]!, 'Editar'));
+    await p.asentar();
+
+    const selector = p.raiz.querySelector('np-selector-de-ubicacion select') as HTMLSelectElement;
+    const opciones = [...selector.options].map((o) => o.textContent?.replace(/\s+/g, ' ').trim());
+    expect(opciones[0]).toBe('Sin enlace con el mapa');
+    expect(opciones).toContain('Iglesia de San Pedro');
+    // Las que no se verán lo dicen, para que la pareja no crea que sí.
+    expect(opciones).toContain('Entrada de proveedores · oculta a los invitados: no se verá');
+    expect(opciones).toContain('Finca sin colocar · sin pin: no se verá');
+
+    selector.value = 'iglesia';
+    selector.dispatchEvent(new Event('change'));
+    await p.pulsar(p.boton(p.raiz, 'Guardar'));
+
+    expect(p.guardados).toEqual([
+      expect.objectContaining({ id: 'ceremonia', locationId: 'iglesia' }),
+    ]);
+  });
+
+  it('un hito enlazado conserva su ubicación al abrirlo y se puede quitar el enlace', async () => {
+    const p = await montar([hito({ id: 'ceremonia', title: 'Ceremonia', locationId: 'iglesia' })]);
+    await p.pulsar(p.boton(p.fichas()[0]!, 'Editar'));
+    await p.asentar();
+
+    const selector = p.raiz.querySelector('np-selector-de-ubicacion select') as HTMLSelectElement;
+    expect(selector.value).toBe('iglesia');
+
+    selector.value = '';
+    selector.dispatchEvent(new Event('change'));
+    await p.pulsar(p.boton(p.raiz, 'Guardar'));
+
+    expect(p.guardados[0]?.locationId).toBeNull();
+  });
+
+  it('avisa de un enlace a una ubicación que ya no existe', async () => {
+    const p = await montar([hito({ id: 'ceremonia', title: 'Ceremonia', locationId: 'borrada' })]);
+    await p.pulsar(p.boton(p.fichas()[0]!, 'Editar'));
+    await p.asentar();
+
+    expect(p.raiz.querySelector('np-selector-de-ubicacion')?.textContent).toContain(
+      'Esa ubicación ya no existe',
+    );
   });
 
   it('avisa de dos cosas que se pisan, con sus nombres', async () => {

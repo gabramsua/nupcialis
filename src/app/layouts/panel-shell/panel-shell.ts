@@ -49,7 +49,8 @@ import { NpIcon } from '../../design-system/icons/icon';
         }
 
         <span class="np-panel__quien">{{ sesion.sesion().email }}</span>
-        <button npButton variant="ghost" size="sm" (click)="salir()">
+        <button npButton variant="ghost" size="sm" type="button" (click)="salir()">
+          <np-icon name="sign-out" />
           {{ t('panel.salir') }}
         </button>
       </header>

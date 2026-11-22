@@ -221,3 +221,50 @@ describe('la galería en el panel', () => {
     expect(p.texto()).toContain('No hay conexión');
   });
 });
+
+describe('la vista previa de la galería', () => {
+  const FOTOS = [foto({ id: 'a', autor: 'Ana' }), foto({ id: 'b', autor: 'Luis' })];
+
+  it('enseña las mismas fotos con el aspecto de la web, sin poder subir ni borrar', async () => {
+    const p = montar(FOTOS);
+    await p.asentar();
+
+    await p.pulsar(p.boton('Cómo lo ven los invitados'));
+
+    const previa = p.raiz.querySelector('np-galeria-previa') as HTMLElement;
+    expect(previa).not.toBeNull();
+    expect(previa.querySelectorAll('.gv__miniatura')).toHaveLength(2);
+    expect(previa.querySelector('.gv__subir')?.getAttribute('aria-disabled')).toBe('true');
+    expect(previa.querySelector('input[type="file"]')).toBeNull();
+    expect(previa.textContent).not.toContain('Borrar');
+  });
+
+  it('el visor abre una foto, pasa a la siguiente y se cierra', async () => {
+    const p = montar(FOTOS);
+    await p.asentar();
+    await p.pulsar(p.boton('Cómo lo ven los invitados'));
+
+    const previa = p.raiz.querySelector('np-galeria-previa') as HTMLElement;
+    await p.pulsar(previa.querySelector('.gv__miniatura') as HTMLButtonElement);
+    expect(previa.querySelector('.gv__grande')?.getAttribute('src')).toContain('/a.jpg');
+    expect(previa.textContent).toContain('Foto de Ana');
+
+    const mando = [...previa.querySelectorAll('.gv__mando button')] as HTMLButtonElement[];
+    expect(mando[0]?.disabled).toBe(true);
+    await p.pulsar(mando[1]!);
+    expect(previa.querySelector('.gv__grande')?.getAttribute('src')).toContain('/b.jpg');
+    expect(
+      ([...previa.querySelectorAll('.gv__mando button')][1] as HTMLButtonElement).disabled,
+    ).toBe(true);
+
+    await p.pulsar(previa.querySelector('.gv__cerrar') as HTMLButtonElement);
+    expect(previa.querySelector('.gv__visor')).toBeNull();
+  });
+
+  it('sin fotos no hay botón de vista previa', async () => {
+    const p = montar([]);
+    await p.asentar();
+
+    expect(p.texto()).not.toContain('Cómo lo ven los invitados');
+  });
+});

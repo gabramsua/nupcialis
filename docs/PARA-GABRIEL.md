@@ -50,6 +50,27 @@ se ha podido guardar.
 el panel, D-46): hay que **desplegar functions** otra vez. Y reinicia `ng serve`
 (se ha tocado `angular.json` para el Jodit).
 
+**Tanda D-50 (la 21).** Sin dependencias nuevas ni iconos. **`npm run deploy:functions`**:
+función nueva **`completeWeddings`**. Sin desplegarla, el botón «Añadir módulos
+nuevos» del superadmin falla. Después, en `/superadmin`, pulsa **«Añadir módulos
+nuevos»** una vez: las bodas extendidas ya creadas ganan `Nuestra historia` y
+`Presupuesto` en su menú (y el cartel de la historia, apagado). Pruébalo en la
+lista de invitados: abre una fila, ordena por grupo o por respuesta y filtra por
+un grupo; y en el alta, con ceremonia civil, la casilla «mismo sitio».
+
+**Tanda D-49 (la 20).** `npm install` no hace falta (sin dependencias nuevas);
+`npm run icons` por si acaso (entra `book-open` en el sprite público) y reinicia
+`ng serve`. Después **`npm run deploy:rules`** (reglas de Firestore con
+`catalog/{tipo}/items` **y de Storage** con `weddings/{id}/story/`) y
+**`npm run deploy:functions`**: funciones nuevas `saveCatalogItem`,
+`deleteCatalogItem` y `loadFactoryCatalog`, y cambian `provisionWedding` (tipo de
+ceremonia, lugares, plantillas de tareas y partidas) y la proyección pública
+(`content.historia`). Sin funciones, el alta con civil/religiosa falla.
+Tras desplegar: entra en `/superadmin/catalogos` y, si quieres editar las
+originales, pulsa **«Cargar los de fábrica»** en cada pestaña (sin esto se usan
+las de fábrica igualmente). Las bodas ya creadas ganan `Nuestra historia` y
+`Presupuesto` con el botón «Añadir módulos nuevos» (D-50).
+
 **Tanda D-47 (la de los 18 puntos).** Antes de nada: `npm install` (entra
 `@angular/cdk` para arrastrar en las mesas), `npm run icons` (hay iconos nuevos;
 el sprite ya viene en el parche, pero no sobra) y reinicia `ng serve`. Después
@@ -62,31 +83,35 @@ al final de `D-47` en `PENDIENTES.md`.
 
 **Funciones nuevas acumuladas**, por orden de entrada:
 
-| Función                      | Para qué                                                 |
-| ---------------------------- | -------------------------------------------------------- |
-| `getRsvpForm`, `submitRsvp`  | El formulario de confirmación del invitado               |
-| `guestLinkLogin`             | Entrar con el enlace de la pareja (D-34)                 |
-| `verifyGuest`                | Subir de «enlace» a «verificado» con los cuatro dígitos  |
-| `getInviteLink`              | El token del enlace de cada invitado                     |
-| `listRsvpAnswers`            | Lo que han contestado, para la pareja                    |
-| `listAccessLog`              | «Quién ha entrado»                                       |
-| `setCompanionQuota`          | El cupo de acompañantes en lote                          |
-| `reorderGroups`              | El orden de los grupos                                   |
-| `startQuiz`, `submitQuiz`    | Jugar al quiz, con la corrección en servidor             |
-| `listQuizRanking`            | El ranking que ve el invitado                            |
-| `listQuizPlays`              | Quién ha jugado, con teléfono, para vuestro panel        |
-| `clearQuizRanking`           | Vaciar el ranking antes del día de la boda               |
-| `assignGuestsToTable`        | Sentar invitados en una mesa, en lote                    |
-| `uploadPhoto`                | Subir foto a la galería (grande y miniatura)             |
-| `listPhotos`                 | Una página de la galería                                 |
-| `deletePhoto`                | Borrar una foto (la suya, o cualquiera si sois vosotros) |
-| `clearGallery`               | Vaciar la galería entera                                 |
-| `listPlaylist`               | La lista de canciones que ve el invitado, sin ids        |
-| `suggestSong`, `voteSong`    | Proponer y votar una canción (con duplicados detectados) |
-| `getGifts`                   | La página de regalos del invitado                        |
-| `getAdminStats`              | Las estadísticas del superadmin (solo con el claim)      |
-| `setWeddingLimits`           | Fijar el tope de fotos de una boda (solo superadmin)     |
-| `reserveGift`, `releaseGift` | Coger y soltar un regalo de la lista                     |
+| Función                                        | Para qué                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------- |
+| `getRsvpForm`, `submitRsvp`                    | El formulario de confirmación del invitado                             |
+| `guestLinkLogin`                               | Entrar con el enlace de la pareja (D-34)                               |
+| `verifyGuest`                                  | Subir de «enlace» a «verificado» con los cuatro dígitos                |
+| `getInviteLink`                                | El token del enlace de cada invitado                                   |
+| `listRsvpAnswers`                              | Lo que han contestado, para la pareja                                  |
+| `listAccessLog`                                | «Quién ha entrado»                                                     |
+| `setCompanionQuota`                            | El cupo de acompañantes en lote                                        |
+| `reorderGroups`                                | El orden de los grupos                                                 |
+| `startQuiz`, `submitQuiz`                      | Jugar al quiz, con la corrección en servidor                           |
+| `listQuizRanking`                              | El ranking que ve el invitado                                          |
+| `listQuizPlays`                                | Quién ha jugado, con teléfono, para vuestro panel                      |
+| `clearQuizRanking`                             | Vaciar el ranking antes del día de la boda                             |
+| `assignGuestsToTable`                          | Sentar invitados en una mesa, en lote                                  |
+| `uploadPhoto`                                  | Subir foto a la galería (grande y miniatura)                           |
+| `listPhotos`                                   | Una página de la galería                                               |
+| `deletePhoto`                                  | Borrar una foto (la suya, o cualquiera si sois vosotros)               |
+| `clearGallery`                                 | Vaciar la galería entera                                               |
+| `listPlaylist`                                 | La lista de canciones que ve el invitado, sin ids                      |
+| `suggestSong`, `voteSong`                      | Proponer y votar una canción (con duplicados detectados)               |
+| `getGifts`                                     | La página de regalos del invitado                                      |
+| `getAdminStats`                                | Las estadísticas del superadmin (solo con el claim)                    |
+| `getWeddingFile`, `generateCoupleResetLink`    | La ficha de una boda y el enlace de restablecimiento (solo superadmin) |
+| `listPayments`, `savePayment`, `deletePayment` | El libro de cobros (solo superadmin)                                   |
+| `getReminders`, `markReminderSent`             | Los avisos de después de la boda (solo superadmin)                     |
+| `setGuestsRsvp`                                | La pareja marca la respuesta de varios invitados a la vez              |
+| `setWeddingLimits`                             | Fijar el tope de fotos de una boda (solo superadmin)                   |
+| `reserveGift`, `releaseGift`                   | Coger y soltar un regalo de la lista                                   |
 
 **Las reglas cambian**: `playlistSuggestions` pasa a ser **solo de la pareja**
 (antes un invitado podía leerla, y con ella quién había votado qué). Sin
@@ -118,6 +143,21 @@ de quien ha cogido cada cosa vive en el documento, y una regla puede negar una
 escritura pero no esconder un campo de una lectura—. Hasta que se desplieguen
 las reglas, un invitado identificado podría consultar la colección y ver quién
 ha cogido qué.
+
+**Tanda D-48 (superadmin, respuesta en lote, ubicaciones).** Hay que
+**desplegar reglas, índices y funciones**: `npm run deploy:rules` (colecciones
+`payments` y `reminderMarks`, cerradas salvo lectura del superadmin, y el
+**índice nuevo de `auditLog`** — `weddingId` + `createdAt`—; sin él la ficha de
+boda da error al cargar el historial y Firestore tarda unos minutos en
+construirlo) y `npm run deploy:functions`: funciones nuevas **`setGuestsRsvp`**
+(respuesta en lote), **`getWeddingFile`**, **`generateCoupleResetLink`**,
+**`listPayments`**, **`savePayment`**, **`deletePayment`**, **`getReminders`** y
+**`markReminderSent`**, y cambian los triggers de proyección (los enlaces de
+ubicación de la cronología y de los alojamientos). Sin `setGuestsRsvp` el botón
+de la lista avisa de que no se ha podido guardar. Después, en
+`/superadmin`, pulsa el nombre de una pareja para abrir su ficha. El enlace de
+restablecimiento **no se envía**: lo copias y se lo pasas tú. Las decisiones
+que he apartado están en `D-48`.
 
 **El IBAN.** Lo que la pareja escribe se comprueba con el módulo 97 antes de
 publicarse, y **no sube a la proyección pública** ni el número de cuenta ni el

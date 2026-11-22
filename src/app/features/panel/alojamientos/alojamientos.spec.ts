@@ -14,6 +14,7 @@ import {
 } from '../../../core/alojamientos/alojamientos-gateway';
 import { idDeAlojamiento } from '../../../core/firebase/alojamientos-gateway.firestore';
 import { abrirDialogosEnPruebas } from '../invitados/dobles.testing';
+import { proveerUbicacionesDePrueba } from '../mapa/ubicaciones.testing';
 import { PanelAlojamientos } from './alojamientos';
 import { AlojamientosStore } from './alojamientos.store';
 
@@ -56,6 +57,7 @@ function sitio(parcial: Partial<AlojamientoDelPanel> & { id: string }): Alojamie
     blockedRooms: null,
     bookingDeadline: null,
     recommended: false,
+    locationId: null,
     order: 1,
     enabled: true,
     ...parcial,
@@ -92,6 +94,7 @@ async function montar(alojamientos: readonly AlojamientoDelPanel[]) {
       { provide: PUERTA_ALOJAMIENTOS, useValue: doble },
       { provide: SessionStore, useValue: { weddingId: () => 'w1' } },
       AlojamientosStore,
+      ...proveerUbicacionesDePrueba(),
     ],
   });
 
@@ -107,6 +110,10 @@ async function montar(alojamientos: readonly AlojamientoDelPanel[]) {
     raiz,
     guardados,
     borrados,
+    async asentar() {
+      await new Promise((listo) => setTimeout(listo, 0));
+      fixture.detectChanges();
+    },
     texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
     fichas: () => [...raiz.querySelectorAll('.al__ficha')],
     boton(dentro: Element, texto: string) {
@@ -196,6 +203,19 @@ describe('los alojamientos en el panel', () => {
     expect(p.texto()).not.toContain('Repasad esto');
     expect(p.fichas()[0]?.textContent).toContain('Desde 80 € la noche');
     expect(p.fichas()[0]?.textContent).toContain('A 2 km');
+  });
+
+  it('enlaza un alojamiento con una ubicación del mapa y lo guarda', async () => {
+    const p = await montar([sitio({ id: 'a', name: 'Hotel Centro' })]);
+    await p.pulsar(p.boton(p.fichas()[0]!, 'Editar'));
+    await p.asentar();
+
+    const selector = p.raiz.querySelector('np-selector-de-ubicacion select') as HTMLSelectElement;
+    selector.value = 'iglesia';
+    selector.dispatchEvent(new Event('change'));
+    await p.pulsar(p.boton(p.raiz, 'Guardar'));
+
+    expect(p.guardados).toEqual([expect.objectContaining({ id: 'a', locationId: 'iglesia' })]);
   });
 
   it('quitar de la web conserva todo lo demás', async () => {

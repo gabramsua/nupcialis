@@ -16,6 +16,7 @@ import type {
   PuertaRespuestas,
   RespuestasDeInvitado,
   ResultadoGuardarRespuesta,
+  ResultadoRespuestaEnLote,
   ResultadoRespuestas,
 } from '../rsvp/respuestas-gateway';
 import { TIPOS_PREGUNTA, type Pregunta, type TipoPregunta } from '../rsvp/rsvp-gateway';
@@ -43,6 +44,23 @@ export function crearPuertaRespuestasFirebase(): PuertaRespuestas {
             preguntas: Array.isArray(d['preguntas']) ? d['preguntas'].flatMap(aPregunta) : [],
             invitados: Array.isArray(d['invitados']) ? d['invitados'].flatMap(aInvitado) : [],
           },
+        };
+      } catch (error) {
+        return { ok: false, fallo: traducir(error) };
+      }
+    },
+
+    async guardarEnLote(guestIds, estado): Promise<ResultadoRespuestaEnLote> {
+      const setGuestsRsvp = httpsCallable<unknown, unknown>(functions, 'setGuestsRsvp');
+
+      try {
+        const resultado = await setGuestsRsvp({ guestIds, estado });
+        const d = (resultado.data ?? {}) as Record<string, unknown>;
+
+        return {
+          ok: true,
+          cambiados: typeof d['cambiados'] === 'number' ? d['cambiados'] : 0,
+          omitidos: typeof d['omitidos'] === 'number' ? d['omitidos'] : 0,
         };
       } catch (error) {
         return { ok: false, fallo: traducir(error) };

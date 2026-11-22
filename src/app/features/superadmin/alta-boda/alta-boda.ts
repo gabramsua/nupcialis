@@ -9,13 +9,20 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
-import { PUERTA_ALTA, type AltaCreada, type PlanContratado } from '../../../core/alta/alta-gateway';
+import {
+  PUERTA_ALTA,
+  type AltaCreada,
+  type LugarParaAlta,
+  type PlanContratado,
+  type TipoDeCeremonia,
+} from '../../../core/alta/alta-gateway';
 import { normalizarSlug, MENSAJES_SLUG, validarSlug } from '../../../core/tenant/slug';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpField } from '../../../design-system/components/field/field';
 import { NpInput } from '../../../design-system/components/field/input';
 import { NpIcon } from '../../../design-system/icons/icon';
+import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
 
 /**
  * Alta de una boda desde el panel de superadmin.
@@ -28,7 +35,16 @@ import { NpIcon } from '../../../design-system/icons/icon';
  */
 @Component({
   selector: 'np-alta-boda',
-  imports: [ReactiveFormsModule, TranslocoDirective, NpAlert, NpButton, NpField, NpInput, NpIcon],
+  imports: [
+    ReactiveFormsModule,
+    TranslocoDirective,
+    LugarDeAlta,
+    NpAlert,
+    NpButton,
+    NpField,
+    NpInput,
+    NpIcon,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -109,6 +125,43 @@ import { NpIcon } from '../../../design-system/icons/icon';
           <np-field [label]="t('superadmin.alta.fecha')" [required]="true" [error]="errorFecha()">
             <input npInput type="date" formControlName="weddingDate" />
           </np-field>
+
+          <fieldset class="np-alta__tipo">
+            <legend>{{ t('superadmin.alta.ceremonia') }}</legend>
+            @for (tipo of tipos; track tipo) {
+              <label class="np-alta__opcion">
+                <input
+                  type="radio"
+                  formControlName="ceremonyType"
+                  [value]="tipo"
+                  [attr.value]="tipo"
+                />
+                {{ t('superadmin.alta.ceremoniaTipo.' + tipo) }}
+              </label>
+            }
+          </fieldset>
+
+          <p class="np-alta__aviso">{{ t('superadmin.alta.lugaresAyuda') }}</p>
+          @if (puedeSerMismoSitio()) {
+            <label class="np-alta__opcion">
+              <input type="checkbox" formControlName="mismoSitio" />
+              {{ t('superadmin.alta.mismoSitio') }}
+            </label>
+          }
+          <np-lugar-de-alta
+            clave="ceremonia"
+            [etiqueta]="
+              t(unSoloSitio() ? 'superadmin.alta.lugarUnico' : 'superadmin.alta.lugarCeremonia')
+            "
+            [(value)]="lugarCeremonia"
+          />
+          @if (!unSoloSitio()) {
+            <np-lugar-de-alta
+              clave="celebracion"
+              [etiqueta]="t('superadmin.alta.lugarCelebracion')"
+              [(value)]="lugarCelebracion"
+            />
+          }
 
           <np-field
             [label]="t('superadmin.alta.emailA')"
@@ -197,6 +250,25 @@ import { NpIcon } from '../../../design-system/icons/icon';
       font-size: var(--np-text-sm);
       color: var(--np-surface-text-muted);
     }
+    .np-alta__tipo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--np-space-4);
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+    .np-alta__tipo legend {
+      padding: 0;
+      margin-block-end: var(--np-space-2);
+      font-weight: var(--np-weight-medium);
+    }
+    .np-alta__opcion {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      min-block-size: var(--np-tap-target);
+    }
     @media (max-width: 40rem) {
       .np-alta__pareja {
         grid-template-columns: 1fr;
@@ -220,7 +292,14 @@ export class AltaBoda {
     emailA: ['', [Validators.required, Validators.email]],
     emailB: [''],
     plan: ['basic' as PlanContratado, Validators.required],
+    ceremonyType: ['civil' as TipoDeCeremonia, Validators.required],
+    /** Solo con ceremonia civil: se casan donde celebran. */
+    mismoSitio: [false],
   });
+
+  protected readonly tipos: readonly TipoDeCeremonia[] = ['civil', 'religious'];
+  protected readonly lugarCeremonia = signal<LugarEditable>(LUGAR_VACIO);
+  protected readonly lugarCelebracion = signal<LugarEditable>(LUGAR_VACIO);
 
   protected readonly enviando = signal(false);
   protected readonly creada = signal<AltaCreada | null>(null);
@@ -229,6 +308,14 @@ export class AltaBoda {
 
   private readonly slugEscrito = signal('');
   private readonly fechaEscrita = signal('');
+  private readonly tipoElegido = signal<TipoDeCeremonia>('civil');
+  private readonly mismoSitioMarcado = signal(false);
+
+  /** Una ceremonia religiosa casi nunca es en el salón del banquete: solo se ofrece en civil. */
+  protected readonly puedeSerMismoSitio = computed(() => this.tipoElegido() === 'civil');
+  protected readonly unSoloSitio = computed(
+    () => this.puedeSerMismoSitio() && this.mismoSitioMarcado(),
+  );
 
   constructor() {
     // Se normaliza mientras se escribe: la pareja ve la dirección real antes de
@@ -238,6 +325,12 @@ export class AltaBoda {
     );
     this.formulario.controls.weddingDate.valueChanges.subscribe((valor) =>
       this.fechaEscrita.set(valor ?? ''),
+    );
+    this.formulario.controls.ceremonyType.valueChanges.subscribe((valor) =>
+      this.tipoElegido.set(valor ?? 'civil'),
+    );
+    this.formulario.controls.mismoSitio.valueChanges.subscribe((valor) =>
+      this.mismoSitioMarcado.set(valor ?? false),
     );
   }
 
@@ -277,7 +370,9 @@ export class AltaBoda {
 
   protected otraMas(): void {
     this.creada.set(null);
-    this.formulario.reset({ plan: 'basic' });
+    this.formulario.reset({ plan: 'basic', ceremonyType: 'civil', mismoSitio: false });
+    this.lugarCeremonia.set(LUGAR_VACIO);
+    this.lugarCelebracion.set(LUGAR_VACIO);
   }
 
   protected async enviar(): Promise<void> {
@@ -292,6 +387,9 @@ export class AltaBoda {
 
     const valores = this.formulario.getRawValue();
     const emails = [valores.emailA, valores.emailB].map((e) => e.trim()).filter((e) => e !== '');
+    const ceremonia = lugarParaEnviar(this.lugarCeremonia());
+    // Un solo sitio: se siembra igual en las dos fichas; la pareja podrá separarlas luego.
+    const celebracion = this.unSoloSitio() ? ceremonia : lugarParaEnviar(this.lugarCelebracion());
 
     const resultado = await this.puerta.crearBoda({
       slug: this.slugNormalizado(),
@@ -300,6 +398,9 @@ export class AltaBoda {
       weddingDate: new Date(valores.weddingDate).toISOString(),
       emails,
       plan: valores.plan,
+      ceremonyType: valores.ceremonyType,
+      ceremonyPlace: ceremonia,
+      receptionPlace: celebracion,
     });
 
     this.enviando.set(false);
@@ -332,4 +433,14 @@ export class AltaBoda {
         this.fallo.set(resultado.fallo.mensaje);
     }
   }
+}
+
+/** Un lugar sin nada escrito ni pin es «aún no se sabe», no un sitio vacío. */
+function lugarParaEnviar(lugar: LugarEditable): LugarParaAlta | null {
+  const address = lugar.address.trim();
+  // Con dirección y sin nombre, el servidor rechazaría el alta: se usa el primer
+  // trozo de la dirección, que casi siempre es el nombre del sitio.
+  const name = lugar.name.trim() || (address.split(',')[0] ?? '').trim();
+  if (name === '' && address === '' && lugar.lat === null) return null;
+  return { name, address, lat: lugar.lat, lng: lugar.lng };
 }

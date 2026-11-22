@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   deLaFamilia,
   filtrarInvitados,
+  ordenarInvitados,
   ordenarPorNombre,
   porGrupo,
   porVista,
@@ -228,5 +229,90 @@ describe('deLaFamilia', () => {
 
   it('un titular sin acompañantes sale solo', () => {
     expect(deLaFamilia([lista[0]!, lista[3]!], 'd').map((i) => i.id)).toEqual(['d']);
+  });
+});
+
+describe('ordenarInvitados', () => {
+  const ana = invitado({ id: 'ana', fullName: 'Ana', rsvpStatus: 'declined', groupIds: ['g2'] });
+  const beto = invitado({
+    id: 'beto',
+    fullName: 'Beto',
+    rsvpStatus: 'confirmed',
+    groupIds: ['g1'],
+  });
+  const carla = invitado({ id: 'carla', fullName: 'Carla', rsvpStatus: 'pending', groupIds: [] });
+  const dani = invitado({
+    id: 'dani',
+    fullName: 'Dani',
+    rsvpStatus: 'confirmed',
+    groupIds: ['g2', 'g1'],
+  });
+  const lista = [dani, carla, ana, beto];
+  const grupos = ['g1', 'g2'];
+  const ids = (l: readonly Invitado[]) => l.map((i) => i.id);
+
+  it('por nombre, ascendente y descendente', () => {
+    expect(ids(ordenarInvitados(lista, 'nombre', 'asc', grupos))).toEqual([
+      'ana',
+      'beto',
+      'carla',
+      'dani',
+    ]);
+    expect(ids(ordenarInvitados(lista, 'nombre', 'desc', grupos))).toEqual([
+      'dani',
+      'carla',
+      'beto',
+      'ana',
+    ]);
+  });
+
+  it('por respuesta: confirmados, pendientes, no vienen; los empates, por nombre', () => {
+    expect(ids(ordenarInvitados(lista, 'estado', 'asc', grupos))).toEqual([
+      'beto',
+      'dani',
+      'carla',
+      'ana',
+    ]);
+    expect(ids(ordenarInvitados(lista, 'estado', 'desc', grupos))).toEqual([
+      'ana',
+      'carla',
+      'beto',
+      'dani',
+    ]);
+  });
+
+  it('por grupo sigue el orden de la pareja y deja sin grupo al final en los dos sentidos', () => {
+    // Dani está en g1 y g2: cuenta por el primero de la pareja, g1.
+    expect(ids(ordenarInvitados(lista, 'grupo', 'asc', grupos))).toEqual([
+      'beto',
+      'dani',
+      'ana',
+      'carla',
+    ]);
+    expect(ids(ordenarInvitados(lista, 'grupo', 'desc', grupos))).toEqual([
+      'ana',
+      'beto',
+      'dani',
+      'carla',
+    ]);
+  });
+
+  it('por fecha de alta: los sin fecha cuentan como los más antiguos', () => {
+    const viejo = invitado({ id: 'viejo', fullName: 'Zoe', altaEn: null });
+    const antes = invitado({ id: 'antes', fullName: 'Yago', altaEn: '2026-01-01T10:00:00.000Z' });
+    const despues = invitado({
+      id: 'despues',
+      fullName: 'Xia',
+      altaEn: '2026-03-01T10:00:00.000Z',
+    });
+    const todos = [despues, viejo, antes];
+    expect(ids(ordenarInvitados(todos, 'alta', 'asc', []))).toEqual(['viejo', 'antes', 'despues']);
+    expect(ids(ordenarInvitados(todos, 'alta', 'desc', []))).toEqual(['despues', 'antes', 'viejo']);
+  });
+
+  it('no toca la lista original', () => {
+    const copia = [...lista];
+    ordenarInvitados(lista, 'estado', 'desc', grupos);
+    expect(lista).toEqual(copia);
   });
 });

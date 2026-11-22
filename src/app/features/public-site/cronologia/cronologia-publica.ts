@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../design-system/icons/icon';
+import { enlaceParaLlegar, type UbicacionPublica } from '../mapa/ubicaciones';
 import { sanearCronologia, type HitoPublico } from './cronologia';
 
 /**
@@ -41,6 +42,17 @@ import { sanearCronologia, type HitoPublico } from './cronologia';
                 <h3>{{ hito.title }}</h3>
                 @if (hito.description) {
                   <p>{{ hito.description }}</p>
+                }
+                @if (sitioDe(hito); as sitio) {
+                  <a
+                    class="cr__llegar"
+                    [href]="llegar(sitio)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <np-icon name="map-pin" />
+                    {{ t('publico.cronologia.llegar', { sitio: sitio.name }) }}
+                  </a>
                 }
               </div>
             </li>
@@ -125,6 +137,16 @@ import { sanearCronologia, type HitoPublico } from './cronologia';
       font-size: var(--np-text-sm);
       opacity: 0.85;
     }
+    .cr__llegar {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--np-space-1);
+      margin-block-start: var(--np-space-1);
+      min-block-size: 2.75rem;
+      color: inherit;
+      font-size: var(--np-text-sm);
+      font-weight: var(--np-weight-medium);
+    }
     .cr__nada {
       margin: 0;
       opacity: 0.7;
@@ -133,6 +155,8 @@ import { sanearCronologia, type HitoPublico } from './cronologia';
 })
 export class NpCronologiaPublica {
   readonly cronologia = input.required<readonly HitoPublico[]>();
+  /** Las ubicaciones publicadas: de ahí sale el «Cómo llegar» de cada hito (F2.2b). */
+  readonly ubicaciones = input<readonly UbicacionPublica[]>([]);
 
   /**
    * Se vuelve a sanear aquí aunque el servidor ya lo haya hecho.
@@ -142,4 +166,15 @@ export class NpCronologiaPublica {
    * despliegue a medias. Además es lo que garantiza el orden por hora.
    */
   protected readonly hitos = computed(() => sanearCronologia(this.cronologia()));
+
+  private readonly porId = computed(() => new Map(this.ubicaciones().map((u) => [u.id, u])));
+
+  /** El sitio enlazado, solo si **está publicado**: un enlace al vacío no se pinta. */
+  protected sitioDe(hito: HitoPublico): UbicacionPublica | null {
+    return hito.locationId === null ? null : (this.porId().get(hito.locationId) ?? null);
+  }
+
+  protected llegar(sitio: UbicacionPublica): string {
+    return enlaceParaLlegar(sitio);
+  }
 }

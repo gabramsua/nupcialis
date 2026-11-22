@@ -64,10 +64,23 @@ export type ResultadoGuardarRespuesta =
   | { readonly ok: true; readonly estado: 'pending' | 'confirmed' | 'declined' }
   | { readonly ok: false; readonly fallo: FalloAlGuardar };
 
+/** Lo que pasó al marcar a varios de una vez: cuántos se cambiaron y cuántos no existían. */
+export type ResultadoRespuestaEnLote =
+  | { readonly ok: true; readonly cambiados: number; readonly omitidos: number }
+  | { readonly ok: false; readonly fallo: FalloRespuestas };
+
 export interface PuertaRespuestas {
   leer(): Promise<ResultadoRespuestas>;
   /** Fija la respuesta de un invitado en su nombre. Solo la pareja. */
   guardar(guestId: string, respuesta: RespuestaDeLaPareja): Promise<ResultadoGuardarRespuesta>;
+  /**
+   * Fija **solo el estado** de varios invitados a la vez (F1.8i/j). Las respuestas
+   * del formulario de cada uno no se tocan.
+   */
+  guardarEnLote(
+    guestIds: readonly string[],
+    estado: 'pending' | 'confirmed' | 'declined',
+  ): Promise<ResultadoRespuestaEnLote>;
 }
 
 export const PUERTA_RESPUESTAS = new InjectionToken<PuertaRespuestas>('PUERTA_RESPUESTAS');

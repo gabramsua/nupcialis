@@ -167,7 +167,8 @@
     },
     "cronologia": {
       "hasta": "hasta las {{hora}}",
-      "pronto": "Muy pronto contaremos cómo será el día."
+      "pronto": "Muy pronto contaremos cómo será el día.",
+      "llegar": "Cómo llegar a {{sitio}}"
     },
     "alojamientos": {
       "pronto": "Muy pronto os diremos dónde dormir.",
@@ -189,7 +190,8 @@
         "ultimos": "¡Solo quedan {{n}} días para reservarlas!",
         "hoy": "Hoy es el último día para reservarlas.",
         "cerrado": "El plazo para reservarlas ya ha pasado."
-      }
+      },
+      "llegar": "Cómo llegar"
     },
     "dressCode": {
       "pronto": "Muy pronto os diremos cómo vestir.",
@@ -335,11 +337,28 @@
     "playlistLlamada": {
       "titulo": "La música",
       "ayuda": "Proponed canciones y votad las que queréis que suenen."
+    },
+    "historia": {
+      "volver": "Volver a la web",
+      "titulo": "Nuestra historia",
+      "nada": "Todavía estamos escribiendo nuestra historia. Volved pronto.",
+      "apartado": {
+        "conocemos": "Nos conocemos desde",
+        "beso": "El primer beso",
+        "recuerdo": "Nuestro mejor recuerdo",
+        "viaje": "Nuestro mejor viaje",
+        "pedida": "La pedida"
+      },
+      "fotoDe": "Foto de «{{apartado}}»"
+    },
+    "historiaLlamada": {
+      "titulo": "Nuestra historia",
+      "ayuda": "Cómo nos conocimos, el primer beso, la pedida… y algunas fotos."
     }
   },
   "panel": {
     "navegacion": "Secciones de vuestra boda",
-    "salir": "Salir",
+    "salir": "Cerrar sesión",
     "resumen": "Resumen",
     "error": "No hemos podido cargar vuestra boda",
     "ocultos": "Tenéis {{n}} secciones activas que los invitados todavía no ven.",
@@ -404,13 +423,28 @@
       "weddingParty": "Personas importantes",
       "budget": "Presupuesto",
       "vendors": "Proveedores",
-      "checklist": "Tareas"
+      "checklist": "Tareas",
+      "story": "Nuestra historia"
     },
     "datos": {
       "titulo": "Datos de la boda",
-      "ayuda": "La fecha la fijamos al crear vuestra web. La hora la ponéis vosotros cuando la tengáis decidida.",
-      "fecha": "Fecha",
+      "ayuda": "Aquí podéis corregir los datos con los que creamos vuestra web. La hora la ponéis vosotros cuando la tengáis decidida.",
+      "nombreA": "Nombre de uno de los novios",
+      "nombreB": "Nombre del otro",
+      "nombreVacio": "Escribid los dos nombres.",
+      "fecha": "Fecha de la boda",
+      "fechaPista": "Si la cambiáis, las fechas de las tareas ya creadas no se mueven solas.",
+      "fechaIlegible": "Elegid una fecha válida.",
       "sinFecha": "Sin fecha",
+      "ceremonia": "Tipo de ceremonia",
+      "ceremoniaTipo": {
+        "civil": "Boda civil",
+        "religious": "Boda religiosa"
+      },
+      "ceremoniaSinIndicar": "Todavía no lo habéis indicado.",
+      "lugares": "Lugares",
+      "lugaresAyuda": "El lugar de la ceremonia y el de la celebración se cambian en el mapa: ahí podéis buscarlos, colocar el pin o corregirlos.",
+      "lugaresIr": "Ir al mapa",
       "hora": "Hora de la ceremonia",
       "horaPista": "Se usa para la cuenta atrás de vuestra web.",
       "horaIlegible": "Esa hora no se entiende. Escríbela como 17:00.",
@@ -443,7 +477,8 @@
         "galeria": "Las fotos",
         "regalos": "Regalos",
         "mapa": "Cómo llegar",
-        "playlist": "La música"
+        "playlist": "La música",
+        "historia": "Nuestra historia"
       },
       "campo": {
         "titulo": "Título",
@@ -558,13 +593,51 @@
       "familia": {
         "titulo": "Mirando una familia",
         "de": "Quien viene con {{nombre}}, y quien lo trae.",
-        "verTodos": "Ver toda la lista"
+        "verTodos": "Ver toda la lista",
+        "ver": "Ver su familia"
       },
       "vinculo": {
         "no-existe": "Ese invitado ya no está en la lista. Recargad e intentadlo otra vez.",
         "uno-mismo": "Nadie puede venir consigo mismo.",
         "es-acompanante": "Esa persona ya viene como acompañante de otra, y un acompañante no puede traer a nadie. Elegid al titular.",
         "tiene-acompanantes": "Este invitado ya trae a otros. Quitadles primero el enlace si queréis que venga con alguien."
+      },
+      "lote": {
+        "titulo": "Marcar «viene» o «no viene» a los {{n}} que estás viendo",
+        "ayuda": "Sirve con los filtros: abre la familia de un titular, elige un grupo o busca por nombre, y marca a todos de una vez. Solo cambia si vienen o no; lo demás que hayan contestado se queda como estaba.",
+        "confirmed": "Vienen",
+        "declined": "No vienen",
+        "pending": "Sin contestar",
+        "confirmedTexto": "«viene»",
+        "declinedTexto": "«no viene»",
+        "pendingTexto": "«sin contestar»",
+        "confirmar": "¿Marcar a {{n}} invitados como {{estado}}? Cambia el recuento de confirmados, las mesas y el catering.",
+        "aplicar": "Sí, marcarlos",
+        "hecho": "Hecho: {{n}} invitados actualizados.",
+        "omitidos": "{{n}} ya no estaban en la lista.",
+        "error": {
+          "sin-permiso": "No tienes permiso para cambiar esto.",
+          "red": "No hemos podido guardar: parece que no hay conexión. Inténtalo de nuevo.",
+          "error": "No se ha podido guardar. Inténtalo de nuevo."
+        }
+      },
+      "lista": {
+        "plegarTodo": "Plegar todos",
+        "menu": "Menú",
+        "alergias": "Alergias"
+      },
+      "orden": {
+        "etiqueta": "Ordenar por",
+        "campo": {
+          "nombre": "Nombre",
+          "estado": "Respuesta",
+          "grupo": "Grupo",
+          "alta": "Fecha de alta"
+        },
+        "asc": "Ascendente",
+        "desc": "Descendente",
+        "cambiarSentido": "Cambiar el sentido del orden. Ahora: {{sentido}}",
+        "cuenta": "Mostrando {{n}} de {{total}}"
       }
     },
     "importar": {
@@ -1155,6 +1228,17 @@
       "etiqueta": {
         "facil": "Pregunta fácil",
         "dificil": "Pregunta difícil"
+      },
+      "porRevisar": "Por revisar",
+      "porRevisarAyuda": "Cambiad las respuestas de muestra por las vuestras y guardad: así se juega.",
+      "sugerencias": {
+        "titulo": "Preguntas sugeridas",
+        "ayuda": "Ideas para empezar. Al añadir una, llega a vuestro quiz apagada y con respuestas de muestra: editadla con vuestras respuestas y guardadla para que se juegue.",
+        "ejemplo": "Ejemplo de respuesta: {{respuesta}}",
+        "anadir": "Añadir a nuestro quiz",
+        "yaEsta": "Ya está en vuestro quiz",
+        "anadida": "Añadida a vuestro quiz. Editadla con vuestras respuestas para activarla.",
+        "fallo": "No se ha podido añadir la pregunta. Inténtalo de nuevo."
       }
     },
     "quizRanking": {
@@ -1254,7 +1338,13 @@
       "vaciar": "Vaciar la galería",
       "confirmarVaciado": "Se borran las {{n}} fotos de la galería y sus ficheros. No hay papelera y no tiene vuelta atrás.",
       "escribePalabra": "Escribid {{palabra}} para confirmar",
-      "error": "No se ha podido cargar"
+      "error": "No se ha podido cargar",
+      "previa": {
+        "boton": "Cómo lo ven los invitados",
+        "titulo": "Así ve la galería un invitado",
+        "ayuda": "Las mismas fotos que hay colgadas, con el aspecto de la web. Pulsa una para abrir el visor. Subir y borrar no funcionan aquí. Un invitado ve solo las fotos de su grupo cuando hay fotos restringidas.",
+        "hayMas": "Hay más fotos: en la web se traen con «Ver más»."
+      }
     },
     "regalos": {
       "titulo": "Regalos",
@@ -1385,7 +1475,7 @@
       },
       "selector": {
         "buscar": "Buscar una dirección",
-        "buscarEjemplo": "Calle, pueblo o nombre del sitio",
+        "buscarEjemplo": "Calle, pueblo, nombre del sitio o enlace de Google Maps",
         "buscarBoton": "Buscar",
         "corta": "Escribid al menos tres letras para buscar.",
         "sinResultados": "No hemos encontrado nada. Probad con menos datos o tocad el mapa para poner el pin.",
@@ -1399,6 +1489,16 @@
         "sin-permiso": "Vuestra sesión no tiene permiso sobre esta boda.",
         "red": "No hay conexión. Inténtalo otra vez en un momento.",
         "desconocido": "No se ha podido guardar. Inténtalo otra vez."
+      },
+      "enlace": {
+        "etiqueta": "¿Dónde es? (ubicación del mapa)",
+        "ninguna": "Sin enlace con el mapa",
+        "ayuda": "El invitado verá un «Cómo llegar» que abre su aplicación de mapas. Solo sale si la ubicación tiene pin y es visible.",
+        "sinUbicaciones": "Todavía no hay sitios en el mapa.",
+        "irAlMapa": "Añadir uno",
+        "sinPin": "sin pin: no se verá",
+        "oculta": "oculta a los invitados: no se verá",
+        "yaNoExiste": "Esa ubicación ya no existe"
       }
     },
     "playlist": {
@@ -1569,6 +1669,96 @@
         "no-existe": "Ese invitado ya no está en la lista.",
         "desconocido": "No se ha podido guardar. Inténtalo de nuevo."
       }
+    },
+    "presupuesto": {
+      "titulo": "Presupuesto",
+      "ayuda": "Apuntad lo que calculáis gastar, lo que cuesta de verdad y si ya está pagado. La lista parte de unas partidas habituales: cambiadlas, quitadlas o añadid las vuestras.",
+      "cargando": "Cargando el presupuesto…",
+      "fallo": "No se ha podido completar la operación",
+      "fallos": {
+        "sin-permiso": "No tenéis permiso para hacerlo.",
+        "red": "Sin conexión. Inténtalo de nuevo.",
+        "error": "Ha ocurrido un error. Inténtalo de nuevo."
+      },
+      "estimado": "Estimado",
+      "real": "Gasto real",
+      "pagado": "Pagado",
+      "pendiente": "Por pagar",
+      "estimadoCorto": "Estimado",
+      "realCorto": "Real",
+      "porEncima": "Vais {{importe}} por encima de lo estimado en las partidas con coste real.",
+      "porDebajo": "Vais {{importe}} por debajo de lo estimado en las partidas con coste real.",
+      "nueva": "Añadir partida",
+      "editar": "Editar partida",
+      "exportar": "Descargar para Excel",
+      "vacio": "Todavía no hay partidas",
+      "vacioDescripcion": "Añadid la primera: la finca, el catering, el vestido…",
+      "subtotal": "Estimado {{estimado}} · Real {{real}}",
+      "marcarPagada": "Marcar «{{c}}» como pagada",
+      "vence": "Pagar antes del {{fecha}}",
+      "estaPagada": "Pagada",
+      "sinPagar": "Sin pagar",
+      "campo": {
+        "concepto": "Concepto",
+        "categoria": "Categoría",
+        "estimado": "Importe estimado (€)",
+        "real": "Gasto real (€)",
+        "realPista": "Déjalo vacío hasta que sepáis lo que cuesta de verdad.",
+        "vence": "Fecha límite de pago (opcional)",
+        "notas": "Notas (opcional)",
+        "pagada": "Ya está pagada"
+      },
+      "error": {
+        "concepto": "Escribid en qué consiste la partida.",
+        "categoria": "La categoría es demasiado larga.",
+        "estimado": "El importe estimado no se entiende. Escribid, por ejemplo, 1.200 o 350,50.",
+        "real": "El gasto real no se entiende. Escribid, por ejemplo, 1.200 o 350,50.",
+        "fecha": "La fecha no es válida.",
+        "notas": "Las notas son demasiado largas."
+      },
+      "borrarConfirmar": "Se borrará «{{c}}» de vuestro presupuesto.",
+      "csv": {
+        "categoria": "Categoría",
+        "concepto": "Concepto",
+        "estimado": "Estimado (€)",
+        "real": "Real (€)",
+        "pagada": "Pagada",
+        "vence": "Fecha límite",
+        "notas": "Notas",
+        "si": "Sí",
+        "no": "No"
+      }
+    },
+    "historia": {
+      "titulo": "Nuestra historia",
+      "ayuda": "Cinco momentos para contar cómo habéis llegado hasta aquí. Escribid lo que queráis en cada uno y, si os apetece, añadid una o dos fotos. Los que dejéis vacíos no se enseñan.",
+      "cargando": "Cargando vuestra historia…",
+      "fallo": "No se ha podido guardar",
+      "fallos": {
+        "sin-permiso": "No tenéis permiso para hacerlo.",
+        "red": "Sin conexión. Inténtalo de nuevo.",
+        "error": "Ha ocurrido un error. Inténtalo de nuevo."
+      },
+      "apartado": {
+        "conocemos": "Nos conocemos desde",
+        "beso": "El primer beso",
+        "recuerdo": "Nuestro mejor recuerdo",
+        "viaje": "Nuestro mejor viaje",
+        "pedida": "La pedida"
+      },
+      "sugerencia": {
+        "conocemos": "¿Desde cuándo y dónde? Un colegio, una cena de amigos, una app…",
+        "beso": "El día, el sitio y cómo fue (o cómo lo recordáis cada uno).",
+        "recuerdo": "Ese momento al que volveríais mil veces.",
+        "viaje": "El viaje o el lugar al que siempre queréis volver juntos.",
+        "pedida": "Cómo, dónde y qué pasó por vuestra cabeza."
+      },
+      "sinGuardar": "Cambios sin guardar",
+      "fotos": "Fotos ({{n}} de {{max}})",
+      "fotoDe": "Foto de «{{apartado}}»",
+      "subirFoto": "Subir una foto",
+      "quitarFoto": "Quitar",
+      "demasiadoGrande": "Esa foto pesa más de 10 MB. Prueba con otra o redúcela antes."
     }
   },
   "superadmin": {
@@ -1646,6 +1836,11 @@
       "basic": "Básico",
       "extended": "Extendido"
     },
+    "completar": {
+      "boton": "Añadir módulos nuevos",
+      "alDia": "Las {{n}} bodas ya tienen todos los módulos.",
+      "hecho": "{{n}} bodas puestas al día: {{modulos}} módulos y {{secciones}} secciones añadidos."
+    },
     "alta": {
       "titulo": "Dar de alta una boda",
       "creada": "Creada {{slug}}.nupcialis.com",
@@ -1659,6 +1854,27 @@
       "slugOcupado": "Esa dirección ya está ocupada por otra boda.",
       "alternativas": "Direcciones libres parecidas:",
       "camposInvalidos": "Revisa estos campos: {{campos}}.",
+      "ceremonia": "Tipo de ceremonia",
+      "ceremoniaTipo": {
+        "civil": "Boda civil",
+        "religious": "Boda religiosa"
+      },
+      "lugaresAyuda": "Los lugares son opcionales: la pareja puede ponerlos o corregirlos después desde el mapa de su panel.",
+      "lugarCeremonia": "Lugar de la ceremonia",
+      "lugarCelebracion": "Lugar de la celebración",
+      "lugarUnico": "Lugar de la ceremonia y la celebración",
+      "mismoSitio": "La ceremonia y la celebración son en el mismo sitio",
+      "lugarNombre": "Nombre del sitio",
+      "lugarBuscar": "Buscar la dirección",
+      "lugarBuscarEjemplo": "Dirección, o enlace de Google Maps",
+      "lugarBuscarBoton": "Buscar",
+      "lugarConPin": "Con ubicación en el mapa.",
+      "lugarSinPin": "Sin ubicación en el mapa: no se enseñará a los invitados hasta que se coloque.",
+      "lugarAviso": {
+        "corta": "Escribe al menos tres letras para buscar.",
+        "red": "No se ha podido buscar ahora mismo. La pareja podrá colocar el pin después.",
+        "sinResultados": "No se ha encontrado nada. Prueba con menos datos o pega un enlace de Google Maps."
+      },
       "sinPermiso": "Tu sesión no tiene permiso para dar de alta bodas.",
       "sinVerificar": "La función ha rechazado la llamada por falta de verificación (401). Tu sesión y tus permisos están bien: lo que falta es App Check. Revisa `appCheckSiteKey` en el entorno y el token de depuración para localhost, en docs/PUESTA-EN-MARCHA.md.",
       "nombreA": "Nombre de uno",
@@ -1722,6 +1938,256 @@
       "volverAlDefecto": "Usar el de por defecto",
       "topeInvalido": "Escribe un número entero dentro del rango.",
       "falloGuardar": "No se ha podido guardar el tope. Inténtalo de nuevo."
+    },
+    "ficha": {
+      "titulo": "Ficha de la boda",
+      "volver": "Volver al listado",
+      "cargando": "Cargando la ficha…",
+      "error": "No se ha podido cargar la ficha",
+      "noExiste": "Esa boda no existe.",
+      "sinCorreo": "Esa cuenta no tiene correo, así que no hay a dónde mandar el enlace.",
+      "resumen": "Resumen",
+      "subdominio": "Subdominio",
+      "subdominioOk": "Autorizado en Auth",
+      "contacto": "Contacto de la pareja",
+      "sinContactos": "Esta boda no tiene ninguna cuenta de pareja asociada.",
+      "ultimoAcceso": "Último acceso: {{fecha}}",
+      "nuncaHaEntrado": "Todavía no ha entrado",
+      "cuentaDeshabilitada": "Cuenta deshabilitada",
+      "generarEnlace": "Enlace de restablecimiento",
+      "enlaceNota": "No se envía ningún correo: el enlace se genera aquí y se lo pasas tú a la pareja, por WhatsApp o como prefieras.",
+      "enlaceError": "No se ha podido generar el enlace",
+      "enlaceTitulo": "Enlace de restablecimiento",
+      "enlaceParaCuenta": "Con este enlace, {{email}} elige una contraseña nueva.",
+      "enlaceAviso": "Quien tenga este enlace puede entrar en la cuenta. No se guarda en ningún sitio: si lo pierdes, genera otro.",
+      "copiar": "Copiar",
+      "copiado": "Copiado",
+      "pagos": "Cobros",
+      "sinPagos": "Todavía no hay ningún cobro apuntado.",
+      "totalPagos": "Cobrado {{cobrado}} · pendiente {{pendiente}}",
+      "irAFinanzas": "Ir a finanzas",
+      "historial": "Historial de actividad",
+      "sinHistorial": "Todavía no hay actividad registrada para esta boda.",
+      "historialNota": "Se muestran las últimas {{n}} entradas como máximo.",
+      "actor": {
+        "superadmin": "Superadmin",
+        "owner": "La pareja",
+        "system": "El sistema"
+      },
+      "accion": {
+        "authorizeWeddingDomain": "Subdominio autorizado en Auth",
+        "createPayment": "Cobro apuntado",
+        "deletePayment": "Cobro borrado",
+        "generateCoupleResetLink": "Enlace de restablecimiento generado",
+        "markReminderSent": "Aviso marcado como enviado",
+        "provisionWedding": "Boda dada de alta",
+        "revokeUserClaims": "Acceso revocado",
+        "setCompanionQuota": "Cupo de acompañantes cambiado",
+        "setGuestRsvp": "Respuesta de un invitado cambiada",
+        "setGuestsRsvp": "Respuesta de varios invitados cambiada",
+        "setUserClaims": "Acceso concedido",
+        "setWeddingLimits": "Tope de fotos cambiado",
+        "setWeddingStatus": "Estado de la boda cambiado",
+        "unmarkReminderSent": "Aviso desmarcado",
+        "updatePayment": "Cobro modificado"
+      }
+    },
+    "finanzas": {
+      "enlace": "Finanzas",
+      "titulo": "Cobros",
+      "cargando": "Cargando los cobros…",
+      "errorCarga": "No se han podido cargar los cobros",
+      "cobrado": "Cobrado",
+      "pendiente": "Pendiente de cobro",
+      "cobros": "Cobros",
+      "recortado": "Hay más cobros de los que se muestran.",
+      "filtroBoda": "Boda",
+      "filtroEstado": "Estado",
+      "todasLasBodas": "Todas las bodas",
+      "todos": "Todos",
+      "exportar": "Exportar CSV",
+      "nuevo": "Nuevo cobro",
+      "editar": "Editar",
+      "editarTitulo": "Editar cobro",
+      "ninguno": "No hay cobros que mostrar",
+      "ningunoDescripcion": "Apunta el primero con «Nuevo cobro», o cambia los filtros.",
+      "sinFactura": "Sin factura",
+      "columna": {
+        "boda": "Boda",
+        "concepto": "Concepto",
+        "importe": "Importe",
+        "metodo": "Método",
+        "estado": "Estado",
+        "factura": "Factura"
+      },
+      "metodo": {
+        "bizum": "Bizum",
+        "transferencia": "Transferencia",
+        "efectivo": "Efectivo",
+        "otro": "Otro"
+      },
+      "estado": {
+        "pending": "Pendiente",
+        "paid": "Cobrado"
+      },
+      "campo": {
+        "boda": "Boda",
+        "concepto": "Concepto",
+        "importe": "Importe (€)",
+        "metodo": "Método de pago",
+        "estado": "Estado",
+        "fecha": "Fecha de cobro",
+        "factura": "Número de factura",
+        "notas": "Notas"
+      },
+      "elegirBoda": "Elige una boda",
+      "borrarTitulo": "Borrar cobro",
+      "borrarConfirmar": "Vas a borrar «{{concepto}}» ({{importe}}). Queda anotado en el historial, pero el cobro no se puede recuperar.",
+      "error": {
+        "boda": "Elige una boda que exista.",
+        "importe": "El importe tiene que ser un número mayor que cero, con dos decimales como mucho.",
+        "concepto": "Escribe un concepto de hasta 120 caracteres.",
+        "metodo": "Elige un método de pago.",
+        "estado": "Elige un estado.",
+        "fecha": "Un cobro cobrado necesita una fecha válida; uno pendiente no la lleva.",
+        "factura": "El número de factura admite hasta 40 caracteres.",
+        "notas": "Las notas admiten hasta 500 caracteres.",
+        "otro": "No se ha podido guardar el cobro."
+      },
+      "csv": {
+        "boda": "Boda",
+        "concepto": "Concepto",
+        "importe": "Importe (€)",
+        "metodo": "Método",
+        "estado": "Estado",
+        "fechaCobro": "Fecha de cobro",
+        "factura": "Factura",
+        "notas": "Notas"
+      }
+    },
+    "recordatorios": {
+      "enlace": "Recordatorios",
+      "titulo": "Recordatorios",
+      "intro": "Lo que toca decir o hacer después de cada boda. Esta pantalla no envía nada: te da el texto, tú lo mandas y lo marcas.",
+      "cargando": "Cargando los recordatorios…",
+      "errorCarga": "No se han podido cargar los recordatorios",
+      "errorMarca": "No se ha podido cambiar la marca. Inténtalo otra vez.",
+      "ninguno": "No hay nada pendiente",
+      "ningunoDescripcion": "Los avisos aparecen dos semanas antes de que toquen.",
+      "grupo": {
+        "vencido": "Vencidos",
+        "proximo": "Próximos",
+        "enviado": "Enviados"
+      },
+      "situacion": {
+        "vencido": "Toca ya",
+        "proximo": "Próximamente",
+        "enviado": "Enviado"
+      },
+      "clave": {
+        "agradecimiento": "Correo de agradecimiento",
+        "encuesta": "Encuesta de satisfacción",
+        "cierre-pareja": "Aviso a la pareja: fotos y cierre de la web",
+        "cierre-superadmin": "Cerrar la boda (tarea tuya)"
+      },
+      "destino": {
+        "pareja": "Para la pareja",
+        "superadmin": "Para ti"
+      },
+      "toca": "Toca el {{fecha}}",
+      "verTexto": "Ver texto",
+      "ocultarTexto": "Ocultar texto",
+      "marcar": "Marcar como enviado",
+      "desmarcar": "Desmarcar",
+      "texto": {
+        "agradecimiento": "Hola, {{pareja}}:\n\nHan pasado un par de meses desde vuestra boda y queríamos daros las gracias por haber confiado en Nupcialis para organizarla. Ha sido un placer acompañaros.\n\nSi os apetece contarnos cómo fue, aquí estamos.\n\nUn abrazo,\nEl equipo de Nupcialis",
+        "encuesta": "Hola, {{pareja}}:\n\nNos ayudaría mucho saber qué tal os fue con Nupcialis: qué os sirvió, qué echasteis de menos y qué cambiaríais. Os llevará dos minutos y lo leemos todo.\n\nGracias de antemano,\nEl equipo de Nupcialis",
+        "cierre-pareja": "Hola, {{pareja}}:\n\nOs avisamos de que vuestra web ({{url}}) se cerrará próximamente. Antes de que ocurra, entrad en vuestro panel y descargad las fotos de la galería y la lista de invitados, para que no se pierda nada.\n\nSi necesitáis más tiempo, decídnoslo y lo vemos.\n\nUn abrazo,\nEl equipo de Nupcialis",
+        "cierre-superadmin": "Boda de {{pareja}} ({{slug}}):\n\n1. Comprobar que la pareja ha recibido el aviso de cierre y ha descargado las fotos.\n2. Archivar la boda desde el listado.\n3. Decidir qué se hace con los datos de los invitados y con las fotos, según el plazo de conservación."
+      }
+    },
+    "salir": "Cerrar sesión",
+    "catalogos": {
+      "enlace": "Catálogos",
+      "titulo": "Catálogos de plantilla",
+      "ayuda": "Lo que se entrega a cada boda nueva. Cada pareja recibe su propia copia y la edita a su gusto; lo que cambiéis aquí solo afecta a las bodas que se creen a partir de ahora.",
+      "tipo": {
+        "tasks": "Tareas",
+        "budget": "Presupuesto",
+        "quiz": "Preguntas del quiz"
+      },
+      "nota": {
+        "tasks": "Se copian a la lista de tareas de cada boda nueva, con la fecha calculada desde el día de la boda. Si el catálogo está vacío, se usan las de fábrica.",
+        "budget": "Se copian al presupuesto de cada boda nueva. Si el catálogo está vacío, se usan las de fábrica.",
+        "quiz": "No se copian solas: cada pareja las ve como sugerencias y añade a su quiz las que quiere (llegan apagadas para que cambien las respuestas)."
+      },
+      "cargando": "Cargando…",
+      "errorCarga": "No se ha podido cargar el catálogo",
+      "nuevo": "Añadir",
+      "editarTitulo": "Editar",
+      "vacio": "Este catálogo está vacío",
+      "vacioDescripcion": "Mientras esté vacío, las bodas nuevas reciben los elementos de fábrica. Podéis cargarlos aquí para editarlos.",
+      "cargarFabrica": "Cargar los de fábrica",
+      "activa": "Activa",
+      "apagada": "Apagada",
+      "mesesAntes": "{{n}} meses antes",
+      "prioridad": {
+        "low": "Baja",
+        "normal": "Normal",
+        "high": "Alta"
+      },
+      "dificultad": {
+        "1": "Fácil (10 puntos)",
+        "2": "Media (20 puntos)",
+        "3": "Difícil (30 puntos)"
+      },
+      "sinIcono": "Sin icono",
+      "col": {
+        "estado": "Estado",
+        "titulo": "Tarea",
+        "categoria": "Categoría",
+        "cuando": "Cuándo",
+        "prioridad": "Prioridad",
+        "concepto": "Concepto",
+        "estimado": "Estimado",
+        "pregunta": "Pregunta",
+        "correcta": "Respuesta correcta",
+        "dificultad": "Dificultad"
+      },
+      "campo": {
+        "titulo": "Tarea",
+        "categoria": "Categoría",
+        "meses": "Meses antes de la boda",
+        "mesesPista": "Admite medios meses: 0,5 son quince días. Con 12, la tarea vence un año antes.",
+        "prioridad": "Prioridad",
+        "icono": "Icono",
+        "concepto": "Concepto",
+        "estimado": "Importe estimado (€)",
+        "estimadoPista": "Déjalo vacío si no hay una cifra de referencia.",
+        "pregunta": "Pregunta",
+        "correcta": "Respuesta correcta",
+        "falsa": "Respuesta falsa {{n}}",
+        "dificultad": "Dificultad",
+        "pista": "Pista (opcional)",
+        "orden": "Orden",
+        "activa": "Activa: se entrega a las bodas nuevas"
+      },
+      "borrarTitulo": "Borrar del catálogo",
+      "borrarConfirmar": "Se borrará «{{nombre}}» del catálogo. Las bodas que ya lo recibieron lo conservan.",
+      "error": {
+        "red": "Sin conexión. Inténtalo de nuevo.",
+        "lleno": "El catálogo está lleno (150 elementos).",
+        "formato": "Faltan datos.",
+        "titulo": "Escribe el título (hasta 120 caracteres).",
+        "categoria": "Escribe la categoría (hasta 40 caracteres).",
+        "concepto": "Escribe el concepto (hasta 120 caracteres).",
+        "meses": "Los meses van de 0 a 36, en enteros o medios.",
+        "icono": "Elige un icono de la lista.",
+        "prioridad": "Elige una prioridad.",
+        "importe": "Escribe un importe válido, por ejemplo 1.200 o 350,50.",
+        "orden": "El orden es un número entero.",
+        "pregunta": "La pregunta necesita enunciado, la respuesta correcta y tres falsas distintas."
+      }
     }
   },
   "rsvp": {

@@ -24,10 +24,15 @@ import { CronologiaStore } from './cronologia/cronologia.store';
 import { AlojamientosStore } from './alojamientos/alojamientos.store';
 import { UbicacionesStore } from './mapa/ubicaciones.store';
 import { TareasStore } from './checklist/tareas.store';
+import { HistoriaStore } from './historia/historia.store';
+import { provideHistoria } from '../../core/historia/historia.providers';
+import { PresupuestoStore } from './presupuesto/presupuesto.store';
 import { PlaylistStore } from './playlist/playlist.store';
 import { providePlaylistDelPanel } from '../../core/playlist/playlist-panel.providers';
+import { providePresupuesto } from '../../core/presupuesto/presupuesto.providers';
 import { provideTareas } from '../../core/checklist/tareas.providers';
 import { provideUbicaciones } from '../../core/mapa/ubicaciones.providers';
+import { provideCatalogos } from '../../core/superadmin/catalogos.providers';
 import { provideQuizDelPanel } from '../../core/quiz/quiz-admin.providers';
 import { provideMesas } from '../../core/mesas/mesas.providers';
 import { provideGaleriaDelPanel } from '../../core/galeria/galeria-panel.providers';
@@ -60,8 +65,11 @@ export const panelRoutes: Routes = [
       provideAlojamientos(),
       provideUbicaciones(),
       provideTareas(),
+      providePresupuesto(),
+      provideHistoria(),
       providePlaylistDelPanel(),
       provideQuizDelPanel(),
+      provideCatalogos(),
       provideMesas(),
       provideGaleriaDelPanel(),
       provideRegalosDelPanel(),
@@ -134,14 +142,14 @@ export const panelRoutes: Routes = [
             // El nombre del módulo es `timeline`, y la ruta se llama como él:
             // el menú del panel enlaza a `/panel/<modulo>`.
             path: 'timeline',
-            providers: [CronologiaStore],
+            providers: [CronologiaStore, UbicacionesStore],
             loadComponent: () => import('./cronologia/cronologia').then((m) => m.PanelCronologia),
           },
           {
             // El módulo se llama `accommodation`, y la ruta como él: el menú
             // del panel enlaza a `/panel/<modulo>`.
             path: 'accommodation',
-            providers: [AlojamientosStore],
+            providers: [AlojamientosStore, UbicacionesStore],
             loadComponent: () =>
               import('./alojamientos/alojamientos').then((m) => m.PanelAlojamientos),
           },
@@ -151,6 +159,19 @@ export const panelRoutes: Routes = [
             path: 'map',
             providers: [UbicacionesStore],
             loadComponent: () => import('./mapa/mapa-panel').then((m) => m.PanelMapa),
+          },
+          {
+            // El módulo se llama `story` y la ruta como él.
+            path: 'story',
+            providers: [HistoriaStore],
+            loadComponent: () => import('./historia/historia-panel').then((m) => m.PanelHistoria),
+          },
+          {
+            // El módulo se llama `budget` y la ruta como él.
+            path: 'budget',
+            providers: [PresupuestoStore],
+            loadComponent: () =>
+              import('./presupuesto/presupuesto-panel').then((m) => m.PanelPresupuesto),
           },
           {
             // El módulo se llama `checklist` y la ruta como él.

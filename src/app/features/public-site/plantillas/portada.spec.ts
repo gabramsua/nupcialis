@@ -17,6 +17,7 @@ function datos(parcial: Partial<DatosPortada>): DatosPortada {
     faqs: [],
     cronologia: [],
     alojamientos: [],
+    ubicaciones: [],
     dressCode: DRESS_CODE_VACIO,
     ...parcial,
   };

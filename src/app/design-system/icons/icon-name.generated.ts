@@ -12,6 +12,7 @@ export type NpIconName =
   | 'bank'
   | 'bed'
   | 'bell'
+  | 'book-open'
   | 'briefcase'
   | 'bus'
   | 'cake'
@@ -94,6 +95,7 @@ export type NpIconName =
   | 'question'
   | 'seat'
   | 'share-network'
+  | 'sign-out'
   | 'sliders-horizontal'
   | 'sparkle'
   | 'spinner-gap'
@@ -245,4 +247,6 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'link-simple': "Enlace",
   'arrows-clockwise': "Cambiar el enlace",
   'chat-circle-text': "Respuestas",
+  'sign-out': "Cerrar sesión",
+  'book-open': "Historia",
 };

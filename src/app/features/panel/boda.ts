@@ -30,6 +30,7 @@ export const MODULOS = [
   'accommodation',
   'dressCode',
   'weddingParty',
+  'story',
   'budget',
   'vendors',
   'checklist',
@@ -41,6 +42,12 @@ export type Visibilidad = 'hidden' | 'soon' | 'visible';
 export interface ConfigModulo {
   readonly enabled: boolean;
   readonly visibility: Visibilidad;
+}
+
+export type TipoDeCeremonia = 'civil' | 'religious';
+
+export function esTipoDeCeremonia(valor: unknown): valor is TipoDeCeremonia {
+  return valor === 'civil' || valor === 'religious';
 }
 
 export interface BodaDelPanel {
@@ -64,6 +71,12 @@ export interface BodaDelPanel {
    */
   readonly weddingTime: string | null;
   readonly timezone: string;
+  /**
+   * Boda civil o religiosa. `null` en las bodas anteriores a que el alta lo
+   * pidiera: la pareja lo marca desde sus datos. Por ahora solo se guarda y se
+   * enseña (D-49).
+   */
+  readonly ceremonyType: TipoDeCeremonia | null;
   /**
    * Cómo entra un invitado en la web: abierta, nombre + cuatro dígitos, o
    * teléfono. Ver REQUISITOS §3.3. Es propiedad de la boda, no de un módulo:
@@ -149,6 +162,7 @@ export const ICONO_MODULO: Record<Modulo, NpIconName> = {
   accommodation: 'bed',
   dressCode: 't-shirt',
   weddingParty: 'crown-simple',
+  story: 'book-open',
   budget: 'currency-eur',
   vendors: 'briefcase',
   checklist: 'list-checks',
@@ -180,6 +194,8 @@ export const RUTA_MODULO: Partial<Record<Modulo, string>> = {
   map: '/panel/map',
   playlist: '/panel/playlist',
   checklist: '/panel/checklist',
+  budget: '/panel/budget',
+  story: '/panel/story',
   tables: '/panel/tables',
 };
 

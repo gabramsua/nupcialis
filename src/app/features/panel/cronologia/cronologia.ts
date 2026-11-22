@@ -27,6 +27,7 @@ import {
 import { CronologiaStore } from './cronologia.store';
 import { NpInput } from '../../../design-system/components/field/input';
 import { NpColorPicker } from '../../../design-system/components/picker/color-picker';
+import { NpSelectorDeUbicacion } from '../mapa/selector-de-ubicacion';
 import { NpIconPicker } from '../../../design-system/components/picker/icon-picker';
 import { NpCronologiaPublica } from '../../public-site/cronologia/cronologia-publica';
 
@@ -50,6 +51,7 @@ import { NpCronologiaPublica } from '../../public-site/cronologia/cronologia-pub
   imports: [
     NpColorPicker,
     NpIconPicker,
+    NpSelectorDeUbicacion,
     NpCronologiaPublica,
     ReactiveFormsModule,
     TranslocoDirective,
@@ -248,6 +250,11 @@ import { NpCronologiaPublica } from '../../public-site/cronologia/cronologia-pub
                   (valueChange)="formulario.controls.icon.setValue($any($event))"
                 />
               </div>
+
+              <np-selector-de-ubicacion
+                [value]="formulario.controls.locationId.value"
+                (valueChange)="formulario.controls.locationId.setValue($event)"
+              />
 
               <div class="cr__grupo" role="group" aria-labelledby="cr-color">
                 <span id="cr-color" class="cr__etiqueta">{{
@@ -517,6 +524,7 @@ export class PanelCronologia {
     description: [''],
     icon: ['clock' as IconoHito],
     color: ['rosa' as ColorHito],
+    locationId: [''],
     visibleToGuests: [true],
   });
 
@@ -545,6 +553,7 @@ export class PanelCronologia {
         description: (v.description ?? '').trim(),
         icon: (v.icon ?? 'clock') as IconoHito,
         color: (v.color ?? 'rosa') as ColorHito,
+        locationId: null,
         order: 0,
       },
     ];
@@ -563,6 +572,7 @@ export class PanelCronologia {
         description: hito.description,
         icon: hito.icon,
         color: hito.color,
+        locationId: hito.locationId,
         order: hito.order,
       })),
   );
@@ -608,6 +618,7 @@ export class PanelCronologia {
         description: hito.description,
         icon: hito.icon,
         color: hito.color,
+        locationId: hito.locationId,
         order: hito.order,
       }));
   }
@@ -624,6 +635,7 @@ export class PanelCronologia {
       description: '',
       icon: 'clock',
       color: 'rosa',
+      locationId: '',
       visibleToGuests: true,
     });
     this.editando.set('nuevo');
@@ -637,6 +649,7 @@ export class PanelCronologia {
       description: hito.description,
       icon: hito.icon,
       color: hito.color,
+      locationId: hito.locationId ?? '',
       visibleToGuests: hito.visibleToGuests,
     });
     this.editando.set(hito);
@@ -663,6 +676,7 @@ export class PanelCronologia {
       description: valores.description.trim(),
       icon: valores.icon,
       color: valores.color,
+      locationId: valores.locationId === '' ? null : valores.locationId,
       visibleToGuests: valores.visibleToGuests,
       // El orden lo decide la hora (ver `sanearCronologia`), así que esto es
       // solo un desempate estable para los que coincidan.
@@ -683,6 +697,7 @@ export class PanelCronologia {
       description: hito.description,
       icon: hito.icon,
       color: hito.color,
+      locationId: hito.locationId,
       order: hito.order,
       visibleToGuests: !hito.visibleToGuests,
     });

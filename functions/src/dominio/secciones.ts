@@ -39,6 +39,7 @@ export const TIPOS_SECCION = [
   'regalos',
   'mapa',
   'playlist',
+  'historia',
 ] as const;
 export type TipoSeccion = (typeof TIPOS_SECCION)[number];
 
@@ -89,6 +90,9 @@ export const CAMPOS_POR_TIPO: Record<TipoSeccion, Readonly<Record<string, number
   mapa: { titulo: 80 },
   // La playlist (§8.14), igual: el cartel que lleva a su página.
   playlist: { titulo: 80 },
+  // Nuestra historia: el cartel que lleva a su página, donde están los cinco
+  // apartados con su texto y sus fotos.
+  historia: { titulo: 80 },
 };
 
 /**
@@ -114,6 +118,7 @@ export const CAMPOS_RICOS: Record<TipoSeccion, readonly string[]> = {
   regalos: [],
   mapa: [],
   playlist: [],
+  historia: [],
 };
 
 export function esCampoRico(tipo: TipoSeccion, campo: string): boolean {
@@ -209,10 +214,11 @@ export const SECCIONES_INICIALES: readonly Seccion[] = [
   { id: 'portada', type: 'portada', enabled: true, order: 0, fields: {} },
   {
     id: 'historia',
-    type: 'texto',
+    // Cartel que lleva a la página de «Nuestra historia» (los cinco apartados).
+    type: 'historia',
     enabled: false,
     order: 1,
-    fields: { titulo: 'Nuestra historia', texto: '' },
+    fields: { titulo: 'Nuestra historia' },
   },
   {
     id: 'ceremonia',

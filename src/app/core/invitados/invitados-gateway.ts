@@ -178,6 +178,70 @@ export function ordenarPorNombre(invitados: readonly Invitado[]): readonly Invit
   return [...invitados].sort((a, b) => colador.compare(a.fullName, b.fullName));
 }
 
+export type CampoOrden = 'nombre' | 'estado' | 'grupo' | 'alta';
+export type Sentido = 'asc' | 'desc';
+export const CAMPOS_DE_ORDEN: readonly CampoOrden[] = ['nombre', 'estado', 'grupo', 'alta'];
+
+const RANGO_RSVP: Record<EstadoRsvp, number> = { confirmed: 0, pending: 1, declined: 2 };
+
+/**
+ * Ordena la lista por lo que la pareja quiera mirar.
+ *
+ * `nombre` es el orden de siempre. `estado` agrupa confirmados, pendientes y
+ * los que no vienen; `grupo` sigue el orden de los grupos de la pareja (no el
+ * alfabético) y deja **siempre al final** a quien no tiene ninguno, vaya en el
+ * sentido que vaya; `alta` va por la fecha en que se apuntó, y los documentos
+ * anteriores a ese dato cuentan como los más antiguos. Dentro de cada empate,
+ * por nombre: sin eso, el orden de los iguales cambiaría con cada recarga.
+ *
+ * `idsDeGrupos` es la lista de ids de grupo **en el orden de la pareja**.
+ */
+export function ordenarInvitados(
+  invitados: readonly Invitado[],
+  campo: CampoOrden,
+  sentido: Sentido,
+  idsDeGrupos: readonly string[],
+): readonly Invitado[] {
+  const colador = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+  const signo = sentido === 'asc' ? 1 : -1;
+  const porNombre = (a: Invitado, b: Invitado) => colador.compare(a.fullName, b.fullName);
+
+  const primerGrupo = (i: Invitado): number => {
+    const posiciones = i.groupIds
+      .map((id) => idsDeGrupos.indexOf(id))
+      .filter((posicion) => posicion >= 0);
+    return posiciones.length > 0 ? Math.min(...posiciones) : -1;
+  };
+
+  return [...invitados].sort((a, b) => {
+    switch (campo) {
+      case 'estado': {
+        const d = RANGO_RSVP[a.rsvpStatus] - RANGO_RSVP[b.rsvpStatus];
+        if (d !== 0) return d * signo;
+        break;
+      }
+      case 'grupo': {
+        const ga = primerGrupo(a);
+        const gb = primerGrupo(b);
+        if (ga !== gb) {
+          if (ga === -1) return 1;
+          if (gb === -1) return -1;
+          return (ga - gb) * signo;
+        }
+        break;
+      }
+      case 'alta': {
+        const d = (a.altaEn ?? '').localeCompare(b.altaEn ?? '');
+        if (d !== 0) return d * signo;
+        break;
+      }
+      case 'nombre':
+        return porNombre(a, b) * signo;
+    }
+    return porNombre(a, b);
+  });
+}
+
 export interface ResumenInvitados {
   readonly total: number;
   readonly confirmados: number;

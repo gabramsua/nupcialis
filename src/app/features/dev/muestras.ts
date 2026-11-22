@@ -9,6 +9,7 @@
 import { sanearFaqs } from '../public-site/faqs/faqs';
 import { sanearCronologia } from '../public-site/cronologia/cronologia';
 import { sanearAlojamientos } from '../public-site/alojamientos/alojamientos';
+import { sanearUbicaciones } from '../public-site/mapa/ubicaciones';
 import { sanearDressCode } from '../public-site/dress-code/dress-code';
 import { SECCIONES_INICIALES, sanearSecciones } from '../public-site/secciones/secciones';
 import type { DatosPortada } from '../public-site/plantillas/portada';
@@ -112,6 +113,7 @@ export const BODA_DE_MUESTRA: Muestra = {
       description: 'En el jardín de la finca. Mejor llegar diez minutos antes.',
       icon: 'church',
       color: 'rosa',
+      locationId: 'finca',
       order: 1,
       visibleToGuests: true,
     },
@@ -222,6 +224,17 @@ export const BODA_DE_MUESTRA: Muestra = {
       enabled: true,
     },
   ]),
+  ubicaciones: sanearUbicaciones([
+    {
+      id: 'finca',
+      type: 'ceremonia',
+      name: 'Finca La Dehesa',
+      address: 'Camino de la Dehesa, s/n',
+      coords: { lat: 40.9481, lng: -4.1184 },
+      visibleToGuests: true,
+      order: 1,
+    },
+  ]),
   dressCode: sanearDressCode({
     description:
       '<p>Nos encantaría veros <strong>arreglados pero cómodos</strong>. La ceremonia y el cóctel son al aire libre.</p>',
@@ -246,5 +259,6 @@ export const VACIA: Muestra = {
   faqs: [],
   cronologia: [],
   alojamientos: [],
+  ubicaciones: [],
   dressCode: sanearDressCode(null),
 };

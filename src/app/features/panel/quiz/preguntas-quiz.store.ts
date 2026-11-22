@@ -37,9 +37,16 @@ export class PreguntasQuizStore {
    * partida, así que lo que aquí se cuenta es exactamente lo que allí se va a
    * poder preguntar.
    */
-  readonly jugables = computed(() => this._preguntas().filter(esEntera));
+  readonly jugables = computed(() =>
+    this._preguntas().filter((pregunta) => pregunta.enabled && esEntera(pregunta)),
+  );
 
-  readonly aMedias = computed(() => this._preguntas().filter((pregunta) => !esEntera(pregunta)));
+  /** Enteras pero apagadas: las que llegan de las sugerencias hasta que la pareja las revisa. */
+  readonly porRevisar = computed(() => this._preguntas().filter((pregunta) => !pregunta.enabled));
+
+  readonly aMedias = computed(() =>
+    this._preguntas().filter((pregunta) => pregunta.enabled && !esEntera(pregunta)),
+  );
 
   async cargar(): Promise<void> {
     const weddingId = this.sesion.weddingId();

@@ -15,6 +15,7 @@ import { sanearFaqs } from '../../features/public-site/faqs/faqs';
 import { sanearCronologia } from '../../features/public-site/cronologia/cronologia';
 import { sanearAlojamientos } from '../../features/public-site/alojamientos/alojamientos';
 import { sanearUbicaciones } from '../../features/public-site/mapa/ubicaciones';
+import { historiaPublicada } from '../../features/public-site/historia/historia-publicada';
 import { dressCodePublicado } from '../../features/public-site/dress-code/dress-code';
 import { FIRESTORE } from './firestore.providers';
 
@@ -87,6 +88,8 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         // El HTML de la descripción ya viene saneado del servidor: aquí solo
         // se comprueba la forma, como con todo lo que llega de Firestore.
         dressCode: dressCodePublicado(dentroDeContent(datos['content'], 'dressCode')),
+        // Ya saneada por el servidor y sin rutas de Storage: aquí solo la forma.
+        historia: historiaPublicada(dentroDeContent(datos['content'], 'historia')),
       };
     },
   };

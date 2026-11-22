@@ -103,6 +103,9 @@ async function montar(
         },
       };
     },
+    async guardarEnLote() {
+      return { ok: true as const, cambiados: 0, omitidos: 0 };
+    },
     async guardar(id, respuesta) {
       guardados.push({ id, respuesta });
       return opciones.alGuardar?.() ?? { ok: true as const, estado: respuesta.estado ?? 'pending' };

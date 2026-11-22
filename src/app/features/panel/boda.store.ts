@@ -6,7 +6,11 @@ import type { ColoresPaleta } from '../public-site/paletas/paletas';
 import type { Seccion } from '../public-site/secciones/secciones';
 import { menuDeModulos, modulosNoVisibles, type BodaDelPanel } from './boda';
 import { crearFuenteBodaFirestore } from './boda.firestore';
-import type { AportacionParaGuardar, DressCodeParaGuardar } from './boda.firestore';
+import type {
+  AportacionParaGuardar,
+  DatosBasicosParaGuardar,
+  DressCodeParaGuardar,
+} from './boda.firestore';
 import { sanearDressCode } from '../public-site/dress-code/dress-code';
 import { sanearAportacion } from '../public-site/regalos/regalos';
 
@@ -243,6 +247,27 @@ export class BodaStore {
     try {
       await this.fuente.guardarModoAcceso(boda.weddingId, guestAccessMode);
       this._boda.set({ ...boda, guestAccessMode });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /** Nombres, día, tipo de ceremonia y hora, de una vez. */
+  async guardarDatos(datos: DatosBasicosParaGuardar): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarDatos(boda.weddingId, datos);
+      this._boda.set({
+        ...boda,
+        pareja: { partnerA: datos.partnerA, partnerB: datos.partnerB },
+        weddingDate: datos.weddingDate,
+        ceremonyType: datos.ceremonyType,
+        weddingTime: datos.weddingTime,
+      });
       return true;
     } catch (error) {
       this._error.set(error instanceof Error ? error.message : String(error));

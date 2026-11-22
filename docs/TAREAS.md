@@ -63,7 +63,7 @@ que todavía no existe en el proyecto.
 3. **`F2.8` Mesas (§8.5).** La herramienta interna que de verdad ahorra horas a
    la pareja. Arrastrar invitados a las mesas, avisos de capacidad y de grupos
    separados, y la hoja para el catering. Es la más grande de las tres.
-4. ~~**`F2.3` Mapa (§8.6).**~~ **Hecho** con Leaflet y OpenStreetMap. Quedan los
+4. ~~**`F2.3` Mapa (§8.6).**~~ **Hecho** con Leaflet y OpenStreetMap, y con los
    enlaces `locationId` de la cronología y de los alojamientos (`F2.2b`,
    `F2.4b`).
 5. **`F3.3` Regalos (§8.14).** Pequeña y con valor directo: cuenta, Bizum y la
@@ -394,9 +394,11 @@ Tres decisiones de un minuto cada una, por lo que abren:
       huecos** con los nombres de los hitos, calculados también sobre lo
       interno; y en la web, línea de tiempo vertical con la hora destacada.
       Entiende que **la boda acaba de madrugada**: «04:00» va al final.
-- [ ] `F2.2b` Enlazar un hito con una **ubicación del mapa** (§8.13). El campo
-      `locationId` se escribe a `null`; el mapa ya existe (`F2.3`), falta el
-      selector en la pantalla de la cronología.
+- [x] `F2.2b` Enlazar un hito con una **ubicación del mapa** (§8.13). Selector
+      en la pantalla de la cronología (`selector-de-ubicacion.ts`, compartido
+      con alojamientos); en la web, «Cómo llegar» con el enlace de navegación.
+      La proyección deja `locationId` en `null` si esa ubicación no se publica,
+      y los enlaces se validan en servidor (`conEnlaceValido`).
 - [x] `F2.4` **Alojamientos** (§8.10), de punta a punta: fichas con tipo,
       precio por noche, distancia, teléfono, web, código de reserva,
       habitaciones bloqueadas y plazo. Viajan en la proyección pública con la
@@ -407,9 +409,8 @@ Tres decisiones de un minuto cada una, por lo que abren:
       plazo vencido o a punto de vencer, habitaciones bloqueadas sin fecha, y
       ficha sin teléfono ni web— y guarda el teléfono y la web ya normalizados
       con las mismas funciones que usa el servidor.
-- [ ] `F2.4b` Enlazar un alojamiento con una **ubicación del mapa** (§8.10). El
-      campo `locationId` se escribe a `null`; el mapa ya existe (`F2.3`), falta
-      el selector en la pantalla de alojamientos.
+- [x] `F2.4b` Enlazar un alojamiento con una **ubicación del mapa** (§8.10). Igual
+      que `F2.2b`: selector en el panel y «Cómo llegar» en la web.
 - [x] `F2.5` **Dress code** (§8.11): descripción con texto enriquecido, paleta de
       colores sugeridos y a evitar —ids de una lista cerrada de 30 con nombre,
       ver `D-38`— y avisos prácticos. En la web, las muestras con su nombre al
@@ -731,25 +732,62 @@ El primer recorrido completo salió mal. Arreglado en esta tanda:
       `upsertGuest` acepta `invitedById`. Pulido de timeline/FAQ (selector visual
       de iconos y colores, vista previa) y Jodit con su hoja de estilos.
       Quiz sin preguntas de fábrica, con explicación y buscador.
-      Pendiente: vista previa de la galería.
-- [ ] `F1.8i` **Respuesta en lote**: marcar a varios invitados a la vez como
-      «viene» o «no viene» (los de una misma familia que confirman por teléfono).
-      Falta que la lista tenga selección múltiple.
-- [ ] `F1.8j` **Marcar a todo un grupo**, y la misma acción sobre los acompañantes
-      de un titular.
+      Vista previa de la galería hecha (ver `F3.1e`).
+- [x] `F1.8i` **Respuesta en lote**: «viene», «no viene» o «sin contestar» para
+      todos los invitados que se están viendo en la lista (`np-respuesta-en-lote`,
+      función `setGuestsRsvp`, hasta 500 por llamada, con confirmación que dice a
+      cuántos afecta). Sin casillas: se apoya en los filtros, como el cupo en lote.
+- [x] `F1.8j` **Marcar a todo un grupo**, y la familia de un titular: son los
+      mismos filtros de la lista (por grupo, o por titular) aplicados a la acción
+      anterior. Solo toca el estado, no las respuestas del formulario.
+- [x] `F3.1e` **Vista previa de la galería** en el panel: maqueta con las mismas
+      fotos, rejilla y visor, sin subir ni borrar.
+
+- [x] `S3` **Tanda 20** (D-49): **civil/religiosa** y **lugares de ceremonia y
+      celebración** en el alta (búsqueda OSM o enlace de Google Maps) y editables
+      en el panel; **catálogos del superadmin** de tareas, presupuesto y preguntas
+      del quiz (`/superadmin/catalogos`) que se vuelcan a cada boda nueva;
+      **presupuesto de la pareja** (`/panel/budget`); sugerencias del quiz con
+      «Añadir a nuestro quiz»; **«Nuestra historia»** (cinco apartados con Jodit y
+      hasta dos fotos, `/panel/story` y `/historia`); **cerrar sesión** en ambos
+      paneles; filtros estables en el superadmin. **Funciones nuevas, reglas de
+      Firestore y de Storage: hay que desplegar.**
+- [ ] `S3b` **Apartado (D-49)**: qué más cambia civil/religiosa (tareas propias de
+      la civil: sin prisa), posición de las fotos de la historia (lo prueba
+      Gabriel), enlaces cortos de Google Maps. Resueltos en D-50: casilla «mismo
+      sitio» y módulos nuevos en bodas existentes.
+- [x] `S3c` **Tanda 21** (D-50): **lista de invitados en acordeón** (fila
+      numerada, detalles y acciones al abrir), **orden** por nombre, respuesta,
+      grupo o alta en ambos sentidos y filtro por grupos mantenido; casilla
+      **«mismo sitio»** (solo civil) en el alta; botón y función
+      **`completeWeddings`** para añadir los módulos nuevos a las bodas ya
+      creadas. **Función nueva: hay que desplegar functions.**
 
 Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
 
 - [ ] `S1.1` **Landing pública de venta**, atractiva y funcional (hoy es un rótulo).
 - [ ] `S1.3d` **Estadísticas por landing**: visitas y conversión.
-- [ ] `S1.3e` **Módulo financiero del superadmin**: ingreso por boda y factura asociada.
-- [ ] `S1.3f` **Recordatorios**: a los 2 meses de la boda, correo de agradecimiento,
-      encuesta de satisfacción y aviso de que se pueden bajar las fotos y de que la
-      web se cierra (para Gabriel y para la pareja).
-- [ ] `S1.3g` **Notificaciones** push / correo.
-- [ ] `S1.6b` **Recuperación desde el superadmin**: ficha de la pareja (correos,
-      teléfono) y botón «enviar correo de restablecimiento».
-- [ ] `S1.7` **Historial de actividad** (`auditLog`) y **ficha de boda** en el superadmin.
+- [x] `S1.3e` **Módulo financiero del superadmin** (D-48): `/superadmin/finanzas`,
+      libro de cobros por boda (importe en céntimos, método, estado, fecha, número
+      de factura, notas), totales, filtros y exportación a CSV. Colección
+      `payments`, solo superadmin, escrita por funciones. Sin pasarela y sin
+      precios inventados.
+- [x] `S1.3f` **Recordatorios** (D-48): `/superadmin/recordatorios`. A los 60 días
+      de la boda salen cuatro avisos —agradecimiento, encuesta, aviso de fotos y
+      cierre para la pareja, y tarea de cierre para Gabriel— con el texto listo
+      para copiar y «marcar como enviado» (`reminderMarks`). **No envía nada.**
+- [ ] `S1.3g` **Notificaciones** push / correo. **Apartada** (D-48): necesita
+      decidir proveedor de correo (REQUISITOS §11.5). La pantalla de recordatorios
+      ya tiene el texto y el estado; solo faltaría quién aprieta el botón.
+- [x] `S1.6b` **Recuperación desde el superadmin** (D-48): ficha de la pareja
+      (correos, teléfono si lo hay, último acceso) y botón «enlace de
+      restablecimiento» (`generateCoupleResetLink`): genera el enlace y lo enseña
+      para copiarlo y pasarlo por WhatsApp. No se envía correo: el Admin SDK solo
+      genera enlaces.
+- [x] `S1.7` **Historial de actividad** (`auditLog`) y **ficha de boda** en el
+      superadmin (D-48): `/superadmin/bodas/:id` con resumen, contactos, cobros y
+      las últimas 100 entradas del registro de esa boda (índice nuevo en
+      `auditLog`).
 - [ ] `S1.4` **Repaso de seguridad** (HTTPS, auth, datos sensibles): casi todo ya está; falta recopilarlo.
 
 ---

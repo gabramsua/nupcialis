@@ -25,7 +25,9 @@ import {
 } from '../public-site/dress-code/dress-code';
 import {
   MODULOS,
+  esTipoDeCeremonia,
   type BodaDelPanel,
+  type TipoDeCeremonia,
   type ConfigModulo,
   type Modulo,
   type Visibilidad,
@@ -36,6 +38,8 @@ export interface FuenteBoda {
   cambiarPlantilla(weddingId: string, templateId: string): Promise<void>;
   /** `'17:00'`, o `null` para dejarla sin fijar. */
   guardarHora(weddingId: string, weddingTime: string | null): Promise<void>;
+  /** Los datos básicos del alta, que la pareja puede corregir (D-49). */
+  guardarDatos(weddingId: string, datos: DatosBasicosParaGuardar): Promise<void>;
   guardarSecciones(weddingId: string, secciones: readonly Seccion[]): Promise<void>;
   /** `null` quita la paleta y devuelve la boda a los colores de su plantilla. */
   guardarPaleta(weddingId: string, colores: ColoresPaleta | null): Promise<void>;
@@ -54,6 +58,16 @@ export interface FuenteBoda {
   /** El dress code (§8.11), que vive en la configuración de su módulo. */
   guardarDressCode(weddingId: string, dress: DressCodeParaGuardar): Promise<void>;
   guardarAportacion(weddingId: string, aportacion: AportacionParaGuardar): Promise<void>;
+}
+
+/** Lo que la pantalla de datos manda guardar: nombres, día, tipo y hora. */
+export interface DatosBasicosParaGuardar {
+  readonly partnerA: string;
+  readonly partnerB: string;
+  /** Medianoche UTC del día (invariante de `shared/zona-horaria.ts`). */
+  readonly weddingDate: Date;
+  readonly ceremonyType: TipoDeCeremonia | null;
+  readonly weddingTime: string | null;
 }
 
 /** Lo que la pantalla de regalos manda guardar. Tal cual lo teclea la pareja. */
@@ -92,6 +106,19 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
       // `weddingTime` no es campo de sistema (regla 6): lo escribe la pareja
       // directamente, sin pasar por una función. Las reglas ya lo permiten.
       await updateDoc(doc(db, 'weddings', weddingId), { weddingTime });
+    },
+
+    async guardarDatos(weddingId: string, datos: DatosBasicosParaGuardar): Promise<void> {
+      // Rutas de punto para `couple`: así no se pisa nada que algún día cuelgue
+      // de ese mapa. Ninguno de estos campos es de sistema (regla 6); la
+      // proyección pública se republica sola.
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        'couple.partnerA': datos.partnerA,
+        'couple.partnerB': datos.partnerB,
+        weddingDate: Timestamp.fromDate(datos.weddingDate),
+        ceremonyType: datos.ceremonyType,
+        weddingTime: datos.weddingTime,
+      });
     },
 
     async guardarPaleta(weddingId: string, colores: ColoresPaleta | null): Promise<void> {
@@ -256,6 +283,7 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
     weddingDate: datos['weddingDate'] instanceof Timestamp ? datos['weddingDate'].toDate() : null,
     weddingTime: typeof datos['weddingTime'] === 'string' ? datos['weddingTime'] : null,
     timezone: typeof datos['timezone'] === 'string' ? datos['timezone'] : 'Europe/Madrid',
+    ceremonyType: esTipoDeCeremonia(datos['ceremonyType']) ? datos['ceremonyType'] : null,
     // Ante un valor desconocido, abierta: es la que no deja a nadie fuera.
     // Una boda que de pronto pidiera identificarse por un dato corrupto
     // dejaría a sus invitados en la puerta sin que nadie lo hubiera pedido.

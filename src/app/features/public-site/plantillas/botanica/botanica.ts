@@ -9,6 +9,7 @@ import { NpDressCodePublico } from '../../dress-code/dress-code-publico';
 import { NpQuizLlamada } from '../../quiz/quiz-llamada';
 import { NpGaleriaLlamada } from '../../galeria/galeria-llamada';
 import { NpRegalosLlamada } from '../../regalos/regalos-llamada';
+import { NpHistoriaLlamada } from '../../historia/historia-llamada';
 import { NpMapaLlamada } from '../../mapa/mapa-llamada';
 import { NpPlaylistLlamada } from '../../playlist/playlist-llamada';
 import { fechaLarga } from '../../../../shared/fecha';
@@ -40,6 +41,7 @@ import {
     NpQuizLlamada,
     NpGaleriaLlamada,
     NpRegalosLlamada,
+    NpHistoriaLlamada,
     NpMapaLlamada,
     NpPlaylistLlamada,
   ],
@@ -114,10 +116,16 @@ import {
               <np-faqs-publicas [faqs]="datos().faqs" />
             }
             @case ('cronologia') {
-              <np-cronologia-publica [cronologia]="datos().cronologia" />
+              <np-cronologia-publica
+                [cronologia]="datos().cronologia"
+                [ubicaciones]="datos().ubicaciones"
+              />
             }
             @case ('alojamientos') {
-              <np-alojamientos-publicos [alojamientos]="datos().alojamientos" />
+              <np-alojamientos-publicos
+                [alojamientos]="datos().alojamientos"
+                [ubicaciones]="datos().ubicaciones"
+              />
             }
             @case ('dressCode') {
               <np-dress-code-publico [dressCode]="datos().dressCode" />
@@ -130,6 +138,9 @@ import {
             }
             @case ('regalos') {
               <np-regalos-llamada />
+            }
+            @case ('historia') {
+              <np-historia-llamada />
             }
             @case ('mapa') {
               <np-mapa-llamada />

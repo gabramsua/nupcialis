@@ -18,6 +18,7 @@ import {
   type FalloAlta,
   type PuertaAlta,
   type ResultadoAlta,
+  type ResultadoCompletar,
   type ResultadoEstado,
 } from '../alta/alta-gateway';
 import { FIREBASE_FUNCTIONS } from './functions.providers';
@@ -83,6 +84,29 @@ export function crearPuertaAltaFirebase(): PuertaAlta {
             : [],
           mensaje: fallo.message ?? 'No se pudo cambiar el estado de la boda.',
         };
+      }
+    },
+
+    async completarBodas(): Promise<ResultadoCompletar> {
+      const completeWeddings = httpsCallable<Record<string, never>, Record<string, unknown>>(
+        functions,
+        'completeWeddings',
+      );
+
+      try {
+        const { data } = await completeWeddings({});
+        const numero = (clave: string) =>
+          typeof data[clave] === 'number' ? (data[clave] as number) : 0;
+        return {
+          ok: true,
+          revisadas: numero('revisadas'),
+          actualizadas: numero('actualizadas'),
+          modulosAnadidos: numero('modulosAnadidos'),
+          seccionesAnadidas: numero('seccionesAnadidas'),
+        };
+      } catch (error) {
+        const fallo = (error ?? {}) as ErrorInvocable;
+        return { ok: false, mensaje: fallo.message ?? 'No se pudieron actualizar las bodas.' };
       }
     },
   };
