@@ -44,6 +44,7 @@ function tenant(ubicaciones: readonly UbicacionPublica[]): ResultadoTenant {
       dressCode: DRESS_CODE_VACIO,
       historia: [],
       modulos: {},
+      layout: 'onepage',
     },
   };
 }

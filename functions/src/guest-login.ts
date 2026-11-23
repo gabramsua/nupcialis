@@ -34,6 +34,7 @@ import { HttpsError, onCall, type CallableRequest } from 'firebase-functions/v2/
 import {
   SIN_INTENTOS,
   esModoAcceso,
+  modoDeIdentificacion,
   pareceToken,
   puedeIntentar,
   trasAcertar,
@@ -238,10 +239,8 @@ export const guestLogin = onCall<EntradaAcceso>(
     const slug = typeof datos.slug === 'string' ? datos.slug.trim().toLowerCase() : '';
     if (slug === '') throw noEntra();
 
-    const { weddingId, modo } = await bodaDelSlug(slug);
-
-    // En una boda abierta no hay nada que verificar.
-    if (modo === 'open') throw noEntra();
+    const { weddingId, modo: modoDeLaBoda } = await bodaDelSlug(slug);
+    const modo = modoDeIdentificacion(modoDeLaBoda);
 
     const ahora = Date.now();
     const refIntentos = db().doc(

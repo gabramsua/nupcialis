@@ -108,7 +108,7 @@ El modo de acceso lo elige la pareja en la configuración de su boda. Es una pro
 
 **En los modos B y C la identificación va delante de todo.** No es que haya módulos que pidan identidad y otros no: según §1.1 solo existe «visitante anónimo» cuando el modo es abierto, así que ni los nombres, ni la fecha, ni las secciones se pintan antes de saber quién entra. La puerta vive en un trozo de código diferido: una boda en modo A no descarga ni el formulario ni Firebase Auth.
 
-**Modo A — Entrada abierta.** Cualquiera con la URL ve la web. No hay identificación. Los módulos que requieren identidad (RSVP nominal, libro de firmas atribuido, subida de fotos) quedan deshabilitados o pasan a modo anónimo según su propia configuración.
+**Modo A — Entrada abierta.** Cualquiera con la URL ve la web. No hay identificación para verla. Los módulos que requieren identidad (quiz, galería, regalos, playlist) **piden nombre y últimos 4 dígitos al entrar en ellos** (D-56); el RSVP nominal y el libro de firmas atribuido siguen sin estar disponibles.
 
 **Modo B — Nombre + últimos 4 dígitos del teléfono.** El invitado escribe su nombre y los cuatro últimos dígitos de su móvil. Se contrastan contra la lista de invitados cargada por la pareja.
 
@@ -458,11 +458,11 @@ weddings/{weddingId}/guests/{guestId}
   isCompanion: bool
   invitedById: string | null      // guestId del titular que lo añadió
   addedBy: 'owner' | 'guest'      // quién lo dio de alta
-  maxCompanions: number           // solo en titulares; 0 = no puede añadir
 
   // RSVP
   rsvpStatus: 'pending' | 'confirmed' | 'declined'
   rsvpAt: Timestamp | null
+  rsvpFollowsTitular: bool        // solo acompañantes; ausente o true = viene como viene su titular (D-51)
   rsvpAnswers: { [questionId: string]: any }   // respuestas al formulario dinámico
 
   // Banquete
@@ -487,13 +487,13 @@ weddings/{weddingId}/guests/{guestId}
 
 Reglas del alta de acompañantes por parte del invitado:
 
-- Solo si `allowGuestAddedCompanions` está activo en la boda **y** el titular tiene `maxCompanions > 0`.
-- El alta la ejecuta una Cloud Function, nunca el cliente: valida el cupo restante contando los acompañantes ya creados y crea el documento con `addedBy: 'guest'`.
+- Solo si `allowGuestAddedCompanions` está activo en la boda. **No hay cupo por invitado** (D-51): queda solo un tope técnico de 10 acompañantes por titular.
+- El alta la ejecuta una Cloud Function, nunca el cliente: valida el tope contando los acompañantes ya creados y crea el documento con `addedBy: 'guest'`.
+- **Los acompañantes tienen, por defecto, la misma asistencia que su titular** (D-51), también los añadidos después: nacen con su estado y lo siguen cuando el titular confirma o declina (el invitado, la pareja o el lote). Cambiar a mano la respuesta de un acompañante lo suelta del titular (`rsvpFollowsTitular: false`). Solo se mueve el **estado**; su menú y sus alergias son suyos.
 - El acompañante **hereda los `groupIds` del titular**. Si el titular es del grupo "Universidad", su acompañante también lo es, y por tanto ve y publica con esa misma audiencia. Esto es deliberado: si no, el acompañante de un miembro del grupo restringido se convertiría en una fuga.
 - En modos de acceso B y C el titular debe aportar el teléfono del acompañante para que este pueda entrar. En modo A no hace falta.
 - La pareja ve en el panel qué invitados fueron añadidos por otros invitados y puede eliminarlos.
 - **Y se le avisa**: encima de la lista sale un aviso con los nombres de los que han apuntado sus invitados en los últimos siete días, con un botón que filtra la lista a esos. Sin eso, un acompañante nuevo no se distingue de los doscientos que ya estaban. El listado (`listGuests`) lleva para ello dos campos más: si lo apuntó un invitado y cuándo se dio de alta.
-- **El cupo se pone a varios a la vez** (`setCompanionQuota`): la pareja filtra la lista —por grupo, por estado— y le pone el mismo cupo a todos los que está viendo. En una boda son doscientos invitados y el cupo se decide por tandas («los amigos, uno cada uno»), así que de uno en uno es una tarde. Los acompañantes se omiten, porque un acompañante con cupo encadenaría las invitaciones, y **bajar el cupo no echa a nadie**: quien ya apuntó a dos sigue con dos y solo deja de poder apuntar a un tercero.
 - **RGPD:** el titular está facilitando datos de un tercero. El formulario debe informarlo expresamente y la finalidad debe constar en el aviso de privacidad.
 
 ### 5.6 Mesas
@@ -718,8 +718,7 @@ Solo como pegamento. Todas con App Check activado.
 | `listAccessLog`                                              | callable (owner)                      | Registro de accesos para la pareja: une los nombres (que `guests` no se lee de fuera), baja el `user-agent` a «Android · Chrome» y **no devuelve la IP**. Las últimas 300 entradas |
 | `upsertGroup` / `deleteGroup`                                | callable (owner)                      | Crear, editar y borrar grupos cuidando que nadie quede en dos restringidos y que un borrado no deje invitados apuntando a la nada. Ver §5.4                                        |
 | `reorderGroups`                                              | callable (owner)                      | El orden de los grupos que decide la pareja, en una sola escritura. Ignora ids que ya no existen y no pierde los que no venían en la lista                                         |
-| `addCompanion`                                               | callable (guest)                      | Alta de acompañante validando cupo, heredando grupos y registrando `addedBy: 'guest'`                                                                                              |
-| `setCompanionQuota`                                          | callable (owner)                      | Poner el mismo cupo de acompañantes a una lista de invitados, en lotes. Omite acompañantes; bajar el cupo no borra a nadie                                                         |
+| `addCompanion`                                               | callable (guest)                      | Alta de acompañante validando el tope, heredando grupos y asistencia del titular y registrando `addedBy: 'guest'`                                                                  |
 | `submitRsvp`                                                 | callable (guest)                      | Validar respuestas contra `formQuestions`, aplicar `mapsTo`, guardar y recalcular contadores                                                                                       |
 | `listPhotos`                                                 | callable (guest)                      | Una página de 24 fotos, de la última a la primera, con el cursor en el `createdAt` de la última servida. Devuelve solo lo que ese invitado puede ver                               |
 | `uploadPhoto`                                                | callable (guest verificado)           | Guarda grande y miniatura (las dos vienen ya reducidas del navegador) y escribe el documento. Asignará `audienceGroupId` cuando entren los grupos                                  |
@@ -763,6 +762,39 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
   paleta se aplica **entera o nada**: media paleta mezcla tres colores de la
   boda con tres de la plantilla, que es peor que ninguno.
 
+  Catálogo actual (D-54): **Clásica**, **Botánica**, **Romántica** (caligrafía y
+  tonos rosados) y **Moderna** (blanca, sans-serif en mayúsculas); catálogo de
+  **doce paletas**. La tipografía es la de cada plantilla, no un selector aparte.
+
+  **Módulos públicos y tema** (D-55): quiz, galería, regalos, playlist, historia,
+  mapa y confirmar aplican los colores y la tipografía de la plantilla de la boda
+  (`features/public-site/tema.ts`), no solo la portada.
+
+  **Dirección (slug)** (D-55): editable por el superadmin. Reserva la nueva en
+  `slugs`, libera la antigua y mueve la autorización del dominio en Auth; los
+  enlaces viejos dejan de funcionar. Auditado con `slugAntiguo` y `slugNuevo`.
+
+  **Datos de contacto y actividad** (D-55): teléfono de contacto opcional de la
+  pareja (`contactPhone`); contador agregado de visitas a la web (`access.webVisits`,
+  `access.lastWebVisitAt`, solo con la web activa, sin conversión). No existe
+  correo de invitación a invitados. La cola `mail` es visible y descartable desde
+  el superadmin; sin la extensión Trigger Email, los correos solo se encolan.
+  La importación de invitados acepta `.xlsx` y `.csv`.
+
+  **Identidad en módulos con web abierta (D-56, decidido por Gabriel):** con acceso
+  `open` la web se ve sin identificarse, pero el **quiz, la galería, los regalos y la
+  playlist exigen identificarse** (nombre y 4 últimos dígitos, igual que el modo B;
+  `guestLogin` acepta una boda abierta con esas credenciales). Una guarda de ruta
+  manda a `/entrar?volver=<página>` y devuelve al invitado a donde iba. El panel
+  avisa a la pareja en «Datos de la boda», en el quiz y en la galería de que todos
+  sus invitados necesitan teléfono en la lista.
+
+  **Precio acordado** (D-56): importe pactado con cada pareja, en céntimos, editable
+  por el superadmin en «Editar datos» (puede ser 0). Vive en `billing/{weddingId}`
+  (solo Admin SDK, cerrada al cliente: la pareja no lo ve) y no en el documento de la
+  boda. La ficha enseña acordado, cobrado y lo que falta. Se conserva al borrar la
+  boda, como los cobros.
+
 - Tokens de diseño: paleta (6 colores), pareja de tipografías, imagen de portada.
 
   El **catálogo de paletas es cerrado**, por el mismo motivo que el de
@@ -791,6 +823,12 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
   boda en borrador no se indexa aunque el interruptor esté encendido de antes, y
   una archivada tampoco: lo último que quiere una pareja es que su boda del año
   pasado siga saliendo la primera al buscar sus nombres.
+
+  **Quién cambia el estado** (D-54): la pareja **publica** su web y la **vuelve a
+  borrador** desde el Resumen (`setMyWebStatus`); exige nombres, fecha y
+  dirección. Archivar y reactivar una archivada es solo del superadmin
+  (`setWeddingStatus`). Al pasar de borrador a activa se **borran las partidas de
+  prueba del quiz** (partidas, ranking y contador; las preguntas se conservan).
 
 **Modelo de edición .** Se descarta construir un maquetador libre tipo WordPress y se adopta un modelo intermedio:
 
@@ -871,7 +909,7 @@ Cómo está hecho (implementado el 2026-11-13):
   - **También se puede subir el `.xlsx` tal cual** (F1.2b), que es como la mitad de las parejas tiene su lista. Se lee **solo la primera hoja**: en la hoja de una boda las demás son el reparto de mesas a medias o una copia vieja, e importarlas metería duplicados. Las fechas llegan en ISO y no como número de serie, y las decenas de filas vacías que Excel arrastra al final se descartan antes de contar.
 
 - Asignación de **grupos** (§5.4), con indicación visual de cuáles son de audiencia restringida.
-- **La lista del panel es un acordeón numerado (D-50).** Una línea por invitado —número, nombre, grupos, respuesta— y, al abrirla, teléfono, mote, lado, edad, cupo, menú, alergias, notas y las acciones. Se ordena por nombre, respuesta, grupo o fecha de alta (en los dos sentidos; sin grupo, siempre al final) y se filtra por grupo, por cifra y por texto. El número es la posición en lo que se ve.
+- **La lista del panel es un acordeón numerado (D-50).** Una línea por invitado —número, nombre, grupos, respuesta— y, al abrirla, teléfono, mote, lado, edad, menú, alergias, notas y las acciones. Se ordena por nombre, respuesta, grupo o fecha de alta (en los dos sentidos; sin grupo, siempre al final) y se filtra por grupo, por cifra y por texto. El número es la posición en lo que se ve.
 - **Enlace de invitación por invitado y botón de compartir por WhatsApp** con mensaje predefinido y editable.
   - **El enlace abre la web, y solo eso** (D-34, opción 3): lleva un token por invitado y entra con nivel `enlace`. Para confirmar, elegir menú o apuntar acompañantes se le piden los cuatro dígitos. Ver §3.3 para el detalle del token y de los dos niveles.
   - **A quien llega por un enlace reenviado no se le enseña nada de esa persona**: ni sus respuestas, ni su menú, ni lo que escribió a los novios. El formulario no se lee sin verificarse.
@@ -879,18 +917,18 @@ Cómo está hecho (implementado el 2026-11-13):
   - El mensaje es una **plantilla de la boda**, con `{nombre}`, `{novios}`, `{fecha}` y `{enlace}`. Se guarda con los marcadores dentro, no montado, porque sirve para doscientos invitados. Lo que no se reconoce se queda escrito tal cual: así se ve el error en la vista previa en vez de mandar doscientos mensajes con un hueco.
   - Se puede retocar el mensaje **de esa persona** antes de mandarlo, y se usa el mote si lo tiene: en un WhatsApp, «Hola Majo» se lee mejor que «Hola María José Pérez».
   - A quien no tenga teléfono en la lista se le avisa **antes** de compartir, porque con puerta recibiría un enlace que no puede abrir.
-- **Acompañantes añadidos por el propio invitado** cuando la pareja lo permite: cupo por titular, herencia de grupos, teléfono obligatorio en modos B y C, y visibilidad en el panel de quién añadió a quién.
+- **Acompañantes añadidos por el propio invitado** cuando la pareja lo permite: herencia de grupos y de asistencia, teléfono obligatorio en modos B y C, y visibilidad en el panel de quién añadió a quién.
 
   Cómo se resolvió (F1.5):
 
-  - **El cupo se cuenta en el servidor**, con los documentos que existen, y el formulario se recarga después de cada alta. Dos pestañas abiertas mandarían el mismo alta dos veces, y eso son comensales de más que se descubren el día del banquete.
-  - **Un acompañante no añade acompañantes.** Sin esa regla el cupo de uno se vuelve una cadena: invito a mi pareja, mi pareja invita a su hermana, y la pareja se encuentra treinta personas que no conoce.
+  - **El tope se cuenta en el servidor**, con los documentos que existen, y el formulario se recarga después de cada alta. Dos pestañas abiertas mandarían el mismo alta dos veces, y eso son comensales de más que se descubren el día del banquete.
+  - **Un acompañante no añade acompañantes.** Sin esa regla las invitaciones de uno se vuelven una cadena: invito a mi pareja, mi pareja invita a su hermana, y la pareja se encuentra treinta personas que no conoce.
   - **El acompañante hereda los `groupIds` del titular** y entra con `side: 'both'`. La herencia es de seguridad, no comodidad: los grupos deciden quién ve qué fotos.
   - **Al invitado se le piden tres datos**: nombre, edad y —solo donde hace falta para entrar— teléfono. Ni correo ni notas: está dando datos de un tercero, y el formulario lo dice expresamente (RGPD).
   - **La fecha límite cierra también esto**: dejar añadir comensales después de dar el número al catering sería darlo dos veces.
   - **El titular puede quitar a quien apuntó, mientras no haya entrado en la web.** A partir de ahí tiene sesión, confirmación y puede tener fotos subidas, así que lo quita la pareja, que ve el conjunto.
   - **En el panel**, cada acompañante lleva el nombre de quien lo trae y cada titular, a cuántos trae. «Es acompañante» a secas obligaba a adivinar de quién, que es justo lo que hace falta para sentarlos juntos.
-  - El interruptor de la boda (`allowGuestAddedCompanions`) está en «Datos de la boda»; el cupo, en la ficha de cada invitado.
+  - El interruptor de la boda (`allowGuestAddedCompanions`) está en «Datos de la boda»; ya no hay cupo por invitado.
 
 - **Contador de accesos por invitado**: número de entradas, primera y última. Lista ordenable por accesos, con vista de quién no ha entrado nunca — útil para saber a quién hay que reenviar el enlace.
 - Exportación a XLSX con menús, alergias y mesas para el catering.
@@ -1321,6 +1359,15 @@ weddings/{weddingId}/checklistItems/{id}
 - **Cobros** (`/superadmin/finanzas`, S1.3e): libro por boda con importe en céntimos, método, estado, fecha de cobro, número de factura y notas; totales de cobrado y pendiente, filtros por boda y estado, y **exportación a CSV** de lo que se ve. No hay pasarela de pago, no emite facturas y no fija precios (D-02).
 - **Recordatorios** (`/superadmin/recordatorios`, S1.3f): a los **60 días** de la boda, para cada boda activa, el correo de agradecimiento, la encuesta de satisfacción, el aviso a la pareja de que puede bajar las fotos y de que la web se cierra, y la tarea de cierre para el superadmin. Se enseñan dos semanas antes, con el texto listo para copiar, y se **marcan como enviados** a mano. No se envía nada.
 
+- **Menú lateral** (D-53): vertical, plegable (recuerda su estado) y con la sección activa resaltada: Bodas, Estadísticas, Finanzas, Recordatorios, Catálogos, Planes y módulos, Correos y Consejos. Cierra la sesión desde el pie.
+- **Correos** (`/superadmin/correos`, D-53): los textos de los correos de Nupcialis (`emailTemplates/{id}`: `parejaAcceso`, `parejaRestablecer`, `invitadoInvitacion`), editables, con vista previa y «volver al original». El servidor solo **encola** el correo en `mail`; lo envía la extensión Firebase «Trigger Email». Marcadores: `{novios}`, `{nombre}`, `{fecha}`, `{enlace}`, `{web}`, `{correo}`. El diseño del correo es siempre el de Nupcialis; el superadmin cambia asunto y mensaje.
+- **Alta de boda** (D-53): el lugar de la ceremonia y de la celebración se da con **un enlace de Google Maps** pegado (sin buscador propio); al crear, el enlace de acceso de la pareja se **envía por correo** con la plantilla `parejaAcceso` y se puede **copiar**; la ficha permite reenviarlo.
+- **Planes y módulos** (`/superadmin/planes`, `plans/{plan}`, D-53): qué módulos trae cada plan. Se aplica a todas las bodas de ese plan; **añadir es inmediato, quitar pide confirmación con el número de bodas afectadas y solo desactiva** (los datos de la pareja se conservan). `publicSite` no se puede quitar. Las bodas nuevas nacen con lo que diga el plan.
+- **Catálogos** (D-53): siempre activos (se borra lo que no se quiera); las tareas no exigen categoría ni icono.
+- **Consejos** (`/superadmin/consejos`, `tips/{módulo}`, D-53): texto plano por módulo, mostrado como desplegable «Consejo» al principio de cada pantalla del panel de la pareja. Vacío = sin consejo.
+- **Editar y borrar boda** (D-53, desde la ficha): editar nombres, fecha, ceremonia y plan (`updateWedding`; el slug no se edita); borrar es **definitivo e inmediato** (`deleteWedding`, se escribe la dirección para confirmar) y se lleva datos, ficheros, dirección, dominio de Auth y cuentas sin otra boda; **se conservan cobros y auditoría**.
+- **Accesos** (D-53): la ficha cuenta las entradas de la pareja al panel (`weddings/{id}.access.{ownerLogins,lastOwnerLoginAt}`, campo de sistema; `recordOwnerLogin`) y cuántos invitados han entrado y cuántas veces. No se miden las visitas anónimas ni la conversión.
+
 **Lo que hay hecho (F3.1d, S1.3e/f, S1.6b, S1.7):** estadísticas y tope de fotos, ficha de boda, restablecimiento, cobros y recordatorios. Otros límites por boda (invitados, mesas) y las notificaciones automáticas (S1.3g) no existen todavía.
 
 ### 8.19 Nuestra historia
@@ -1479,13 +1526,16 @@ Ninguna bloquea el arranque del desarrollo. **El registro vivo es `docs/PENDIENT
 
 1. **Ciclo de vida post-boda.** Cuánto tiempo permanece viva la web y los datos tras la fecha, si se ofrece renovación y cuándo se purga. Afecta a retención RGPD y a coste. Los registros de acceso deberían purgarse antes que el resto.
 2. **Precio y planes.** El reparto de módulos vive en `functions/src/dominio/planes.ts`: el básico es de **una sola página** con seis módulos, y galería y quiz son solo del extendido porque las dos necesitan ruta propia. **El catálogo de dieciocho módulos se mantiene** (decidido el 2026-11-13): lo que todavía no está construido sale en el panel diciendo «En camino», no escondido. Queda por decidir el **precio** de cada plan.
+
+   **Navegación de la web del plan completo (D-57).** Con `layout: multipage` la web lleva una cabecera fija con el tema de la boda: en escritorio, barra horizontal con los primeros enlaces y un «Más»; en móvil, un cajón con los enlaces agrupados en «La boda» y «Participa» y el botón de confirmar al alcance del pulgar. El menú sale de las secciones encendidas, no se configura. Los módulos con página propia (historia, mapa, quiz, galería, regalos, playlist) no se apilan como carteles en la portada. El plan básico no cambia.
+
 3. **Librería del editor de texto enriquecido. Decidida: Jodit con `ngx-jodit`** (ver `D-03`, confirmada el 2026-11-13). Ya no hay prueba comparativa pendiente. Siguen en pie el saneado en servidor y la barra acotada, y se carga **solo en el panel**: en la web pública no hace falta y ahí hay 200 kB de presupuesto que defender.
 4. **Confirmar la librería de mapas.** La recomendación es Leaflet o MapLibre sobre OpenStreetMap para evitar clave y facturación de Google. Si prefieres el aspecto de Google Maps, hay que asumir clave con facturación y restricción por _referrer_ poco estrecha por el wildcard.
 5. **Email transaccional.** Hoy fuera de alcance: la comunicación se hace compartiendo el enlace por WhatsApp manualmente, y solo se usan los correos propios de Firebase Auth. Si se quieren recordatorios automáticos a quienes no han confirmado, hará falta proveedor de email.
 6. **WhatsApp Business API.** No descartado. Coste por mensaje, plantillas aprobadas por Meta y alta como empresa. Previsto para F5.
 7. **Dominio propio de la pareja** (`mariaygabriel.com`). Técnicamente posible, pero reintroduce trabajo manual de certificados. Evaluar como extra de pago.
 8. **PWA e instalación en el móvil del invitado.** Interesante para la galería y el quiz el día de la boda; no decidido.
-9. **Autenticación adicional para módulos sensibles en modo A.** Con entrada abierta, ¿qué hacen la galería, el quiz y el libro de firmas? Propuesta a validar: en modo A esos módulos o se desactivan o funcionan en modo anónimo sin ranking nominal ni audiencias por grupo, porque ambas cosas necesitan saber quién es quién.
+9. ~~Autenticación adicional para módulos sensibles en modo A.~~ **Decidido (D-56): se exige identificarse** (nombre y 4 últimos dígitos) para quiz, galería, regalos y playlist, también con la web abierta.
 10. **Plano real de la finca.** El lienzo de mesas de F2 es genérico a propósito. Reproducir el salón concreto de cada hacienda es un módulo aparte y caro; evaluar como extra de pago en F5.
 11. **¿Puede un invitado jugar al quiz más de una vez?** Está modelado como configurable y el historial guarda todas las partidas; falta decidir el valor por defecto y si el ranking muestra la mejor puntuación o la primera.
 12. ~~Origen del set de iconos.~~ **Decidido: Phosphor** (MIT). Única de las tres candidatas que cubre los 50 conceptos del producto, y sus seis pesos sirven como mecanismo de estado: `regular` inactivo, `fill` activo.

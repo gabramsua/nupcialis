@@ -1,10 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { PUERTA_AUTH } from '../../core/auth/auth-gateway';
 import { SessionStore } from '../../core/auth/session.store';
 import { BodaStore } from '../../features/panel/boda.store';
+import { RUTA_MODULO } from '../../features/panel/boda';
+import { Consejo } from '../../features/panel/consejo/consejo';
+import { ConsejosDelPanel } from '../../features/panel/consejo/consejos-panel';
 import { NpAlert } from '../../design-system/components/alert/alert';
 import { NpButton } from '../../design-system/components/button/button';
 import { NpStatusChip } from '../../design-system/components/status-chip/status-chip';
@@ -27,6 +32,7 @@ import { NpIcon } from '../../design-system/icons/icon';
     RouterLinkActive,
     RouterOutlet,
     TranslocoDirective,
+    Consejo,
     NpAlert,
     NpButton,
     NpStatusChip,
@@ -77,6 +83,7 @@ import { NpIcon } from '../../design-system/icons/icon';
                 class="np-panel__enlace"
                 routerLink="/panel"
                 routerLinkActive="np-panel__enlace--activo"
+                ariaCurrentWhenActive="page"
                 [routerLinkActiveOptions]="{ exact: true }"
               >
                 <np-icon name="chart-bar" />
@@ -86,6 +93,7 @@ import { NpIcon } from '../../design-system/icons/icon';
                 class="np-panel__enlace"
                 routerLink="/panel/datos"
                 routerLinkActive="np-panel__enlace--activo"
+                ariaCurrentWhenActive="page"
               >
                 <np-icon name="calendar" />
                 {{ t('panel.datos.titulo') }}
@@ -94,6 +102,7 @@ import { NpIcon } from '../../design-system/icons/icon';
                 class="np-panel__enlace"
                 routerLink="/panel/web"
                 routerLinkActive="np-panel__enlace--activo"
+                ariaCurrentWhenActive="page"
               >
                 <np-icon name="eye" />
                 {{ t('panel.secciones.titulo') }}
@@ -102,6 +111,7 @@ import { NpIcon } from '../../design-system/icons/icon';
                 class="np-panel__enlace"
                 routerLink="/panel/diseno"
                 routerLinkActive="np-panel__enlace--activo"
+                ariaCurrentWhenActive="page"
               >
                 <np-icon name="palette" />
                 {{ t('panel.diseno.titulo') }}
@@ -109,7 +119,7 @@ import { NpIcon } from '../../design-system/icons/icon';
 
               <hr class="np-panel__separador" />
 
-              @for (entrada of boda.menu(); track entrada.modulo) {
+              @for (entrada of menuDeModulos(); track entrada.modulo) {
                 <!--
                   Un módulo sin pantalla todavía no se enlaza: antes llevaba a
                   una página en blanco. Se queda en el menú, porque la pareja
@@ -120,6 +130,7 @@ import { NpIcon } from '../../design-system/icons/icon';
                   [class.np-panel__enlace--sinPantalla]="!entrada.ruta"
                   [routerLink]="entrada.ruta"
                   routerLinkActive="np-panel__enlace--activo"
+                  ariaCurrentWhenActive="page"
                 >
                   <np-icon [name]="entrada.icono" />
                   <span class="np-panel__nombre">{{ t('panel.modulo.' + entrada.modulo) }}</span>
@@ -148,6 +159,7 @@ import { NpIcon } from '../../design-system/icons/icon';
                   [heading]="t('panel.ocultos', { n: boda.sinPublicar() })"
                 ></np-alert>
               }
+              <np-consejo [modulo]="moduloActual()" />
               <router-outlet />
             </main>
           </div>
@@ -221,9 +233,11 @@ import { NpIcon } from '../../design-system/icons/icon';
     .np-panel__enlace:hover {
       background: var(--np-surface-alt);
     }
+    /* El activo se distingue por fondo, peso y una barra de acento: nunca solo por color. */
     .np-panel__enlace--activo {
       background: var(--np-surface-alt);
-      font-weight: var(--np-weight-semibold);
+      font-weight: var(--np-weight-bold);
+      box-shadow: inset 0 -3px 0 var(--np-cat-rosa);
     }
     .np-panel__separador {
       flex-shrink: 0;
@@ -243,6 +257,9 @@ import { NpIcon } from '../../design-system/icons/icon';
         grid-template-columns: 14rem minmax(0, 1fr);
         align-items: start;
         padding: var(--np-space-5);
+      }
+      .np-panel__enlace--activo {
+        box-shadow: inset 4px 0 0 var(--np-cat-rosa);
       }
       .np-panel__menu {
         flex-direction: column;
@@ -266,6 +283,50 @@ export class PanelShell {
   protected readonly sesion = inject(SessionStore);
   protected readonly boda = inject(BodaStore);
   private readonly puerta = inject(PUERTA_AUTH);
+  private readonly router = inject(Router);
+  private readonly consejos = inject(ConsejosDelPanel, { optional: true });
+
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  /**
+   * Los módulos del menú, sin «Vuestra web»: ya tiene su enlace fijo arriba, y
+   * repetirla ponía dos veces el mismo ojo con el mismo nombre (D-54).
+   */
+  protected readonly menuDeModulos = computed(() =>
+    this.boda.menu().filter((entrada) => entrada.modulo !== 'publicSite'),
+  );
+
+  /** El módulo de la pantalla abierta, por el prefijo más largo que case. */
+  protected readonly moduloActual = computed(() => {
+    const ruta = this.url().split(/[?#]/)[0] ?? '';
+    const casan = Object.entries(RUTA_MODULO).filter(
+      ([, r]) => r !== undefined && (ruta === r || ruta.startsWith(`${r}/`)),
+    );
+    casan.sort((a, b) => (b[1]?.length ?? 0) - (a[1]?.length ?? 0));
+    return casan[0]?.[0] ?? null;
+  });
+
+  constructor() {
+    // Si la sesión se cierra con el panel abierto (otra pestaña, caducidad del
+    // token), fuera: no se queda enseñando pantallas de alguien que ya no está.
+    effect(() => {
+      const sesion = this.sesion.sesion();
+      const resuelta = this.sesion.resuelta?.() ?? true;
+      if (resuelta && sesion.rol !== 'owner' && sesion.rol !== 'superadmin') {
+        void this.router.navigate(['/panel/acceso']);
+      }
+    });
+
+    // Una vez al abrir el panel: los consejos y la cuenta de entradas.
+    void this.consejos?.cargar();
+    void this.consejos?.registrarEntrada();
+  }
 
   protected async salir(): Promise<void> {
     await this.puerta.salir();

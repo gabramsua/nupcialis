@@ -172,7 +172,6 @@ function aAcompanante(cruda: unknown): readonly Acompanante[] {
 
 const MOTIVOS_SIN_CUPO: readonly MotivoSinCupo[] = [
   'modulo-apagado',
-  'sin-cupo',
   'cupo-lleno',
   'es-acompanante',
   'inactivo',

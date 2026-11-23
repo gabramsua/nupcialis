@@ -150,4 +150,22 @@ describe('Datos de la boda', () => {
     const { el } = montar(BODA_DE_PRUEBA);
     expect(el.querySelector('a[href="/panel/map"]')).not.toBeNull();
   });
+
+  it('con el acceso abierto y el juego encendido, avisa de que tendrán que identificarse', () => {
+    const { el } = montar({
+      ...BODA_DE_PRUEBA,
+      guestAccessMode: 'open',
+      modulos: { quiz: { enabled: true, visibility: 'visible' } },
+    });
+    expect(el.textContent).toContain('los invitados tendrán que identificarse');
+  });
+
+  it('con otro modo de acceso, no avisa', () => {
+    const { el } = montar({
+      ...BODA_DE_PRUEBA,
+      guestAccessMode: 'name_phone4',
+      modulos: { quiz: { enabled: true, visibility: 'visible' } },
+    });
+    expect(el.textContent).not.toContain('Para jugar y subir fotos, los invitados');
+  });
 });

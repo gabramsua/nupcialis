@@ -85,6 +85,17 @@ import { NpInput } from '../../../design-system/components/field/input';
           </div>
         </header>
 
+        <!-- Jugar exige identificarse, también con la web abierta (D-56). -->
+        <np-alert status="attention" [heading]="t('panel.quiz.identidadTitulo')">
+          <p>{{ t('panel.quiz.identidadTexto') }}</p>
+          <a routerLink="/panel/guests">{{ t('panel.quiz.identidadLista') }}</a>
+        </np-alert>
+
+        <!-- Lo que se juega antes de publicar es de prueba y se borra al publicar (D-54). -->
+        <np-alert status="info" [heading]="t('panel.quiz.pruebaTitulo')">
+          <p>{{ t('panel.quiz.pruebaTexto') }}</p>
+        </np-alert>
+
         <!--
           Cómo funciona el juego, con las reglas de verdad (los números salen de
           las mismas constantes que usa el servidor). Abierto mientras no hay

@@ -1,9 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   computed,
+  DestroyRef,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -16,6 +17,9 @@ import {
   type FotoPublica,
 } from '../../../core/galeria/galeria-gateway';
 import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
+import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 
 /**
  * La galería, como la ve el invitado (§8.5).
@@ -35,15 +39,21 @@ import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
  */
 @Component({
   selector: 'np-galeria-publica',
-  imports: [RouterLink, TranslocoDirective, NpIcon],
+  imports: [NpCabeceraBoda, RouterLink, TranslocoDirective, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style]': 'tema()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <div class="gl">
-        <a class="gl__volver" routerLink="/">
-          <np-icon name="caret-left" />
-          {{ t('publico.galeria.volver') }}
-        </a>
+        @if (!cabecera()) {
+          <a class="gl__volver" routerLink="/">
+            <np-icon name="caret-left" />
+            {{ t('publico.galeria.volver') }}
+          </a>
+        }
 
         <header class="gl__cabecera">
           <h1>{{ t('publico.galeria.titulo') }}</h1>
@@ -66,6 +76,20 @@ import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
           {{ subiendo() ? t('publico.galeria.subiendo') : t('publico.galeria.subir') }}
         </label>
 
+        <!-- Abre la cámara directamente en el móvil; en el ordenador, el selector de siempre. -->
+        <label class="gl__subir gl__subir--camara" [class.gl__subir--ocupado]="subiendo()">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            data-origen="camara"
+            [disabled]="subiendo()"
+            (change)="elegidas($event)"
+          />
+          <np-icon name="camera" />
+          {{ t('publico.galeria.hacerFoto') }}
+        </label>
+
         @if (fallo(); as cual) {
           <p class="gl__fallo">
             <np-icon name="warning" />
@@ -78,17 +102,51 @@ import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
         } @else if (fotos().length === 0) {
           <p class="gl__vacia">{{ t('publico.galeria.ninguna') }}</p>
         } @else {
+          @if (hayMias()) {
+            <div class="gl__filtro" role="group" [attr.aria-label]="t('publico.galeria.titulo')">
+              <button
+                type="button"
+                data-filtro="todas"
+                [attr.aria-pressed]="!soloMias()"
+                (click)="soloMias.set(false)"
+              >
+                {{ t('publico.galeria.todas') }}
+              </button>
+              <button
+                type="button"
+                data-filtro="mias"
+                [attr.aria-pressed]="soloMias()"
+                (click)="soloMias.set(true)"
+              >
+                {{ t('publico.galeria.mias', { n: numeroMias() }) }}
+              </button>
+            </div>
+          }
+
           <ul class="gl__rejilla">
-            @for (foto of fotos(); track foto.id; let i = $index) {
-              <li>
-                <button type="button" class="gl__miniatura" (click)="abrir(i)">
+            @for (item of visibles(); track item.foto.id) {
+              <li class="gl__celda">
+                <button type="button" class="gl__miniatura" (click)="abrir(item.indice)">
                   <img
-                    [src]="foto.urlMiniatura"
-                    [alt]="foto.pie || t('publico.galeria.deAlguien', { quien: foto.autor })"
+                    [src]="item.foto.urlMiniatura"
+                    [alt]="
+                      item.foto.pie || t('publico.galeria.deAlguien', { quien: item.foto.autor })
+                    "
                     loading="lazy"
                     decoding="async"
                   />
                 </button>
+                @if (puedoBorrar(item.foto)) {
+                  <button
+                    type="button"
+                    class="gl__quitar"
+                    data-accion="borrar-mia"
+                    (click)="borrar(item.foto)"
+                  >
+                    <np-icon name="trash" />
+                    <span class="gl__oculto">{{ t('publico.galeria.borrar') }}</span>
+                  </button>
+                }
               </li>
             }
           </ul>
@@ -223,6 +281,44 @@ import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
       padding: 0;
       list-style: none;
     }
+    .gl__celda {
+      position: relative;
+    }
+    .gl__quitar {
+      position: absolute;
+      inset-block-end: 0.35rem;
+      inset-inline-end: 0.35rem;
+      display: grid;
+      place-items: center;
+      inline-size: 2.5rem;
+      block-size: 2.5rem;
+      border: 0;
+      border-radius: 999px;
+      background: rgb(0 0 0 / 0.65);
+      color: #fff;
+      cursor: pointer;
+    }
+    .gl__filtro {
+      display: flex;
+      gap: 0.5rem;
+      margin-block-end: 1rem;
+    }
+    .gl__filtro button {
+      min-block-size: 2.5rem;
+      padding-inline: 1rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+    .gl__filtro button[aria-pressed='true'] {
+      background: var(--gl-acento);
+      border-color: var(--gl-acento);
+      color: #fff;
+      font-weight: 600;
+    }
     .gl__miniatura {
       display: block;
       inline-size: 100%;
@@ -315,9 +411,19 @@ import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
       clip-path: inset(50%);
       overflow: hidden;
     }
+    /* Los títulos, con la letra de la plantilla de la pareja (D-55). */
+    h1,
+    h2 {
+      font-family: var(--np-marca-titulos, inherit);
+    }
   `,
 })
 export class NpGaleriaPublica {
+  /** La boda, que resuelve la ruta: de aquí sale el tema (D-55). */
+  readonly tenant = input<ResultadoTenant | null>(null);
+  protected readonly tema = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
+
   private readonly puerta = inject(PUERTA_GALERIA);
 
   protected readonly maxPorSubida = MAX_POR_SUBIDA;
@@ -333,6 +439,21 @@ export class NpGaleriaPublica {
   protected readonly miGuestId = signal<string | null>(null);
 
   private readonly indice = signal<number | null>(null);
+
+  /** El filtro «Mis fotos». */
+  protected readonly soloMias = signal(false);
+
+  private readonly lasMias = computed(() => this.fotos().filter((f) => this.puedoBorrar(f)));
+  protected readonly numeroMias = computed(() => this.lasMias().length);
+  protected readonly hayMias = computed(() => this.numeroMias() > 0);
+
+  /** Lo que se pinta en la rejilla, con su posición en la lista entera (la del visor). */
+  protected readonly visibles = computed(() => {
+    const filtrar = this.soloMias() && this.hayMias();
+    return this.fotos()
+      .map((foto, indice) => ({ foto, indice }))
+      .filter((item) => !filtrar || this.puedoBorrar(item.foto));
+  });
 
   protected readonly abierta = computed<FotoPublica | null>(() => {
     const n = this.indice();
@@ -386,6 +507,7 @@ export class NpGaleriaPublica {
     this.fallo.set(null);
     this.fotos.set(resultado.fotos);
     this.cursor.set(resultado.cursor);
+    if (resultado.miGuestId) this.miGuestId.set(resultado.miGuestId);
   }
 
   protected async cargarMas(): Promise<void> {
@@ -402,6 +524,7 @@ export class NpGaleriaPublica {
 
     this.fotos.update((previas) => [...previas, ...resultado.fotos]);
     this.cursor.set(resultado.cursor);
+    if (resultado.miGuestId) this.miGuestId.set(resultado.miGuestId);
   }
 
   /**

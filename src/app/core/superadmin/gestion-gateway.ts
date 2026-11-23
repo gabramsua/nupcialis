@@ -34,6 +34,11 @@ export interface EnlaceDeRestablecimiento {
   readonly enlace: string;
 }
 
+export interface CorreoDeAccesoEnviado extends EnlaceDeRestablecimiento {
+  /** Si quedó en la cola de envío; el enlace sirve igual para copiarlo. */
+  readonly enviado: boolean;
+}
+
 export interface PuertaGestion {
   ficha(weddingId: string): Promise<Resultado<FichaDeBoda>>;
   /** Genera el enlace; **no envía nada**. Quien lo pide se lo pasa a la pareja. */
@@ -41,6 +46,9 @@ export interface PuertaGestion {
     weddingId: string,
     uid: string,
   ): Promise<Resultado<EnlaceDeRestablecimiento>>;
+
+  /** Manda el correo de acceso con la plantilla editable y devuelve el enlace. */
+  enviarCorreoDeAcceso(weddingId: string, uid: string): Promise<Resultado<CorreoDeAccesoEnviado>>;
 
   finanzas(): Promise<Resultado<DatosDeFinanzas>>;
   /** Con `id` edita; con `null` crea. */

@@ -113,7 +113,6 @@ export const INVITADO_DE_PRUEBA: Invitado = {
   rsvpStatus: 'pending',
   isCompanion: false,
   invitedById: null,
-  maxCompanions: 0,
   loginCount: 0,
   notes: '',
   menu: '',

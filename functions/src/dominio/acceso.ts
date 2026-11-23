@@ -26,6 +26,19 @@ export function esModoAcceso(valor: unknown): valor is ModoAcceso {
 }
 
 /** Lo que el invitado escribe. Lo que sobre según el modo, se ignora. */
+/**
+ * Con qué credenciales se identifica un invitado en esta boda (D-56).
+ *
+ * En una boda **abierta** la web se ve sin identificarse, pero el quiz y la
+ * galería necesitan saber quién es cada uno (ranking nominal, autor de cada
+ * foto), así que ahí —y solo ahí— se pide **nombre y los cuatro últimos dígitos
+ * del móvil**, como en el modo B. Mismo límite de intentos y misma respuesta
+ * única de fallo.
+ */
+export function modoDeIdentificacion(modo: ModoAcceso): Exclude<ModoAcceso, 'open'> {
+  return modo === 'open' ? 'name_phone4' : modo;
+}
+
 export interface Credenciales {
   readonly nombre?: unknown;
   readonly digitos?: unknown;

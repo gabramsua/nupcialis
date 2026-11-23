@@ -763,6 +763,46 @@ El primer recorrido completo salió mal. Arreglado en esta tanda:
       **`completeWeddings`** para añadir los módulos nuevos a las bodas ya
       creadas. **Función nueva: hay que desplegar functions.**
 
+- [x] `S4a` **Tanda 22** (D-51, D-52): sin cupo de acompañantes (y sin
+      `setCompanionQuota`), acompañantes que siguen la asistencia del titular,
+      «Ver acompañantes», grupo «Invitados» oculto, WhatsApp único en «Vuestra
+      web», sin «Viene con» al añadir, lote de viene/no viene solo en
+      familia/grupo e importación solo con la plantilla `.xlsx`. **Hay que
+      desplegar functions.**
+
+- [x] `S4b` **Tanda 23** (D-53): menú lateral plegable del superadmin; correos
+      con plantillas editables y cola `mail` (extensión Trigger Email); alta con
+      enlace de Google Maps y correo de acceso automático; planes y módulos
+      editables con confirmación al quitar; catálogos siempre activos y tareas
+      sin categoría; consejos por módulo en el panel (gestionados desde el
+      superadmin); editar y borrar boda; contadores de entradas y resumen en la
+      ficha. **Hay que desplegar functions y reglas, e instalar Trigger Email.**
+- [x] `S4c` **Tanda 24** (D-54): arreglo del acceso de la pareja al panel; la
+      pareja publica su web (`setMyWebStatus`) y se borran las partidas de prueba
+      del quiz al publicar; sugerencias del quiz sin las ya añadidas; «Nuestra
+      historia» con dos botones y fotos sin recortar; menú con apartado activo
+      marcado y sin ojo duplicado; reparación de secciones de historia
+      duplicadas; aviso de primera vez para las tareas; botones de cámara;
+      galería del invitado con «Mis fotos» y borrado propio; plantillas
+      Romántica y Moderna y seis paletas nuevas. **Hay que desplegar functions.**
+- [x] `S4d` **Tanda 25** (D-55): panel protegido con guardas endurecidos; publicar
+      arriba en el Resumen y «Volver a borrador» pequeño al final; tareas de
+      catálogo sin categoría obligatoria y selector de icono; quiz y módulos
+      públicos recuperan la sesión de invitado; tema de la pareja en todos los
+      módulos públicos; cola de correos del superadmin (`listMailQueue`,
+      `discardMailItem`); teléfono de contacto; slug editable por el superadmin;
+      «Apuntar cobro»; contador de visitas a la web (`recordWebVisit`); CSV en la
+      importación; orden por grupo corregido. **Hay que desplegar functions.**
+- [x] `S4e` **Tanda 26** (D-56): quiz, galería, regalos y playlist piden identificarse
+      también con la web abierta (`guestLogin` en boda abierta, guarda y puerta
+      `/entrar`), con avisos a los novios; precio acordado por boda en la ficha del
+      superadmin (`billing/{weddingId}`). **Hay que desplegar functions.**
+- [x] `S4f` **Tanda 27** (D-57): cabecera de navegación del plan completo (barra con
+      «Más» en escritorio, cajón agrupado en móvil), con el tema de la boda; los
+      módulos con página propia salen del apilado de la portada; velo de foto con el
+      color del fondo (arregla Romántica con paletas oscuras); 4 paletas nuevas
+      (Tinto y rosa, Burdeos y oro, Grafito y oro, Perla y oro).
+
 Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
 
 - [ ] `S1.1` **Landing pública de venta**, atractiva y funcional (hoy es un rótulo).
@@ -776,8 +816,10 @@ Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
       de la boda salen cuatro avisos —agradecimiento, encuesta, aviso de fotos y
       cierre para la pareja, y tarea de cierre para Gabriel— con el texto listo
       para copiar y «marcar como enviado» (`reminderMarks`). **No envía nada.**
-- [ ] `S1.3g` **Notificaciones** push / correo. **Apartada** (D-48): necesita
-      decidir proveedor de correo (REQUISITOS §11.5). La pantalla de recordatorios
+- [ ] `S1.3g` **Notificaciones** push / correo. **Parcial** (D-53): ya hay cola `mail`
+      y plantillas editables para los correos de acceso; faltan los recordatorios
+      automáticos y el envío a invitados. (Antes apartada, D-48: necesitaba
+      decidir proveedor de correo, REQUISITOS §11.5.) La pantalla de recordatorios
       ya tiene el texto y el estado; solo faltaría quién aprieta el botón.
 - [x] `S1.6b` **Recuperación desde el superadmin** (D-48): ficha de la pareja
       (correos, teléfono si lo hay, último acceso) y botón «enlace de

@@ -53,6 +53,15 @@ describe('urlDeFuentes', () => {
   });
 
   it('una plantilla sin fuentes propias no pide nada', () => {
-    expect(urlDeFuentes({ id: 'clasica', nombre: 'x', descripcion: 'y', fuentes: [] })).toBeNull();
+    expect(urlDeFuentes({ ...plantillaDe('clasica'), fuentes: [] })).toBeNull();
+  });
+
+  it('cada plantilla trae colores y tipografía para las páginas sueltas (D-55)', () => {
+    for (const p of PLANTILLAS) {
+      expect(p.colores.fondo).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(p.colores.texto).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(p.tipografia.titulos).not.toBe('');
+      expect(p.tipografia.texto).not.toBe('');
+    }
   });
 });

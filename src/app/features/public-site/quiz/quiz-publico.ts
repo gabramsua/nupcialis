@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  input,
   signal,
   type Signal,
 } from '@angular/core';
@@ -17,6 +18,9 @@ import {
   type PartidaTerminada,
 } from '../../../core/quiz/quiz-gateway';
 import type { FilaRanking } from './quiz';
+import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 
 type Fase = 'portada' | 'cargando' | 'jugando' | 'entregando' | 'final';
 
@@ -39,19 +43,25 @@ type Fase = 'portada' | 'cargando' | 'jugando' | 'entregando' | 'final';
  */
 @Component({
   selector: 'np-quiz-publico',
-  imports: [RouterLink, TranslocoDirective, NpIcon],
+  imports: [NpCabeceraBoda, RouterLink, TranslocoDirective, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style]': 'tema()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <div class="qz">
         <!--
           La vuelta a la web de la boda: a esta página se llega por un enlace
           suelto, y sin esto el invitado se queda dentro del juego.
         -->
-        <a class="qz__volver" routerLink="/">
-          <np-icon name="caret-left" />
-          {{ t('publico.quiz.volver') }}
-        </a>
+        @if (!cabecera()) {
+          <a class="qz__volver" routerLink="/">
+            <np-icon name="caret-left" />
+            {{ t('publico.quiz.volver') }}
+          </a>
+        }
 
         @switch (fase()) {
           @case ('portada') {
@@ -436,9 +446,19 @@ type Fase = 'portada' | 'cargando' | 'jugando' | 'entregando' | 'final';
     .qz__suyos {
       font-variant-numeric: tabular-nums;
     }
+    /* Los títulos, con la letra de la plantilla de la pareja (D-55). */
+    h1,
+    h2 {
+      font-family: var(--np-marca-titulos, inherit);
+    }
   `,
 })
 export class NpQuizPublico {
+  /** La boda, que resuelve la ruta: de aquí sale el tema (D-55). */
+  readonly tenant = input<ResultadoTenant | null>(null);
+  protected readonly tema = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
+
   private readonly puerta = inject(PUERTA_QUIZ);
 
   protected readonly fase = signal<Fase>('portada');

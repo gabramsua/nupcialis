@@ -98,9 +98,12 @@ function orden(valor: unknown): number | null {
     : null;
 }
 
-function activo(valor: unknown): boolean {
-  return valor !== false;
-}
+/**
+ * Los elementos del catálogo **siempre están activos**: lo que no se quiere se
+ * borra (D-53). El campo `enabled` se sigue escribiendo —`true`— para no romper
+ * a los lectores antiguos, pero ya no se acepta del cliente ni se mira al volcar.
+ */
+const ACTIVO = true;
 
 export function validarTarea(valor: unknown): ResultadoCatalogo<TareaDeCatalogo> {
   if (valor === null || typeof valor !== 'object') return { ok: false, motivo: 'formato' };
@@ -109,8 +112,10 @@ export function validarTarea(valor: unknown): ResultadoCatalogo<TareaDeCatalogo>
   const title = texto(t['title'], MAX_TITULO);
   if (title === null || title === '') return { ok: false, motivo: 'titulo' };
 
+  // La categoría de una tarea ya no se pide al crearla (D-53): es opcional y la
+  // pareja puede ponerla en su copia. Las tareas de fábrica siguen trayendo la suya.
   const category = texto(t['category'], MAX_CATEGORIA);
-  if (category === null || category === '') return { ok: false, motivo: 'categoria' };
+  if (category === null) return { ok: false, motivo: 'categoria' };
 
   const meses = t['mesesAntes'];
   if (
@@ -146,7 +151,7 @@ export function validarTarea(valor: unknown): ResultadoCatalogo<TareaDeCatalogo>
       icon,
       priority: priority as Prioridad,
       order: ord,
-      enabled: activo(t['enabled']),
+      enabled: ACTIVO,
     },
   };
 }
@@ -181,7 +186,7 @@ export function validarPartida(valor: unknown): ResultadoCatalogo<PartidaDeCatal
       concept,
       estimatedCents: estimado,
       order: ord,
-      enabled: activo(p['enabled']),
+      enabled: ACTIVO,
     },
   };
 }
@@ -219,7 +224,7 @@ export function validarPreguntaSugerida(valor: unknown): ResultadoCatalogo<Pregu
       difficulty: entera.difficulty,
       hint: entera.hint,
       order: ord,
-      enabled: activo(q['enabled']),
+      enabled: ACTIVO,
     },
   };
 }
@@ -244,18 +249,14 @@ export function validarElemento(
  * Las tareas de un catálogo leído de Firestore, ya validadas y en orden.
  *
  * Lo que no cuadra se descarta: un documento roto no puede dejar sin lista de
- * tareas a una boda nueva. Las **apagadas** no se vuelcan.
+ * tareas a una boda nueva.
  */
 export function tareasVolcables(docs: readonly unknown[]): readonly TareaDeCatalogo[] {
-  return ordenar(
-    docs.map((d) => validarTarea(d)).flatMap((r) => (r.ok && r.datos.enabled ? [r.datos] : [])),
-  );
+  return ordenar(docs.map((d) => validarTarea(d)).flatMap((r) => (r.ok ? [r.datos] : [])));
 }
 
 export function partidasVolcables(docs: readonly unknown[]): readonly PartidaDeCatalogo[] {
-  return ordenar(
-    docs.map((d) => validarPartida(d)).flatMap((r) => (r.ok && r.datos.enabled ? [r.datos] : [])),
-  );
+  return ordenar(docs.map((d) => validarPartida(d)).flatMap((r) => (r.ok ? [r.datos] : [])));
 }
 
 function ordenar<T extends { readonly order: number }>(items: readonly T[]): readonly T[] {

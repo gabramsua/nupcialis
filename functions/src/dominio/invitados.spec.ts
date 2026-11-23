@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  MAX_ACOMPANANTES,
   duplicadoDe,
   normalizarNombre,
   normalizarTelefono,
@@ -125,13 +124,9 @@ describe('validarInvitado', () => {
     expect(motivos({ phone: '' })).toEqual([]);
   });
 
-  it('pone tope al cupo de acompañantes', () => {
-    expect(motivos({ maxCompanions: MAX_ACOMPANANTES + 1 })).toEqual([
-      { campo: 'maxCompanions', motivo: 'fuera-de-rango' },
-    ]);
-    expect(motivos({ maxCompanions: -1 })).toEqual([
-      { campo: 'maxCompanions', motivo: 'fuera-de-rango' },
-    ]);
+  /** El cupo por invitado desapareció (D-51): si alguien lo manda, se ignora. */
+  it('ya no hay cupo de acompañantes por invitado', () => {
+    expect(motivos({ ...({ maxCompanions: 99 } as object) })).toEqual([]);
   });
 
   it('devuelve todos los motivos de una vez, no el primero', () => {

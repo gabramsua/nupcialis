@@ -122,6 +122,14 @@ function montar(iniciales: readonly FotoPublica[], enLugarDe?: PuertaGaleriaPane
 }
 
 describe('la galería en el panel', () => {
+  it('avisa a la pareja de que los invitados tendrán que identificarse (D-56)', async () => {
+    const p = montar([]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('tendrán que identificarse para ver y subir fotos');
+    expect(p.texto()).toContain('Ir a la lista de invitados');
+  });
+
   it('pinta las miniaturas, no las fotos grandes', async () => {
     const p = montar([foto({ id: 'f1' }), foto({ id: 'f2' })]);
     await p.asentar();

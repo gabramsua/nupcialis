@@ -38,9 +38,10 @@ describe('catálogo de tareas', () => {
     expect(validarTarea({ ...TAREA, mesesAntes: '12' })).toEqual({ ok: false, motivo: 'meses' });
   });
 
-  it('exige título y categoría, y una prioridad que exista', () => {
+  it('exige título, y una prioridad que exista; la categoría es opcional (D-53)', () => {
     expect(validarTarea({ ...TAREA, title: ' ' })).toEqual({ ok: false, motivo: 'titulo' });
-    expect(validarTarea({ ...TAREA, category: '' })).toEqual({ ok: false, motivo: 'categoria' });
+    expect(validarTarea({ ...TAREA, category: '' }).ok).toBe(true);
+    expect(validarTarea({ ...TAREA, category: 7 })).toEqual({ ok: false, motivo: 'categoria' });
     expect(validarTarea({ ...TAREA, priority: 'urgente' })).toEqual({
       ok: false,
       motivo: 'prioridad',
@@ -49,15 +50,20 @@ describe('catálogo de tareas', () => {
     expect(validarTarea(null)).toEqual({ ok: false, motivo: 'formato' });
   });
 
-  it('solo se vuelcan las encendidas, en orden, y lo roto se descarta', () => {
+  it('se vuelcan todas, en orden, y lo roto se descarta; ya no hay «apagadas» (D-53)', () => {
     const lista = tareasVolcables([
       { ...TAREA, title: 'B', order: 2 },
       { ...TAREA, title: 'A', order: 1 },
-      { ...TAREA, title: 'Apagada', enabled: false },
+      { ...TAREA, title: 'Antes apagada', order: 3, enabled: false },
       { title: 'Rota' },
       'basura',
     ]);
-    expect(lista.map((t) => t.title)).toEqual(['A', 'B']);
+    expect(lista.map((t) => t.title)).toEqual(['A', 'B', 'Antes apagada']);
+  });
+
+  it('el cliente no puede apagar una: siempre se guarda activa', () => {
+    const r = validarTarea({ ...TAREA, enabled: false });
+    expect(r.ok && r.datos.enabled).toBe(true);
   });
 
   it('los de fábrica son válidos y son los de siempre', () => {
@@ -99,13 +105,13 @@ describe('catálogo de presupuesto', () => {
     });
   });
 
-  it('solo vuelca las encendidas, en orden', () => {
+  it('vuelca todas, en orden', () => {
     const lista = partidasVolcables([
       { ...PARTIDA, concept: 'B', order: 2 },
       { ...PARTIDA, concept: 'A', order: 1 },
-      { ...PARTIDA, concept: 'Apagada', enabled: false },
+      { ...PARTIDA, concept: 'Antes apagada', order: 3, enabled: false },
     ]);
-    expect(lista.map((p) => p.concept)).toEqual(['A', 'B']);
+    expect(lista.map((p) => p.concept)).toEqual(['A', 'B', 'Antes apagada']);
   });
 
   it('los de fábrica son válidos', () => {

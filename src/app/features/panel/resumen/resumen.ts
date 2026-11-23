@@ -22,6 +22,7 @@ import {
   tareasUrgentes,
   type TareaDelPanel,
 } from '../checklist/tareas';
+import { PublicarWeb } from '../publicar/publicar-web';
 import { cifras, diasParaLaBoda, pendientes } from './pendientes';
 
 /**
@@ -42,13 +43,29 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
 /** Cuántas tareas urgentes se enseñan en el inicio; el resto, en su pantalla. */
 const MAX_URGENTES = 3;
 
+const CLAVE_AVISO_TAREAS = 'np.panel.avisoTareas';
+
+function avisoYaDescartado(): boolean {
+  try {
+    return localStorage.getItem(CLAVE_AVISO_TAREAS) === '1';
+  } catch {
+    return false;
+  }
+}
+
 @Component({
   selector: 'np-panel-resumen',
-  imports: [RouterLink, TranslocoDirective, NpButton, NpIcon],
+  imports: [RouterLink, TranslocoDirective, NpButton, NpIcon, PublicarWeb],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
       <section class="re">
+        <!--
+          Con la web en borrador, publicar es lo primero que se ve (D-55).
+          «Volver a borrador» está al final de la pantalla, pequeño.
+        -->
+        <np-publicar-web posicion="arriba" />
+
         <header class="re__intro">
           <h2>{{ t('panel.inicio.hola', { nombres: nombres() }) }}</h2>
           @if (dias(); as cuantos) {
@@ -67,6 +84,29 @@ const MAX_URGENTES = 3;
             <p class="re__fecha">{{ t('panel.inicio.sinFecha') }}</p>
           }
         </header>
+
+        @if (verAvisoDeTareas()) {
+          <aside class="re__aviso" data-aviso="tareas">
+            <np-icon name="check-circle" />
+            <div>
+              <strong>{{ t('panel.inicio.avisoTareas.titulo') }}</strong>
+              <p>{{ t('panel.inicio.avisoTareas.texto') }}</p>
+              <div class="re__avisoAcciones">
+                <a
+                  npButton
+                  variant="secondary"
+                  routerLink="/panel/checklist"
+                  (click)="descartarAviso()"
+                >
+                  {{ t('panel.inicio.avisoTareas.ver') }}
+                </a>
+                <button npButton variant="ghost" type="button" (click)="descartarAviso()">
+                  {{ t('panel.inicio.avisoTareas.entendido') }}
+                </button>
+              </div>
+            </div>
+          </aside>
+        }
 
         <!--
           Las dos cifras que se consultan a diario. Cada una lleva a la lista
@@ -191,6 +231,8 @@ const MAX_URGENTES = 3;
             }
           </div>
         </section>
+
+        <np-publicar-web posicion="abajo" />
       </section>
     </ng-container>
   `,
@@ -217,6 +259,25 @@ const MAX_URGENTES = 3;
       margin: var(--np-space-1) 0 0;
       color: var(--np-surface-text-muted);
       font-size: var(--np-text-sm);
+    }
+    .re__aviso {
+      display: flex;
+      gap: var(--np-space-3);
+      padding: var(--np-space-4);
+      border: 1px solid var(--np-surface-border);
+      border-inline-start: 4px solid var(--np-pending-border);
+      border-radius: var(--np-radius-md);
+      background: var(--np-surface-surface);
+    }
+    .re__aviso p {
+      margin: var(--np-space-1) 0 var(--np-space-3);
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
+    }
+    .re__avisoAcciones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--np-space-2);
     }
     .re__cifras {
       display: grid;
@@ -367,6 +428,24 @@ export class PanelResumen {
   protected readonly masUrgentes = computed(
     () => this.todasLasUrgentes().length - this.urgentes().length,
   );
+
+  /**
+   * Aviso de la primera vez: «mirad las tareas». Se descarta para siempre en
+   * este navegador; si el almacenamiento no está disponible, se enseña y ya.
+   */
+  private readonly avisoDescartado = signal(avisoYaDescartado());
+  protected readonly verAvisoDeTareas = computed(
+    () => !this.avisoDescartado() && this.store.boda()?.modulos.checklist?.enabled === true,
+  );
+
+  protected descartarAviso(): void {
+    this.avisoDescartado.set(true);
+    try {
+      localStorage.setItem(CLAVE_AVISO_TAREAS, '1');
+    } catch {
+      // Sin almacenamiento: vale con esconderlo hasta que se recargue.
+    }
+  }
 
   protected vencida(tarea: TareaDelPanel): boolean {
     return plazoDeTarea(tarea, this.ahora).clave === 'vencio';

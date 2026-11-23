@@ -1,10 +1,10 @@
 import { DOCUMENT, inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateChildFn, CanActivateFn, Router, UrlTree } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { crearFuenteTenantFirestore } from '../firebase/tenant-source.firestore';
 import { cargarTenant } from '../tenant/tenant-loader';
 import { resolverTenant } from '../tenant/tenant-resolution';
-import { accesoAlPanel, accesoAlSuperadmin } from './acceso';
+import { accesoAlPanel, accesoAlPanelSinBoda, accesoAlSuperadmin } from './acceso';
 import { SessionStore } from './session.store';
 
 /**
@@ -41,6 +41,35 @@ function dependenciasDelPanel() {
 export const guardaPanel: CanActivateFn = async () => {
   const { router, store, hostname, fuenteTenant } = dependenciasDelPanel();
 
+  // Falla cerrado: si algo revienta al resolver la sesión o la boda (red,
+  // App Check, una regla), el panel NO se abre. Una excepción en una guarda
+  // deja el router a medias, que no es lo mismo que denegar.
+  try {
+    return await decidirAccesoAlPanel(router, store, hostname, fuenteTenant);
+  } catch (error) {
+    console.error('[Panel] No se pudo comprobar el acceso; se deniega.', error);
+    return router.createUrlTree(['/panel/acceso']);
+  }
+};
+
+/**
+ * Se vuelve a comprobar la sesión en **cada** navegación dentro del panel, no
+ * solo al entrar: si la sesión caduca o se cierra en otra pestaña mientras el
+ * panel está abierto, el siguiente clic lleva al acceso en vez de enseñar
+ * pantallas de alguien que ya no está.
+ */
+export const guardaHijosDelPanel: CanActivateChildFn = async () => {
+  const router = inject(Router);
+  const sesion = await inject(SessionStore).esperar();
+  return accesoAlPanelSinBoda(sesion) ? true : router.createUrlTree(['/panel/acceso']);
+};
+
+async function decidirAccesoAlPanel(
+  router: Router,
+  store: SessionStore,
+  hostname: string,
+  fuenteTenant: ReturnType<typeof crearFuenteTenantFirestore>,
+): Promise<boolean | UrlTree> {
   const sesion = await store.esperar();
 
   const destino = resolverTenant(hostname, environment.rootDomain);
@@ -80,7 +109,7 @@ export const guardaPanel: CanActivateFn = async () => {
     default:
       return router.createUrlTree(['/']);
   }
-};
+}
 
 /** Guarda del panel de superadmin. No necesita resolver ninguna boda. */
 export const guardaSuperadmin: CanActivateFn = async () => {

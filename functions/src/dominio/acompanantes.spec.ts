@@ -5,23 +5,23 @@ import {
   exigeTelefono,
   heredarDelTitular,
   puedeAnadir,
+  sigueAlTitular,
   validarAcompanante,
   type Titular,
-  MAX_EN_UN_LOTE,
   idsDelLote,
-  validarLoteDeCupo,
   validarVinculo,
 } from './acompanantes';
-import { normalizarTelefono } from './invitados';
+import { MAX_ACOMPANANTES, normalizarTelefono } from './invitados';
 
 /**
  * Acompañantes añadidos por el invitado.
  *
  * Lo que se vigila, por orden de lo que costaría si se rompe:
  *
- * 1. **El cupo se cuenta con lo que hay escrito.** Dos pestañas abiertas mandan
- *    el mismo alta dos veces; si el cupo saliera del cliente, la pareja se
- *    encuentra comensales de más y lo descubre el día del banquete.
+ * 1. **El tope se cuenta con lo que hay escrito.** Dos pestañas abiertas mandan
+ *    el mismo alta dos veces; si la cuenta saliera del cliente, la pareja se
+ *    encuentra comensales de más y lo descubre el día del banquete. Ya no hay
+ *    cupo por invitado (D-51): queda solo el tope técnico.
  * 2. **Un acompañante no añade acompañantes.** Sin eso, el cupo de uno se vuelve
  *    una cadena.
  * 3. **Los grupos se heredan.** Es seguridad: los grupos deciden quién ve qué
@@ -32,7 +32,6 @@ function titular(parcial: Partial<Titular> = {}): Titular {
   return {
     id: 'g1',
     isCompanion: false,
-    maxCompanions: 2,
     groupIds: ['uni', 'familia'],
     active: true,
     ...parcial,
@@ -40,29 +39,31 @@ function titular(parcial: Partial<Titular> = {}): Titular {
 }
 
 describe('puedeAnadir', () => {
-  it('con cupo libre, dice cuántos quedan', () => {
-    expect(puedeAnadir(true, titular(), 0)).toEqual({ puede: true, quedan: 2 });
-    expect(puedeAnadir(true, titular(), 1)).toEqual({ puede: true, quedan: 1 });
+  it('sin cupo asignado por la pareja, pueden traer hasta el tope técnico', () => {
+    expect(puedeAnadir(true, titular(), 0)).toEqual({ puede: true, quedan: MAX_ACOMPANANTES });
+    expect(puedeAnadir(true, titular(), 1)).toEqual({
+      puede: true,
+      quedan: MAX_ACOMPANANTES - 1,
+    });
   });
 
-  it('con el cupo lleno, no', () => {
-    expect(puedeAnadir(true, titular(), 2)).toEqual({ puede: false, motivo: 'cupo-lleno' });
+  it('con el tope lleno, no', () => {
+    expect(puedeAnadir(true, titular(), MAX_ACOMPANANTES)).toEqual({
+      puede: false,
+      motivo: 'cupo-lleno',
+    });
   });
 
   /** Ya pasó con el cupo de los grupos: contar mal por arriba cuesta dinero. */
-  it('pasado el cupo por lo que sea, tampoco', () => {
-    expect(puedeAnadir(true, titular(), 5)).toEqual({ puede: false, motivo: 'cupo-lleno' });
+  it('pasado el tope por lo que sea, tampoco', () => {
+    expect(puedeAnadir(true, titular(), MAX_ACOMPANANTES + 5)).toEqual({
+      puede: false,
+      motivo: 'cupo-lleno',
+    });
   });
 
   it('con el interruptor de la boda apagado, nadie añade a nadie', () => {
     expect(puedeAnadir(false, titular(), 0)).toEqual({ puede: false, motivo: 'modulo-apagado' });
-  });
-
-  it('sin cupo asignado, no: el cupo lo decide la pareja invitado por invitado', () => {
-    expect(puedeAnadir(true, titular({ maxCompanions: 0 }), 0)).toEqual({
-      puede: false,
-      motivo: 'sin-cupo',
-    });
   });
 
   /** Si no, el cupo de uno se vuelve una cadena de treinta desconocidos. */
@@ -238,33 +239,23 @@ describe('validarVinculo', () => {
   });
 });
 
-describe('validarLoteDeCupo', () => {
-  it('un lote normal no tiene nada que objetar', () => {
-    expect(validarLoteDeCupo(['a', 'b'], 1, 10)).toEqual([]);
-    expect(validarLoteDeCupo(['a'], 0, 10)).toEqual([]);
-  });
-
-  it('sin invitados no hay nada que hacer', () => {
-    expect(validarLoteDeCupo([], 1, 10)).toEqual(['sin-invitados']);
-    expect(validarLoteDeCupo([null, 42, ''], 1, 10)).toEqual(['sin-invitados']);
-  });
-
-  /** El cupo es un número pequeño y entero: ni 1.5, ni -1, ni cien. */
-  it('un cupo que no es un número entero dentro del tope se rechaza', () => {
-    expect(validarLoteDeCupo(['a'], -1, 10)).toEqual(['cupo-invalido']);
-    expect(validarLoteDeCupo(['a'], 1.5, 10)).toEqual(['cupo-invalido']);
-    expect(validarLoteDeCupo(['a'], 11, 10)).toEqual(['cupo-invalido']);
-    expect(validarLoteDeCupo(['a'], '2', 10)).toEqual(['cupo-invalido']);
-  });
-
-  it('un lote enorme se corta antes de escribir nada', () => {
-    const muchos = Array.from({ length: MAX_EN_UN_LOTE + 1 }, (_, i) => `g${i}`);
-    expect(validarLoteDeCupo(muchos, 1, 10)).toEqual(['demasiados']);
-  });
-});
-
 describe('idsDelLote', () => {
   it('quita repetidos y lo que no es un id', () => {
     expect(idsDelLote(['a', 'a', '', null, 7, 'b'])).toEqual(['a', 'b']);
+  });
+});
+
+describe('sigueAlTitular', () => {
+  it('sin marca, sigue: son los acompañantes anteriores a la regla', () => {
+    expect(sigueAlTitular({})).toBe(true);
+  });
+
+  it('con la marca a favor, sigue', () => {
+    expect(sigueAlTitular({ rsvpFollowsTitular: true })).toBe(true);
+  });
+
+  /** Cambiarlo a mano es decir «este va por libre»: no se le pisa después. */
+  it('cambiado a mano, ya no', () => {
+    expect(sigueAlTitular({ rsvpFollowsTitular: false })).toBe(false);
   });
 });

@@ -106,7 +106,7 @@ import {
       </main>
 
       @for (seccion of secciones(); track seccion.id) {
-        <section class="clasica__seccion">
+        <section class="clasica__seccion" [attr.id]="'s-' + seccion.id">
           @if (seccion.fields['titulo']; as titulo) {
             <h2 class="clasica__titulo">{{ titulo }}</h2>
           }
@@ -316,6 +316,8 @@ import {
     /* Primero móvil: una columna con aire, y el ancho se limita en ch para que
        la línea no pase de unos 70 caracteres en pantallas grandes. */
     .clasica__seccion {
+      /* Que la cabecera fija no tape el título al saltar a un ancla del menú. */
+      scroll-margin-block-start: 5rem;
       display: flex;
       flex-direction: column;
       gap: var(--np-space-4);

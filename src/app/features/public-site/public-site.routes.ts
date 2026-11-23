@@ -4,7 +4,7 @@ import { provideIconSprite } from '../../design-system/icons/icon-sprite.provide
 import { provideFirestore } from '../../core/firebase/firestore.providers';
 import { provideAppCheck } from '../../core/firebase/appcheck.providers';
 import { provideFirebaseFunctions } from '../../core/firebase/functions.providers';
-import { SesionInvitado } from '../../core/firebase/sesion-invitado';
+import { SesionInvitado, exigirSesionDeInvitado } from '../../core/firebase/sesion-invitado';
 import { PUERTA_RSVP } from '../../core/rsvp/rsvp-gateway';
 import { crearPuertaRsvpFirebase } from '../../core/firebase/rsvp-gateway.firebase';
 import { provideQuiz } from '../../core/quiz/quiz.providers';
@@ -63,6 +63,7 @@ export const publicSiteRoutes: Routes = [
     // así el juego cae en su propio trozo, que la mayoría de invitados no
     // llegará a descargar.
     path: 'quiz',
+    canActivate: [exigirSesionDeInvitado('quiz')],
     providers: [
       provideIconSprite('public'),
       provideFirestore(),
@@ -78,6 +79,7 @@ export const publicSiteRoutes: Routes = [
     // La galería, con URL propia: es la página a la que se vuelve al día
     // siguiente de la boda, y la que se pasa por el grupo de WhatsApp.
     path: 'galeria',
+    canActivate: [exigirSesionDeInvitado('galeria')],
     providers: [
       provideIconSprite('public'),
       provideFirestore(),
@@ -94,6 +96,7 @@ export const publicSiteRoutes: Routes = [
     // pintan dentro de la web. Y por uno más, que es el que manda: el número
     // de cuenta de la pareja no puede viajar en la proyección pública.
     path: 'regalos',
+    canActivate: [exigirSesionDeInvitado('regalos')],
     providers: [
       provideIconSprite('public'),
       provideFirestore(),
@@ -109,6 +112,7 @@ export const publicSiteRoutes: Routes = [
     // La playlist, con URL propia: quién ha votado qué no es público, así que
     // la lista llega por invocable y solo a quien está identificado.
     path: 'playlist',
+    canActivate: [exigirSesionDeInvitado('playlist')],
     providers: [
       provideIconSprite('public'),
       provideFirestore(),
@@ -119,6 +123,22 @@ export const publicSiteRoutes: Routes = [
     ],
     resolve: { tenant: tenantResolver },
     loadComponent: () => import('./playlist/playlist-publica').then((m) => m.NpPlaylistPublica),
+  },
+  {
+    // La puerta de los módulos que necesitan saber quién es el invitado (D-56):
+    // el quiz, la galería, los regalos y la playlist mandan aquí a quien no se
+    // ha identificado, y vuelven a su página cuando lo hace. En una boda abierta
+    // la portada no pide nada; esto solo aparece al entrar a uno de esos módulos.
+    path: 'entrar',
+    providers: [
+      provideIconSprite('public'),
+      provideFirestore(),
+      provideFirebaseFunctions(),
+      provideAppCheck(),
+      SesionInvitado,
+    ],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./acceso/entrar-modulo').then((m) => m.EntrarModulo),
   },
   {
     // El mapa, con URL propia por lo que pesa Leaflet: se descarga solo aquí.

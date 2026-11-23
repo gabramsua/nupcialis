@@ -62,7 +62,7 @@ export function leerTarea(id: string, crudo: unknown): TareaDeCatalogo | null {
   if (!esObjeto(crudo)) return null;
   const title = texto(crudo['title']);
   const category = texto(crudo['category']);
-  if (title === '' || category === '') return null;
+  if (title === '') return null;
 
   const prioridad = crudo['priority'];
   return {

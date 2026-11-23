@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
 import { PlantillaBotanica } from './botanica/botanica';
 import { PlantillaClasica } from './clasica/clasica';
+import { PlantillaModerna } from './moderna/moderna';
+import { PlantillaRomantica } from './romantica/romantica';
 
 /**
  * Regresión del 2026-09-16: la portada enseñaba los nombres y nada más.
@@ -18,6 +20,8 @@ import { PlantillaClasica } from './clasica/clasica';
 const PLANTILLAS: readonly [string, Type<unknown>][] = [
   ['clásica', PlantillaClasica],
   ['botánica', PlantillaBotanica],
+  ['romántica', PlantillaRomantica],
+  ['moderna', PlantillaModerna],
 ];
 
 describe.each(PLANTILLAS)('plantilla %s', (_nombre, Plantilla) => {

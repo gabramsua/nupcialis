@@ -268,3 +268,22 @@ describe('lugarDeAlta', () => {
     });
   });
 });
+
+describe('teléfono de contacto de la pareja (D-55)', () => {
+  it('es opcional: sin él, `null`', () => {
+    const r = validarAlta(VALIDA, HOY);
+    expect(r.ok && r.datos.contactPhone).toBeNull();
+  });
+
+  it('se guarda normalizado, con prefijo', () => {
+    const r = validarAlta({ ...VALIDA, contactPhone: '600 11 22 33' }, HOY);
+    expect(r.ok && r.datos.contactPhone).toBe('+34600112233');
+  });
+
+  it('uno a medias es un error, no se guarda a medias', () => {
+    expect(motivos({ contactPhone: '12345' })).toContainEqual({
+      campo: 'telefono',
+      motivo: 'no-es-telefono',
+    });
+  });
+});

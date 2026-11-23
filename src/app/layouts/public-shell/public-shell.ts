@@ -27,7 +27,11 @@ import {
   pideIdentificarse,
   type ModoAcceso,
 } from '../../core/acceso/acceso';
+import { FIREBASE_FUNCTIONS } from '../../core/firebase/functions.providers';
 import { SesionInvitado } from '../../core/firebase/sesion-invitado';
+import { registrarVisitaWeb } from '../../core/firebase/visita-web';
+import { NpCabeceraBoda } from '../../features/public-site/navegacion/cabecera-boda';
+import { conCabecera as bodaConCabecera } from '../../features/public-site/tema';
 import { Entrar } from '../../features/public-site/acceso/entrar';
 import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-code';
 
@@ -47,7 +51,15 @@ import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-co
  */
 @Component({
   selector: 'np-public-shell',
-  imports: [NgComponentOutlet, RouterLink, TranslocoDirective, NpEmptyState, NpIcon, Entrar],
+  imports: [
+    NgComponentOutlet,
+    RouterLink,
+    TranslocoDirective,
+    NpEmptyState,
+    NpIcon,
+    Entrar,
+    NpCabeceraBoda,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style]': 'variablesDeMarca()' },
   template: `
@@ -79,6 +91,14 @@ import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-co
               de fondo de marca, sobre todo al recargar.
             -->
           } @else if (plantilla(); as componente) {
+            <!--
+              La cabecera de navegación, solo en la web de varias páginas. Va
+              antes de la plantilla y sale en todas las páginas de la boda, no
+              solo en la portada.
+            -->
+            @if (conCabecera()) {
+              <np-cabecera-boda [tenant]="tenant()" />
+            }
             <ng-container
               *ngComponentOutlet="componente; inputs: { datos: datosPortada() }"
             ></ng-container>
@@ -112,7 +132,7 @@ import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-co
               seis secciones. Y solo cuando sabemos quién es: sin identidad no
               hay a quién apuntar la respuesta (ver D-09).
             -->
-            @if (puedeConfirmar()) {
+            @if (puedeConfirmar() && !conCabecera()) {
               <a class="np-confirmar" routerLink="/confirmar">
                 <np-icon name="check-circle" weight="fill" />
                 {{ t('publico.confirmar.entrada') }}
@@ -245,6 +265,7 @@ export class PublicShell {
   private readonly fuentes = inject(Fuentes);
   private readonly indexacion = inject(Indexacion);
   protected readonly sesion = inject(SesionInvitado);
+  private readonly functions = inject(FIREBASE_FUNCTIONS, { optional: true });
 
   /**
    * El nombre que trae el enlace que le mandó la pareja (`?n=`).
@@ -343,6 +364,9 @@ export class PublicShell {
     () => this.sitio()?.modulos['rsvp'] === 'visible' && this.sesion.identificado(),
   );
 
+  /** La web de varias páginas lleva cabecera de navegación (plan completo). */
+  protected readonly conCabecera = computed(() => bodaConCabecera(this.tenant()));
+
   /** La boda pide identificarse y todavía no sabemos quién es. */
   protected readonly hayQuePreguntar = computed(
     () => pideIdentificarse(this.modo()) && this.sesion.resuelta() && !this.sesion.identificado(),
@@ -389,6 +413,7 @@ export class PublicShell {
       alojamientos: t.sitio.alojamientos,
       ubicaciones: t.sitio.ubicaciones,
       dressCode: t.sitio.dressCode,
+      layout: t.sitio.layout,
     };
   });
 
@@ -413,6 +438,14 @@ export class PublicShell {
       const t = this.tenant();
       if (t.tipo !== 'ok') return;
       this.indexacion.aplicar(debeIndexarse(t.sitio.status, t.sitio.indexable));
+    });
+
+    // El contador de visitas (D-55): una vez por pestaña y solo con la web publicada.
+    effect(() => {
+      const sitio = this.sitio();
+      const functions = this.functions;
+      if (!sitio || sitio.status !== 'active' || !functions) return;
+      void registrarVisitaWeb(functions, this.slug());
     });
 
     effect(() => {

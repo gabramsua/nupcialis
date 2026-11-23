@@ -50,7 +50,6 @@ interface InvitadoEnLista {
   readonly rsvpStatus: string;
   readonly isCompanion: boolean;
   readonly invitedById: string | null;
-  readonly maxCompanions: number;
   readonly loginCount: number;
   readonly notes: string;
   readonly menu: string;
@@ -84,7 +83,6 @@ function aLista(id: string, d: Record<string, unknown>): InvitadoEnLista {
     rsvpStatus: texto(d['rsvpStatus']) || 'pending',
     isCompanion: d['isCompanion'] === true,
     invitedById: typeof d['invitedById'] === 'string' ? d['invitedById'] : null,
-    maxCompanions: entero(d['maxCompanions']),
     loginCount: entero(d['loginCount']),
     notes: texto(d['notes']),
     menu: texto(d['menu']),
@@ -182,6 +180,7 @@ export const upsertGuest = onCall<EntradaUpsert>(
       typeof datos.invitedById === 'string' && datos.invitedById !== '' ? datos.invitedById : null;
 
     let heredados: readonly string[] | null = null;
+    let estadoDelTitular: 'pending' | 'confirmed' | 'declined' = 'pending';
     if (titularId !== null) {
       const [titularSnap, suyos] = await Promise.all([
         coleccion.doc(titularId).get(),
@@ -194,7 +193,6 @@ export const upsertGuest = onCall<EntradaUpsert>(
           ? {
               id: titularId,
               isCompanion: t['isCompanion'] === true,
-              maxCompanions: typeof t['maxCompanions'] === 'number' ? t['maxCompanions'] : 0,
               groupIds: Array.isArray(t['groupIds'])
                 ? t['groupIds'].filter((g): g is string => typeof g === 'string')
                 : [],
@@ -209,10 +207,14 @@ export const upsertGuest = onCall<EntradaUpsert>(
         });
       }
       heredados = vinculo.groupIds;
+      estadoDelTitular =
+        t?.['rsvpStatus'] === 'confirmed' || t?.['rsvpStatus'] === 'declined'
+          ? t['rsvpStatus']
+          : 'pending';
     }
 
-    // Lo que cambia en el documento por la relación. Un acompañante no tiene
-    // cupo propio (`maxCompanions: 0`) y hereda los grupos del titular.
+    // Lo que cambia en el documento por la relación. Un acompañante hereda los
+    // grupos del titular.
     const relacion: Record<string, unknown> = !quiereVinculo
       ? {}
       : titularId === null
@@ -220,8 +222,11 @@ export const upsertGuest = onCall<EntradaUpsert>(
         : {
             isCompanion: true,
             invitedById: titularId,
-            maxCompanions: 0,
             groupIds: heredados ?? [],
+            // Viene como viene quien lo trae, salvo que se cambie a mano (D-51).
+            rsvpStatus: estadoDelTitular,
+            rsvpFollowsTitular: true,
+            rsvpAt: estadoDelTitular === 'pending' ? null : FieldValue.serverTimestamp(),
           };
 
     if (id) {
@@ -251,10 +256,10 @@ export const upsertGuest = onCall<EntradaUpsert>(
       invitedById: null,
       addedBy: 'owner',
       // Si se crea ya como acompañante de alguien, manda la relación: los
-      // grupos son los del titular y no hay cupo propio.
-      ...relacion,
+      // grupos son los del titular.
       rsvpStatus: 'pending',
       rsvpAt: null,
+      ...relacion,
       rsvpAnswers: {},
       menu: '',
       allergies: '',

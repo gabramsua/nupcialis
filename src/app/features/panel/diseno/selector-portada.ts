@@ -62,6 +62,19 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
             />
           </label>
 
+          <label class="pf__subir" [class.pf__subir--ocupado]="trabajando()">
+            <np-icon name="camera" />
+            {{ t('panel.diseno.portada.hacerFoto') }}
+            <input
+              type="file"
+              [accept]="tipos"
+              capture="environment"
+              data-origen="camara"
+              [disabled]="trabajando()"
+              (change)="elegir($event)"
+            />
+          </label>
+
           @if (url()) {
             <button
               npButton

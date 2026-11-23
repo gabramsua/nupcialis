@@ -11,7 +11,7 @@
  * producto necesita enterarse.
  */
 
-export type PlantillaId = 'clasica' | 'botanica';
+export type PlantillaId = 'clasica' | 'botanica' | 'romantica' | 'moderna';
 
 export interface Plantilla {
   readonly id: PlantillaId;
@@ -26,6 +26,19 @@ export interface Plantilla {
    * el enlace desde WhatsApp con datos móviles.
    */
   readonly fuentes: readonly string[];
+  /**
+   * Cómo se ve por defecto, sin paleta elegida. Las páginas sueltas de la boda
+   * (quiz, galería, regalos…) lo usan para parecerse a **su** plantilla y no al
+   * sistema (D-55). Tiene que coincidir con las reservas de su hoja de estilos.
+   */
+  readonly colores: {
+    readonly fondo: string;
+    readonly texto: string;
+    readonly acento: string;
+    readonly superficie: string;
+  };
+  /** Las familias CSS de los títulos y del texto, con su reserva. */
+  readonly tipografia: { readonly titulos: string; readonly texto: string };
 }
 
 export const PLANTILLAS: readonly Plantilla[] = [
@@ -34,12 +47,46 @@ export const PLANTILLAS: readonly Plantilla[] = [
     nombre: 'Clásica',
     descripcion: 'Papel claro, tipografía con serifa y una foto grande. Sobria y luminosa.',
     fuentes: ['Cormorant+Garamond:wght@300;400;500;600', 'Karla:wght@400;500;600'],
+    colores: { fondo: '#faf8f6', texto: '#241f1c', acento: '#e54d69', superficie: '#ffffff' },
+    tipografia: {
+      titulos: "'Cormorant Garamond', georgia, 'Times New Roman', serif",
+      texto: "'Karla', system-ui, sans-serif",
+    },
   },
   {
     id: 'botanica',
     nombre: 'Botánica',
     descripcion: 'Portada oscura a sangre y el día contado en una línea de tiempo.',
     fuentes: ['DM+Serif+Display', 'Jost:wght@300;400;500'],
+    colores: { fondo: '#1f4436', texto: '#f4f0e8', acento: '#d9c9a3', superficie: '#2a5646' },
+    tipografia: {
+      titulos: "'DM Serif Display', georgia, 'Times New Roman', serif",
+      texto: "'Jost', system-ui, sans-serif",
+    },
+  },
+  {
+    id: 'romantica',
+    nombre: 'Romántica',
+    descripcion:
+      'Tonos rosados y claros, los nombres en caligrafía. Suave, de invitación de siempre.',
+    fuentes: ['Great+Vibes', 'Lora:wght@400;500;600'],
+    colores: { fondo: '#fbf1ef', texto: '#4a2f35', acento: '#b5506a', superficie: '#ffffff' },
+    tipografia: {
+      titulos: "'Great Vibes', 'Brush Script MT', cursive",
+      texto: "'Lora', georgia, 'Times New Roman', serif",
+    },
+  },
+  {
+    id: 'moderna',
+    nombre: 'Moderna',
+    descripcion:
+      'Blanca, con letra grande en mayúsculas y un solo color de acento. Parece un cartel.',
+    fuentes: ['Montserrat:wght@400;600;800'],
+    colores: { fondo: '#ffffff', texto: '#161616', acento: '#d6452f', superficie: '#f5f5f5' },
+    tipografia: {
+      titulos: "'Montserrat', system-ui, sans-serif",
+      texto: "'Montserrat', system-ui, sans-serif",
+    },
   },
 ];
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
@@ -10,6 +10,9 @@ import {
   type RegaloPublico,
 } from '../../../core/regalos/regalos-gateway';
 import { hayAportacion, ibanEnGrupos, resumenDeRegalos } from './regalos';
+import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 
 /**
  * Los regalos, como los ve el invitado (§8.8).
@@ -26,15 +29,21 @@ import { hayAportacion, ibanEnGrupos, resumenDeRegalos } from './regalos';
  */
 @Component({
   selector: 'np-regalos-publica',
-  imports: [RouterLink, TranslocoDirective, NpIcon],
+  imports: [NpCabeceraBoda, RouterLink, TranslocoDirective, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style]': 'tema()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <div class="rg">
-        <a class="rg__volver" routerLink="/">
-          <np-icon name="caret-left" />
-          {{ t('publico.regalos.volver') }}
-        </a>
+        @if (!cabecera()) {
+          <a class="rg__volver" routerLink="/">
+            <np-icon name="caret-left" />
+            {{ t('publico.regalos.volver') }}
+          </a>
+        }
 
         <header class="rg__cabecera">
           <h1>{{ t('publico.regalos.titulo') }}</h1>
@@ -174,7 +183,7 @@ import { hayAportacion, ibanEnGrupos, resumenDeRegalos } from './regalos';
       max-inline-size: 42rem;
       margin-inline: auto;
       padding: 1.25rem 1rem 3rem;
-      color: var(--np-marca-texto, inherit);
+      color: var(--np-marca-text, inherit);
     }
     .rg__volver {
       display: inline-flex;
@@ -333,6 +342,11 @@ import { hayAportacion, ibanEnGrupos, resumenDeRegalos } from './regalos';
   `,
 })
 export class NpRegalosPublica {
+  /** La boda, que resuelve la ruta: de aquí sale el tema (D-55). */
+  readonly tenant = input<ResultadoTenant | null>(null);
+  protected readonly tema = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
+
   private readonly puerta = inject(PUERTA_REGALOS);
 
   protected readonly aportacion = signal<AportacionPublica | null>(null);

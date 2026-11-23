@@ -23,6 +23,7 @@ import {
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { auditar } from './infra/auditoria';
 import { exigirSuperadmin } from './infra/permisos';
+import { borrarDatosDePruebaDelQuiz } from './infra/quiz-prueba';
 
 export interface EntradaEstado {
   readonly weddingId: string;
@@ -69,6 +70,13 @@ export const setWeddingStatus = onCall<Partial<EntradaEstado>>(
       if (motivos.length > 0) {
         throw new HttpsError('failed-precondition', 'Le faltan datos a la boda.', { motivos });
       }
+    }
+
+    // Publicar una boda que venía de borrador: fuera las partidas de prueba del
+    // quiz, igual que cuando publica la pareja (D-54). Reactivar una archivada
+    // no borra nada.
+    if (destino === 'active' && actual === 'draft') {
+      await borrarDatosDePruebaDelQuiz(weddingId);
     }
 
     await ref.update({ status: destino, updatedAt: FieldValue.serverTimestamp() });

@@ -21,6 +21,7 @@ const SITIO: SitioPublico = {
   dressCode: DRESS_CODE_VACIO,
   historia: [],
   modulos: { rsvp: 'visible' },
+  layout: 'onepage',
 };
 
 function fuente(

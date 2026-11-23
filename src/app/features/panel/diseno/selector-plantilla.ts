@@ -163,6 +163,32 @@ import { BodaStore } from '../boda.store';
     .sp__muestra[data-plantilla='botanica'] .sp__muestra-fecha {
       color: #d9c9a3;
     }
+    .sp__muestra[data-plantilla='romantica'] {
+      background: #fbf1ef;
+      color: #4a2f35;
+    }
+    .sp__muestra[data-plantilla='romantica'] .sp__muestra-nombres {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.25rem;
+    }
+    .sp__muestra[data-plantilla='romantica'] .sp__muestra-fecha {
+      color: #b5506a;
+    }
+    .sp__muestra[data-plantilla='moderna'] {
+      align-items: flex-start;
+      background: #ffffff;
+      color: #161616;
+      text-align: start;
+    }
+    .sp__muestra[data-plantilla='moderna'] .sp__muestra-nombres {
+      font-family: 'Montserrat', system-ui, sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .sp__muestra[data-plantilla='moderna'] .sp__muestra-fecha {
+      color: #d6452f;
+    }
     .sp__muestra-fecha {
       font-size: var(--np-text-xs);
       letter-spacing: 0.2em;

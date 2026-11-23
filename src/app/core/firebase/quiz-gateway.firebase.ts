@@ -172,6 +172,10 @@ export function traducirQuiz(error: unknown): FalloQuiz {
   if (detalles['motivo'] === 'sin-verificar') return { tipo: 'sin-verificar' };
 
   switch (fallo.code) {
+    case 'functions/unauthenticated':
+    case 'functions/permission-denied':
+      return { tipo: 'sin-sesion' };
+
     case 'functions/deadline-exceeded':
       return { tipo: 'caducada' };
 

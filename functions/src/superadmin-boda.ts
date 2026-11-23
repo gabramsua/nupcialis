@@ -10,10 +10,9 @@
  * El superadmin copia el enlace y se lo pasa a la pareja por WhatsApp.
  */
 
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { AggregateField, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
-import { dominioDeBoda } from './dominio/dominios';
 import {
   calcularRecordatorios,
   claveDeMarca,
@@ -21,7 +20,8 @@ import {
   validarPago,
   type MotivoPagoInvalido,
 } from './dominio/superadmin';
-import { DOMINIO_BASE, EXIGIR_APP_CHECK, REGION, auth, db } from './firebase';
+import { EXIGIR_APP_CHECK, REGION, auth, db } from './firebase';
+import { generarAccesoDePareja } from './infra/acceso-pareja';
 import { auditar } from './infra/auditoria';
 import { exigirSuperadmin } from './infra/permisos';
 
@@ -90,7 +90,7 @@ export const getWeddingFile = onCall<{ weddingId?: unknown }>(
       ? (datos['ownerUids'] as unknown[]).filter((u): u is string => typeof u === 'string')
       : [];
 
-    const [cuentas, historial, pagos] = await Promise.all([
+    const [cuentas, historial, pagos, entradasDeInvitados, fotos, facturacion] = await Promise.all([
       ownerUids.length === 0
         ? Promise.resolve({ users: [] })
         : auth().getUsers(ownerUids.map((uid) => ({ uid }))),
@@ -101,6 +101,15 @@ export const getWeddingFile = onCall<{ weddingId?: unknown }>(
         .limit(MAX_ENTRADAS_HISTORIAL)
         .get(),
       db().collection('payments').where('weddingId', '==', weddingId).get(),
+      // Los invitados que han entrado alguna vez y cuántas veces entre todos.
+      db()
+        .collection(`weddings/${weddingId}/guests`)
+        .where('loginCount', '>', 0)
+        .aggregate({ quienes: AggregateField.count(), veces: AggregateField.sum('loginCount') })
+        .get(),
+      db().collection(`weddings/${weddingId}/photos`).count().get(),
+      // Lo acordado con la pareja (D-56): solo lo lee el superadmin.
+      db().doc(`billing/${weddingId}`).get(),
     ]);
 
     const porUid = new Map(cuentas.users.map((u) => [u.uid, u]));
@@ -117,6 +126,7 @@ export const getWeddingFile = onCall<{ weddingId?: unknown }>(
     });
 
     const c = (datos['counters'] ?? {}) as Record<string, unknown>;
+    const acceso = (datos['access'] ?? {}) as Record<string, unknown>;
     const setup = (datos['setup'] ?? {}) as Record<string, unknown>;
 
     return {
@@ -128,8 +138,23 @@ export const getWeddingFile = onCall<{ weddingId?: unknown }>(
       weddingDay: diaDeBoda(datos['weddingDate']),
       createdAt: isoDe(datos['createdAt']),
       authDomain: setup['authDomain'] === 'ok' ? 'ok' : 'pending',
+      ceremonyType: datos['ceremonyType'] === 'religious' ? 'religious' : 'civil',
+      contactPhone: textoDe(datos['contactPhone']),
+      agreedPriceCents: precioAcordado(facturacion.data()?.['agreedPriceCents']),
       invitados: typeof c['guestsTotal'] === 'number' ? c['guestsTotal'] : 0,
       confirmados: typeof c['guestsConfirmed'] === 'number' ? c['guestsConfirmed'] : 0,
+      rechazados: typeof c['guestsDeclined'] === 'number' ? c['guestsDeclined'] : 0,
+      pendientes: typeof c['guestsPending'] === 'number' ? c['guestsPending'] : 0,
+      fotos: fotos.data().count,
+      // Cuántas veces ha entrado la pareja y cuántos invitados (D-53).
+      acceso: {
+        pareja: typeof acceso['ownerLogins'] === 'number' ? acceso['ownerLogins'] : 0,
+        parejaUltima: isoDe(acceso['lastOwnerLoginAt']),
+        visitasWeb: typeof acceso['webVisits'] === 'number' ? acceso['webVisits'] : 0,
+        visitasWebUltima: isoDe(acceso['lastWebVisitAt']),
+        invitadosQueEntraron: Number(entradasDeInvitados.data()['quienes'] ?? 0),
+        invitadosEntradas: Number(entradasDeInvitados.data()['veces'] ?? 0),
+      },
       contactos,
       historial: historial.docs.map((d) => {
         const e = d.data();
@@ -148,6 +173,11 @@ export const getWeddingFile = onCall<{ weddingId?: unknown }>(
     };
   },
 );
+
+/** El precio acordado, en céntimos, o `null` si no se ha fijado. */
+function precioAcordado(valor: unknown): number | null {
+  return typeof valor === 'number' && Number.isInteger(valor) && valor >= 0 ? valor : null;
+}
 
 // ---------- recuperación de contraseña ----------
 
@@ -168,34 +198,7 @@ export const generateCoupleResetLink = onCall<{ weddingId?: unknown; uid?: unkno
     const weddingId = idDe(peticion.data?.weddingId);
     const uid = idDe(peticion.data?.uid, 'la cuenta');
 
-    const boda = await db().doc(`weddings/${weddingId}`).get();
-    if (!boda.exists) throw new HttpsError('not-found', 'Esa boda no existe.');
-    const datos = boda.data() ?? {};
-
-    const propietarios = Array.isArray(datos['ownerUids']) ? (datos['ownerUids'] as unknown[]) : [];
-    if (!propietarios.includes(uid)) {
-      throw new HttpsError('permission-denied', 'Esa cuenta no es de esta boda.');
-    }
-
-    const cuenta = await auth()
-      .getUser(uid)
-      .catch(() => null);
-    if (!cuenta?.email) {
-      throw new HttpsError('failed-precondition', 'Esa cuenta no tiene correo.', {
-        motivo: 'sin-correo',
-      });
-    }
-
-    const slug = textoDe(datos['slug']);
-    const url = `https://${dominioDeBoda(slug, DOMINIO_BASE)}/panel/acceso`;
-
-    let enlace: string;
-    try {
-      enlace = await auth().generatePasswordResetLink(cuenta.email, { url });
-    } catch (error) {
-      console.error('No se pudo generar el enlace de restablecimiento', uid, error);
-      throw new HttpsError('internal', 'No se pudo generar el enlace.');
-    }
+    const acceso = await generarAccesoDePareja(weddingId, uid);
 
     await auditar({
       actorUid: superadmin.uid,
@@ -205,7 +208,7 @@ export const generateCoupleResetLink = onCall<{ weddingId?: unknown; uid?: unkno
       payload: { paraUid: uid },
     });
 
-    return { weddingId, uid, email: cuenta.email, enlace };
+    return { weddingId, uid, email: acceso.email, enlace: acceso.enlace };
   },
 );
 

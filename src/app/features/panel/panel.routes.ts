@@ -7,7 +7,7 @@ import { provideCronologia } from '../../core/cronologia/cronologia.providers';
 import { provideAlojamientos } from '../../core/alojamientos/alojamientos.providers';
 import { provideEnlaces } from '../../core/invitados/enlaces.providers';
 import { provideInvitados } from '../../core/invitados/invitados.providers';
-import { guardaPanel } from '../../core/auth/guards';
+import { guardaHijosDelPanel, guardaPanel } from '../../core/auth/guards';
 import { provideFirebaseAuth } from '../../core/firebase/auth.providers';
 import { provideFirestore } from '../../core/firebase/firestore.providers';
 import { provideAppCheck } from '../../core/firebase/appcheck.providers';
@@ -32,6 +32,8 @@ import { providePlaylistDelPanel } from '../../core/playlist/playlist-panel.prov
 import { providePresupuesto } from '../../core/presupuesto/presupuesto.providers';
 import { provideTareas } from '../../core/checklist/tareas.providers';
 import { provideUbicaciones } from '../../core/mapa/ubicaciones.providers';
+import { ConsejosDelPanel } from './consejo/consejos-panel';
+import { provideLlamadas } from '../../core/llamadas/llamadas.providers';
 import { provideCatalogos } from '../../core/superadmin/catalogos.providers';
 import { provideQuizDelPanel } from '../../core/quiz/quiz-admin.providers';
 import { provideMesas } from '../../core/mesas/mesas.providers';
@@ -70,6 +72,8 @@ export const panelRoutes: Routes = [
       providePlaylistDelPanel(),
       provideQuizDelPanel(),
       provideCatalogos(),
+      provideLlamadas(),
+      ConsejosDelPanel,
       provideMesas(),
       provideGaleriaDelPanel(),
       provideRegalosDelPanel(),
@@ -91,6 +95,7 @@ export const panelRoutes: Routes = [
       {
         path: '',
         canActivate: [guardaPanel],
+        canActivateChild: [guardaHijosDelPanel],
         loadComponent: () =>
           import('../../layouts/panel-shell/panel-shell').then((m) => m.PanelShell),
         children: [

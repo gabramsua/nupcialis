@@ -13,6 +13,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { cambiosPendientes, hayCambios } from './dominio/completar-boda';
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
+import { leerModulosDeLosPlanes } from './planes';
 import { auditar } from './infra/auditoria';
 import { exigirSuperadmin } from './infra/permisos';
 
@@ -38,12 +39,13 @@ export const completeWeddings = onCall<{ weddingId?: string }>(
       : (await db().collection('weddings').get()).docs;
     if (id && docs.length === 0) throw new HttpsError('not-found', 'Esa boda no existe.');
 
+    const porPlan = await leerModulosDeLosPlanes();
     let actualizadas = 0;
     let modulosAnadidos = 0;
     let seccionesAnadidas = 0;
 
     for (const doc of docs) {
-      const cambios = cambiosPendientes(doc.data() ?? {});
+      const cambios = cambiosPendientes(doc.data() ?? {}, porPlan);
       if (!hayCambios(cambios)) continue;
 
       const escritura: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };

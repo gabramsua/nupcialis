@@ -13,10 +13,94 @@
  */
 
 /** Lo que se acepta en el campo de fichero. */
-export const TIPOS_ACEPTADOS = '.csv,.tsv,.txt,.xlsx,text/csv';
+export const TIPOS_ACEPTADOS = '.xlsx,.csv';
 
 export function esXlsx(nombre: string): boolean {
   return /\.xlsx$/i.test(nombre.trim());
+}
+
+export function esCsv(nombre: string): boolean {
+  return /\.csv$/i.test(nombre.trim());
+}
+
+/**
+ * Las filas de un CSV, en texto.
+ *
+ * Un CSV de Excel en español sale con **punto y coma** y con BOM; uno de Google
+ * Sheets o de otro país, con coma; y a veces es un pegado con tabuladores. Se
+ * detecta el separador mirando la primera línea (el que más aparece fuera de
+ * comillas) en vez de pedirle a la pareja que lo sepa. Respeta las comillas
+ * dobles, las comillas escapadas (`""`) y los saltos de línea dentro de una celda.
+ */
+export function parsearCsv(texto: string): readonly string[][] {
+  const limpio = texto.replace(/^\uFEFF/, '');
+  const primeraLinea = limpio.split(/\r?\n/, 1)[0] ?? '';
+
+  const candidatos = [';', ',', '\t'] as const;
+  let separador = ';';
+  let mejor = -1;
+  for (const c of candidatos) {
+    let n = 0;
+    let comillas = false;
+    for (const ch of primeraLinea) {
+      if (ch === '"') comillas = !comillas;
+      else if (ch === c && !comillas) n++;
+    }
+    if (n > mejor) {
+      mejor = n;
+      separador = c;
+    }
+  }
+
+  const filas: string[][] = [];
+  let fila: string[] = [];
+  let celda = '';
+  let comillas = false;
+
+  for (let i = 0; i < limpio.length; i++) {
+    const ch = limpio[i]!;
+    if (comillas) {
+      if (ch === '"') {
+        if (limpio[i + 1] === '"') {
+          celda += '"';
+          i++;
+        } else {
+          comillas = false;
+        }
+      } else {
+        celda += ch;
+      }
+    } else if (ch === '"') {
+      comillas = true;
+    } else if (ch === separador) {
+      fila.push(celda);
+      celda = '';
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && limpio[i + 1] === '\n') i++;
+      fila.push(celda);
+      filas.push(fila);
+      fila = [];
+      celda = '';
+    } else {
+      celda += ch;
+    }
+  }
+  if (celda !== '' || fila.length > 0) {
+    fila.push(celda);
+    filas.push(fila);
+  }
+
+  return sinFilasVacias(filas);
+}
+
+/** Lee un `.csv` que suba la pareja. Misma forma de salida que `leerXlsx`. */
+export async function leerCsv(fichero: Blob): Promise<LecturaXlsx> {
+  try {
+    const filas = parsearCsv(await fichero.text());
+    return filas.length === 0 ? { ok: false, motivo: 'vacio' } : { ok: true, filas };
+  } catch {
+    return { ok: false, motivo: 'no-se-puede-leer' };
+  }
 }
 
 /**

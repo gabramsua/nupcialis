@@ -9,6 +9,7 @@ import {
   VENTANA_MS,
   esModoAcceso,
   esNivel,
+  modoDeIdentificacion,
   pareceToken,
   puedeHacer,
   puedeIntentar,
@@ -294,5 +295,17 @@ describe('el token del enlace', () => {
 
   it('192 bits de azar: el escenario no es adivinarlo', () => {
     expect(BYTES_TOKEN).toBeGreaterThanOrEqual(16);
+  });
+});
+
+describe('modoDeIdentificacion (D-56)', () => {
+  /** En una boda abierta el quiz y la galería piden nombre y cuatro dígitos. */
+  it('una boda abierta se identifica como el modo B', () => {
+    expect(modoDeIdentificacion('open')).toBe('name_phone4');
+  });
+
+  it('los demás modos se quedan como están', () => {
+    expect(modoDeIdentificacion('name_phone4')).toBe('name_phone4');
+    expect(modoDeIdentificacion('phone')).toBe('phone');
   });
 });

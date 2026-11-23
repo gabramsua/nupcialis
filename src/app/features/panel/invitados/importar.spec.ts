@@ -58,9 +58,6 @@ function espiar(respuesta: Importacion = VACIA): Espia {
       async guardar() {
         return { ok: true, id: 'i1', creado: true };
       },
-      async cupoEnLote() {
-        return { ok: true as const, cambiados: 0, omitidos: 0 };
-      },
       async borrar() {
         return { ok: true };
       },
@@ -90,96 +87,89 @@ function montar(espia: Espia) {
   // `protected` es una promesa del compilador, no del runtime: desde el test el
   // componente es un objeto normal. Se toca así para no exportar API de más.
   return fixture.componentInstance as unknown as {
-    leer(texto: string): void;
+    leerFilas(filas: readonly (readonly string[])[]): void;
     paso(): string;
     cabeceras(): readonly string[];
     mapeo(): readonly (string | null)[];
     cuantasFilas(): number;
-    tieneNombre(): boolean;
-    avisoAcentos(): boolean;
     problemaLocal(): string | null;
     comprobar(): Promise<void>;
     importar(): Promise<void>;
-    cambiarMapeo(indice: number, evento: Event): void;
     empezarDeCero(): void;
   };
 }
 
-/** Un `change` de un `<select>` sin montar un `<select>` de verdad. */
-function eligiendo(valor: string): Event {
-  return { target: { value: valor } } as unknown as Event;
-}
+/** Las filas tal y como las deja la lectura del Excel. */
+const EXCEL = [
+  ['Nombre y apellidos', 'Teléfono', 'Edad'],
+  ['María José Pérez', '666123456', 'adulto'],
+  ['Íñigo Muñoz', '+34677000111', 'niño'],
+];
 
-const PEGADO_DE_EXCEL = [
-  'Nombre y apellidos\tTeléfono\tAcompañantes',
-  'María José Pérez\t666123456\t1',
-  'Íñigo Muñoz\t+34677000111\t0',
-].join('\n');
-
-describe('al leer lo que la pareja pega', () => {
+describe('al leer el Excel de la plantilla', () => {
   it('reconoce las columnas y deja fuera la cabecera', () => {
     const componente = montar(espiar());
-    componente.leer(PEGADO_DE_EXCEL);
+    componente.leerFilas(EXCEL);
 
     expect(componente.paso()).toBe('mapeo');
-    expect(componente.mapeo()).toEqual(['fullName', 'phone', 'maxCompanions']);
+    expect(componente.mapeo()).toEqual(['fullName', 'phone', 'ageGroup']);
     // Dos invitados, no tres: la cabecera no es un invitado.
     expect(componente.cuantasFilas()).toBe(2);
   });
 
-  it('sin cabecera reconocible, no se inventa que la primera fila sobra', () => {
+  /** Sin cabeceras no hay forma de saber qué es cada columna, y adivinar daba errores. */
+  it('sin la fila de cabeceras no es la plantilla y se rechaza', () => {
     const componente = montar(espiar());
-    componente.leer('María José Pérez;666123456\nÍñigo Muñoz;+34677000111');
+    componente.leerFilas([
+      ['María José Pérez', '666123456'],
+      ['Íñigo Muñoz', '+34677000111'],
+    ]);
 
-    expect(componente.cuantasFilas()).toBe(2);
+    expect(componente.problemaLocal()).toBe('plantilla');
+    expect(componente.paso()).toBe('origen');
   });
 
-  it('un pegado vacío lo dice en vez de quedarse quieto', () => {
+  it('con cabeceras pero sin la del nombre, tampoco', () => {
     const componente = montar(espiar());
-    componente.leer('   ');
+    componente.leerFilas([['Teléfono'], ['666123456']]);
+
+    expect(componente.problemaLocal()).toBe('plantilla');
+  });
+
+  it('un Excel vacío lo dice en vez de quedarse quieto', () => {
+    const componente = montar(espiar());
+    componente.leerFilas([]);
 
     expect(componente.problemaLocal()).toBe('vacio');
     expect(componente.paso()).toBe('origen');
   });
-
-  it('avisa cuando el fichero llega con los acentos rotos', () => {
-    const componente = montar(espiar());
-    componente.leer('Nombre\nMarÃ­a JosÃ© PÃ©rez');
-
-    expect(componente.avisoAcentos()).toBe(true);
-  });
 });
 
 describe('al mandar las filas', () => {
-  it('manda los campos con nombre, no las celdas', async () => {
+  it('manda los campos con nombre, no las celdas, y ya sin cupo de acompañantes', async () => {
     const espia = espiar();
     const componente = montar(espia);
 
-    componente.leer(PEGADO_DE_EXCEL);
+    componente.leerFilas(EXCEL);
     await componente.comprobar();
 
     expect(espia.llamadas[0].soloPrevisualizar).toBe(true);
     expect(espia.llamadas[0].filas).toEqual([
-      { fullName: 'María José Pérez', phone: '666123456', maxCompanions: 1 },
-      { fullName: 'Íñigo Muñoz', phone: '+34677000111', maxCompanions: 0 },
+      { fullName: 'María José Pérez', phone: '666123456', ageGroup: 'adult' },
+      { fullName: 'Íñigo Muñoz', phone: '+34677000111', ageGroup: 'child' },
     ]);
-  });
-
-  it('el acompañante llega como número; «uno» escrito a mano no rompe nada', async () => {
-    const espia = espiar();
-    const componente = montar(espia);
-
-    componente.leer('Nombre\tAcompañantes\nAna\tdos');
-    await componente.comprobar();
-
-    expect(espia.llamadas[0].filas[0].maxCompanions).toBe(0);
   });
 
   it('entiende «niño» y «bebé» escritos como los escribe la gente', async () => {
     const espia = espiar();
     const componente = montar(espia);
 
-    componente.leer('Nombre\tEdad\nAna\tNiño\nLeo\tbebe\nSara\tadulto');
+    componente.leerFilas([
+      ['Nombre', 'Edad'],
+      ['Ana', 'Niño'],
+      ['Leo', 'bebe'],
+      ['Sara', 'adulto'],
+    ]);
     await componente.comprobar();
 
     expect(espia.llamadas[0].filas.map((f) => f.ageGroup)).toEqual(['child', 'baby', 'adult']);
@@ -189,48 +179,12 @@ describe('al mandar las filas', () => {
     const espia = espiar();
     const componente = montar(espia);
 
-    componente.leer(PEGADO_DE_EXCEL);
+    componente.leerFilas(EXCEL);
     await componente.comprobar();
     await componente.importar();
 
     expect(espia.llamadas).toHaveLength(2);
     expect(espia.llamadas[0].filas).toEqual(espia.llamadas[1].filas);
     expect(espia.llamadas[1].soloPrevisualizar).toBe(false);
-  });
-});
-
-describe('al cambiar el mapeo a mano', () => {
-  it('soltar una columna deja de mandar ese campo', async () => {
-    const espia = espiar();
-    const componente = montar(espia);
-
-    componente.leer(PEGADO_DE_EXCEL);
-    componente.cambiarMapeo(1, eligiendo(''));
-    await componente.comprobar();
-
-    expect(espia.llamadas[0].filas[0]).toEqual({
-      fullName: 'María José Pérez',
-      maxCompanions: 1,
-    });
-  });
-
-  it('asignar una columna que ya estaba puesta la suelta de donde estaba', () => {
-    const componente = montar(espiar());
-
-    componente.leer(PEGADO_DE_EXCEL);
-    componente.cambiarMapeo(2, eligiendo('phone'));
-
-    // Nunca dos veces el mismo campo: el segundo pisaría al primero en silencio.
-    expect(componente.mapeo()).toEqual(['fullName', null, 'phone']);
-  });
-
-  it('sin nombre no se deja continuar: es lo único imprescindible', () => {
-    const componente = montar(espiar());
-
-    componente.leer(PEGADO_DE_EXCEL);
-    expect(componente.tieneNombre()).toBe(true);
-
-    componente.cambiarMapeo(0, eligiendo(''));
-    expect(componente.tieneNombre()).toBe(false);
   });
 });

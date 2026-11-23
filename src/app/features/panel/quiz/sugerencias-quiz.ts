@@ -4,7 +4,6 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { PUERTA_CATALOGOS } from '../../../core/superadmin/catalogos-gateway';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpIcon } from '../../../design-system/icons/icon';
-import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
 import type { PreguntaDeCatalogo } from '../../superadmin/catalogos/catalogos';
 import { PreguntasQuizStore } from './preguntas-quiz.store';
 
@@ -33,11 +32,11 @@ export function claveDeTexto(texto: string): string {
  */
 @Component({
   selector: 'np-sugerencias-quiz',
-  imports: [TranslocoDirective, NpButton, NpIcon, NpStatusChip],
+  imports: [TranslocoDirective, NpButton, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
-      @if (carga() === 'lista' && sugerencias().length > 0) {
+      @if (carga() === 'lista' && (sugerencias().length > 0 || ultima())) {
         <section class="sq">
           <h3>{{ t('panel.quiz.sugerencias.titulo') }}</h3>
           <p class="sq__ayuda">{{ t('panel.quiz.sugerencias.ayuda') }}</p>
@@ -49,22 +48,18 @@ export function claveDeTexto(texto: string): string {
                 <small>
                   {{ t('panel.quiz.sugerencias.ejemplo', { respuesta: s.correctAnswer }) }}
                 </small>
-                @if (yaEsta(s)) {
-                  <np-status-chip status="confirmed" [label]="t('panel.quiz.sugerencias.yaEsta')" />
-                } @else {
-                  <button
-                    npButton
-                    size="sm"
-                    variant="secondary"
-                    type="button"
-                    [loading]="anadiendo() === s.id"
-                    [disabled]="anadiendo() !== null"
-                    (click)="anadir(s)"
-                  >
-                    <np-icon name="plus" />
-                    {{ t('panel.quiz.sugerencias.anadir') }}
-                  </button>
-                }
+                <button
+                  npButton
+                  size="sm"
+                  variant="secondary"
+                  type="button"
+                  [loading]="anadiendo() === s.id"
+                  [disabled]="anadiendo() !== null"
+                  (click)="anadir(s)"
+                >
+                  <np-icon name="plus" />
+                  {{ t('panel.quiz.sugerencias.anadir') }}
+                </button>
               </li>
             }
           </ul>
@@ -141,8 +136,14 @@ export class SugerenciasQuiz {
   protected readonly fallo = signal(false);
   protected readonly ultima = signal(false);
 
-  /** Solo las encendidas: las apagadas son del superadmin y no se ofrecen. */
-  protected readonly sugerencias = computed(() => this.todas().filter((s) => s.enabled));
+  /**
+   * Las del catálogo que **todavía no están** en el quiz de esta boda: una vez
+   * añadida, la sugerencia desaparece de la lista (D-54). El catálogo ya no tiene
+   * «apagadas»: lo que no se quiere se borra (D-53).
+   */
+  protected readonly sugerencias = computed(() =>
+    this.todas().filter((s) => !this.yaEnElQuiz().has(claveDeTexto(s.text))),
+  );
 
   private readonly yaEnElQuiz = computed(
     () => new Set(this.store.preguntas().map((p) => claveDeTexto(p.text))),
@@ -161,10 +162,6 @@ export class SugerenciasQuiz {
       // Sin sugerencias no pasa nada: el quiz sigue funcionando. Simplemente no se pinta.
       this.carga.set('error');
     }
-  }
-
-  protected yaEsta(s: PreguntaDeCatalogo): boolean {
-    return this.yaEnElQuiz().has(claveDeTexto(s.text));
   }
 
   protected async anadir(s: PreguntaDeCatalogo): Promise<void> {

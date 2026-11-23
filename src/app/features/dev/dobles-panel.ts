@@ -683,7 +683,6 @@ function invitadoDeMuestra(
     rsvpStatus: 'confirmed',
     isCompanion: false,
     invitedById: null,
-    maxCompanions: 0,
     loginCount: 0,
     notes: '',
     menu: '',

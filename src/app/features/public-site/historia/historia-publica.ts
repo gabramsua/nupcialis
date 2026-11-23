@@ -3,7 +3,8 @@ import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../design-system/icons/icon';
-import { variablesDeMarca } from '../../../core/tenant/marca';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
 import type { ApartadoPublicoDeHistoria } from './historia';
 
@@ -19,16 +20,21 @@ import type { ApartadoPublicoDeHistoria } from './historia';
  */
 @Component({
   selector: 'np-historia-publica',
-  imports: [RouterLink, TranslocoDirective, NpIcon],
+  imports: [NpCabeceraBoda, RouterLink, TranslocoDirective, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style]': 'colores()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <main class="hp">
-        <a class="hp__volver" routerLink="/">
-          <np-icon name="caret-left" />
-          {{ t('publico.historia.volver') }}
-        </a>
+        @if (!cabecera()) {
+          <a class="hp__volver" routerLink="/">
+            <np-icon name="caret-left" />
+            {{ t('publico.historia.volver') }}
+          </a>
+        }
 
         <header class="hp__cabecera">
           <h1>{{ t('publico.historia.titulo') }}</h1>
@@ -113,9 +119,15 @@ import type { ApartadoPublicoDeHistoria } from './historia';
     .hp__foto {
       inline-size: 100%;
       block-size: auto;
-      max-block-size: 28rem;
+      max-block-size: 32rem;
       border-radius: 1rem;
-      object-fit: cover;
+      /* Sin recortar: una foto vertical o panorámica se ve entera. */
+      object-fit: contain;
+    }
+    /* Los títulos, con la letra de la plantilla de la pareja (D-55). */
+    h1,
+    h2 {
+      font-family: var(--np-marca-titulos, inherit);
     }
   `,
 })
@@ -123,10 +135,8 @@ export class NpHistoriaPublica {
   /** Lo que resuelve la ruta: la boda, con su historia ya saneada. */
   readonly tenant = input.required<ResultadoTenant>();
 
-  protected readonly colores = computed(() => {
-    const t = this.tenant();
-    return variablesDeMarca(t?.tipo === 'ok' ? t.sitio.theme.palette : null);
-  });
+  protected readonly colores = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
 
   /** Solo los apartados con algo que leer o que mirar. */
   protected readonly apartados = computed<readonly ApartadoPublicoDeHistoria[]>(() => {

@@ -240,3 +240,27 @@ describe('guestAccessLog: lo escribe el servidor', () => {
     );
   });
 });
+
+describe('plans, emailTemplates, tips, mail y billing: solo Admin SDK (D-53, D-56)', () => {
+  // Los planes mandan sobre qué módulos tiene cada boda, las plantillas llevan
+  // los textos de los correos, y `mail` es la cola de envío: nada de eso debe
+  // poder leerse ni escribirse desde un navegador, ni siquiera el de la pareja
+  // o el superadmin (que pasa por las Cloud Functions).
+  it.each(['plans', 'emailTemplates', 'tips', 'mail', 'billing'])(
+    '%s está cerrada a la pareja, a un invitado y al superadmin',
+    async (coleccion) => {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), coleccion, 'x'), { text: 'dato' });
+      });
+
+      for (const db of [
+        ownerOf(env, WEDDING_A),
+        guestOf(env, WEDDING_A, GUEST_A1),
+        superadmin(env),
+      ]) {
+        await assertFails(getDoc(doc(db, coleccion, 'x')));
+        await assertFails(setDoc(doc(db, coleccion, 'x'), { text: 'cambiado' }));
+      }
+    },
+  );
+});

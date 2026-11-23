@@ -109,13 +109,9 @@ describe('Alta de boda: ceremonia y lugares', () => {
     escribir(el, 'input[name="nombre-ceremonia"]', 'Iglesia de San Juan');
     escribir(
       el,
-      'input[name="buscar-ceremonia"]',
+      'input[name="enlace-ceremonia"]',
       'https://www.google.com/maps/place/X/@40.41680,-3.70380,17z',
     );
-    el.querySelectorAll<HTMLButtonElement>('np-lugar-de-alta button[type="button"]')[0]?.click();
-    await fixture.whenStable();
-    fixture.detectChanges();
-    el.querySelector<HTMLButtonElement>('.lda__resultados button')?.click();
     fixture.detectChanges();
 
     escribir(el, 'input[name="nombre-celebracion"]', 'Finca Los Olivos');

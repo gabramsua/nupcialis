@@ -37,6 +37,14 @@ export function accesoAlPanel(
   return 'ok';
 }
 
+/**
+ * Lo mínimo para seguir dentro del panel: haber entrado como pareja o como
+ * superadmin. La boda concreta ya la comprobó la guarda al entrar.
+ */
+export function accesoAlPanelSinBoda(sesion: Sesion | null): boolean {
+  return sesion?.rol === 'owner' || sesion?.rol === 'superadmin';
+}
+
 /** Panel de superadmin, en su propio subdominio. */
 export function accesoAlSuperadmin(sesion: Sesion | null): ResultadoAcceso {
   if (!sesion || sesion.rol === 'anonimo') return 'sin-sesion';

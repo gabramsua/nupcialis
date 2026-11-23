@@ -96,9 +96,6 @@ const PUERTA_FALSA: PuertaInvitados = {
   async guardar() {
     return { ok: true, id: 'i1', creado: true };
   },
-  async cupoEnLote() {
-    return { ok: true as const, cambiados: 0, omitidos: 0 };
-  },
   async borrar() {
     return { ok: true };
   },

@@ -32,6 +32,8 @@ export type FalloQuiz =
   | { readonly tipo: 'ya-entregada' }
   /** Le falta escribir sus cuatro dígitos (D-34). */
   | { readonly tipo: 'sin-verificar' }
+  /** No hay sesión de invitado: abrió el juego sin pasar por el enlace de la pareja. */
+  | { readonly tipo: 'sin-sesion' }
   | { readonly tipo: 'red' }
   | { readonly tipo: 'error' };
 

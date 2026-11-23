@@ -43,6 +43,7 @@ export function crearPuertaGaleriaFirebase(): PuertaGaleria {
           ok: true,
           fotos: sanearFotos(datos['fotos']),
           cursor: typeof datos['cursor'] === 'string' ? datos['cursor'] : null,
+          miGuestId: typeof datos['miGuestId'] === 'string' ? datos['miGuestId'] : null,
         };
       } catch (error) {
         return { ok: false, fallo: traducirGaleria(error) };

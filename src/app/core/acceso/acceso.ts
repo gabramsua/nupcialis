@@ -49,6 +49,17 @@ export function pideIdentificarse(modo: ModoAcceso): boolean {
   return modo !== 'open';
 }
 
+/**
+ * Cómo se identifica un invitado en esta boda (D-56).
+ *
+ * Copia de `modoDeIdentificacion` del servidor. En una boda abierta la web se
+ * ve sin identificarse, pero el quiz y la galería piden **nombre y cuatro
+ * dígitos**, como el modo B.
+ */
+export function modoDeIdentificacion(modo: ModoAcceso): Exclude<ModoAcceso, 'open'> {
+  return modo === 'open' ? 'name_phone4' : modo;
+}
+
 /** Qué escribe el invitado, según el modo. */
 export interface CredencialesInvitado {
   readonly nombre?: string;

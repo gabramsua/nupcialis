@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpAlert } from '../../../design-system/components/alert/alert';
@@ -22,9 +22,8 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
  * «Nuestra historia»: cinco apartados fijos, cada uno con su texto (el mismo
  * editor que el resto de la web) y hasta dos fotos que se pintan debajo.
  *
- * Cada apartado se guarda por separado: así un texto largo a medio escribir no
- * bloquea que se suba una foto de otro, y un fallo afecta solo a lo que se
- * estaba haciendo.
+ * Los textos se guardan todos de una vez con los dos botones (arriba y abajo);
+ * las fotos se suben y se quitan al momento, cada una por su cuenta.
  */
 @Component({
   selector: 'np-panel-historia',
@@ -50,6 +49,22 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
           </np-alert>
         }
 
+        <div class="hi__guardar" data-barra="arriba">
+          <button
+            npButton
+            type="button"
+            data-accion="guardar"
+            [loading]="guardando()"
+            [disabled]="!hayCambios()"
+            (click)="guardarTodo()"
+          >
+            {{ t('panel.historia.guardarTodo') }}
+          </button>
+          @if (hayCambios()) {
+            <small>{{ t('panel.historia.sinGuardar') }}</small>
+          }
+        </div>
+
         @if (store.estado() === 'cargando') {
           <np-empty-state icon="clock-countdown" [title]="t('panel.historia.cargando')" />
         } @else {
@@ -67,22 +82,6 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
               } @placeholder {
                 <p class="hi__cargando">{{ t('panel.secciones.cargandoEditor') }}</p>
               }
-
-              <div class="hi__guardar">
-                <button
-                  npButton
-                  type="button"
-                  data-accion="guardar"
-                  [loading]="store.ocupado(clave)"
-                  [disabled]="!sinGuardar(clave)"
-                  (click)="guardar(clave)"
-                >
-                  {{ t('common.save') }}
-                </button>
-                @if (sinGuardar(clave)) {
-                  <small>{{ t('panel.historia.sinGuardar') }}</small>
-                }
-              </div>
 
               <h4>
                 {{
@@ -129,10 +128,39 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
                       />
                     </label>
                   </li>
+                  <li>
+                    <label class="hi__subir" [class.hi__subir--ocupado]="store.ocupado(clave)">
+                      <np-icon name="camera" />
+                      {{ t('panel.historia.hacerFoto') }}
+                      <input
+                        type="file"
+                        [accept]="tipos"
+                        capture="environment"
+                        data-origen="camara"
+                        [disabled]="store.ocupado(clave)"
+                        (change)="elegir(clave, $event)"
+                      />
+                    </label>
+                  </li>
                 }
               </ul>
             </article>
           }
+          <div class="hi__guardar" data-barra="abajo">
+            <button
+              npButton
+              type="button"
+              data-accion="guardar"
+              [loading]="guardando()"
+              [disabled]="!hayCambios()"
+              (click)="guardarTodo()"
+            >
+              {{ t('panel.historia.guardarTodo') }}
+            </button>
+            @if (hayCambios()) {
+              <small>{{ t('panel.historia.sinGuardar') }}</small>
+            }
+          </div>
         }
       </section>
     </ng-container>
@@ -188,9 +216,11 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
     }
     .hi__foto img {
       inline-size: 100%;
-      aspect-ratio: 4 / 3;
+      block-size: auto;
+      max-block-size: 14rem;
       border-radius: var(--np-radius-md);
-      object-fit: cover;
+      object-fit: contain;
+      background: var(--np-surface-bg, transparent);
     }
     .hi__subir {
       display: inline-flex;
@@ -249,17 +279,28 @@ export class PanelHistoria {
     this.borradores.update((b) => ({ ...b, [clave]: html }));
   }
 
-  protected async guardar(clave: ClaveHistoria): Promise<void> {
-    const borrador = this.borradores()[clave];
-    if (borrador === undefined) return;
+  protected readonly hayCambios = computed(() => this.claves.some((c) => this.sinGuardar(c)));
+  protected readonly guardando = signal(false);
 
-    const ok = await this.store.guardarTexto(clave, borrador);
-    if (ok) {
-      this.borradores.update((b) => {
-        const resto = { ...b };
-        delete resto[clave];
-        return resto;
-      });
+  /** Guarda de una vez todos los apartados con texto sin guardar. */
+  protected async guardarTodo(): Promise<void> {
+    this.guardando.set(true);
+    try {
+      for (const clave of this.claves) {
+        if (!this.sinGuardar(clave)) continue;
+        const borrador = this.borradores()[clave];
+        if (borrador === undefined) continue;
+        const ok = await this.store.guardarTexto(clave, borrador);
+        if (ok) {
+          this.borradores.update((b) => {
+            const resto = { ...b };
+            delete resto[clave];
+            return resto;
+          });
+        }
+      }
+    } finally {
+      this.guardando.set(false);
     }
   }
 

@@ -145,7 +145,14 @@ interface EntradaListar {
  */
 export const listPhotos = onCall<EntradaListar>(
   { region: REGION, enforceAppCheck: EXIGIR_APP_CHECK },
-  async (peticion): Promise<{ fotos: readonly FotoPublica[]; cursor: string | null }> => {
+  async (
+    peticion,
+  ): Promise<{
+    fotos: readonly FotoPublica[];
+    cursor: string | null;
+    /** Quién pregunta, para que su navegador sepa cuáles son sus fotos. */
+    miGuestId: string | null;
+  }> => {
     const quien = await quienMira(peticion);
 
     const cursor = typeof peticion.data?.cursor === 'string' ? peticion.data.cursor : null;
@@ -173,6 +180,7 @@ export const listPhotos = onCall<EntradaListar>(
       fotos,
       // Solo hay siguiente página si esta vino llena. Con menos, se acabó.
       cursor: fotos.length === POR_PAGINA && ultima ? ultima.creadoEn : null,
+      miGuestId: quien.guestId,
     };
   },
 );
@@ -295,14 +303,14 @@ async function borrarFicheros(rutas: readonly unknown[]): Promise<void> {
  */
 async function quienMira(
   peticion: Parameters<typeof exigirInvitado>[0],
-): Promise<{ weddingId: string; esPareja: boolean }> {
+): Promise<{ weddingId: string; esPareja: boolean; guestId: string | null }> {
   if (peticion.auth?.token?.['role'] === 'owner') {
-    return { weddingId: exigirPareja(peticion).weddingId, esPareja: true };
+    return { weddingId: exigirPareja(peticion).weddingId, esPareja: true, guestId: null };
   }
 
   const invitado = exigirInvitado(peticion);
   exigirVerificado(invitado, await modoDeAcceso(invitado.weddingId));
-  return { weddingId: invitado.weddingId, esPareja: false };
+  return { weddingId: invitado.weddingId, esPareja: false, guestId: invitado.guestId };
 }
 
 /** Quien borra puede ser el invitado dueño de la foto o la pareja. */

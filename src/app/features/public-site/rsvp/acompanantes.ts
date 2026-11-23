@@ -56,14 +56,6 @@ import {
         }
 
         @if (puedeAnadir()) {
-          <p class="ac__ayuda">
-            {{
-              t('publico.confirmar.acompanantes.quedan', {
-                n: quedan(),
-              })
-            }}
-          </p>
-
           <form class="ac__nuevo" (submit)="anadir($event)">
             <label>
               <span>{{ t('publico.confirmar.acompanantes.nombre') }}</span>

@@ -9,9 +9,9 @@ import { NpButton } from '../../../design-system/components/button/button';
 import { NpEmptyState } from '../../../design-system/components/empty-state/empty-state';
 import { NpInput } from '../../../design-system/components/field/input';
 import { NpModal } from '../../../design-system/components/modal/modal';
-import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
+import { NpIconPicker } from '../../../design-system/components/picker/icon-picker';
 import { NpIcon } from '../../../design-system/icons/icon';
-import { NP_ICON_LABELS } from '../../../design-system/icons/icon-name.generated';
+import { NP_ICON_LABELS, type NpIconName } from '../../../design-system/icons/icon-name.generated';
 import { centimosAEuros, centimosATexto, eurosACentimos } from '../gestion/gestion';
 import {
   PRIORIDADES,
@@ -29,13 +29,12 @@ type Carga = 'cargando' | 'lista' | 'error';
 interface Fila {
   readonly id: string;
   readonly celdas: readonly string[];
-  readonly enabled: boolean;
   readonly origen: Elemento;
 }
 
 /** Las columnas de cada pestaña; el texto está en `superadmin.catalogos.col.*`. */
 const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
-  tasks: ['titulo', 'categoria', 'cuando', 'prioridad'],
+  tasks: ['titulo', 'cuando', 'prioridad'],
   budget: ['categoria', 'concepto', 'estimado'],
   quiz: ['pregunta', 'correcta', 'dificultad'],
 };
@@ -57,9 +56,9 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
     NpButton,
     NpEmptyState,
     NpIcon,
+    NpIconPicker,
     NpInput,
     NpModal,
-    NpStatusChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -133,7 +132,6 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
                       @for (c of columnas(); track c) {
                         <th>{{ t('superadmin.catalogos.col.' + c) }}</th>
                       }
-                      <th>{{ t('superadmin.catalogos.col.estado') }}</th>
                       <th>{{ t('superadmin.bodas.columna.acciones') }}</th>
                     </tr>
                   </thead>
@@ -144,16 +142,6 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
                         @for (c of f.celdas; track $index) {
                           <td>{{ c }}</td>
                         }
-                        <td>
-                          <np-status-chip
-                            [status]="f.enabled ? 'confirmed' : 'pending'"
-                            [label]="
-                              f.enabled
-                                ? t('superadmin.catalogos.activa')
-                                : t('superadmin.catalogos.apagada')
-                            "
-                          />
-                        </td>
                         <td>
                           <div class="ca__acciones">
                             <button
@@ -204,10 +192,6 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
                   <input npInput type="text" formControlName="title" maxlength="120" />
                 </label>
                 <label>
-                  <span>{{ t('superadmin.catalogos.campo.categoria') }}</span>
-                  <input npInput type="text" formControlName="category" maxlength="40" />
-                </label>
-                <label>
                   <span>{{ t('superadmin.catalogos.campo.meses') }}</span>
                   <input npInput type="text" inputmode="decimal" formControlName="meses" />
                   <small>{{ t('superadmin.catalogos.campo.mesesPista') }}</small>
@@ -220,15 +204,18 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
                     }
                   </select>
                 </label>
-                <label>
-                  <span>{{ t('superadmin.catalogos.campo.icono') }}</span>
-                  <select npInput formControlName="icon">
-                    <option value="">{{ t('superadmin.catalogos.sinIcono') }}</option>
-                    @for (i of iconos; track i[0]) {
-                      <option [value]="i[0]">{{ i[1] }}</option>
-                    }
-                  </select>
-                </label>
+                <div class="ca__icono" role="group" aria-labelledby="ca-icono">
+                  <span id="ca-icono">{{ t('superadmin.catalogos.campo.icono') }}</span>
+                  <div class="ca__iconos">
+                    <np-icon-picker
+                      [opciones]="opcionesDeIcono"
+                      [etiqueta]="t('superadmin.catalogos.campo.icono')"
+                      [value]="form.controls.icon.value"
+                      (valueChange)="form.controls.icon.setValue($any($event))"
+                    />
+                  </div>
+                  <small>{{ t('superadmin.catalogos.campo.iconoPista') }}</small>
+                </div>
               }
               @case ('budget') {
                 <label>
@@ -283,10 +270,6 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
             <label>
               <span>{{ t('superadmin.catalogos.campo.orden') }}</span>
               <input npInput type="number" min="0" formControlName="order" />
-            </label>
-            <label class="ca__casilla">
-              <input type="checkbox" formControlName="enabled" />
-              <span>{{ t('superadmin.catalogos.campo.activa') }}</span>
             </label>
             @if (errorForm(); as e) {
               <p class="ca__error" role="alert">
@@ -390,6 +373,11 @@ const COLUMNAS: Readonly<Record<TipoCatalogo, readonly string[]>> = {
       display: grid;
       gap: var(--np-space-1);
     }
+    .ca__iconos {
+      max-block-size: 16rem;
+      overflow-y: auto;
+      padding: var(--np-space-1);
+    }
     .ca__form .ca__casilla {
       display: flex;
       align-items: center;
@@ -411,7 +399,10 @@ export class PantallaCatalogos {
 
   protected readonly tipos = TIPOS_CATALOGO;
   protected readonly prioridades = PRIORIDADES;
-  protected readonly iconos = Object.entries(NP_ICON_LABELS);
+  /** Todos los iconos del set, con su nombre: la pareja ve el que se elija aquí. */
+  protected readonly opcionesDeIcono = (Object.keys(NP_ICON_LABELS) as NpIconName[]).map(
+    (value) => ({ value, label: NP_ICON_LABELS[value] }),
+  );
 
   protected readonly tipo = signal<TipoCatalogo>('tasks');
   protected readonly carga = signal<Carga>('cargando');
@@ -430,11 +421,9 @@ export class PantallaCatalogos {
       case 'tasks':
         return this.tareas().map((x) => ({
           id: x.id,
-          enabled: x.enabled,
           origen: x,
           celdas: [
             x.title,
-            x.category,
             t('superadmin.catalogos.mesesAntes', { n: x.mesesAntes }),
             t(`superadmin.catalogos.prioridad.${x.priority}`),
           ],
@@ -442,7 +431,6 @@ export class PantallaCatalogos {
       case 'budget':
         return this.partidas().map((x) => ({
           id: x.id,
-          enabled: x.enabled,
           origen: x,
           celdas: [
             x.category,
@@ -453,7 +441,6 @@ export class PantallaCatalogos {
       case 'quiz':
         return this.preguntas().map((x) => ({
           id: x.id,
-          enabled: x.enabled,
           origen: x,
           celdas: [x.text, x.correctAnswer, t(`superadmin.catalogos.dificultad.${x.difficulty}`)],
         }));
@@ -482,7 +469,6 @@ export class PantallaCatalogos {
     difficulty: new FormControl('1', { nonNullable: true }),
     hint: new FormControl('', { nonNullable: true }),
     order: new FormControl(1, { nonNullable: true }),
-    enabled: new FormControl(true, { nonNullable: true }),
   });
 
   constructor() {
@@ -526,7 +512,6 @@ export class PantallaCatalogos {
     this.form.reset({
       priority: 'normal',
       difficulty: '1',
-      enabled: true,
       order: siguienteOrden(this.filas().map((f) => f.origen)),
     });
     this.editandoId.set(null);
@@ -536,7 +521,6 @@ export class PantallaCatalogos {
 
   protected editar(origen: Elemento): void {
     this.form.reset({
-      enabled: origen.enabled,
       order: origen.order,
       priority: 'normal',
       difficulty: '1',
@@ -590,7 +574,7 @@ export class PantallaCatalogos {
   /** Lo que se manda al servidor, que es quien valida de verdad. */
   private elemento(): Record<string, unknown> | null {
     const v = this.form.getRawValue();
-    const comunes = { order: Number(v.order), enabled: v.enabled };
+    const comunes = { order: Number(v.order) };
 
     switch (this.tipo()) {
       case 'tasks': {

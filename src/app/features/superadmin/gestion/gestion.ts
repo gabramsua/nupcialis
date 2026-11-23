@@ -63,6 +63,16 @@ export interface Pago {
 
 export type PagoEnEdicion = Omit<Pago, 'id'>;
 
+export interface AccesoDeBoda {
+  readonly pareja: number;
+  readonly parejaUltima: Date | null;
+  /** Veces que se ha abierto la web de la boda (contador agregado, D-55). */
+  readonly visitasWeb: number;
+  readonly visitasWebUltima: Date | null;
+  readonly invitadosQueEntraron: number;
+  readonly invitadosEntradas: number;
+}
+
 export interface FichaDeBoda {
   readonly weddingId: string;
   readonly slug: string;
@@ -72,8 +82,18 @@ export interface FichaDeBoda {
   readonly weddingDay: string | null;
   readonly createdAt: Date | null;
   readonly authDomain: 'ok' | 'pending';
+  readonly ceremonyType: 'civil' | 'religious';
+  /** Teléfono de contacto de la pareja, o `''` si no se dio. */
+  readonly contactPhone: string;
+  /** Lo acordado con la pareja, en céntimos; `null` si no se ha fijado (D-56). */
+  readonly agreedPriceCents: number | null;
   readonly invitados: number;
   readonly confirmados: number;
+  readonly rechazados: number;
+  readonly pendientes: number;
+  readonly fotos: number;
+  /** Cuántas veces ha entrado cada parte (D-53). */
+  readonly acceso: AccesoDeBoda;
   readonly contactos: readonly Contacto[];
   readonly historial: readonly EntradaDeHistorial[];
   readonly pagos: readonly Pago[];
@@ -183,8 +203,25 @@ export function leerFicha(valor: unknown): FichaDeBoda | null {
     weddingDay: textoONull(o['weddingDay']),
     createdAt: fecha(o['createdAt']),
     authDomain: o['authDomain'] === 'ok' ? 'ok' : 'pending',
+    ceremonyType: o['ceremonyType'] === 'religious' ? 'religious' : 'civil',
+    contactPhone: texto(o['contactPhone']),
+    agreedPriceCents:
+      typeof o['agreedPriceCents'] === 'number' && o['agreedPriceCents'] >= 0
+        ? Math.round(o['agreedPriceCents'])
+        : null,
     invitados: entero(o['invitados']),
     confirmados: entero(o['confirmados']),
+    rechazados: entero(o['rechazados']),
+    pendientes: entero(o['pendientes']),
+    fotos: entero(o['fotos']),
+    acceso: {
+      pareja: entero(objeto(o['acceso'])['pareja']),
+      parejaUltima: fecha(objeto(o['acceso'])['parejaUltima']),
+      visitasWeb: entero(objeto(o['acceso'])['visitasWeb']),
+      visitasWebUltima: fecha(objeto(o['acceso'])['visitasWebUltima']),
+      invitadosQueEntraron: entero(objeto(o['acceso'])['invitadosQueEntraron']),
+      invitadosEntradas: entero(objeto(o['acceso'])['invitadosEntradas']),
+    },
     contactos: lista(o['contactos']).flatMap((c) => {
       const x = objeto(c);
       const uid = texto(x['uid']);

@@ -98,7 +98,7 @@ class SesionFalsa {
   }
 }
 
-function bodaOk(modo: ModoAcceso): ResultadoTenant {
+function bodaOk(modo: ModoAcceso, layout: 'onepage' | 'multipage' = 'onepage'): ResultadoTenant {
   return {
     tipo: 'ok',
     weddingId: 'w1',
@@ -119,13 +119,18 @@ function bodaOk(modo: ModoAcceso): ResultadoTenant {
       dressCode: DRESS_CODE_VACIO,
       historia: [],
       modulos: { rsvp: 'visible' },
+      layout,
       locale: 'es',
       theme: { templateId: 'clasica', palette: null, heroImagePath: null, heroImageUrl: null },
     },
   };
 }
 
-async function montar(modo: ModoAcceso, sesion: SesionFalsa) {
+async function montar(
+  modo: ModoAcceso,
+  sesion: SesionFalsa,
+  layout: 'onepage' | 'multipage' = 'onepage',
+) {
   TestBed.configureTestingModule({
     imports: [
       TranslocoTestingModule.forRoot({
@@ -141,7 +146,7 @@ async function montar(modo: ModoAcceso, sesion: SesionFalsa) {
   });
 
   const fixture = TestBed.createComponent(PublicShell);
-  fixture.componentRef.setInput('tenant', bodaOk(modo));
+  fixture.componentRef.setInput('tenant', bodaOk(modo, layout));
   fixture.detectChanges();
   await asentar(fixture);
 
@@ -242,5 +247,35 @@ describe('PublicShell: el enlace de la pareja (D-34)', () => {
     expect(texto(fixture)).toContain('Estás viendo esto como María José');
     // Y aun así el token sale de la URL: ya no hace falta para nada.
     expect(window.location.search).toBe('');
+  });
+});
+
+describe('PublicShell: la cabecera de navegación', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('la web de varias páginas lleva cabecera y deja el botón de confirmar en ella', async () => {
+    const sesion = new SesionFalsa();
+    sesion.previa = { guestId: 'g1', nivel: 'verificado', nombre: 'María José' };
+
+    const fixture = await montar('name_phone4', sesion, 'multipage');
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('np-cabecera-boda')).not.toBeNull();
+    // El flotante de la web de una página se sustituye por el de la cabecera.
+    expect(el.querySelector('.np-confirmar')).toBeNull();
+    expect(el.querySelector('np-cabecera-boda .cb__confirmar')).not.toBeNull();
+  });
+
+  it('la web de una página sigue como estaba: sin cabecera y con el botón flotante', async () => {
+    const sesion = new SesionFalsa();
+    sesion.previa = { guestId: 'g1', nivel: 'verificado', nombre: 'María José' };
+
+    const fixture = await montar('name_phone4', sesion, 'onepage');
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('np-cabecera-boda')).toBeNull();
+    expect(el.querySelector('.np-confirmar')).not.toBeNull();
   });
 });

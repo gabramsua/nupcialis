@@ -133,12 +133,38 @@ export class Login {
     this.enviadoRecuperacion.set(true);
   }
 
+  /** Hasta que la sesión deja de ser anónima, con tope por si algo no llega. */
+  private esperarSesionIniciada(): Promise<void> {
+    return new Promise((resolver) => {
+      let terminado = false;
+      let dejar: () => void = () => undefined;
+      const acabar = () => {
+        if (terminado) return;
+        terminado = true;
+        clearTimeout(tope);
+        dejar();
+        resolver();
+      };
+      const tope = setTimeout(acabar, 5000);
+      dejar = this.puerta.observar((sesion) => {
+        if (sesion.rol !== 'anonimo') acabar();
+      });
+      // El observador pudo contestar antes de que `dejar` estuviera asignado.
+      if (terminado) dejar();
+    });
+  }
+
   private async intentar(accion: () => Promise<void>): Promise<void> {
     this.cargando.set(true);
     this.error.set(null);
     this.enviadoRecuperacion.set(false);
     try {
       await accion();
+      // El guarda del panel mira el estado de la sesión, y ese estado se pone
+      // un instante **después** de que Firebase confirme la entrada (hay que
+      // leer los claims del token). Sin esperarlo, el guarda ve «nadie» y echa
+      // a la pareja recién entrada (D-54).
+      await this.esperarSesionIniciada();
       const llegado = await this.router.navigate([this.destino]);
       if (!environment.production) {
         console.warn(

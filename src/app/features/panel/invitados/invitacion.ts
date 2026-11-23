@@ -70,6 +70,17 @@ export const MENSAJE_POR_DEFECTO =
   'Aquí tienes toda la información y puedes confirmar si vienes:\n{enlace}\n\n' +
   'Un abrazo,\n{novios}';
 
+/**
+ * El mensaje que se manda **una sola vez**, a todos, desde «Vuestra web» (D-52).
+ *
+ * Sin `{nombre}`: es el mismo para el grupo de la familia y para los amigos. El
+ * enlace es el de la boda; cada invitado se identifica al entrar.
+ */
+export const MENSAJE_GENERAL =
+  '¡Hola! Nos casamos y queremos que estéis.\n\n' +
+  'Aquí tenéis toda la información y podéis confirmar si venís:\n{enlace}\n\n' +
+  'Un abrazo,\n{novios}';
+
 export interface DatosDelMensaje {
   readonly nombre: string;
   readonly novios: string;

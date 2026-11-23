@@ -58,6 +58,76 @@ nuevos»** una vez: las bodas extendidas ya creadas ganan `Nuestra historia` y
 lista de invitados: abre una fila, ordena por grupo o por respuesta y filtra por
 un grupo; y en el alta, con ceremonia civil, la casilla «mismo sitio».
 
+**Tanda D-56 (la 26).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`.** Cambian `guestLogin` (acepta bodas abiertas),
+   `updateWedding` (precio acordado) y la ficha de boda. Reglas: sin cambios
+   (`billing` queda cerrada por defecto).
+2. Pruébalo: en una boda con la web abierta y el quiz activo, entra en `/quiz` sin
+   haber entrado antes: debe salir «Entra» con nombre y 4 dígitos y, al acertar,
+   volver al juego. Repite con `/galeria`. En la ficha de una boda, «Editar datos» →
+   «Precio acordado», y mira acordado / cobrado / falta.
+3. **Pregunta pendiente:** ver el punto 6 de D-56 en PENDIENTES.
+
+**Tanda D-55 (la 25).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`** (sin reglas nuevas). Funciones nuevas:
+   `listMailQueue`, `discardMailItem`, `recordWebVisit`. Cambian `provisionWedding`,
+   `updateWedding` (teléfono y slug), `fichaBoda`. Y **comprueba que `setMyWebStatus`
+   (de la tanda 24) está desplegada**: si no, publicar da «No se ha podido hacer el cambio».
+2. **Los correos no salen**: la extensión Trigger Email no está instalada. Mira
+   `/superadmin/cola-correos`: ahí verás cuántos hay en cola y cuáles.
+3. Pruébalo: cambia el slug de una boda de prueba (los enlaces viejos dejan de
+   funcionar), apunta un cobro, importa un CSV de invitados, abre el quiz desde un
+   enlace directo con acceso por enlace o teléfono, y mira los módulos públicos con
+   la plantilla Romántica.
+4. **Decisión pendiente:** acceso «abierto» y quiz/fotos (ver D-55 en PENDIENTES).
+
+**Tanda D-54 (la 24).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`.** Función nueva: `setMyWebStatus`. Cambian
+   `setWeddingStatus` (borra las partidas de prueba del quiz al publicar),
+   `completeWeddings` (repara «Nuestra historia» duplicada) y `listPhotos`
+   (devuelve `miGuestId`). Sin esto, publicar desde el panel y el borrado de fotos
+   propias no funcionan. Reglas: sin cambios.
+2. En `/superadmin`, pulsa **«Añadir módulos nuevos»** una vez para reparar las
+   bodas que tenían «Nuestra historia» duplicada.
+3. Pruébalo: entra como pareja (debe llevarte al panel), publica y vuelve a
+   borrador desde el Resumen; en una boda con quiz, juega una partida de prueba y
+   mira que desaparece al publicar. En la galería, sube una foto como invitado y
+   bórrala desde la rejilla. En Diseño, prueba las plantillas Romántica y Moderna
+   y las paletas nuevas.
+
+**Tanda D-53 (la 23).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions` y `npm run deploy:rules`.** Funciones nuevas:
+   `listEmailTemplates`, `saveEmailTemplate`, `resetEmailTemplate`,
+   `previewEmail`, `sendCoupleAccessEmail`, `listPlans`, `savePlanModules`,
+   `getTips`, `listTips`, `saveTip`, `resetTip`, `updateWedding`,
+   `deleteWedding` y `recordOwnerLogin`; cambian `provisionWedding`,
+   `completeWeddings` y `getWeddingFile`. Las reglas añaden `access` a los campos
+   de sistema.
+2. **Instala la extensión «Trigger Email from Firestore»** (Firebase → Extensiones):
+   colección **`mail`**, un SMTP (el de tu dominio, SendGrid, Brevo…) y el
+   remitente que quieras. **Sin ella los correos se quedan en `mail` y no salen**
+   (el alta funciona igual y el enlace sigue saliendo en pantalla). Para probarlo:
+   da de alta una boda con un correo tuyo.
+3. Entra en **`/superadmin/planes`** y mira qué módulos trae cada plan: el básico
+   tiene la lista corta de antes. Lo que marques se aplica a las bodas existentes.
+4. Lee los textos de **`/superadmin/correos`** y **`/superadmin/consejos`** (los de
+   fábrica los he escrito yo) y cámbialos a tu gusto.
+5. **Mira la ficha de una boda de prueba:** el resumen, «Editar datos» y «Eliminar
+   la boda» (¡borra de verdad! úsalo con una de prueba).
+
+**Tanda D-51/D-52 (la 22).** Sin dependencias nuevas. **`npm run deploy:functions`**
+(cambian `upsertGuest`, `addCompanion`, `getRsvpForm`, `submitRsvp`,
+`setGuestRsvp`, `setGuestsRsvp`, `importGuests`) y, para limpiar, borra la que ya
+no existe: `firebase functions:delete setCompanionQuota --region <la tuya>`
+(si no la borras no pasa nada: nadie la llama). Reinicia `ng serve`. Pruébalo
+así: apunta un acompañante a alguien que ya ha confirmado (tiene que nacer
+confirmado), pon al titular en «no viene» (el acompañante también) y baja el
+Excel de la plantilla desde Importar.
+
 **Tanda D-49 (la 20).** `npm install` no hace falta (sin dependencias nuevas);
 `npm run icons` por si acaso (entra `book-open` en el sprite público) y reinicia
 `ng serve`. Después **`npm run deploy:rules`** (reglas de Firestore con
@@ -91,7 +161,6 @@ al final de `D-47` en `PENDIENTES.md`.
 | `getInviteLink`                                | El token del enlace de cada invitado                                   |
 | `listRsvpAnswers`                              | Lo que han contestado, para la pareja                                  |
 | `listAccessLog`                                | «Quién ha entrado»                                                     |
-| `setCompanionQuota`                            | El cupo de acompañantes en lote                                        |
 | `reorderGroups`                                | El orden de los grupos                                                 |
 | `startQuiz`, `submitQuiz`                      | Jugar al quiz, con la corrección en servidor                           |
 | `listQuizRanking`                              | El ranking que ve el invitado                                          |
@@ -224,6 +293,12 @@ que sustituye al aislamiento por bases de datos separadas.
 ---
 
 ## 5. Lo que necesita tus ojos
+
+**Tanda 27 (D-57), plan completo:** abre una boda con plan extendido y mira (a) la
+cabecera en escritorio y móvil con tus plantillas y paletas, (b) que «Más» se abre y
+cierra, (c) que desde el quiz o la galería los enlaces del menú te llevan a la
+portada con ancla, (d) Romántica con foto de portada y las paletas Vino, Tinto y
+rosa, Burdeos y oro, Grafito y oro y Perla y oro.
 
 Esto es lo que convierte «los tests pasan» en «esto funciona», y es lo único que
 queda para dar **F1 por terminada**. Con `npm start` levantado y entrando por

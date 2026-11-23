@@ -38,6 +38,7 @@ import {
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { limiteDe } from './infra/boda';
 import { leerPreguntas } from './infra/formulario';
+import { acompanantesSiguenAlTitular } from './infra/acompanantes-asistencia';
 import { exigirInvitado, exigirVerificado } from './infra/permisos';
 import { grupoGeneral } from './groups';
 import { proponerDesdeRsvp } from './playlist';
@@ -154,8 +155,6 @@ function titularDe(guestId: string, invitado: Record<string, unknown>): Titular 
   return {
     id: guestId,
     isCompanion: invitado['isCompanion'] === true,
-    maxCompanions:
-      typeof invitado['maxCompanions'] === 'number' ? Math.floor(invitado['maxCompanions']) : 0,
     groupIds: Array.isArray(grupos) ? grupos.filter((g): g is string => typeof g === 'string') : [],
     active: invitado['active'] !== false,
   };
@@ -250,8 +249,13 @@ export const submitRsvp = onCall<EntradaRsvp>(
         ...campos,
         rsvpStatus: estado,
         rsvpAt: FieldValue.serverTimestamp(),
+        // Un acompañante que contesta por sí mismo ya no sigue al titular.
+        ...(ctx.esAcompanante ? { rsvpFollowsTitular: false } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       });
+
+    // Los acompañantes vienen como viene quien los trae (D-51).
+    if (!ctx.esAcompanante) await acompanantesSiguenAlTitular(weddingId, guestId, estado);
 
     // La canción que no puede faltar entra sola en la playlist (§8.14). Va
     // después de guardar la respuesta y sin dejar que falle la confirmación:

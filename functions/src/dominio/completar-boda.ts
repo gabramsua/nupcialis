@@ -28,14 +28,18 @@ function tieneConfig(valor: unknown): boolean {
   return valor !== null && typeof valor === 'object';
 }
 
-export function cambiosPendientes(boda: Record<string, unknown>): CambiosPendientes {
+export function cambiosPendientes(
+  boda: Record<string, unknown>,
+  /** Los módulos de cada plan tal como los tiene el superadmin (D-53). */
+  porPlan?: Partial<Record<Plan, readonly Modulo[]>>,
+): CambiosPendientes {
   const plan: Plan = esPlan(boda['plan']) ? boda['plan'] : 'basic';
   const actuales =
     boda['modules'] !== null && typeof boda['modules'] === 'object'
       ? (boda['modules'] as Record<string, unknown>)
       : {};
 
-  const iniciales = modulosIniciales(plan);
+  const iniciales = modulosIniciales(plan, porPlan?.[plan]);
   const modulos: Partial<Record<Modulo, ConfigModulo>> = {};
   for (const modulo of MODULOS) {
     if (!tieneConfig(actuales[modulo])) modulos[modulo] = iniciales[modulo];
@@ -45,9 +49,22 @@ export function cambiosPendientes(boda: Record<string, unknown>): CambiosPendien
 }
 
 /**
- * Añade el cartel de «Nuestra historia» si la boda no tiene ninguna sección de
- * ese tipo. Apagado: es la pareja quien decide anunciarlo. Sin `content` (o sin
- * lista) no se inventa nada: ya cae en las iniciales al publicar.
+ * Deja **una sola** sección «Nuestra historia», en forma de cartel.
+ *
+ * Antes de existir el cartel (tipo `historia`), «Nuestra historia» era una
+ * sección de texto con id `historia`. Las bodas viejas la conservan, y el
+ * parche que añadía el cartel les ponía **otro** al lado (`historia-nuestra`):
+ * dos secciones con el mismo título en la web (D-54). Ahora:
+ *
+ * - si ya hay cartel **y** la sección de texto vieja, se quita la vieja (y el
+ *   cartel queda encendido si cualquiera de las dos lo estaba);
+ * - si solo está la de texto vieja, se **convierte** en cartel, sin moverla ni
+ *   apagarla;
+ * - si no hay ninguna, se añade el cartel, apagado y al final (es la pareja
+ *   quien decide anunciarlo).
+ *
+ * Sin `content` (o sin lista) no se inventa nada: ya cae en las iniciales al
+ * publicar. Es idempotente: una segunda pasada no cambia nada.
  */
 function seccionesCompletas(contenido: unknown): readonly Seccion[] | null {
   if (contenido === null || typeof contenido !== 'object') return null;
@@ -55,7 +72,31 @@ function seccionesCompletas(contenido: unknown): readonly Seccion[] | null {
   if (!Array.isArray(crudas)) return null;
 
   const secciones = sanearSecciones(crudas);
-  if (secciones.some((s) => s.type === 'historia')) return null;
+  const cartel = secciones.find((s) => s.type === 'historia');
+  const vieja = secciones.find((s) => s.id === 'historia' && s.type === 'texto');
+
+  if (cartel && vieja) {
+    return secciones
+      .filter((s) => s !== vieja)
+      .map((s) => (s === cartel ? { ...s, enabled: s.enabled || vieja.enabled } : s));
+  }
+
+  if (cartel) return null;
+
+  if (vieja) {
+    return secciones.map((s) =>
+      s === vieja
+        ? {
+            id: s.id,
+            type: 'historia' as const,
+            enabled: s.enabled,
+            order: s.order,
+            fields: { titulo: s.fields['titulo'] || 'Nuestra historia' },
+          }
+        : s,
+    );
+  }
+
   if (secciones.length >= MAX_SECCIONES) return null;
 
   const id = secciones.some((s) => s.id === 'historia') ? 'historia-nuestra' : 'historia';

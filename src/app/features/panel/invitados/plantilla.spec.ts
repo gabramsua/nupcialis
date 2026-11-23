@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { parsearTabla } from '../../../shared/tabla';
 import {
   COLUMNAS,
   DEFINICIONES,
@@ -9,7 +8,7 @@ import {
   nombresDeGrupo,
   normalizarCabecera,
   pareceCabecera,
-  plantillaCsv,
+  hojaDePlantilla,
 } from './plantilla';
 
 describe('normalizarCabecera', () => {
@@ -73,36 +72,46 @@ describe('pareceCabecera', () => {
   });
 });
 
-describe('plantillaCsv', () => {
-  const csv = plantillaCsv();
+/** La plantilla como la ve quien la abre: cabeceras y filas de texto. */
+function tabla(pareja?: { partnerA: string; partnerB: string }): string[][] {
+  const hoja = hojaDePlantilla(pareja);
+  return [
+    hoja.columnas.map((c) => c.titulo),
+    ...hoja.filas.map((fila) => fila.map((celda) => String(celda ?? ''))),
+  ];
+}
 
-  it('empieza por el BOM, para que Excel no rompa los acentos', () => {
-    // Sin esto, Excel abre el fichero en ANSI y enseña «MarÃ­a».
-    expect(csv.startsWith('﻿')).toBe(true);
-  });
-
-  it('usa punto y coma, que es lo que espera Excel en español', () => {
-    expect(csv).toContain('Nombre y apellidos;Mote;Teléfono');
-  });
-
-  it('se puede volver a leer con nuestro propio lector', () => {
-    // La prueba que de verdad importa: lo que damos tiene que entrar.
-    const filas = parsearTabla(csv);
+describe('hojaDePlantilla', () => {
+  it('se puede volver a leer con nuestro propio reconocimiento', () => {
+    // La prueba que de verdad importa: lo que damos tiene que entrar solo.
+    const filas = tabla();
     expect(adivinarColumnas(filas[0])).toEqual([...COLUMNAS]);
     expect(filas.length).toBeGreaterThan(1);
   });
 
+  it('ya no trae columna de acompañantes: el cupo se quitó (D-51)', () => {
+    expect(tabla()[0]).not.toContain('Acompañantes');
+    expect(COLUMNAS).not.toContain('maxCompanions' as never);
+  });
+
+  it('cada fila tiene tantas celdas como columnas', () => {
+    const filas = tabla();
+    for (const fila of filas) expect(fila).toHaveLength(filas[0].length);
+  });
+
   it('trae ejemplos que enseñan qué se espera en cada columna', () => {
-    const filas = parsearTabla(csv);
-    const nombres = filas.slice(1).map((f) => f[0]);
+    const nombres = tabla()
+      .slice(1)
+      .map((f) => f[0]);
     expect(nombres).toContain('María José Pérez');
     // Con acentos y con ñ a propósito: es donde se ve si la codificación falla.
     expect(nombres.some((n) => n.includes('ñ'))).toBe(true);
   });
 
-  it('entrecomilla lo que lleve el separador dentro', () => {
-    // Si no, una nota con punto y coma partiría la fila en dos columnas.
-    expect(() => parsearTabla(plantillaCsv())).not.toThrow();
+  it('el teléfono de ejemplo es texto y conserva el +34', () => {
+    const filas = tabla();
+    const columna = filas[0].indexOf('Teléfono');
+    expect(filas.slice(1).some((f) => f[columna].startsWith('+34'))).toBe(true);
   });
 });
 
@@ -145,23 +154,20 @@ describe('nombresDeGrupo', () => {
   });
 });
 
-describe('plantillaCsv con la pareja', () => {
+describe('hojaDePlantilla con la pareja', () => {
   it('rellena «De quién» con sus nombres, no con A y B', () => {
-    const filas = parsearTabla(plantillaCsv({ partnerA: 'María José', partnerB: 'Gabriel' }));
+    const pareja = { partnerA: 'María José', partnerB: 'Gabriel' };
+    const filas = tabla(pareja);
     const columna = filas[0].indexOf('De quién');
     const valores = filas.slice(1).map((f) => f[columna]);
 
     expect(valores).toEqual(['María', 'Gabriel', 'Los dos']);
     // Y lo que damos se vuelve a entender al subirlo.
-    expect(valores.map((v) => lado(v, { partnerA: 'María José', partnerB: 'Gabriel' }))).toEqual([
-      'A',
-      'B',
-      'both',
-    ]);
+    expect(valores.map((v) => lado(v, pareja))).toEqual(['A', 'B', 'both']);
   });
 
   it('un ejemplo trae dos grupos en la misma celda, para que se vea cómo', () => {
-    const filas = parsearTabla(plantillaCsv());
+    const filas = tabla();
     const columna = filas[0].indexOf('Grupos');
     expect(filas.slice(1).some((f) => nombresDeGrupo(f[columna]).length === 2)).toBe(true);
   });

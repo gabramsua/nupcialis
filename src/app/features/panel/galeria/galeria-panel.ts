@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { RouterLink } from '@angular/router';
 
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
@@ -30,6 +31,7 @@ const PALABRA_VACIAR = 'VACIAR';
 @Component({
   selector: 'np-panel-galeria',
   imports: [
+    RouterLink,
     TranslocoDirective,
     NpAlert,
     NpButton,
@@ -48,6 +50,12 @@ const PALABRA_VACIAR = 'VACIAR';
           <h2>{{ t('panel.galeria.titulo') }}</h2>
           <p>{{ t('panel.galeria.ayuda') }}</p>
         </header>
+
+        <!-- Ver y subir fotos exige identificarse, también con la web abierta (D-56). -->
+        <np-alert status="attention" [heading]="t('panel.galeria.identidadTitulo')">
+          <p>{{ t('panel.galeria.identidadTexto') }}</p>
+          <a routerLink="/panel/guests">{{ t('panel.galeria.identidadLista') }}</a>
+        </np-alert>
 
         @if (store.fallo(); as fallo) {
           <np-alert status="declined" [heading]="t('panel.galeria.error')">

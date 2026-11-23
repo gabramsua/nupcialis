@@ -39,6 +39,9 @@ import { SesionInvitado } from '../../../core/firebase/sesion-invitado';
         <div class="ent__tarjeta">
           <p class="ent__boda">{{ nombres() }}</p>
           <h1>{{ t('publico.acceso.titulo') }}</h1>
+          @if (motivo() !== '') {
+            <p class="ent__motivo">{{ motivo() }}</p>
+          }
           <p class="ent__ayuda">{{ t('publico.acceso.ayuda.' + modo()) }}</p>
 
           <form [formGroup]="formulario" (ngSubmit)="entrar()">
@@ -139,6 +142,10 @@ import { SesionInvitado } from '../../../core/firebase/sesion-invitado';
       font-size: var(--np-text-2xl);
       font-weight: var(--np-weight-semibold);
     }
+    .ent__motivo {
+      margin: 0 0 var(--np-space-2);
+      font-weight: var(--np-weight-medium);
+    }
     .ent__ayuda {
       margin: 0 0 var(--np-space-4);
       font-size: var(--np-text-sm);
@@ -220,6 +227,8 @@ export class Entrar {
    * siguen siendo los cuatro dígitos, que no viajan en la URL (D-34).
    */
   readonly nombrePrevio = input('');
+  /** Para qué se pide, cuando no es para ver la web (el quiz, las fotos…). */
+  readonly motivo = input('');
 
   protected readonly entrando = signal(false);
   protected readonly fallo = signal<FalloAcceso | null>(null);

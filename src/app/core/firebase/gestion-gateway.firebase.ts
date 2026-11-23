@@ -54,6 +54,16 @@ export function crearPuertaGestionFirebase(): PuertaGestion {
           : null;
       }),
 
+    enviarCorreoDeAcceso: (weddingId, uid) =>
+      llamar('sendCoupleAccessEmail', { weddingId, uid }, (crudo) => {
+        const d = (crudo ?? {}) as Record<string, unknown>;
+        return typeof d['enlace'] === 'string' &&
+          typeof d['email'] === 'string' &&
+          typeof d['enviado'] === 'boolean'
+          ? { email: d['email'], enlace: d['enlace'], enviado: d['enviado'] }
+          : null;
+      }),
+
     finanzas: () => llamar('listPayments', {}, leerFinanzas),
 
     guardarPago: (id, pago) =>

@@ -27,6 +27,8 @@ export type ResultadoFotos =
       readonly fotos: readonly FotoPublica[];
       /** Por dónde seguir, o `null` si no hay más. */
       readonly cursor: string | null;
+      /** Quién pregunta, para saber cuáles son «mis fotos». `null` si no se sabe. */
+      readonly miGuestId?: string | null;
     }
   | { readonly ok: false; readonly fallo: FalloGaleria };
 

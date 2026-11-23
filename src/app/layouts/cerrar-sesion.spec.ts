@@ -12,6 +12,7 @@ import { FIRESTORE } from '../core/firebase/firestore.providers';
 import { provideIconSprite } from '../design-system/icons/icon-sprite.providers';
 import { BodaStore } from '../features/panel/boda.store';
 import { AdminShell } from './admin-shell/admin-shell';
+import { SuperadminLayout } from './superadmin-layout/superadmin-layout';
 import { PanelShell } from './panel-shell/panel-shell';
 
 /**
@@ -103,7 +104,8 @@ describe('cerrar sesión', () => {
     vi.stubGlobal('location', { assign: asignar });
     configurar(salidas);
 
-    const fixture = TestBed.createComponent(AdminShell);
+    // El botón vive ahora en el menú lateral, que es el marco de todas las secciones.
+    const fixture = TestBed.createComponent(SuperadminLayout);
     fixture.detectChanges();
     const boton = botonSalir(fixture.nativeElement);
     expect(boton).toBeTruthy();

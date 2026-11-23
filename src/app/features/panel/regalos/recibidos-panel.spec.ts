@@ -43,7 +43,6 @@ function invitado(parcial: Partial<Invitado> & { id: string; fullName: string })
     rsvpStatus: 'confirmed',
     isCompanion: false,
     invitedById: null,
-    maxCompanions: 0,
     loginCount: 0,
     notes: '',
     menu: '',

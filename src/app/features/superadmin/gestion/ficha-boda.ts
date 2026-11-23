@@ -1,24 +1,30 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 
+import { FichaAcciones } from './ficha-acciones';
 import { PUERTA_GESTION, type FalloGestion } from '../../../core/superadmin/gestion-gateway';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpEmptyState } from '../../../design-system/components/empty-state/empty-state';
+import { NpInput } from '../../../design-system/components/field/input';
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
 import { NpIcon } from '../../../design-system/icons/icon';
 import { fechaMedia, horaCorta } from '../../../shared/fecha';
 import {
+  METODOS_PAGO,
   centimosAEuros,
   diaAFecha,
+  eurosACentimos,
   esAccionConocida,
   resumenDePayload,
   totalesDePagos,
   type Contacto,
   type EntradaDeHistorial,
   type FichaDeBoda,
+  type MetodoPago,
 } from './gestion';
 
 type Carga = 'cargando' | 'lista' | 'error';
@@ -26,6 +32,8 @@ type Carga = 'cargando' | 'lista' | 'error';
 interface EnlaceGenerado {
   readonly email: string;
   readonly enlace: string;
+  /** Solo si se pidió mandar el correo: si quedó en la cola de envío. */
+  readonly enviado?: boolean;
 }
 
 /**
@@ -39,12 +47,15 @@ interface EnlaceGenerado {
 @Component({
   selector: 'np-ficha-boda',
   imports: [
+    FormsModule,
     RouterLink,
     TranslocoDirective,
+    FichaAcciones,
     NpAlert,
     NpButton,
     NpEmptyState,
     NpIcon,
+    NpInput,
     NpModal,
     NpStatusChip,
   ],
@@ -125,8 +136,89 @@ interface EnlaceGenerado {
                 </dl>
               </section>
 
+              <section class="fb__bloque" aria-labelledby="fb-actividad">
+                <h2 id="fb-actividad">{{ t('superadmin.ficha.actividad') }}</h2>
+                <dl class="fb__datos">
+                  <div>
+                    <dt>{{ t('superadmin.ficha.invitadosConfirmados') }}</dt>
+                    <dd>{{ f.confirmados }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.invitadosRechazados') }}</dt>
+                    <dd>{{ f.rechazados }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.invitadosPendientes') }}</dt>
+                    <dd>{{ f.pendientes }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.fotos') }}</dt>
+                    <dd>{{ f.fotos }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.entradasPareja') }}</dt>
+                    <dd>
+                      {{ f.acceso.pareja }}
+                      @if (f.acceso.parejaUltima; as u) {
+                        <span class="fb__tenue">
+                          · {{ t('superadmin.ficha.ultimaEntrada', { fecha: dia(u) }) }}
+                        </span>
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.entradasInvitados') }}</dt>
+                    <dd>
+                      {{
+                        t('superadmin.ficha.entradasInvitadosValor', {
+                          quienes: f.acceso.invitadosQueEntraron,
+                          veces: f.acceso.invitadosEntradas,
+                        })
+                      }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.visitasWeb') }}</dt>
+                    <dd data-visitas>
+                      {{ f.acceso.visitasWeb }}
+                      @if (f.acceso.visitasWebUltima; as u) {
+                        <span class="fb__tenue">
+                          · {{ t('superadmin.ficha.ultimaEntrada', { fecha: dia(u) }) }}
+                        </span>
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.precioAcordado') }}</dt>
+                    <dd data-precio>
+                      @if (f.agreedPriceCents !== null) {
+                        {{ euros(f.agreedPriceCents) }}
+                      } @else {
+                        <span class="fb__tenue">{{ t('superadmin.ficha.precioSinFijar') }}</span>
+                      }
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ t('superadmin.ficha.cobrado') }}</dt>
+                    <dd>{{ euros(cobrado(f)) }}</dd>
+                  </div>
+                  @if (f.agreedPriceCents !== null) {
+                    <div>
+                      <dt>{{ t('superadmin.ficha.faltaCobrar') }}</dt>
+                      <dd data-falta>{{ euros(faltaCobrar(f)) }}</dd>
+                    </div>
+                  }
+                </dl>
+                <p class="fb__nota">{{ t('superadmin.ficha.actividadNota') }}</p>
+              </section>
+
               <section class="fb__bloque" aria-labelledby="fb-contacto">
                 <h2 id="fb-contacto">{{ t('superadmin.ficha.contacto') }}</h2>
+                @if (f.contactPhone) {
+                  <p class="fb__telefono" data-telefono>
+                    {{ t('superadmin.ficha.telefonoContacto', { telefono: f.contactPhone }) }}
+                  </p>
+                }
                 @if (f.contactos.length === 0) {
                   <p class="fb__vacio">{{ t('superadmin.ficha.sinContactos') }}</p>
                 } @else {
@@ -167,6 +259,17 @@ interface EnlaceGenerado {
                           <np-icon name="envelope" />
                           {{ t('superadmin.ficha.generarEnlace') }}
                         </button>
+                        <button
+                          npButton
+                          size="sm"
+                          type="button"
+                          [disabled]="!c.email"
+                          [loading]="enviando() === c.uid"
+                          (click)="enviarCorreo(c)"
+                        >
+                          <np-icon name="envelope" />
+                          {{ t('superadmin.ficha.enviarCorreo') }}
+                        </button>
                       </li>
                     }
                   </ul>
@@ -178,6 +281,8 @@ interface EnlaceGenerado {
                   </np-alert>
                 }
               </section>
+
+              <np-ficha-acciones [ficha]="f" (editada)="cargar()" (borrada)="alBorrar()" />
 
               <section class="fb__bloque" aria-labelledby="fb-pagos">
                 <h2 id="fb-pagos">{{ t('superadmin.ficha.pagos') }}</h2>
@@ -213,6 +318,42 @@ interface EnlaceGenerado {
                     }
                   </ul>
                 }
+                <form class="fb__cobro" (ngSubmit)="apuntarCobro()" #cobro="ngForm">
+                  <h3>{{ t('superadmin.ficha.apuntarCobro') }}</h3>
+                  <div class="fb__cobroCampos">
+                    <label>
+                      <span>{{ t('superadmin.ficha.cobroImporte') }}</span>
+                      <input
+                        npInput
+                        type="text"
+                        inputmode="decimal"
+                        name="importe"
+                        [ngModel]="importeCobro()"
+                        (ngModelChange)="importeCobro.set($event)"
+                      />
+                    </label>
+                    <label>
+                      <span>{{ t('superadmin.ficha.cobroMetodo') }}</span>
+                      <select
+                        npInput
+                        name="metodo"
+                        [ngModel]="metodoCobro()"
+                        (ngModelChange)="metodoCobro.set($event)"
+                      >
+                        @for (m of metodos; track m) {
+                          <option [value]="m">{{ t('superadmin.finanzas.metodo.' + m) }}</option>
+                        }
+                      </select>
+                    </label>
+                    <button npButton type="submit" [loading]="guardandoCobro()">
+                      <np-icon name="check" />
+                      {{ t('superadmin.ficha.cobroGuardar') }}
+                    </button>
+                  </div>
+                  @if (errorCobro(); as e) {
+                    <p class="fb__cobroError" role="alert">{{ t(e) }}</p>
+                  }
+                </form>
                 <a class="fb__enlace" routerLink="/superadmin/finanzas">
                   <np-icon name="currency-eur" />
                   {{ t('superadmin.ficha.irAFinanzas') }}
@@ -254,6 +395,15 @@ interface EnlaceGenerado {
       -->
       @if (generado(); as g) {
         <np-modal [open]="true" [heading]="t('superadmin.ficha.enlaceTitulo')" (closed)="cerrar()">
+          @if (g.enviado === true) {
+            <np-alert status="confirmed" [heading]="t('superadmin.ficha.correoEnviado')">
+              <p>{{ t('superadmin.ficha.correoEnviadoA', { email: g.email }) }}</p>
+            </np-alert>
+          } @else if (g.enviado === false) {
+            <np-alert status="attention" [heading]="t('superadmin.ficha.correoNoEnviado')">
+              <p>{{ t('superadmin.ficha.correoNoEnviadoTexto') }}</p>
+            </np-alert>
+          }
           <p>{{ t('superadmin.ficha.enlaceParaCuenta', { email: g.email }) }}</p>
           <code class="fb__codigo">{{ g.enlace }}</code>
           <p class="fb__nota">{{ t('superadmin.ficha.enlaceAviso') }}</p>
@@ -389,10 +539,36 @@ interface EnlaceGenerado {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
+    .fb__cobro {
+      display: grid;
+      gap: var(--np-space-2);
+      padding-block-start: var(--np-space-3);
+    }
+    .fb__cobro h3 {
+      margin: 0;
+      font-size: var(--np-text-md);
+    }
+    .fb__cobroCampos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: var(--np-space-3);
+    }
+    .fb__cobroCampos label {
+      display: grid;
+      gap: var(--np-space-1);
+      font-size: var(--np-text-sm);
+    }
+    .fb__cobroError {
+      margin: 0;
+      color: var(--np-declined-fg);
+      font-size: var(--np-text-sm);
+    }
   `,
 })
 export class FichaBoda {
   private readonly puerta = inject(PUERTA_GESTION);
+  private readonly router = inject(Router);
   private readonly weddingId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
 
   protected readonly carga = signal<Carga>('cargando');
@@ -401,8 +577,15 @@ export class FichaBoda {
 
   protected readonly generando = signal<string | null>(null);
   protected readonly generado = signal<EnlaceGenerado | null>(null);
+  protected readonly enviando = signal<string | null>(null);
   protected readonly falloEnlace = signal<FalloGestion | null>(null);
   protected readonly copiado = signal(false);
+
+  protected readonly metodos = METODOS_PAGO;
+  protected readonly importeCobro = signal('');
+  protected readonly metodoCobro = signal<MetodoPago>('efectivo');
+  protected readonly guardandoCobro = signal(false);
+  protected readonly errorCobro = signal<string | null>(null);
 
   protected readonly totales = computed(() => totalesDePagos(this.ficha()?.pagos ?? []));
 
@@ -433,6 +616,17 @@ export class FichaBoda {
     else this.falloEnlace.set(r.fallo);
   }
 
+  protected async enviarCorreo(contacto: Contacto): Promise<void> {
+    this.falloEnlace.set(null);
+    this.copiado.set(false);
+    this.enviando.set(contacto.uid);
+    const r = await this.puerta.enviarCorreoDeAcceso(this.weddingId, contacto.uid);
+    this.enviando.set(null);
+
+    if (r.ok) this.generado.set(r.datos);
+    else this.falloEnlace.set(r.fallo);
+  }
+
   protected cerrar(): void {
     this.generado.set(null);
     this.copiado.set(false);
@@ -446,6 +640,57 @@ export class FichaBoda {
       // Sin permiso del portapapeles el texto sigue seleccionable con un clic.
       this.copiado.set(false);
     }
+  }
+
+  /** Lo que falta por cobrar del precio acordado; nunca negativo. */
+  protected faltaCobrar(f: FichaDeBoda): number {
+    return Math.max(0, (f.agreedPriceCents ?? 0) - this.cobrado(f));
+  }
+
+  /** Lo cobrado de esta boda: solo los cobros marcados como pagados. */
+  protected cobrado(f: FichaDeBoda): number {
+    return f.pagos.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amountCents, 0);
+  }
+
+  /**
+   * Apunta un cobro ya cobrado, sin pasar por la pantalla de Finanzas: es lo
+   * que se necesita cuando te dan el dinero en mano y quieres dejarlo escrito
+   * en la ficha de esa boda.
+   */
+  protected async apuntarCobro(): Promise<void> {
+    const f = this.ficha();
+    if (!f) return;
+
+    const centimos = eurosACentimos(this.importeCobro());
+    if (centimos === null || centimos <= 0) {
+      this.errorCobro.set('superadmin.ficha.cobroImporteError');
+      return;
+    }
+
+    this.errorCobro.set(null);
+    this.guardandoCobro.set(true);
+    const r = await this.puerta.guardarPago(null, {
+      weddingId: f.weddingId,
+      amountCents: centimos,
+      concept: 'Cobro',
+      method: this.metodoCobro(),
+      status: 'paid',
+      paidOn: new Date().toISOString().slice(0, 10),
+      invoiceNumber: '',
+      notes: '',
+    });
+    this.guardandoCobro.set(false);
+
+    if (!r.ok) {
+      this.errorCobro.set('superadmin.ficha.cobroError');
+      return;
+    }
+    this.importeCobro.set('');
+    await this.cargar();
+  }
+
+  protected alBorrar(): void {
+    void this.router.navigateByUrl('/superadmin');
   }
 
   protected euros(centimos: number): string {

@@ -16,6 +16,7 @@
  */
 
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router, type CanActivateFn } from '@angular/router';
 import { httpsCallable } from 'firebase/functions';
 
 import {
@@ -256,4 +257,40 @@ export function traducirAcceso(error: unknown): FalloAcceso {
     default:
       return { tipo: 'no-identificado' };
   }
+}
+
+/** Las páginas que piden identificarse, con el nombre con el que vuelven de la puerta. */
+export const PAGINAS_CON_IDENTIDAD = ['quiz', 'galeria', 'regalos', 'playlist'] as const;
+export type PaginaConIdentidad = (typeof PAGINAS_CON_IDENTIDAD)[number];
+
+export function esPaginaConIdentidad(valor: unknown): valor is PaginaConIdentidad {
+  return PAGINAS_CON_IDENTIDAD.includes(valor as PaginaConIdentidad);
+}
+
+/**
+ * Guarda de las páginas que **necesitan saber quién es** el invitado (D-56): el
+ * quiz (ranking nominal), la galería (autor de cada foto), los regalos
+ * (reserva) y la playlist (votos).
+ *
+ * Recupera la sesión que el navegador tuviera y, si no hay ninguna —lo normal
+ * en una boda **abierta**, donde la portada no pide nada—, manda a `/entrar`
+ * con el nombre de la página para volver a ella en cuanto se identifique.
+ * Antes, esas páginas se abrían, llamaban a la función sin token y el invitado
+ * veía un error sin saber qué hacer.
+ */
+export function exigirSesionDeInvitado(pagina: PaginaConIdentidad): CanActivateFn {
+  return async () => {
+    const sesion = inject(SesionInvitado);
+    const router = inject(Router);
+
+    try {
+      await sesion.recuperar();
+    } catch {
+      // Sin Auth no hay sesión que recuperar: se trata como «no hay nadie».
+    }
+
+    return sesion.identificado()
+      ? true
+      : router.createUrlTree(['/entrar'], { queryParams: { volver: pagina } });
+  };
 }

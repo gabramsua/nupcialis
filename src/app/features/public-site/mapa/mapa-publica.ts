@@ -17,7 +17,8 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { NP_ICON_SPRITE } from '../../../design-system/icons/icon-sprite.providers';
 import { NpIcon } from '../../../design-system/icons/icon';
 import type { NpIconName } from '../../../design-system/icons/icon-name.generated';
-import { variablesDeMarca } from '../../../core/tenant/marca';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
 import {
   CENTRO_POR_DEFECTO,
@@ -49,7 +50,7 @@ import {
  */
 @Component({
   selector: 'np-mapa-publica',
-  imports: [RouterLink, TranslocoDirective, NpIcon],
+  imports: [NpCabeceraBoda, RouterLink, TranslocoDirective, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Los pines los pinta Leaflet fuera de Angular: sus estilos tienen que ser
   // globales o no los alcanza el encapsulado.
@@ -57,11 +58,16 @@ import {
   host: { '[style]': 'colores()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <main class="mp">
-        <a class="mp__volver" routerLink="/">
-          <np-icon name="caret-left" />
-          {{ t('publico.mapa.volver') }}
-        </a>
+        @if (!cabecera()) {
+          <a class="mp__volver" routerLink="/">
+            <np-icon name="caret-left" />
+            {{ t('publico.mapa.volver') }}
+          </a>
+        }
 
         <header class="mp__cabecera">
           <h1>{{ t('publico.mapa.titulo') }}</h1>
@@ -265,10 +271,8 @@ export class NpMapaPublica {
   private readonly lienzo = viewChild<ElementRef<HTMLElement>>('lienzo');
 
   /** Los colores de la pareja, como en el resto de la web pública. */
-  protected readonly colores = computed(() => {
-    const t = this.tenant();
-    return variablesDeMarca(t?.tipo === 'ok' ? t.sitio.theme.palette : null);
-  });
+  protected readonly colores = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
 
   protected readonly elegido = signal<string | null>(null);
   protected readonly fallo = signal(false);

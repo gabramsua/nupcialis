@@ -36,7 +36,7 @@ service cloud.firestore {
     // Campos que mueve el servidor y la pareja no puede tocar.
     function noSystemFields() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt', 'limits']);
+        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt', 'limits', 'access']);
     }
 
     // ---------- colecciones raíz ----------

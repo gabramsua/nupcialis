@@ -1,16 +1,17 @@
 /**
  * La plantilla de importación y el reconocimiento de columnas.
  *
- * Dos caminos para la misma pantalla, y hacen falta los dos:
+ * **Solo hay un camino: nuestra plantilla** (D-52). Antes se aceptaba también
+ * el CSV de cada cual y celdas pegadas, y cada hoja distinta era un error
+ * nuevo: columnas cambiadas de sitio, tildes rotas, el teléfono en las notas.
+ * Ahora se descarga la hoja, se rellena y se sube; las cabeceras coinciden y
+ * no hay nada que asignar.
  *
- * - **La plantilla** es para quien empieza de cero: se la descarga, la rellena
- *   y no tiene que adivinar nada. Como las cabeceras coinciden, el mapeo se
- *   resuelve solo y no hay ni un clic que dar.
- * - **El reconocimiento** es para quien ya tiene su lista, que son la mayoría:
- *   el Excel que hizo su madre, la hoja que les pasó la finca, un Google Sheets
- *   a medias. Obligarles a copiar doscientos nombres a nuestro formato es lo
- *   que hace que lo dejen para «otro día».
+ * El reconocimiento sigue tolerando que alguien retoque el nombre de una
+ * cabecera («Móvil» por «Teléfono»), pero lo que no encaje se ignora y se dice.
  */
+
+import type { Hoja } from './exportacion';
 
 /** Las columnas que se pueden importar, en el orden de la plantilla. */
 export const COLUMNAS = [
@@ -20,7 +21,6 @@ export const COLUMNAS = [
   'groups',
   'side',
   'ageGroup',
-  'maxCompanions',
   'notes',
 ] as const;
 
@@ -76,12 +76,6 @@ export const DEFINICIONES: readonly DefinicionColumna[] = [
     etiqueta: 'Edad',
     obligatoria: false,
     alias: ['edad', 'tipo', 'adulto o nino', 'age'],
-  },
-  {
-    clave: 'maxCompanions',
-    etiqueta: 'Acompañantes',
-    obligatoria: false,
-    alias: ['acompanantes', 'acompanante', 'plazas', 'invitados extra', 'companions'],
   },
   {
     clave: 'notes',
@@ -147,30 +141,30 @@ function ejemplos(pareja: Pareja): readonly (readonly string[])[] {
   const b = primerNombre(pareja.partnerB) || 'B';
 
   return [
-    ['María José Pérez', 'Majo', '666123456', 'Familia', a, 'adulto', '1', 'Viene en autobús'],
-    ['Íñigo Muñoz', '', '+34677000111', 'Universidad, Pádel', b, 'adulto', '0', ''],
-    ['Lucía Muñoz', 'Lu', '', 'Familia', 'Los dos', 'niño', '0', 'Menú infantil'],
+    ['María José Pérez', 'Majo', '666123456', 'Familia', a, 'adulto', 'Viene en autobús'],
+    ['Íñigo Muñoz', '', '+34677000111', 'Universidad, Pádel', b, 'adulto', ''],
+    ['Lucía Muñoz', 'Lu', '', 'Familia', 'Los dos', 'niño', 'Menú infantil'],
   ];
 }
 
 /**
- * El contenido de la plantilla descargable.
+ * La plantilla descargable, como hoja para `descargarXlsx`.
  *
- * **Punto y coma y BOM**, los dos a propósito: Excel en español espera punto y
- * coma porque la coma es el separador decimal, y sin el BOM abre el fichero en
- * ANSI y enseña «MarÃ­a» en vez de «María». Las dos cosas juntas hacen que se
- * abra bien con doble clic, que es lo único que la pareja va a intentar.
+ * Un `.xlsx` y no un CSV: se abre con doble clic en cualquier Excel, Numbers o
+ * Google Sheets sin separadores ni codificaciones, que era donde se rompían las
+ * listas. Todas las celdas van como texto, así el teléfono conserva su `+34`.
  */
-export function plantillaCsv(pareja: Pareja = { partnerA: '', partnerB: '' }): string {
-  const filas = [DEFINICIONES.map((d) => d.etiqueta), ...ejemplos(pareja)];
-  return '﻿' + filas.map((fila) => fila.map(entrecomillar).join(';')).join('\r\n') + '\r\n';
+export function hojaDePlantilla(pareja: Pareja = { partnerA: '', partnerB: '' }): Hoja {
+  const anchos = [28, 14, 16, 24, 14, 10, 30];
+
+  return {
+    nombre: 'Invitados',
+    columnas: DEFINICIONES.map((d, i) => ({ titulo: d.etiqueta, ancho: anchos[i] ?? 16 })),
+    filas: ejemplos(pareja),
+  };
 }
 
-function entrecomillar(celda: string): string {
-  return /[;"\n\r]/.test(celda) ? `"${celda.replace(/"/g, '""')}"` : celda;
-}
-
-export const NOMBRE_PLANTILLA = 'invitados-nupcialis.csv';
+export const NOMBRE_PLANTILLA = 'invitados-nupcialis.xlsx';
 
 /**
  * Tope de filas por fichero. **Copia del de la función** (`MAX_FILAS`).

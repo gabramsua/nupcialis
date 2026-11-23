@@ -12,41 +12,40 @@ import {
   type FalloInvitado,
   type Importacion,
 } from '../../../core/invitados/invitados-gateway';
-import { pareceLatin1, parsearTabla } from '../../../shared/tabla';
-import { TIPOS_ACEPTADOS, esXlsx, leerXlsx } from './leer-xlsx';
+import { descargarXlsx } from './exportar-xlsx';
+import { TIPOS_ACEPTADOS, esCsv, esXlsx, leerCsv, leerXlsx } from './leer-xlsx';
 import { BodaStore } from '../boda.store';
 import { GruposStore } from './grupos.store';
 import {
-  COLUMNAS,
   DEFINICIONES,
   MAX_FILAS,
   NOMBRE_PLANTILLA,
   adivinarColumnas,
   lado,
+  hojaDePlantilla,
   nombresDeGrupo,
   pareceCabecera,
-  plantillaCsv,
   type Columna,
 } from './plantilla';
-import { NpInput } from '../../../design-system/components/field/input';
 
 type Paso = 'origen' | 'mapeo' | 'resultado';
 
 /**
- * Importar la lista de invitados desde un CSV o pegándola.
+ * Importar la lista de invitados desde nuestra plantilla de Excel.
  *
  * **La previsualización la calcula el servidor**, con la misma llamada que
  * importa y una bandera de «solo mirar». Si la calculara el navegador habría
  * dos validaciones distintas, y el día que se separaran la previsualización
  * empezaría a mentir sin que nadie se enterase hasta que faltan invitados.
  *
- * Dos caminos de entrada porque hacen falta los dos: la **plantilla** para
- * quien empieza de cero —y entonces las columnas se reconocen solas—, y
- * **pegar o subir lo que ya tengan** para el resto, que son la mayoría.
+ * **Un solo camino de entrada** (D-52): se descarga la plantilla, se rellena y
+ * se sube. Las columnas se reconocen solas porque las cabeceras son las
+ * nuestras; un fichero que no las tenga se rechaza diciendo por qué, en vez de
+ * pedirle a la pareja que adivine qué es cada columna.
  */
 @Component({
   selector: 'np-importar-invitados',
-  imports: [RouterLink, TranslocoDirective, NpAlert, NpButton, NpStatusChip, NpIcon, NpInput],
+  imports: [RouterLink, TranslocoDirective, NpAlert, NpButton, NpStatusChip, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -78,6 +77,14 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
           <np-alert status="declined" [heading]="t('panel.importar.fallo')">
             <p>{{ t('panel.importar.demasiadasFilas', { n: filasLeidas(), max: maxFilas }) }}</p>
           </np-alert>
+        } @else if (problemaLocal() === 'plantilla') {
+          <np-alert status="declined" [heading]="t('panel.importar.fallo')">
+            <p>{{ t('panel.importar.fichero.plantilla') }}</p>
+          </np-alert>
+        } @else if (problemaLocal() === 'noExcel') {
+          <np-alert status="declined" [heading]="t('panel.importar.fallo')">
+            <p>{{ t('panel.importar.fichero.noExcel') }}</p>
+          </np-alert>
         } @else if (problemaLocal() === 'xlsxIlegible') {
           <np-alert status="declined" [heading]="t('panel.importar.fallo')">
             <p>{{ t('panel.importar.fichero.xlsxIlegible') }}</p>
@@ -90,51 +97,39 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
 
         @switch (paso()) {
           @case ('origen') {
-            <div class="imp__tarjeta">
-              <h3>{{ t('panel.importar.plantilla.titulo') }}</h3>
-              <p>{{ t('panel.importar.plantilla.ayuda') }}</p>
-              <button npButton variant="secondary" type="button" (click)="descargarPlantilla()">
-                <np-icon name="download-simple" />
-                {{ t('panel.importar.plantilla.descargar') }}
-              </button>
-            </div>
-
-            <div class="imp__tarjeta">
-              <h3>{{ t('panel.importar.fichero.titulo') }}</h3>
-              <p>{{ t('panel.importar.fichero.ayuda') }}</p>
-              <label class="imp__subir">
-                <np-icon name="upload-simple" />
-                {{ t('panel.importar.fichero.elegir') }}
-                <input
-                  type="file"
-                  [attr.accept]="tiposAceptados"
-                  (change)="elegirFichero($event)"
-                />
-              </label>
-            </div>
-
-            <div class="imp__tarjeta">
-              <h3>{{ t('panel.importar.pegar.titulo') }}</h3>
-              <p>{{ t('panel.importar.pegar.ayuda') }}</p>
-              <label class="imp__campo">
-                <span class="imp__oculto">{{ t('panel.importar.pegar.titulo') }}</span>
-                <textarea
-                  npInput
-                  rows="6"
-                  [placeholder]="t('panel.importar.pegar.ejemplo')"
-                  [value]="pegado()"
-                  (input)="pegar($event)"
-                ></textarea>
-              </label>
-              <button
-                npButton
-                type="button"
-                [disabled]="pegado().trim() === ''"
-                (click)="leer(pegado())"
-              >
-                {{ t('panel.importar.pegar.leer') }}
-              </button>
-            </div>
+            <ol class="imp__pasos">
+              <li>
+                <h3>{{ t('panel.importar.paso1.titulo') }}</h3>
+                <p>{{ t('panel.importar.paso1.ayuda') }}</p>
+                <button
+                  npButton
+                  variant="secondary"
+                  type="button"
+                  [loading]="descargando()"
+                  (click)="descargarPlantilla()"
+                >
+                  <np-icon name="download-simple" />
+                  {{ t('panel.importar.paso1.descargar') }}
+                </button>
+              </li>
+              <li>
+                <h3>{{ t('panel.importar.paso2.titulo') }}</h3>
+                <p>{{ t('panel.importar.paso2.ayuda') }}</p>
+              </li>
+              <li>
+                <h3>{{ t('panel.importar.paso3.titulo') }}</h3>
+                <p>{{ t('panel.importar.paso3.ayuda') }}</p>
+                <label class="imp__subir">
+                  <np-icon name="upload-simple" />
+                  {{ t('panel.importar.paso3.elegir') }}
+                  <input
+                    type="file"
+                    [attr.accept]="tiposAceptados"
+                    (change)="elegirFichero($event)"
+                  />
+                </label>
+              </li>
+            </ol>
           }
 
           @case ('mapeo') {
@@ -142,70 +137,33 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
               <h3>{{ t('panel.importar.mapeo.titulo', { n: cuantasFilas() }) }}</h3>
               <p>{{ t('panel.importar.mapeo.ayuda') }}</p>
 
-              @if (avisoAcentos()) {
-                <np-alert status="pending" [heading]="t('panel.importar.acentos.titulo')">
-                  <p>{{ t('panel.importar.acentos.ayuda') }}</p>
-                </np-alert>
-              }
-
               <ul class="imp__columnas">
-                <!--
-                  El índice se guarda con nombre: dentro del bucle de las
-                  definiciones, $index es el de ESE bucle y tapa al de fuera.
-                  Con $index a secas todas las columnas acababan marcando la
-                  misma opción.
-                -->
                 @for (cabecera of cabeceras(); track $index; let columna = $index) {
                   <li>
-                    <label>
-                      <span class="imp__cabecera">{{
-                        cabecera || t('panel.importar.sinTitulo')
-                      }}</span>
-                      <!--
-                        La selección va marcada en cada opción, no con un
-                        enlace de "value" en el select. Así la columna
-                        reconocida no se veía: el valor se aplica antes de que
-                        el bucle haya creado las opciones, el navegador no
-                        encuentra ninguna que case y se queda en la primera. El
-                        mapeo era correcto por dentro y la pareja leía «No
-                        importar esta columna» en las cuatro.
-                      -->
-                      <select npInput (change)="cambiarMapeo(columna, $event)">
-                        <option value="" [selected]="mapeo()[columna] === null">
-                          {{ t('panel.importar.noImportar') }}
-                        </option>
-                        @for (definicion of definiciones; track definicion.clave) {
-                          <option
-                            [value]="definicion.clave"
-                            [selected]="mapeo()[columna] === definicion.clave"
-                          >
-                            {{ definicion.etiqueta }}
-                          </option>
-                        }
-                      </select>
-                    </label>
+                    <span class="imp__cabecera">{{
+                      cabecera || t('panel.importar.sinTitulo')
+                    }}</span>
+                    @if (mapeo()[columna]; as clave) {
+                      <np-status-chip
+                        status="confirmed"
+                        [label]="t('panel.importar.columna.' + clave)"
+                      />
+                    } @else {
+                      <np-status-chip
+                        status="pending"
+                        [label]="t('panel.importar.columna.ignorada')"
+                      />
+                    }
                     <small class="imp__muestra">{{ muestraDe(columna) }}</small>
                   </li>
                 }
               </ul>
 
-              @if (!tieneNombre()) {
-                <np-alert status="declined" [heading]="t('panel.importar.faltaNombre.titulo')">
-                  <p>{{ t('panel.importar.faltaNombre.ayuda') }}</p>
-                </np-alert>
-              }
-
               <div class="imp__acciones">
                 <button npButton variant="ghost" type="button" (click)="empezarDeCero()">
                   {{ t('panel.importar.otroFichero') }}
                 </button>
-                <button
-                  npButton
-                  type="button"
-                  [loading]="trabajando()"
-                  [disabled]="!tieneNombre()"
-                  (click)="comprobar()"
-                >
+                <button npButton type="button" [loading]="trabajando()" (click)="comprobar()">
                   <np-icon name="eye" />
                   {{ t('panel.importar.comprobar') }}
                 </button>
@@ -379,20 +337,38 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
       block-size: 1px;
       opacity: 0;
     }
-    .imp__campo {
-      display: block;
-      inline-size: 100%;
+    .imp__pasos {
+      display: flex;
+      flex-direction: column;
+      gap: var(--np-space-3);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: paso;
     }
-    .imp__oculto {
-      position: absolute;
-      inline-size: 1px;
-      block-size: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
+    .imp__pasos li {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--np-space-2);
+      padding: var(--np-space-4);
+      border: 1px solid var(--np-surface-border);
+      border-radius: var(--np-radius-lg);
+      background: var(--np-surface-surface);
+      counter-increment: paso;
     }
-    .imp__campo textarea,
-    .imp__columnas select {
-      inline-size: 100%;
+    .imp__pasos h3 {
+      margin: 0;
+      font-size: var(--np-text-base);
+      font-weight: var(--np-weight-semibold);
+    }
+    .imp__pasos h3::before {
+      content: counter(paso) '. ';
+    }
+    .imp__pasos p {
+      margin: 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-surface-text-muted);
     }
     /* Primero móvil: una columna por fila, con su muestra debajo. */
     .imp__columnas {
@@ -404,18 +380,18 @@ type Paso = 'origen' | 'mapeo' | 'resultado';
       padding: 0;
       list-style: none;
     }
-    .imp__columnas label {
+    .imp__columnas li {
       display: flex;
-      flex-direction: column;
-      gap: var(--np-space-1);
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--np-space-1) var(--np-space-3);
     }
     .imp__cabecera {
       font-size: var(--np-text-sm);
       font-weight: var(--np-weight-medium);
     }
     .imp__muestra {
-      display: block;
-      margin-block-start: var(--np-space-1);
+      flex-basis: 100%;
       color: var(--np-surface-text-muted);
       font-size: var(--np-text-xs);
     }
@@ -487,11 +463,12 @@ export class ImportarInvitados {
   protected readonly definiciones = DEFINICIONES;
 
   protected readonly paso = signal<Paso>('origen');
-  protected readonly pegado = signal('');
+  protected readonly descargando = signal(false);
   protected readonly trabajando = signal(false);
   protected readonly fallo = signal<FalloInvitado | null>(null);
-  protected readonly avisoAcentos = signal(false);
-  protected readonly problemaLocal = signal<'vacio' | 'demasiadas' | 'xlsxIlegible' | null>(null);
+  protected readonly problemaLocal = signal<
+    'vacio' | 'demasiadas' | 'xlsxIlegible' | 'plantilla' | 'noExcel' | null
+  >(null);
   /** Mientras se abre el `.xlsx`: en una hoja grande tarda un segundo. */
   protected readonly leyendo = signal(false);
   protected readonly tiposAceptados = TIPOS_ACEPTADOS;
@@ -499,19 +476,15 @@ export class ImportarInvitados {
   protected readonly maxFilas = MAX_FILAS;
 
   private readonly tabla = signal<readonly (readonly string[])[]>([]);
-  private readonly conCabecera = signal(true);
   protected readonly mapeo = signal<readonly (Columna | null)[]>([]);
   protected readonly resultado = signal<Importacion | null>(null);
 
   protected readonly cabeceras = computed(() => this.tabla()[0] ?? []);
 
-  /** Las filas de datos, sin la de cabeceras si la hay. */
-  private readonly datos = computed(() =>
-    this.conCabecera() ? this.tabla().slice(1) : this.tabla(),
-  );
+  /** Las filas de datos, sin la de cabeceras. */
+  private readonly datos = computed(() => this.tabla().slice(1));
 
   protected readonly cuantasFilas = computed(() => this.datos().length);
-  protected readonly tieneNombre = computed(() => this.mapeo().includes('fullName'));
 
   protected readonly problematicas = computed(
     () => this.resultado()?.filas.filter((f) => f.estado !== 'nuevo') ?? [],
@@ -545,20 +518,13 @@ export class ImportarInvitados {
     return f?.tipo === 'error' ? f.mensaje : '';
   }
 
-  protected descargarPlantilla(): void {
-    const blob = new Blob([plantillaCsv(this.pareja())], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+  protected async descargarPlantilla(): Promise<void> {
+    this.descargando.set(true);
+    const hecho = await descargarXlsx([hojaDePlantilla(this.pareja())], NOMBRE_PLANTILLA);
+    this.descargando.set(false);
 
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = NOMBRE_PLANTILLA;
-    enlace.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  protected pegar(evento: Event): void {
-    this.pegado.set((evento.target as HTMLTextAreaElement).value);
+    // Sin conexión la librería no llega a cargar: se dice, no se queda quieto.
+    this.problemaLocal.set(hecho ? null : 'xlsxIlegible');
   }
 
   protected async elegirFichero(evento: Event): Promise<void> {
@@ -569,42 +535,34 @@ export class ImportarInvitados {
     entrada.value = '';
     if (!fichero) return;
 
-    // Un `.xlsx` no es texto: es un ZIP. Leerlo con `text()` daba una tabla de
-    // una fila con basura binaria dentro, y la pareja no entendía nada.
-    if (esXlsx(fichero.name)) {
-      this.leyendo.set(true);
-      const lectura = await leerXlsx(fichero);
-      this.leyendo.set(false);
-
-      if (!lectura.ok) {
-        this.fallo.set(null);
-        this.problemaLocal.set(lectura.motivo === 'vacio' ? 'vacio' : 'xlsxIlegible');
-        this.filasLeidas.set(0);
-        return;
-      }
-
-      this.leerFilas(lectura.filas, false);
+    // `.xlsx` y `.csv`: un `.xls` antiguo no se intenta leer. Se dice qué hacer,
+    // que es guardarlo como Excel moderno o como CSV, o usar la plantilla.
+    if (!esXlsx(fichero.name) && !esCsv(fichero.name)) {
+      this.fallo.set(null);
+      this.problemaLocal.set('noExcel');
+      this.filasLeidas.set(0);
       return;
     }
 
-    this.leer(await fichero.text());
-  }
+    this.leyendo.set(true);
+    const lectura = esCsv(fichero.name) ? await leerCsv(fichero) : await leerXlsx(fichero);
+    this.leyendo.set(false);
 
-  protected leer(texto: string): void {
-    // Excel guarda en ANSI salvo que se le diga: entonces «María» llega como
-    // «MarÃ­a». No se puede arreglar desde aquí —el fichero ya se leyó como
-    // UTF-8— pero sí avisar antes de importar doscientos nombres rotos. Con un
-    // `.xlsx` no pasa: la codificación va dentro del fichero.
-    this.leerFilas(parsearTabla(texto), pareceLatin1(texto));
+    if (!lectura.ok) {
+      this.fallo.set(null);
+      this.problemaLocal.set(lectura.motivo === 'vacio' ? 'vacio' : 'xlsxIlegible');
+      this.filasLeidas.set(0);
+      return;
+    }
+
+    this.leerFilas(lectura.filas);
   }
 
   /**
-   * El camino común, venga de un CSV, de celdas pegadas o de un `.xlsx`.
-   *
-   * Que los tres acaben aquí es lo que hace que el resto de la pantalla no
-   * tenga que saber de dónde salieron las filas.
+   * Lo que se hace con las filas ya leídas: comprobar que son de nuestra
+   * plantilla y preparar el paso siguiente.
    */
-  private leerFilas(filas: readonly (readonly string[])[], acentosRotos: boolean): void {
+  protected leerFilas(filas: readonly (readonly string[])[]): void {
     this.fallo.set(null);
     this.problemaLocal.set(null);
     this.filasLeidas.set(filas.length);
@@ -620,34 +578,21 @@ export class ImportarInvitados {
       return;
     }
 
-    this.avisoAcentos.set(acentosRotos);
+    // La primera fila tiene que ser la de cabeceras y traer al menos el nombre.
+    // Sin eso no es nuestra plantilla, y adivinar qué es cada columna es
+    // exactamente lo que daba errores.
+    const mapeo = pareceCabecera(filas[0]) ? adivinarColumnas(filas[0]) : [];
+    if (!mapeo.includes('fullName')) {
+      this.problemaLocal.set('plantilla');
+      return;
+    }
 
-    const hayCabecera = pareceCabecera(filas[0]);
     this.tabla.set(filas.map((fila) => [...fila]));
-    this.conCabecera.set(hayCabecera);
-    this.mapeo.set(
-      hayCabecera
-        ? adivinarColumnas(filas[0])
-        : // Sin cabecera, el orden de la plantilla es la mejor apuesta.
-          filas[0].map((_, indice) => COLUMNAS[indice] ?? null),
-    );
+    this.mapeo.set(mapeo);
 
     this.fallo.set(null);
     this.resultado.set(null);
     this.paso.set('mapeo');
-  }
-
-  protected cambiarMapeo(indice: number, evento: Event): void {
-    const valor = (evento.target as HTMLSelectElement).value as Columna | '';
-
-    this.mapeo.update((actual) =>
-      actual.map((columna, i) => {
-        if (i === indice) return valor === '' ? null : valor;
-        // Una columna no puede estar asignada dos veces: si se elige aquí, se
-        // suelta donde estuviera.
-        return valor !== '' && columna === valor ? null : columna;
-      }),
-    );
   }
 
   /** Un par de valores de esa columna, para saber qué se está mapeando. */
@@ -663,9 +608,7 @@ export class ImportarInvitados {
     this.tabla.set([]);
     this.mapeo.set([]);
     this.resultado.set(null);
-    this.pegado.set('');
     this.fallo.set(null);
-    this.avisoAcentos.set(false);
     this.problemaLocal.set(null);
     this.filasLeidas.set(0);
     this.paso.set('origen');
@@ -715,8 +658,7 @@ export class ImportarInvitados {
         if (!columna) return;
         const valor = fila[indice] ?? '';
 
-        if (columna === 'maxCompanions') datos[columna] = Number(valor) || 0;
-        else if (columna === 'ageGroup') datos[columna] = edad(valor);
+        if (columna === 'ageGroup') datos[columna] = edad(valor);
         else if (columna === 'groups') datos['groupNames'] = nombresDeGrupo(valor);
         else if (columna === 'side') {
           const suyo = lado(valor, pareja);

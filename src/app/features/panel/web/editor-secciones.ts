@@ -13,6 +13,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpIcon } from '../../../design-system/icons/icon';
+import { NpCompartirWeb } from './compartir-web';
 import { NpEditorRico } from './editor-rico';
 import { plantillaDe } from '../../public-site/plantillas/catalogo';
 import { cargarPlantilla } from '../../public-site/plantillas/cargador';
@@ -53,6 +54,7 @@ import { NpInput } from '../../../design-system/components/field/input';
     TranslocoDirective,
     NpAlert,
     NpButton,
+    NpCompartirWeb,
     NpIcon,
     NpEditorRico,
     NpInput,
@@ -115,6 +117,8 @@ import { NpInput } from '../../../design-system/components/field/input';
             {{ t('panel.secciones.pestanaPrevia') }}
           </button>
         </div>
+
+        <np-compartir-web />
 
         <!--
           El buscador va con las secciones y no en «Datos de la boda» porque es

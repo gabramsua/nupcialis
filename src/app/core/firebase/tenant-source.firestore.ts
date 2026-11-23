@@ -72,6 +72,9 @@ export function crearFuenteTenantFirestore(): FuenteTenant {
         theme: tema(datos['theme']),
         indexable: datos['indexable'] === true,
         modulos: modulos(datos['modules']),
+        // Lo que no se reconozca es la web de una página: es el diseño que
+        // siempre ha existido y el que no esconde nada.
+        layout: datos['layout'] === 'multipage' ? 'multipage' : 'onepage',
         // Ante un valor que no reconocemos, abierta. Una boda que pidiera
         // identificarse por un dato corrupto dejaría fuera a sus invitados sin
         // que nadie lo hubiera decidido.

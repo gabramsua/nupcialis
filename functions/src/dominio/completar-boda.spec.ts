@@ -52,14 +52,17 @@ describe('cambiosPendientes', () => {
     expect(cambios.secciones).toHaveLength(sinHistoria.length + 1);
   });
 
-  it('si el id «historia» ya lo usa otra sección, elige otro', () => {
+  const base = modulosIniciales('extended');
+  const portada = { id: 'portada', type: 'portada', enabled: true, order: 0, fields: {} };
+
+  it('si el id «historia» lo usa otra sección que no es de texto, elige otro', () => {
     const cambios = cambiosPendientes({
       plan: 'extended',
-      modules: modulosIniciales('extended'),
+      modules: base,
       content: {
         sections: [
-          { id: 'portada', type: 'portada', enabled: true, order: 0, fields: {} },
-          { id: 'historia', type: 'texto', enabled: true, order: 1, fields: { titulo: 'X' } },
+          portada,
+          { id: 'historia', type: 'evento', enabled: true, order: 1, fields: { titulo: 'X' } },
         ],
       },
     });
@@ -68,6 +71,81 @@ describe('cambiosPendientes', () => {
       'historia',
       'historia-nuestra',
     ]);
+  });
+
+  it('convierte la vieja sección de texto «historia» en cartel, sin añadir otra', () => {
+    const cambios = cambiosPendientes({
+      plan: 'extended',
+      modules: base,
+      content: {
+        sections: [
+          portada,
+          {
+            id: 'historia',
+            type: 'texto',
+            enabled: true,
+            order: 1,
+            fields: { titulo: 'Nosotros' },
+          },
+        ],
+      },
+    });
+    expect(cambios.secciones).toHaveLength(2);
+    expect(cambios.secciones?.[1]).toMatchObject({
+      id: 'historia',
+      type: 'historia',
+      enabled: true,
+      order: 1,
+      fields: { titulo: 'Nosotros' },
+    });
+  });
+
+  it('repara el duplicado que dejó el parche anterior: queda solo el cartel, encendido', () => {
+    const cambios = cambiosPendientes({
+      plan: 'extended',
+      modules: base,
+      content: {
+        sections: [
+          portada,
+          {
+            id: 'historia',
+            type: 'texto',
+            enabled: true,
+            order: 1,
+            fields: { titulo: 'Nuestra historia' },
+          },
+          {
+            id: 'historia-nuestra',
+            type: 'historia',
+            enabled: false,
+            order: 9,
+            fields: { titulo: 'Nuestra historia' },
+          },
+        ],
+      },
+    });
+    expect(cambios.secciones?.map((s) => s.id)).toEqual(['portada', 'historia-nuestra']);
+    expect(cambios.secciones?.[1]?.enabled).toBe(true);
+  });
+
+  it('es idempotente: una boda ya arreglada no vuelve a cambiar', () => {
+    const arreglada = {
+      plan: 'extended',
+      modules: base,
+      content: {
+        sections: [
+          portada,
+          {
+            id: 'historia',
+            type: 'historia',
+            enabled: true,
+            order: 1,
+            fields: { titulo: 'Nuestra historia' },
+          },
+        ],
+      },
+    };
+    expect(cambiosPendientes(arreglada).secciones).toBeNull();
   });
 
   it('sin lista de secciones no inventa ninguna', () => {

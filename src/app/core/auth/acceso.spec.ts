@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { accesoAlPanel, accesoAlSuperadmin, accesoDeInvitado } from './acceso';
+import {
+  accesoAlPanel,
+  accesoAlPanelSinBoda,
+  accesoAlSuperadmin,
+  accesoDeInvitado,
+} from './acceso';
 import { SESION_ANONIMA, Sesion } from './session';
 
 const owner = (weddingId: string): Sesion => ({
@@ -79,5 +84,18 @@ describe('accesoDeInvitado', () => {
     // No tiene weddingId, así que no puede subir fotos a una boda ajena
     // haciéndose pasar por invitado.
     expect(accesoDeInvitado(superadmin, 'w1')).toBe('otra-boda');
+  });
+});
+
+describe('accesoAlPanelSinBoda (cada navegación dentro del panel)', () => {
+  it('deja seguir a la pareja y al superadmin', () => {
+    expect(accesoAlPanelSinBoda(owner('w1'))).toBe(true);
+    expect(accesoAlPanelSinBoda(superadmin)).toBe(true);
+  });
+
+  it('no deja seguir a nadie más: anónimo, invitado ni sin sesión', () => {
+    expect(accesoAlPanelSinBoda(SESION_ANONIMA)).toBe(false);
+    expect(accesoAlPanelSinBoda(invitado('w1'))).toBe(false);
+    expect(accesoAlPanelSinBoda(null)).toBe(false);
   });
 });

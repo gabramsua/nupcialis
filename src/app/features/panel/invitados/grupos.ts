@@ -79,7 +79,7 @@ import { NpInput } from '../../../design-system/components/field/input';
             <np-empty-state icon="clock-countdown" [title]="t('panel.grupos.cargando')" />
           }
           @default {
-            @if (store.grupos().length === 0) {
+            @if (visibles().length === 0) {
               <np-empty-state
                 icon="users"
                 [title]="t('panel.grupos.ninguno')"
@@ -87,7 +87,7 @@ import { NpInput } from '../../../design-system/components/field/input';
               />
             } @else {
               <ul class="gru__lista">
-                @for (grupo of store.grupos(); track grupo.id) {
+                @for (grupo of visibles(); track grupo.id) {
                   <li class="gru__tarjeta">
                     <div class="gru__quien">
                       <np-grupo-chip
@@ -98,12 +98,6 @@ import { NpInput } from '../../../design-system/components/field/input';
                         <span class="gru__dato">
                           <np-icon name="lock-simple" />
                           {{ t('panel.grupos.soloElGrupo') }}
-                        </span>
-                      }
-                      @if (grupo.porDefecto) {
-                        <span class="gru__dato">
-                          <np-icon name="users" />
-                          {{ t('panel.grupos.elDeTodos') }}
                         </span>
                       }
                     </div>
@@ -512,6 +506,12 @@ export class Grupos {
   protected readonly fallo = signal<FalloGrupo | null>(null);
 
   private readonly groupIdsDeInvitados = signal<readonly { groupIds: readonly string[] }[]>([]);
+  /**
+   * Sin el grupo de todos («Invitados»): todo invitado está en él (D-47) y no
+   * hay nada que decidir sobre él, así que no se enseña (D-52).
+   */
+  protected readonly visibles = computed(() => this.store.grupos().filter((g) => !g.porDefecto));
+
   protected readonly miembros = computed(() => miembrosPorGrupo(this.groupIdsDeInvitados()));
 
   protected readonly formulario = this.fb.nonNullable.group({

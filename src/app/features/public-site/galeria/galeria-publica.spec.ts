@@ -187,4 +187,64 @@ describe('la galería del invitado', () => {
 
     expect(p.texto()).toContain('cuatro últimos dígitos');
   });
+
+  describe('mis fotos', () => {
+    const MIXTA: ResultadoFotos = {
+      ok: true,
+      fotos: [
+        foto({ id: 'a', guestId: 'g1' }),
+        foto({ id: 'b', guestId: 'g2' }),
+        foto({ id: 'c', guestId: 'g1' }),
+      ],
+      cursor: null,
+      miGuestId: 'g1',
+    };
+
+    it('ofrece borrar solo las suyas desde la rejilla', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      expect(p.raiz.querySelectorAll('[data-accion="borrar-mia"]')).toHaveLength(2);
+    });
+
+    it('con el filtro «Mis fotos» solo enseña las suyas', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      await p.pulsar(p.raiz.querySelector('[data-filtro="mias"]') as HTMLButtonElement);
+      expect(p.miniaturas().map((i) => i.getAttribute('src'))).toEqual([
+        'https://fotos.example.com/a-mini.jpg',
+        'https://fotos.example.com/c-mini.jpg',
+      ]);
+
+      await p.pulsar(p.raiz.querySelector('[data-filtro="todas"]') as HTMLButtonElement);
+      expect(p.miniaturas()).toHaveLength(3);
+    });
+
+    it('borra una foto suya y deja de enseñarla', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      await p.pulsar(p.raiz.querySelector('[data-accion="borrar-mia"]') as HTMLButtonElement);
+
+      expect(p.borradas).toEqual(['a']);
+      expect(p.miniaturas()).toHaveLength(2);
+    });
+
+    it('si no sabe quién es, no ofrece borrar nada ni el filtro', async () => {
+      const p = montar([{ ...MIXTA, miGuestId: null }]);
+      await p.asentar();
+
+      expect(p.raiz.querySelector('[data-accion="borrar-mia"]')).toBeNull();
+      expect(p.raiz.querySelector('[data-filtro]')).toBeNull();
+    });
+
+    it('trae un botón para hacer una foto con la cámara', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      const camara = p.raiz.querySelector('input[data-origen="camara"]');
+      expect(camara?.getAttribute('capture')).toBe('environment');
+    });
+  });
 });

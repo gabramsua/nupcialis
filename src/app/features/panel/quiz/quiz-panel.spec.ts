@@ -209,6 +209,14 @@ describe('el banco de preguntas', () => {
     expect(p.texto()).toContain('A medio escribir');
   });
 
+  it('avisa a la pareja de que los invitados tendrán que identificarse para jugar (D-56)', async () => {
+    const p = montarPreguntas([pregunta({ id: 'a' })]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('Los invitados tendrán que identificarse para jugar');
+    expect(p.texto()).toContain('Ir a la lista de invitados');
+  });
+
   it('con el banco bien, no saca ningún aviso', async () => {
     const p = montarPreguntas([
       pregunta({ id: 'a' }),
@@ -447,16 +455,16 @@ describe('sugerencias del superadmin', () => {
     ...parcial,
   });
 
-  it('ofrece las sugerencias encendidas y no las apagadas', async () => {
+  it('ofrece las sugerencias del catálogo, sin distinguir «apagadas» (D-53)', async () => {
     const p = montarPreguntas([], {}, [
       sugerida({ id: 's1' }),
-      sugerida({ id: 's2', text: 'Apagada', enabled: false }),
+      sugerida({ id: 's2', text: 'Antes apagada', enabled: false }),
     ]);
     await p.asentar();
 
     expect(p.texto()).toContain('Preguntas sugeridas');
     expect(p.texto()).toContain('¿En qué ciudad nos conocimos?');
-    expect(p.texto()).not.toContain('Apagada');
+    expect(p.texto()).toContain('Antes apagada');
   });
 
   /** Las respuestas de las sugerencias son de muestra: no pueden jugarse sin revisar. */
@@ -480,7 +488,8 @@ describe('sugerencias del superadmin', () => {
     const p = montarPreguntas([existente], {}, [sugerida({ id: 's1' })]);
     await p.asentar();
 
-    expect(p.texto()).toContain('Ya está en vuestro quiz');
+    // Desaparece de las sugerencias, sin chip de «ya está» (D-54).
+    expect(p.texto()).not.toContain('¿En qué ciudad nos conocimos?');
     expect(p.boton('Añadir a nuestro quiz')).toBeUndefined();
   });
 

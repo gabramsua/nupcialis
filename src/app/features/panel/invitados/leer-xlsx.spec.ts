@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   TIPOS_ACEPTADOS,
   comoTexto,
+  esCsv,
   esXlsx,
+  parsearCsv,
   filasDeLaPrimeraHoja,
   leerXlsx,
   sinFilasVacias,
@@ -33,14 +35,16 @@ describe('esXlsx', () => {
   });
 
   it('un CSV no es un xlsx, y un .xls antiguo tampoco', () => {
-    expect(esXlsx('invitados.csv')).toBe(false);
+    expect(esXlsx('invitados.csv')).toBe(false); // el CSV se lee aparte (esCsv)
     expect(esXlsx('invitados.xls')).toBe(false);
     expect(esXlsx('invitados.xlsx.txt')).toBe(false);
   });
 
   it('el campo de fichero los acepta', () => {
     expect(TIPOS_ACEPTADOS).toContain('.xlsx');
+    // Excel y CSV (D-55); los `.xls` antiguos y el texto, no.
     expect(TIPOS_ACEPTADOS).toContain('.csv');
+    expect(TIPOS_ACEPTADOS).not.toContain('.xls,');
   });
 });
 
@@ -170,5 +174,50 @@ describe('filasDeLaPrimeraHoja', () => {
     expect(filasDeLaPrimeraHoja([])).toEqual([]);
     expect(filasDeLaPrimeraHoja(null)).toEqual([]);
     expect(filasDeLaPrimeraHoja({ raro: 1 })).toEqual([]);
+  });
+});
+
+describe('CSV (D-55)', () => {
+  it('reconoce el nombre del fichero', () => {
+    expect(esCsv('invitados.csv')).toBe(true);
+    expect(esCsv('Invitados.CSV')).toBe(true);
+    expect(esCsv('invitados.csv.xlsx')).toBe(false);
+  });
+
+  it('lee un CSV de Excel en español: punto y coma, BOM y comillas', () => {
+    const filas = parsearCsv(
+      '﻿Nombre y apellidos;Teléfono;Notas\r\n"Pérez, Ana";600111222;"dice ""hola"""\r\nLeo;;\r\n',
+    );
+    expect(filas).toEqual([
+      ['Nombre y apellidos', 'Teléfono', 'Notas'],
+      ['Pérez, Ana', '600111222', 'dice "hola"'],
+      ['Leo', '', ''],
+    ]);
+  });
+
+  it('lee un CSV con comas y uno con tabuladores', () => {
+    expect(parsearCsv('a,b\n1,2')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
+    expect(parsearCsv('a\tb\n1\t2')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
+  });
+
+  it('una celda con salto de línea dentro de comillas sigue siendo una celda', () => {
+    expect(parsearCsv('a;b\n"uno\ndos";3')).toEqual([
+      ['a', 'b'],
+      ['uno\ndos', '3'],
+    ]);
+  });
+
+  it('quita las filas vacías del final y un fichero vacío no da filas', () => {
+    expect(parsearCsv('a;b\n1;2\n;\n\n')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
+    expect(parsearCsv('')).toEqual([]);
   });
 });

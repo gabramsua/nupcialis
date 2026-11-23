@@ -55,6 +55,8 @@ export interface TemaPublico {
   readonly heroImageUrl: string | null;
 }
 
+export type LayoutPublico = 'onepage' | 'multipage';
+
 /** La proyección pública: lo único legible sin autenticación. */
 export type VisibilidadModulo = 'hidden' | 'soon' | 'visible';
 
@@ -113,6 +115,12 @@ export interface SitioPublico {
    * formulario de confirmación, no cuándo termina el plazo.
    */
   readonly modulos: Readonly<Record<string, VisibilidadModulo>>;
+  /**
+   * Cómo se organiza la web: `onepage` (plan básico: todo en la portada) o
+   * `multipage` (plan completo: portada con el contenido y una página por
+   * módulo, con cabecera de navegación). Lo publica la proyección.
+   */
+  readonly layout: LayoutPublico;
   readonly locale: string;
   readonly theme: TemaPublico;
 }

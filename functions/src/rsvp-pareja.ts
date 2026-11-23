@@ -20,6 +20,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { respuestasGuardadas, texto, type EstadoRsvp } from './dominio/formulario';
 import { prepararRespuestaDeLaPareja } from './dominio/respuesta-pareja';
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
+import { acompanantesSiguenAlTitular } from './infra/acompanantes-asistencia';
 import { auditar } from './infra/auditoria';
 import { leerPreguntas } from './infra/formulario';
 import { grupoGeneral } from './groups';
@@ -98,8 +99,15 @@ export const setGuestRsvp = onCall<EntradaSetGuestRsvp>(
       rsvpStatus: preparado.estado,
       // Pendiente es «no ha contestado»: sin fecha, como un invitado nuevo.
       rsvpAt: preparado.estado === 'pending' ? null : FieldValue.serverTimestamp(),
+      // Cambiar el estado de un acompañante a mano es decir que va por libre.
+      ...(estado !== null && invitado['isCompanion'] === true ? { rsvpFollowsTitular: false } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    // Los acompañantes vienen como viene quien los trae (D-51).
+    if (estado !== null && invitado['isCompanion'] !== true) {
+      await acompanantesSiguenAlTitular(weddingId, guestId, preparado.estado);
+    }
 
     // Sin el nombre ni lo contestado: el log lo lee el superadmin y no tiene por
     // qué llevarse los datos de cada invitado de cada boda.

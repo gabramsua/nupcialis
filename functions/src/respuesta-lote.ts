@@ -25,6 +25,7 @@ import { respuestasGuardadas, type EstadoRsvp } from './dominio/formulario';
 import { prepararRespuestaDeLaPareja } from './dominio/respuesta-pareja';
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { grupoGeneral } from './groups';
+import { acompanantesSiguenAlTitular } from './infra/acompanantes-asistencia';
 import { auditar } from './infra/auditoria';
 import { leerPreguntas } from './infra/formulario';
 import { exigirPareja } from './infra/permisos';
@@ -97,12 +98,24 @@ export const setGuestsRsvp = onCall<EntradaSetGuestsRsvp>(
           rsvpAnswers: preparado.respuestas,
           rsvpStatus: preparado.estado,
           rsvpAt: preparado.estado === 'pending' ? null : FieldValue.serverTimestamp(),
+          // Un acompañante marcado sin su titular va por libre; con él, sigue.
+          ...(invitado['isCompanion'] === true &&
+          !(typeof invitado['invitedById'] === 'string' && ids.includes(invitado['invitedById']))
+            ? { rsvpFollowsTitular: false }
+            : {}),
           updatedAt: FieldValue.serverTimestamp(),
         });
         cambiados += 1;
       }
 
       await lote.commit();
+    }
+
+    // Los titulares marcados arrastran a sus acompañantes que no estaban en el lote.
+    for (const documento of existentes) {
+      if (documento.data()?.['isCompanion'] !== true) {
+        await acompanantesSiguenAlTitular(weddingId, documento.id, nuevo);
+      }
     }
 
     await auditar({

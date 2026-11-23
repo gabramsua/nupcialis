@@ -37,7 +37,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { validarAlta, sugerirSlugs, type DatosAlta, type EntradaAlta } from './dominio/alta';
 import { dominioDeBoda } from './dominio/dominios';
-import { layoutDePlan, modulosIniciales } from './dominio/planes';
+import { layoutDePlan, modulosIniciales, type Modulo } from './dominio/planes';
 import { proyeccionPublica, type BodaParaProyectar } from './dominio/proyeccion';
 import { SECCIONES_INICIALES } from './dominio/secciones';
 import { CONTADORES_VACIOS } from './dominio/contadores';
@@ -51,6 +51,9 @@ import {
 import { DOMINIO_BASE, EXIGIR_APP_CHECK, REGION, auth, db } from './firebase';
 import { auditar } from './infra/auditoria';
 import { plantillasParaAlta } from './catalogo';
+import { fechaParaCorreo } from './infra/acceso-pareja';
+import { encolarCorreo } from './infra/correo';
+import { leerModulosDePlanGuardados } from './planes';
 import { autorizarDominio } from './infra/identity-toolkit';
 import { exigirSuperadmin } from './infra/permisos';
 
@@ -61,11 +64,13 @@ export interface CuentaCreada {
   /**
    * Enlace para que la persona ponga su contraseña.
    *
-   * Fase 1: lo reparte el superadmin a mano. En fase 5, cuando haya proveedor
-   * de correo, lo enviará la propia función y este campo desaparecerá de la
-   * respuesta. Da acceso al panel: solo lo ve quien ha podido llamar aquí.
+   * Se **manda por correo** con la plantilla `parejaAcceso` (D-53) y además se
+   * devuelve aquí para que el superadmin pueda copiarlo si el correo no llega.
+   * Da acceso al panel: solo lo ve quien ha podido llamar aquí.
    */
   readonly enlaceAcceso: string | null;
+  /** Si el correo de acceso quedó en la cola de envío. */
+  readonly correoEnviado: boolean;
 }
 
 export interface RespuestaAlta {
@@ -97,12 +102,15 @@ export const provisionWedding = onCall<Partial<EntradaAlta>, Promise<RespuestaAl
     const weddingId = db().collection('weddings').doc().id;
     // Se leen **antes** de la transacción: dentro solo se escribe.
     const plantillas = await plantillasParaAlta();
+    // Los módulos con los que nace son los que el superadmin ha fijado para ese plan.
+    const modulos = await leerModulosDePlanGuardados(datos.plan);
 
     await crearBoda(
       weddingId,
       datos,
       cuentas.map((c) => c.uid),
       plantillas,
+      modulos,
     );
 
     // Los claims van después de la transacción a propósito: un claim que apunta
@@ -123,11 +131,13 @@ export const provisionWedding = onCall<Partial<EntradaAlta>, Promise<RespuestaAl
     }
     if (autorizado.aviso) avisos.push(autorizado.aviso);
 
-    const conEnlaces = await conEnlacesDeAcceso(cuentas, datos.slug);
+    const conEnlaces = await conEnlacesDeAcceso(cuentas, datos, weddingId);
     if (conEnlaces.some((c) => c.enlaceAcceso === null)) {
       avisos.push(
         'No se han podido generar todos los enlaces de acceso. Reintenta desde el panel.',
       );
+    } else if (conEnlaces.some((c) => !c.correoEnviado)) {
+      avisos.push('No se ha podido encolar algún correo de acceso. Reenvíalo desde la ficha.');
     }
 
     await auditar({
@@ -204,6 +214,7 @@ async function crearBoda(
   datos: DatosAlta,
   ownerUids: readonly string[],
   plantillas: Plantillas,
+  modulos: readonly Modulo[],
 ): Promise<void> {
   const firestore = db();
   const slugRef = firestore.collection('slugs').doc(datos.slug);
@@ -227,12 +238,16 @@ async function crearBoda(
     }
 
     t.create(slugRef, { weddingId, status: 'active', createdAt: FieldValue.serverTimestamp() });
-    t.create(bodaRef, documentoDeBoda(datos, ownerUids));
-    sembrar(t, bodaRef, datos, plantillas);
+    t.create(bodaRef, documentoDeBoda(datos, ownerUids, modulos));
+    sembrar(t, bodaRef, datos, plantillas, modulos);
   });
 }
 
-function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
+function documentoDeBoda(
+  datos: DatosAlta,
+  ownerUids: readonly string[],
+  modulos: readonly Modulo[],
+) {
   return {
     slug: datos.slug,
     // Nace en borrador aunque la pareja haya pagado: la web no se publica hasta
@@ -249,6 +264,7 @@ function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
     // Civil o religiosa. Por ahora solo se guarda y se enseña; qué cambia según
     // el tipo (p. ej. tareas del cursillo prematrimonial) está en D-49.
     ceremonyType: datos.ceremonyType,
+    contactPhone: datos.contactPhone,
     timezone: datos.timezone,
     locale: datos.locale,
     ownerUids: [...ownerUids],
@@ -261,7 +277,7 @@ function documentoDeBoda(datos: DatosAlta, ownerUids: readonly string[]) {
       heroImagePath: null,
       heroImageUrl: null,
     },
-    modules: modulosIniciales(datos.plan),
+    modules: modulosIniciales(datos.plan, modulos),
     counters: { ...CONTADORES_VACIOS, photosPending: 0 },
     // Lo que queda por cuadrar fuera de Firestore. El panel de superadmin lo
     // pinta en rojo mientras no esté en 'ok'.
@@ -280,9 +296,10 @@ function sembrar(
   bodaRef: DocumentReference,
   datos: DatosAlta,
   plantillas: Plantillas,
+  modulos: readonly Modulo[],
 ): void {
   const boda: BodaParaProyectar = {
-    ...documentoDeBoda(datos, []),
+    ...documentoDeBoda(datos, [], modulos),
     weddingDate: Timestamp.fromDate(datos.weddingDate),
   };
 
@@ -411,22 +428,40 @@ async function intentarAutorizar(
  */
 async function conEnlacesDeAcceso(
   cuentas: readonly { email: string; uid: string; nueva: boolean }[],
-  slug: string,
+  alta: DatosAlta,
+  weddingId: string,
 ): Promise<readonly CuentaCreada[]> {
   // Al login del panel, no a `/panel`: quien acaba de poner su contraseña no
   // tiene sesión todavía, y `/panel` sin sesión depende de que el router lo
   // redirija. Yendo directos al acceso no hay nada que pueda desviarlo.
-  const url = `https://${dominioDeBoda(slug, DOMINIO_BASE)}/panel/acceso`;
+  const web = `https://${dominioDeBoda(alta.slug, DOMINIO_BASE)}`;
+  const url = `${web}/panel/acceso`;
 
   return Promise.all(
     cuentas.map(async (cuenta) => {
+      let enlaceAcceso: string;
       try {
-        const enlaceAcceso = await auth().generatePasswordResetLink(cuenta.email, { url });
-        return { ...cuenta, enlaceAcceso };
+        enlaceAcceso = await auth().generatePasswordResetLink(cuenta.email, { url });
       } catch (error) {
         console.error('No se pudo generar el enlace de acceso', cuenta.email, error);
-        return { ...cuenta, enlaceAcceso: null };
+        return { ...cuenta, enlaceAcceso: null, correoEnviado: false };
       }
+
+      // El correo sale con la plantilla editable. `encolarCorreo` no lanza: un
+      // correo que falla no deshace un alta que ya está hecha.
+      const correoEnviado = await encolarCorreo({
+        para: cuenta.email,
+        plantilla: 'parejaAcceso',
+        weddingId,
+        datos: {
+          novios: `${alta.partnerA} y ${alta.partnerB}`,
+          fecha: fechaParaCorreo(alta.weddingDate),
+          web,
+          enlace: enlaceAcceso,
+          correo: cuenta.email,
+        },
+      });
+      return { ...cuenta, enlaceAcceso, correoEnviado };
     }),
   );
 }

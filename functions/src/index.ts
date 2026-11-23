@@ -13,8 +13,21 @@
 export { listAccessLog } from './access-log';
 export { authorizeWeddingDomain } from './authorize-wedding-domain';
 export { addCompanion, deleteCompanion } from './companions';
-export { setCompanionQuota } from './companion-quota';
 export { completeWeddings } from './completar-bodas';
+export { getTips, listTips, resetTip, saveTip } from './consejos';
+export { recordOwnerLogin } from './entrada-pareja';
+export { recordWebVisit } from './visitas-web';
+export { deleteWedding, updateWedding } from './gestion-boda';
+export { listPlans, savePlanModules } from './planes';
+export {
+  discardMailItem,
+  listEmailTemplates,
+  listMailQueue,
+  previewEmail,
+  resetEmailTemplate,
+  saveEmailTemplate,
+  sendCoupleAccessEmail,
+} from './correos';
 export { deleteGroup, reorderGroups, upsertGroup } from './groups';
 export { guestLinkLogin, guestLogin, verifyGuest } from './guest-login';
 export { getInviteLink } from './invite-links';
@@ -44,6 +57,7 @@ export {
   savePayment,
 } from './superadmin-boda';
 export { setUserClaims } from './set-user-claims';
+export { setMyWebStatus } from './publicar-pareja';
 export { setWeddingStatus } from './set-wedding-status';
 export {
   syncPublicAccommodations,

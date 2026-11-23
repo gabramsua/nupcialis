@@ -117,12 +117,6 @@ export function ladoDeInvitado(
                     <dt>{{ t('panel.invitados.campo.edad') }}</dt>
                     <dd>{{ t('panel.invitados.edad.' + invitado.ageGroup) }}</dd>
                   </div>
-                  @if (!invitado.isCompanion && invitado.maxCompanions > 0) {
-                    <div>
-                      <dt>{{ t('panel.invitados.campo.acompanantes') }}</dt>
-                      <dd>{{ invitado.maxCompanions }}</dd>
-                    </div>
-                  }
                   @if (invitado.menu) {
                     <div>
                       <dt>{{ t('panel.invitados.lista.menu') }}</dt>
@@ -148,23 +142,15 @@ export function ladoDeInvitado(
                     <np-status-chip status="pending" [label]="t('panel.invitados.noHaEntrado')" />
                   }
                   <!--
-                    Quién lo trae, con nombre, y a cuántos trae: llevan a la
-                    familia entera. «Es acompañante» a secas obligaría a
-                    adivinar de quién, que es justo lo que se necesita para
-                    sentarlos juntos.
+                    Un solo enlace, «Ver acompañantes»: lleva a la familia entera
+                    tanto desde el titular como desde cualquiera de los que trae.
+                    «Es acompañante» a secas obligaría a adivinar de quién, que es
+                    justo lo que se necesita para sentarlos juntos.
                   -->
-                  @if (invitado.isCompanion && invitado.invitedById; as titularId) {
-                    @if (quienLoTrae(invitado)) {
-                      <button type="button" class="lst__enlace" (click)="familia.emit(titularId)">
-                        <np-icon name="users" />
-                        {{ t('panel.invitados.familia.ver') }}
-                      </button>
-                    }
-                  }
-                  @if (cuantosTrae(invitado); as cuantos) {
-                    <button type="button" class="lst__enlace" (click)="familia.emit(invitado.id)">
+                  @if (idFamilia(invitado); as titularId) {
+                    <button type="button" class="lst__enlace" (click)="familia.emit(titularId)">
                       <np-icon name="users" />
-                      {{ t('panel.invitados.trae', { n: cuantos }) }}
+                      {{ t('panel.invitados.familia.ver') }}
                     </button>
                   }
                 </div>
@@ -191,16 +177,6 @@ export function ladoDeInvitado(
                   >
                     <np-icon name="check-circle" />
                     {{ t('panel.respuestaPareja.abrir') }}
-                  </button>
-                  <button
-                    npButton
-                    size="sm"
-                    variant="ghost"
-                    type="button"
-                    (click)="compartir.emit(invitado)"
-                  >
-                    <np-icon name="whatsapp-logo" />
-                    {{ t('panel.invitar.compartir') }}
                   </button>
                   <button
                     npButton
@@ -340,7 +316,7 @@ export function ladoDeInvitado(
     .lst__vinculos:empty {
       display: none;
     }
-    /* «Trae a 2» y «Ver su familia» son botones con pinta de dato. */
+    /* «Ver acompañantes» es un botón con pinta de dato. */
     .lst__enlace {
       display: inline-flex;
       align-items: center;
@@ -377,7 +353,6 @@ export class NpListaInvitados {
   readonly familia = output<string>();
   readonly acompanante = output<Invitado>();
   readonly responder = output<Invitado>();
-  readonly compartir = output<Invitado>();
   readonly editar = output<Invitado>();
   readonly borrar = output<Invitado>();
 
@@ -410,9 +385,18 @@ export class NpListaInvitados {
     return this.nombres().get(invitado.invitedById) ?? null;
   }
 
-  /** Cuántos trae, o `null` para que la plantilla no pinte un cero. */
-  protected cuantosTrae(invitado: Invitado): number | null {
-    return this.traen().get(invitado.id) ?? null;
+  /**
+   * De qué titular es la familia que enseña «Ver acompañantes»: el suyo si trae
+   * a alguien, el que lo trae si es acompañante, y `null` si no tiene familia
+   * que ver (para que la plantilla no pinte el enlace).
+   */
+  protected idFamilia(invitado: Invitado): string | null {
+    if (invitado.isCompanion) {
+      return invitado.invitedById !== null && this.quienLoTrae(invitado)
+        ? invitado.invitedById
+        : null;
+    }
+    return (this.traen().get(invitado.id) ?? 0) > 0 ? invitado.id : null;
   }
 
   /** Verde confirmado, rojo declinado, ámbar pendiente. Siempre con etiqueta. */

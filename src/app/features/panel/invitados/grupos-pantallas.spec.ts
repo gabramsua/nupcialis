@@ -85,9 +85,6 @@ function puerta(invitados: readonly Invitado[] = [ANA]) {
       guardados.push(datos);
       return { ok: true, id: 'ana', creado: false };
     },
-    async cupoEnLote() {
-      return { ok: true as const, cambiados: 0, omitidos: 0 };
-    },
     async borrar() {
       return { ok: true };
     },
@@ -338,55 +335,32 @@ describe('la lista de invitados, con grupos', () => {
   });
 
   /**
-   * El cupo en lote (F1.5b), que es lo que hace útil al filtro por grupo:
-   * «los amigos, uno cada uno» son dos clics en vez de cuarenta fichas.
+   * «Viene / no viene» en lote solo tiene sentido sobre una familia o un grupo
+   * (D-52): sobre una lista suelta de X invitados es fácil marcar a quien no
+   * tocaba.
    */
-  it('pone el cupo solo a los que se están viendo, y no a los acompañantes', async () => {
+  it('marcar a varios a la vez solo se ofrece al mirar un grupo', async () => {
     const AMIGO: Invitado = {
       ...INVITADO_DE_PRUEBA,
       id: 'borja',
       fullName: 'Borja Gil',
       groupIds: ['padel'],
     };
-    const SU_PAREJA: Invitado = {
-      ...INVITADO_DE_PRUEBA,
-      id: 'eva',
-      fullName: 'Eva Mora',
-      groupIds: ['padel'],
-      isCompanion: true,
-      invitedById: 'borja',
-    };
-    const { p } = puerta([ANA, AMIGO, SU_PAREJA]);
-    const lotes: { ids: readonly string[]; cupo: number }[] = [];
-    const conCupo = {
-      ...p,
-      async cupoEnLote(guestIds: readonly string[], maxCompanions: number) {
-        lotes.push({ ids: guestIds, cupo: maxCompanions });
-        return { ok: true as const, cambiados: guestIds.length, omitidos: 0 };
-      },
-    };
-    configurar(conCupo);
+    const { p } = puerta([ANA, AMIGO]);
+    configurar(p);
     const fixture = TestBed.createComponent(Invitados);
     await asentar(fixture);
     const raiz = fixture.nativeElement as HTMLElement;
 
-    // Filtrar por «Pádel»: Ana se queda fuera, y Eva es acompañante.
+    expect(raiz.querySelector('np-respuesta-en-lote')).toBeNull();
+
     const padel = [...raiz.querySelectorAll<HTMLButtonElement>('.filtro button')].find((b) =>
       b.textContent?.includes('Pádel'),
     )!;
     padel.click();
     await asentar(fixture);
 
-    const aplicar = [...raiz.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
-      b.textContent?.includes('Poner cupo'),
-    )!;
-    // Dice a cuántos va a afectar antes de pulsarlo: ese es el aviso.
-    expect(aplicar.textContent).toContain('1 invitados');
-
-    aplicar.click();
-    await asentar(fixture);
-
-    expect(lotes).toEqual([{ ids: ['borja'], cupo: 1 }]);
+    expect(raiz.querySelector('np-respuesta-en-lote')).not.toBeNull();
   });
 
   /**
@@ -512,11 +486,11 @@ describe('importar con grupos y lado', () => {
     fixture.detectChanges();
 
     const c = fixture.componentInstance as unknown as {
-      leer(t: string): void;
+      leerFilas(f: readonly (readonly string[])[]): void;
       comprobar(): Promise<void>;
       importar(): Promise<void>;
     };
-    c.leer(texto);
+    c.leerFilas(texto.split('\n').map((fila) => fila.split(';')));
     await c.comprobar();
     fixture.detectChanges();
 
@@ -573,20 +547,20 @@ describe('el grupo de todos (D-31)', () => {
   };
   const CON_TODOS = [TODOS, ...GRUPOS_DE_PRUEBA];
 
-  it('no ofrece borrarlo, y dice para qué está', async () => {
+  it('no se enseña en la pantalla de grupos: no hay nada que decidir sobre él (D-52)', async () => {
     const { p } = puerta();
     configurar(p, gruposStoreFalso(CON_TODOS));
     const fixture = TestBed.createComponent(Grupos);
     await asentar(fixture);
 
-    const [todos, uni] = [
+    const tarjetas = [
       ...(fixture.nativeElement as HTMLElement).querySelectorAll('.gru__tarjeta'),
     ].map((t) => t.textContent?.replace(/\s+/g, ' ') ?? '');
 
-    expect(todos).toContain('Todos los invitados nuevos entran aquí');
-    expect(todos).not.toContain('Eliminar');
+    expect(tarjetas).toHaveLength(GRUPOS_DE_PRUEBA.length);
+    expect(tarjetas.join(' ')).not.toContain('Todos los invitados nuevos entran aquí');
     // Los demás sí se pueden borrar.
-    expect(uni).toContain('Eliminar');
+    expect(tarjetas[0]).toContain('Eliminar');
   });
 
   it('al editarlo no ofrece ponerle candado', async () => {
@@ -604,15 +578,26 @@ describe('el grupo de todos (D-31)', () => {
     expect(modal?.textContent).toContain('No puede llevar candado');
   });
 
-  it('un invitado nuevo sale ya marcado en él', async () => {
-    const { p } = puerta();
+  it('un invitado nuevo no lo enseña, pero se guarda dentro de él', async () => {
+    const { p, guardados } = puerta();
     configurar(p, gruposStoreFalso(CON_TODOS));
     const fixture = TestBed.createComponent(Invitados);
     await asentar(fixture);
 
-    (fixture.componentInstance as unknown as { nuevo(): void }).nuevo();
+    const c = fixture.componentInstance as unknown as {
+      nuevo(): void;
+      formulario: { patchValue(v: object): void };
+      guardar(): Promise<void>;
+    };
+    c.nuevo();
+    c.formulario.patchValue({ fullName: 'Marta Gil' });
     fixture.detectChanges();
 
-    expect(marcados(fixture.nativeElement as HTMLElement)).toContain('Invitados');
+    // No aparece como casilla…
+    expect(marcados(fixture.nativeElement as HTMLElement)).not.toContain('Invitados');
+
+    // …pero el servidor lo recibe en él (D-47).
+    await c.guardar();
+    expect(guardados[0]?.groupIds).toContain('todos');
   });
 });

@@ -19,7 +19,6 @@ import {
   type ResultadoImportacion,
   type PuertaInvitados,
   type ResultadoBorrado,
-  type ResultadoCupo,
   type ResultadoGuardado,
   type ResultadoListado,
 } from '../invitados/invitados-gateway';
@@ -83,34 +82,6 @@ export function crearPuertaInvitadosFirebase(): PuertaInvitados {
           forzarDuplicados: opciones.forzarDuplicados === true,
         });
         return { ok: true, importacion: respuesta.data };
-      } catch (error) {
-        return { ok: false, fallo: traducir(error) };
-      }
-    },
-
-    /**
-     * El mismo cupo a todos los de la lista, en una sola llamada.
-     *
-     * Doscientas llamadas desde el navegador —una por invitado— tardarían un
-     * minuto largo con mala cobertura y se quedarían a medias al primer corte,
-     * dejando media lista con un cupo y media con otro. El servidor lo escribe
-     * en lotes.
-     */
-    async cupoEnLote(guestIds: readonly string[], maxCompanions: number): Promise<ResultadoCupo> {
-      const setCompanionQuota = httpsCallable<
-        { guestIds: readonly string[]; maxCompanions: number },
-        unknown
-      >(functions, 'setCompanionQuota');
-
-      try {
-        const respuesta = await setCompanionQuota({ guestIds, maxCompanions });
-        const d = (respuesta.data ?? {}) as Record<string, unknown>;
-
-        return {
-          ok: true,
-          cambiados: typeof d['cambiados'] === 'number' ? d['cambiados'] : 0,
-          omitidos: typeof d['omitidos'] === 'number' ? d['omitidos'] : 0,
-        };
       } catch (error) {
         return { ok: false, fallo: traducir(error) };
       }

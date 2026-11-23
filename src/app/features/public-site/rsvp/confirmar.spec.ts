@@ -407,11 +407,12 @@ describe('los acompañantes', () => {
     expect(p.texto()).not.toContain('¿Vienes con alguien?');
   });
 
-  it('con cupo, se dice cuántos quedan y se piden sus datos', async () => {
+  it('con el módulo abierto, se piden sus datos', async () => {
     const p = await montar({ ok: true, formulario: CON_CUPO });
 
     expect(p.texto()).toContain('¿Vienes con alguien?');
-    expect(p.texto()).toContain('2 persona(s) más');
+    // Ya no hay cupo por invitado (D-51): no se cuenta «cuántos quedan».
+    expect(p.texto()).not.toContain('persona(s) más');
     expect(p.raiz.querySelector('input[type="tel"]')).not.toBeNull();
   });
 
@@ -448,7 +449,7 @@ describe('los acompañantes', () => {
    * El cupo lo cuenta el servidor: dos pestañas abiertas pueden haber apuntado
    * a alguien más mientras esta rellenaba el nombre.
    */
-  it('después de apuntar, recarga para traer el cupo de verdad', async () => {
+  it('después de apuntar, recarga para traer lo que hay de verdad', async () => {
     const p = await montar({ ok: true, formulario: CON_CUPO });
     p.puerta.lecturas.push({
       ok: true,
@@ -462,7 +463,6 @@ describe('los acompañantes', () => {
     await p.pulsarEn('.ac__nuevo button[type="submit"]');
 
     expect(p.texto()).toContain('Ana Ruiz');
-    expect(p.texto()).toContain('1 persona(s) más');
   });
 
   it('el fallo del cupo se cuenta con sus palabras, no con un código', async () => {

@@ -7,7 +7,7 @@
  * entero.
  */
 
-import type { NombresPareja } from '../../../core/tenant/tenant-source';
+import type { LayoutPublico, NombresPareja } from '../../../core/tenant/tenant-source';
 import { instanteDeBoda } from '../../../shared/zona-horaria';
 import type { Seccion } from '../secciones/secciones';
 import type { FaqPublica } from '../faqs/faqs';
@@ -44,6 +44,12 @@ export interface DatosPortada {
   readonly ubicaciones: readonly UbicacionPublica[];
   /** El dress code (§8.11), que pinta la sección de ese tipo. */
   readonly dressCode: DressCodePublico;
+  /**
+   * Cómo se organiza la web. Sin decir nada es `onepage`. Con `multipage` la
+   * portada no apila los carteles de los módulos que tienen página propia: a
+   * esos se llega desde la cabecera de navegación.
+   */
+  readonly layout?: LayoutPublico;
 }
 
 /**
@@ -54,8 +60,26 @@ export interface DatosPortada {
  * ninguna plantilla tenga que acordarse de mirar `enabled`.
  */
 export function seccionesVisibles(datos: DatosPortada): readonly Seccion[] {
-  return datos.secciones.filter((seccion) => seccion.enabled && seccion.type !== 'portada');
+  const multipagina = datos.layout === 'multipage';
+  return datos.secciones.filter(
+    (seccion) =>
+      seccion.enabled &&
+      seccion.type !== 'portada' &&
+      // En la web de varias páginas los módulos con página propia no se apilan
+      // en la portada como carteles: están en el menú.
+      !(multipagina && SECCIONES_CON_PAGINA.includes(seccion.type)),
+  );
 }
+
+/** Los tipos de sección cuyo contenido vive en su propia página, no en la portada. */
+export const SECCIONES_CON_PAGINA: readonly Seccion['type'][] = [
+  'historia',
+  'mapa',
+  'quiz',
+  'galeria',
+  'regalos',
+  'playlist',
+];
 
 /**
  * Cuenta atrás hasta la boda.

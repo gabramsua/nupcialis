@@ -9,6 +9,7 @@
  * pasado, email con espacios, plan inventado— sin levantar un emulador.
  */
 
+import { normalizarTelefono } from './invitados';
 import type { Plan } from './planes';
 import { normalizarSlug, validarSlug, type SlugInvalido } from './slug';
 
@@ -29,6 +30,8 @@ export interface EntradaAlta {
   readonly partnerB: string;
   readonly weddingDate: string;
   readonly emails: readonly string[];
+  /** Teléfono de contacto de la pareja. Opcional. */
+  readonly contactPhone?: string;
   readonly plan: Plan;
   readonly ceremonyType?: TipoCeremonia;
   readonly ceremonyPlace?: Partial<LugarDeAlta> | null;
@@ -43,6 +46,8 @@ export interface DatosAlta {
   readonly partnerB: string;
   readonly weddingDate: Date;
   readonly emails: readonly string[];
+  /** En formato internacional (`+34…`), o `null` si no se ha dado. */
+  readonly contactPhone: string | null;
   readonly plan: Plan;
   readonly ceremonyType: TipoCeremonia;
   /** `null`: no se ha dicho todavía; la pareja lo pone desde su panel. */
@@ -63,6 +68,7 @@ export type MotivoAlta =
       readonly campo: 'emails';
       readonly motivo: 'ausente' | 'no-es-email' | 'duplicado' | 'demasiados';
     }
+  | { readonly campo: 'telefono'; readonly motivo: 'no-es-telefono' }
   | { readonly campo: 'plan'; readonly motivo: 'desconocido' }
   | { readonly campo: 'ceremonia'; readonly motivo: 'desconocida' }
   | {
@@ -128,6 +134,13 @@ export function validarAlta(bruto: Partial<EntradaAlta> | undefined, hoy: Date):
   const emails = emailsDeAlta(entrada.emails);
   if (!emails.ok) motivos.push({ campo: 'emails', motivo: emails.motivo });
 
+  // El teléfono es opcional; si se escribe, tiene que poder normalizarse.
+  const telefonoEscrito = texto(entrada.contactPhone);
+  const contactPhone = telefonoEscrito === '' ? null : normalizarTelefono(telefonoEscrito);
+  if (telefonoEscrito !== '' && contactPhone === null) {
+    motivos.push({ campo: 'telefono', motivo: 'no-es-telefono' });
+  }
+
   const plan = entrada.plan;
   if (plan !== 'basic' && plan !== 'extended') {
     motivos.push({ campo: 'plan', motivo: 'desconocido' });
@@ -155,6 +168,7 @@ export function validarAlta(bruto: Partial<EntradaAlta> | undefined, hoy: Date):
       partnerB,
       weddingDate: fecha.fecha,
       emails: emails.emails,
+      contactPhone,
       plan: plan as Plan,
       ceremonyType: tipo as TipoCeremonia,
       ceremonyPlace: ceremonia.lugar,

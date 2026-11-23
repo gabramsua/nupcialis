@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { cuentaAtras, type DatosPortada } from './portada';
+import { cuentaAtras, seccionesVisibles, type DatosPortada } from './portada';
 import { DRESS_CODE_VACIO } from '../dress-code/dress-code';
+import type { Seccion } from '../secciones/secciones';
 
 const AHORA = new Date('2026-09-16T12:00:00Z');
 
@@ -56,5 +57,37 @@ describe('cuentaAtras', () => {
     const canarias = cuentaAtras(datos({ timezone: 'Atlantic/Canary' }), AHORA);
     const madrid = cuentaAtras(datos({ timezone: 'Europe/Madrid' }), AHORA);
     expect(canarias?.horas).toBe((madrid?.horas ?? 0) + 1);
+  });
+});
+
+describe('seccionesVisibles', () => {
+  const sec = (type: Seccion['type'], order: number, enabled = true): Seccion => ({
+    id: `${type}-${order}`,
+    type,
+    enabled,
+    order,
+    fields: {},
+  });
+  const todas = [
+    sec('portada', 0),
+    sec('texto', 1),
+    sec('cronologia', 2),
+    sec('quiz', 3),
+    sec('historia', 4),
+    sec('galeria', 5, false),
+  ];
+
+  it('en la web de una página apila todo lo encendido, carteles incluidos', () => {
+    expect(seccionesVisibles(datos({ secciones: todas })).map((s) => s.type)).toEqual([
+      'texto',
+      'cronologia',
+      'quiz',
+      'historia',
+    ]);
+  });
+
+  it('en la de varias páginas deja fuera los módulos con página propia: están en el menú', () => {
+    const visibles = seccionesVisibles(datos({ secciones: todas, layout: 'multipage' }));
+    expect(visibles.map((s) => s.type)).toEqual(['texto', 'cronologia']);
   });
 });

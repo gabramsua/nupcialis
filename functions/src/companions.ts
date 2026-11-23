@@ -22,7 +22,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { esModoAcceso, type ModoAcceso } from './dominio/acceso';
-import { plazoAbierto } from './dominio/formulario';
+import { plazoAbierto, type EstadoRsvp } from './dominio/formulario';
 import {
   heredarDelTitular,
   puedeAnadir,
@@ -43,6 +43,8 @@ export interface EntradaAcompanante {
 interface Contexto {
   readonly weddingId: string;
   readonly titular: Titular;
+  /** Cómo viene quien lo trae: el acompañante nace igual (D-51). */
+  readonly estadoTitular: EstadoRsvp;
   readonly modulo: boolean;
   readonly modo: ModoAcceso;
   readonly limite: Date | null;
@@ -73,13 +75,15 @@ async function contexto(weddingId: string, guestId: string): Promise<Contexto> {
     titular: {
       id: guestId,
       isCompanion: invitado['isCompanion'] === true,
-      maxCompanions:
-        typeof invitado['maxCompanions'] === 'number' ? Math.floor(invitado['maxCompanions']) : 0,
       groupIds: Array.isArray(grupos)
         ? grupos.filter((g): g is string => typeof g === 'string')
         : [],
       active: invitado['active'] !== false,
     },
+    estadoTitular:
+      invitado['rsvpStatus'] === 'confirmed' || invitado['rsvpStatus'] === 'declined'
+        ? invitado['rsvpStatus']
+        : 'pending',
     modulo: boda['allowGuestAddedCompanions'] === true,
     modo: esModoAcceso(modo) ? modo : 'open',
     limite: limiteDe(boda),
@@ -150,10 +154,9 @@ export const addCompanion = onCall<EntradaAcompanante>(
       isCompanion: true,
       invitedById: guestId,
       addedBy: 'guest',
-      // Un acompañante no trae acompañantes: ver `puedeAnadir`.
-      maxCompanions: 0,
-      rsvpStatus: 'pending',
-      rsvpAt: null,
+      rsvpStatus: ctx.estadoTitular,
+      rsvpFollowsTitular: true,
+      rsvpAt: ctx.estadoTitular === 'pending' ? null : FieldValue.serverTimestamp(),
       rsvpAnswers: {},
       menu: '',
       allergies: '',

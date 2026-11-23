@@ -111,7 +111,6 @@ export interface EntradaInvitado {
   readonly side?: unknown;
   readonly ageGroup?: unknown;
   readonly groupIds?: unknown;
-  readonly maxCompanions?: unknown;
   readonly notes?: unknown;
 }
 
@@ -124,14 +123,12 @@ export interface InvitadoValidado {
   readonly side: Lado;
   readonly ageGroup: Edad;
   readonly groupIds: readonly string[];
-  readonly maxCompanions: number;
   readonly notes: string;
 }
 
 export type MotivoInvitado =
   | { readonly campo: 'fullName'; readonly motivo: 'ausente' | 'demasiado-largo' }
   | { readonly campo: 'phone'; readonly motivo: 'no-es-telefono' }
-  | { readonly campo: 'maxCompanions'; readonly motivo: 'fuera-de-rango' }
   /** Se decide contra los grupos de la boda, fuera de `validarInvitado`. Ver `grupos.ts`. */
   | {
       readonly campo: 'groupIds';
@@ -162,12 +159,6 @@ export function validarInvitado(entrada: EntradaInvitado): ResultadoInvitado {
   const phone = telefonoEscrito ? normalizarTelefono(entrada.phone) : null;
   if (telefonoEscrito && !phone) motivos.push({ campo: 'phone', motivo: 'no-es-telefono' });
 
-  const cupo = entrada.maxCompanions;
-  const maxCompanions = typeof cupo === 'number' && Number.isFinite(cupo) ? Math.floor(cupo) : 0;
-  if (maxCompanions < 0 || maxCompanions > MAX_ACOMPANANTES) {
-    motivos.push({ campo: 'maxCompanions', motivo: 'fuera-de-rango' });
-  }
-
   if (motivos.length > 0) return { ok: false, motivos };
 
   const fullName = limpiarNombre(crudo);
@@ -191,7 +182,6 @@ export function validarInvitado(entrada: EntradaInvitado): ResultadoInvitado {
             ),
           ]
         : [],
-      maxCompanions,
       notes: typeof entrada.notes === 'string' ? entrada.notes.trim().slice(0, MAX_NOTA) : '',
     },
   };

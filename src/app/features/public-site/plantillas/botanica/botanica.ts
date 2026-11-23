@@ -97,7 +97,7 @@ import {
       </main>
 
       @for (seccion of secciones(); track seccion.id) {
-        <section class="botanica__seccion">
+        <section class="botanica__seccion" [attr.id]="'s-' + seccion.id">
           @if (seccion.fields['titulo']; as titulo) {
             <h2 class="botanica__titulo">{{ titulo }}</h2>
           }
@@ -247,14 +247,22 @@ import {
       line-height: 1;
     }
     /* Primero móvil: una columna, con la medida de línea acotada en ch. */
-    /* La botánica ya es oscura: el velo solo asegura el contraste del texto
-       claro sobre fotos claras. Ver el comentario de la clásica. */
+    /* El velo es del color del fondo de la boda: oscuro con las paletas
+       oscuras (la botánica por defecto) y claro con las claras, que de otro
+       modo dejaban texto oscuro sobre velo oscuro. */
     .botanica--con-foto {
-      background-image: linear-gradient(rgb(12 30 22 / 55%), rgb(12 30 22 / 70%)), var(--foto);
+      background-image:
+        linear-gradient(
+          color-mix(in srgb, var(--fondo) 55%, transparent),
+          color-mix(in srgb, var(--fondo) 70%, transparent)
+        ),
+        var(--foto);
       background-position: center;
       background-size: cover;
     }
     .botanica__seccion {
+      /* Que la cabecera fija no tape el título al saltar a un ancla del menú. */
+      scroll-margin-block-start: 5rem;
       display: flex;
       flex-direction: column;
       gap: var(--np-space-4);

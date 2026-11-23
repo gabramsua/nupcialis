@@ -37,6 +37,7 @@ function tenant(historia: readonly ApartadoPublicoDeHistoria[]): ResultadoTenant
       dressCode: DRESS_CODE_VACIO,
       historia,
       modulos: {},
+      layout: 'onepage',
     },
   } as ResultadoTenant;
 }

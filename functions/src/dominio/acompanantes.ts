@@ -8,10 +8,11 @@
  *
  * Aquí viven las tres reglas que no se pueden mirar desde una pantalla:
  *
- * 1. **El cupo.** Lo fija la pareja por invitado (`maxCompanions`) y además hay
- *    un interruptor por boda. Dos pestañas abiertas pueden mandar el mismo alta
- *    dos veces, así que el cupo se cuenta en el servidor con lo que hay escrito,
- *    nunca con lo que diga el cliente.
+ * 1. **El tope técnico.** Ya no hay cupo por invitado (D-51): trae a quien
+ *    quiera. Queda un interruptor por boda y un tope de seguridad
+ *    (`MAX_ACOMPANANTES`) para que un enlace reenviado no llene la lista. Dos
+ *    pestañas abiertas pueden mandar el mismo alta dos veces, así que se cuenta
+ *    en el servidor con lo que hay escrito, nunca con lo que diga el cliente.
  * 2. **La herencia de grupos.** El acompañante entra en los grupos del titular.
  *    Es deliberado y es de seguridad: si no, el acompañante de alguien del grupo
  *    restringido vería las fotos de ese grupo sin estar en él —o al contrario,
@@ -22,18 +23,17 @@
  */
 
 import type { ModoAcceso } from './acceso';
+import { MAX_ACOMPANANTES } from './invitados';
 
 /** Lo que hay que saber del titular para dejarle añadir a alguien. */
 export interface Titular {
   readonly id: string;
   readonly isCompanion: boolean;
-  readonly maxCompanions: number;
   readonly groupIds: readonly string[];
   readonly active: boolean;
 }
 
-export type MotivoCupo =
-  'modulo-apagado' | 'sin-cupo' | 'cupo-lleno' | 'es-acompanante' | 'inactivo';
+export type MotivoCupo = 'modulo-apagado' | 'cupo-lleno' | 'es-acompanante' | 'inactivo';
 
 export type Permiso =
   | { readonly puede: true; readonly quedan: number }
@@ -52,9 +52,8 @@ export function puedeAnadir(modulo: boolean, titular: Titular, yaTiene: number):
   if (!modulo) return { puede: false, motivo: 'modulo-apagado' };
   if (!titular.active) return { puede: false, motivo: 'inactivo' };
   if (titular.isCompanion) return { puede: false, motivo: 'es-acompanante' };
-  if (titular.maxCompanions <= 0) return { puede: false, motivo: 'sin-cupo' };
 
-  const quedan = titular.maxCompanions - yaTiene;
+  const quedan = MAX_ACOMPANANTES - yaTiene;
   return quedan > 0 ? { puede: true, quedan } : { puede: false, motivo: 'cupo-lleno' };
 }
 
@@ -173,49 +172,21 @@ export function validarVinculo(
   return { ok: true, ...heredarDelTitular(titular) };
 }
 
-/**
- * El cupo que la pareja fija **a varios invitados a la vez** (F1.5b).
- *
- * En una boda hay doscientos invitados y el cupo se pone casi siempre por
- * tandas enteras —«los amigos, uno cada uno»—, así que ponerlo de uno en uno
- * en su ficha es una tarde perdida.
- *
- * Lo que se decide aquí, y no en la pantalla:
- *
- * - **Un acompañante no recibe cupo.** Si no, el cupo se vuelve una cadena:
- *   invito a mi pareja, mi pareja invita a su hermana (ver `puedeAnadir`).
- * - **Bajar el cupo no echa a nadie.** Quien ya añadió a dos sigue con dos;
- *   lo que no podrá es añadir a un tercero. Borrar invitados por cambiar un
- *   número sería irreversible y nadie lo espera.
- */
+/** Tope de invitados que se tocan en una sola llamada en lote. */
 export const MAX_EN_UN_LOTE = 500;
-
-export type MotivoLote = 'sin-invitados' | 'demasiados' | 'cupo-invalido';
-
-export function validarLoteDeCupo(
-  guestIds: readonly unknown[],
-  maxCompanions: unknown,
-  tope: number,
-): MotivoLote[] {
-  const motivos: MotivoLote[] = [];
-
-  const ids = guestIds.filter((id) => typeof id === 'string' && id !== '');
-  if (ids.length === 0) motivos.push('sin-invitados');
-  if (guestIds.length > MAX_EN_UN_LOTE) motivos.push('demasiados');
-
-  if (
-    typeof maxCompanions !== 'number' ||
-    !Number.isInteger(maxCompanions) ||
-    maxCompanions < 0 ||
-    maxCompanions > tope
-  ) {
-    motivos.push('cupo-invalido');
-  }
-
-  return motivos;
-}
 
 /** Los ids únicos y utilizables de una petición en lote. */
 export function idsDelLote(guestIds: readonly unknown[]): string[] {
   return [...new Set(guestIds.filter((id): id is string => typeof id === 'string' && id !== ''))];
+}
+
+/**
+ * ¿Este acompañante viene como viene su titular? (D-51)
+ *
+ * Sí salvo que alguien lo haya cambiado a mano, que deja
+ * `rsvpFollowsTitular: false`. Un documento sin la marca sigue: es el caso de
+ * los acompañantes anteriores a la regla.
+ */
+export function sigueAlTitular(acompanante: Record<string, unknown>): boolean {
+  return acompanante['rsvpFollowsTitular'] !== false;
 }

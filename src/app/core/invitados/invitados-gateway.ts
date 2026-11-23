@@ -27,7 +27,6 @@ export interface Invitado {
   readonly rsvpStatus: EstadoRsvp;
   readonly isCompanion: boolean;
   readonly invitedById: string | null;
-  readonly maxCompanions: number;
   /** Cuántas veces ha entrado en la web. Lo mueve el servidor. */
   readonly loginCount: number;
   readonly notes: string;
@@ -55,7 +54,6 @@ export interface DatosInvitado {
    * El servidor los resuelve y crea los que falten.
    */
   readonly groupNames?: readonly string[];
-  readonly maxCompanions?: number;
   readonly notes?: string;
   /**
    * Con quién viene. Ausente: no se toca. Un id: viene con ese titular (el
@@ -92,17 +90,6 @@ export type FalloInvitado =
 
 export type ResultadoGuardado =
   | { readonly ok: true; readonly id: string; readonly creado: boolean }
-  | { readonly ok: false; readonly fallo: FalloInvitado };
-
-/**
- * El cupo de acompañantes puesto a varios de una vez (F1.5b).
- *
- * `omitidos` son los que no lo recibieron: acompañantes —que no pueden tener
- * cupo, o se encadenaría— y, si acaso, alguno borrado entre que se pintó la
- * lista y se pulsó el botón.
- */
-export type ResultadoCupo =
-  | { readonly ok: true; readonly cambiados: number; readonly omitidos: number }
   | { readonly ok: false; readonly fallo: FalloInvitado };
 
 export type ResultadoBorrado =
@@ -166,8 +153,6 @@ export interface PuertaInvitados {
   ): Promise<ResultadoImportacion>;
   guardar(datos: DatosInvitado, forzar?: boolean): Promise<ResultadoGuardado>;
   borrar(id: string): Promise<ResultadoBorrado>;
-  /** Pone el mismo cupo de acompañantes a todos los de la lista. */
-  cupoEnLote(guestIds: readonly string[], maxCompanions: number): Promise<ResultadoCupo>;
 }
 
 export const PUERTA_INVITADOS = new InjectionToken<PuertaInvitados>('PUERTA_INVITADOS');

@@ -61,10 +61,9 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
           }
 
           <!--
-            Los enlaces de acceso solo se enseñan aquí, una vez. Dan entrada al
-            panel de la boda: no se registran en ningún sitio ni se vuelven a
-            mostrar. Mientras no haya proveedor de correo (D-05), los reparte el
-            superadmin a mano.
+            El enlace de acceso sale **por correo** con la plantilla editable
+            (D-53) y se enseña aquí una vez, por si hay que copiarlo: da entrada
+            al panel de la boda y no se registra en ningún sitio.
           -->
           <div class="np-alta__enlaces">
             <h3>{{ t('superadmin.alta.enlaces') }}</h3>
@@ -73,7 +72,29 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
               <div class="np-alta__enlace">
                 <div class="np-alta__email">{{ cuenta.email }}</div>
                 @if (cuenta.enlaceAcceso; as enlace) {
+                  <p class="np-alta__correo">
+                    <np-icon [name]="cuenta.correoEnviado ? 'check' : 'warning'" />
+                    {{
+                      cuenta.correoEnviado
+                        ? t('superadmin.alta.correoEnviado')
+                        : t('superadmin.alta.correoNoEnviado')
+                    }}
+                  </p>
                   <code>{{ enlace }}</code>
+                  <button
+                    npButton
+                    size="sm"
+                    variant="secondary"
+                    type="button"
+                    (click)="copiar(enlace)"
+                  >
+                    <np-icon [name]="copiado() === enlace ? 'check' : 'copy'" />
+                    {{
+                      copiado() === enlace
+                        ? t('superadmin.alta.copiado')
+                        : t('superadmin.alta.copiar')
+                    }}
+                  </button>
                 } @else {
                   <span class="np-alta__sin-enlace">{{ t('superadmin.alta.sinEnlace') }}</span>
                 }
@@ -173,6 +194,18 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
 
           <np-field [label]="t('superadmin.alta.emailB')" [hint]="t('superadmin.alta.emailBPista')">
             <input npInput type="email" formControlName="emailB" autocomplete="off" />
+          </np-field>
+          <np-field
+            [label]="t('superadmin.alta.telefono')"
+            [hint]="t('superadmin.alta.telefonoPista')"
+          >
+            <input
+              npInput
+              type="tel"
+              inputmode="tel"
+              formControlName="telefono"
+              autocomplete="off"
+            />
           </np-field>
 
           <np-field [label]="t('superadmin.alta.plan')" [required]="true">
@@ -291,6 +324,7 @@ export class AltaBoda {
     weddingDate: ['', Validators.required],
     emailA: ['', [Validators.required, Validators.email]],
     emailB: [''],
+    telefono: [''],
     plan: ['basic' as PlanContratado, Validators.required],
     ceremonyType: ['civil' as TipoDeCeremonia, Validators.required],
     /** Solo con ceremonia civil: se casan donde celebran. */
@@ -303,6 +337,8 @@ export class AltaBoda {
 
   protected readonly enviando = signal(false);
   protected readonly creada = signal<AltaCreada | null>(null);
+  /** El enlace que se acaba de copiar, para cambiarle el texto al botón. */
+  protected readonly copiado = signal<string | null>(null);
   protected readonly fallo = signal<string | null>(null);
   protected readonly alternativas = signal<readonly string[]>([]);
 
@@ -368,6 +404,16 @@ export class AltaBoda {
     this.alternativas.set([]);
   }
 
+  protected async copiar(enlace: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(enlace);
+      this.copiado.set(enlace);
+    } catch {
+      // Sin permiso del portapapeles el texto sigue seleccionable con un clic.
+      this.copiado.set(null);
+    }
+  }
+
   protected otraMas(): void {
     this.creada.set(null);
     this.formulario.reset({ plan: 'basic', ceremonyType: 'civil', mismoSitio: false });
@@ -397,6 +443,7 @@ export class AltaBoda {
       partnerB: valores.partnerB,
       weddingDate: new Date(valores.weddingDate).toISOString(),
       emails,
+      contactPhone: valores.telefono.trim(),
       plan: valores.plan,
       ceremonyType: valores.ceremonyType,
       ceremonyPlace: ceremonia,

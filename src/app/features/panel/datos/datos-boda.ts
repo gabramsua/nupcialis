@@ -178,7 +178,12 @@ import { esTipoDeCeremonia, type TipoDeCeremonia } from '../boda';
             lo tenga en la lista se queda fuera, y eso solo se descubre el día
             que un invitado llama por teléfono a la pareja.
           -->
-          @if (modoActual() !== 'open' && sinTelefono() > 0) {
+          @if (modoActual() === 'open' && pideIdentidad()) {
+            <np-alert status="attention" [heading]="t('panel.acceso.abiertaAviso.titulo')">
+              <p>{{ t('panel.acceso.abiertaAviso.ayuda') }}</p>
+            </np-alert>
+          }
+          @if ((modoActual() !== 'open' || pideIdentidad()) && sinTelefono() > 0) {
             <np-alert status="attention" [heading]="t('panel.acceso.sinTelefono.titulo')">
               <p>{{ t('panel.acceso.sinTelefono.ayuda', { n: sinTelefono() }) }}</p>
               <a routerLink="/panel/guests">{{ t('panel.acceso.sinTelefono.verLista') }}</a>
@@ -206,18 +211,6 @@ import { esTipoDeCeremonia, type TipoDeCeremonia } from '../boda';
             />
             <span>{{ t('panel.acompanantes.permitir') }}</span>
           </label>
-
-          <!--
-            El cupo es por invitado y se pone en su ficha. Decirlo aquí evita el
-            viaje de ida y vuelta: con el interruptor encendido y todos los cupos
-            a cero, no pasa nada y no hay forma de adivinar por qué.
-          -->
-          @if (permiteAcompanantes()) {
-            <np-alert status="info" [heading]="t('panel.acompanantes.cupo.titulo')">
-              <p>{{ t('panel.acompanantes.cupo.ayuda') }}</p>
-              <a routerLink="/panel/guests">{{ t('panel.acompanantes.cupo.verLista') }}</a>
-            </np-alert>
-          }
 
           @if (acompanantesGuardado()) {
             <p class="db__hecho">
@@ -379,6 +372,12 @@ export class DatosBoda {
   protected readonly guardandoModo = signal(false);
   protected readonly modoGuardado = signal(false);
   protected readonly modoActual = computed(() => this.store.boda()?.guestAccessMode ?? 'open');
+
+  /** ¿Tiene encendido algún módulo que necesita saber quién es cada invitado? */
+  protected readonly pideIdentidad = computed(() => {
+    const modulos = this.store.boda()?.modulos;
+    return modulos?.['quiz']?.enabled === true || modulos?.['gallery']?.enabled === true;
+  });
 
   /**
    * Cuántos invitados no podrían entrar en los modos que piden teléfono.

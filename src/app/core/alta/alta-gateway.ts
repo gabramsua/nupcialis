@@ -28,6 +28,8 @@ export interface DatosDeAlta {
   /** ISO 8601. La función valida que no esté en el pasado. */
   readonly weddingDate: string;
   readonly emails: readonly string[];
+  /** Teléfono de contacto de la pareja. Opcional: vacío si no se da. */
+  readonly contactPhone?: string;
   readonly plan: PlanContratado;
   readonly ceremonyType: TipoDeCeremonia;
   /** `null`: aún no se sabe; la pareja lo pone después desde el mapa. */
@@ -43,10 +45,12 @@ export interface CuentaDeAlta {
    * Enlace para establecer la contraseña.
    *
    * **Da acceso al panel de esa boda.** Se enseña en pantalla para que el
-   * superadmin lo reparta a mano mientras no haya proveedor de correo (D-05),
-   * y por eso no se registra en ningún log ni se manda a ningún sitio.
+   * superadmin lo puede copiar además de que salga por correo (D-53), y por eso
+   * no se registra en ningún log.
    */
   readonly enlaceAcceso: string | null;
+  /** Si el correo de acceso quedó en la cola de envío. */
+  readonly correoEnviado: boolean;
 }
 
 export interface AltaCreada {

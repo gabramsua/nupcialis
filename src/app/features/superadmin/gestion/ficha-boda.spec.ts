@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { abrirDialogosEnPruebas } from '../../panel/invitados/dobles.testing';
 import { FichaBoda } from './ficha-boda';
+import type { PagoEnEdicion } from './gestion';
 import { ficha, crearMontaje, pago } from './gestion.testing';
 
 const montar = crearMontaje(
@@ -22,6 +23,7 @@ const montar = crearMontaje(
  */
 
 beforeAll(abrirDialogosEnPruebas);
+afterEach(() => vi.unstubAllGlobals());
 
 const CONTACTO = {
   uid: 'u1',
@@ -81,9 +83,50 @@ describe('la ficha de boda', () => {
     expect(p.dialogo()).toContain('Quien tenga este enlace puede entrar en la cuenta');
   });
 
+  it('«Correo de reestablecer contraseña» manda el acceso y avisa de que ha salido', async () => {
+    const pedidos: [string, string][] = [];
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({ ok: true, datos: ficha({ contactos: [CONTACTO] }) }),
+        enviarCorreoDeAcceso: async (weddingId, uid) => {
+          pedidos.push([weddingId, uid]);
+          return {
+            ok: true,
+            datos: { email: 'maria@example.com', enlace: 'https://x.test/reset', enviado: true },
+          };
+        },
+      },
+      { id: 'w1' },
+    );
+    await p.pulsar(p.boton('Correo de reestablecer contraseña'));
+
+    expect(pedidos).toEqual([['w1', 'u1']]);
+    expect(p.dialogo()).toContain('Correo en cola');
+    expect(p.dialogo()).toContain('https://x.test/reset');
+  });
+
+  it('si el correo no se ha podido encolar, lo dice y deja el enlace para copiar', async () => {
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({ ok: true, datos: ficha({ contactos: [CONTACTO] }) }),
+        enviarCorreoDeAcceso: async () => ({
+          ok: true,
+          datos: { email: 'maria@example.com', enlace: 'https://x.test/reset', enviado: false },
+        }),
+      },
+      { id: 'w1' },
+    );
+    await p.pulsar(p.boton('Correo de reestablecer contraseña'));
+
+    expect(p.dialogo()).toContain('El correo no ha salido');
+    expect(p.dialogo()).toContain('https://x.test/reset');
+  });
+
   it('copiar manda el enlace al portapapeles', async () => {
     const escribir = vi.fn<(texto: string) => Promise<void>>(async () => undefined);
-    vi.stubGlobal('navigator', { clipboard: { writeText: escribir } });
+    vi.stubGlobal('navigator', { userAgent: 'prueba', clipboard: { writeText: escribir } });
 
     const p = await montar(
       FichaBoda,
@@ -195,5 +238,138 @@ describe('la ficha de boda', () => {
     );
     expect(p.texto()).toContain('Esa boda no existe');
     expect(p.texto()).toContain('Reintentar');
+  });
+});
+
+describe('actividad de la boda', () => {
+  it('enseña los contadores de entradas de la pareja y de los invitados', async () => {
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({
+          ok: true,
+          datos: ficha({
+            acceso: {
+              pareja: 7,
+              parejaUltima: new Date('2026-11-20T10:00:00Z'),
+              visitasWeb: 240,
+              visitasWebUltima: new Date('2026-11-21T10:00:00Z'),
+              invitadosQueEntraron: 31,
+              invitadosEntradas: 58,
+            },
+            fotos: 12,
+            pagos: [pago({ amountCents: 29900, status: 'paid' })],
+          }),
+        }),
+      },
+      { id: 'w1' },
+    );
+
+    const t = p.texto();
+    expect(t).toContain('Entradas de la pareja al panel 7');
+    expect(t).toContain('31 invitados han entrado, 58 entradas en total');
+    expect(t).toContain('Visitas a la web 240');
+    expect(t).toContain('Fotos en la galería12');
+    expect(t).toContain('299');
+  });
+
+  it('apunta un cobro en mano: ya cobrado, con el método elegido', async () => {
+    const guardados: unknown[] = [];
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({ ok: true, datos: ficha() }),
+        guardarPago: async (_id: string | null, pago: PagoEnEdicion) => {
+          guardados.push(pago);
+          return { ok: true as const, datos: { id: 'p1', ...pago } };
+        },
+      },
+      { id: 'w1' },
+    );
+    const importe = p.raiz.querySelector<HTMLInputElement>('input[name="importe"]')!;
+    importe.value = '149,90';
+    importe.dispatchEvent(new Event('input'));
+    await p.pulsar(p.boton('Apuntar cobro'));
+
+    expect(guardados).toHaveLength(1);
+    expect(guardados[0]).toMatchObject({
+      weddingId: 'w1',
+      amountCents: 14990,
+      method: 'efectivo',
+      status: 'paid',
+    });
+  });
+
+  it('un importe que no vale no se manda y se explica', async () => {
+    const guardados: unknown[] = [];
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({ ok: true, datos: ficha() }),
+        guardarPago: async (_id: string | null, pago: PagoEnEdicion) => {
+          guardados.push(pago);
+          return { ok: true as const, datos: { id: 'p1', ...pago } };
+        },
+      },
+      { id: 'w1' },
+    );
+    await p.pulsar(p.boton('Apuntar cobro'));
+
+    expect(guardados).toHaveLength(0);
+    expect(p.texto()).toContain('Escribe un importe mayor que cero');
+  });
+
+  it('con precio acordado, enseña cuánto falta por cobrar (D-56)', async () => {
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({
+          ok: true,
+          datos: ficha({
+            agreedPriceCents: 40000,
+            pagos: [pago({ amountCents: 29900, status: 'paid' })],
+          }),
+        }),
+      },
+      { id: 'w1' },
+    );
+    expect(p.raiz.querySelector('[data-precio]')?.textContent).toContain('400,00');
+    expect(p.raiz.querySelector('[data-falta]')?.textContent).toContain('101,00');
+  });
+
+  it('sin precio acordado lo dice y no inventa un pendiente', async () => {
+    const p = await montar(
+      FichaBoda,
+      { ficha: async () => ({ ok: true, datos: ficha() }) },
+      { id: 'w1' },
+    );
+    expect(p.raiz.querySelector('[data-precio]')?.textContent).toContain('Sin fijar');
+    expect(p.raiz.querySelector('[data-falta]')).toBeNull();
+  });
+
+  it('si ya se ha cobrado de más, no sale un pendiente negativo', async () => {
+    const p = await montar(
+      FichaBoda,
+      {
+        ficha: async () => ({
+          ok: true,
+          datos: ficha({
+            agreedPriceCents: 0,
+            pagos: [pago({ amountCents: 5000, status: 'paid' })],
+          }),
+        }),
+      },
+      { id: 'w1' },
+    );
+    expect(p.raiz.querySelector('[data-falta]')?.textContent).toContain('0,00');
+  });
+
+  it('enseña el teléfono de contacto si lo hay', async () => {
+    const p = await montar(
+      FichaBoda,
+      { ficha: async () => ({ ok: true, datos: ficha({ contactPhone: '+34600112233' }) }) },
+      { id: 'w1' },
+    );
+    expect(p.texto()).toContain('Teléfono de contacto: +34600112233');
   });
 });

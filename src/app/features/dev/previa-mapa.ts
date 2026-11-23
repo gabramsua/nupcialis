@@ -32,6 +32,7 @@ const TENANT: ResultadoTenant = {
     dressCode: DRESS_CODE_VACIO,
     historia: [],
     modulos: {},
+    layout: 'onepage',
     ubicaciones: sanearUbicaciones([
       {
         id: 'ceremonia',

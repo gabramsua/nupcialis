@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter, type UrlTree } from '@angular/router';
+import { describe, expect, it, vi } from 'vitest';
 
-import { traducirAcceso } from './sesion-invitado';
+import {
+  SesionInvitado,
+  esPaginaConIdentidad,
+  exigirSesionDeInvitado,
+  traducirAcceso,
+} from './sesion-invitado';
 
 /**
  * La traducción del error, probada sola.
@@ -59,5 +66,42 @@ describe('traducirAcceso', () => {
       tipo: 'error',
       mensaje: 'se cayó',
     });
+  });
+});
+
+describe('exigirSesionDeInvitado (D-56)', () => {
+  function guarda(pagina: 'quiz' | 'galeria', identificado: boolean) {
+    const recuperar = vi.fn(async () => undefined);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: SesionInvitado, useValue: { recuperar, identificado: () => identificado } },
+      ],
+    });
+    const resultado = TestBed.runInInjectionContext(() =>
+      exigirSesionDeInvitado(pagina)({} as never, {} as never),
+    );
+    return { recuperar, resultado: Promise.resolve(resultado) };
+  }
+
+  it('con sesión, deja pasar (tras esperar a que Auth la recupere)', async () => {
+    const { recuperar, resultado } = guarda('quiz', true);
+    expect(await resultado).toBe(true);
+    expect(recuperar).toHaveBeenCalled();
+  });
+
+  it('sin sesión, manda a /entrar con el nombre de la página para volver', async () => {
+    const { resultado } = guarda('galeria', false);
+    const destino = (await resultado) as UrlTree;
+    expect(TestBed.inject(Router).serializeUrl(destino)).toBe('/entrar?volver=galeria');
+  });
+});
+
+describe('esPaginaConIdentidad', () => {
+  it('solo las cuatro páginas conocidas', () => {
+    expect(esPaginaConIdentidad('quiz')).toBe(true);
+    expect(esPaginaConIdentidad('regalos')).toBe(true);
+    expect(esPaginaConIdentidad('/admin')).toBe(false);
+    expect(esPaginaConIdentidad(undefined)).toBe(false);
   });
 });

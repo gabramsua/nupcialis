@@ -51,9 +51,6 @@ function puertaCon(invitados: readonly Invitado[]): PuertaInvitados {
     async borrar() {
       throw new Error('no se usa');
     },
-    async cupoEnLote() {
-      return { ok: true as const, cambiados: 0, omitidos: 0 };
-    },
   };
 }
 
@@ -265,5 +262,40 @@ describe('las tareas en el resumen', () => {
   it('sin el módulo encendido no sale nada', async () => {
     const p = await montar(MONTADA, [], [tarea({ id: 'a', dueDate: en(-3) })]);
     expect(p.raiz.querySelector('.re__tareas')).toBeNull();
+  });
+
+  describe('el aviso de la primera vez', () => {
+    const CON_CHECKLIST: BodaDelPanel = {
+      ...MONTADA,
+      modulos: { checklist: { enabled: true, visibility: 'hidden' } },
+    };
+
+    it('invita a repasar las tareas y desaparece al descartarlo', async () => {
+      localStorage.removeItem('np.panel.avisoTareas');
+      const p = await montar(CON_CHECKLIST);
+      const aviso = p.raiz.querySelector('[data-aviso="tareas"]');
+      expect(aviso).not.toBeNull();
+      expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/checklist');
+
+      aviso?.querySelector<HTMLButtonElement>('button')?.click();
+      p.fixture.detectChanges();
+
+      expect(p.raiz.querySelector('[data-aviso="tareas"]')).toBeNull();
+      expect(localStorage.getItem('np.panel.avisoTareas')).toBe('1');
+      localStorage.removeItem('np.panel.avisoTareas');
+    });
+
+    it('no sale si ya se descartó', async () => {
+      localStorage.setItem('np.panel.avisoTareas', '1');
+      const p = await montar(CON_CHECKLIST);
+      expect(p.raiz.querySelector('[data-aviso="tareas"]')).toBeNull();
+      localStorage.removeItem('np.panel.avisoTareas');
+    });
+
+    it('no sale si el módulo de tareas está apagado', async () => {
+      localStorage.removeItem('np.panel.avisoTareas');
+      const p = await montar(MONTADA);
+      expect(p.raiz.querySelector('[data-aviso="tareas"]')).toBeNull();
+    });
   });
 });

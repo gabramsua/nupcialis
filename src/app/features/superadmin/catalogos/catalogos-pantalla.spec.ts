@@ -127,6 +127,8 @@ describe('lectores de catálogo', () => {
   it('descartan lo que no cuadra', () => {
     expect(leerTarea('x', { title: '', category: 'a' })).toBeNull();
     expect(leerTarea('x', null)).toBeNull();
+    // La categoría es opcional (D-53): sin ella la tarea sigue viéndose.
+    expect(leerTarea('x', { title: 'Sin categoría' })?.category).toBe('');
     expect(leerPartida('x', { category: 'a' })).toBeNull();
     expect(
       leerPregunta('x', { text: 'a', correctAnswer: 'b', wrongAnswers: ['1', '2'] }),
@@ -178,7 +180,6 @@ describe('pantalla de catálogos', () => {
     botonPorTexto(el, 'Añadir').click();
     fixture.detectChanges();
     escribir(el, 'title', 'Dar el número final');
-    escribir(el, 'category', 'El día');
     escribir(el, 'meses', '0,5');
     botonPorTexto(el, 'Guardar').click();
     await asentar(fixture);
@@ -189,13 +190,32 @@ describe('pantalla de catálogos', () => {
         id: null,
         elemento: expect.objectContaining({
           title: 'Dar el número final',
-          category: 'El día',
+          // Sin categoría ni interruptor: se crea activa y sin categoría (D-53).
+          category: '',
           mesesAntes: 0.5,
           order: 2,
-          enabled: true,
         }),
       },
     ]);
+  });
+
+  it('el formulario de tarea deja elegir icono y lo manda al guardar', async () => {
+    const { fixture, el, guardadas } = montar({ tareas: [TAREA] });
+    await asentar(fixture);
+
+    botonPorTexto(el, 'Añadir').click();
+    fixture.detectChanges();
+    escribir(el, 'title', 'Contratar fotógrafo');
+    escribir(el, 'meses', '6');
+    const radio = el.querySelector<HTMLInputElement>('np-icon-picker input[value="camera"]');
+    expect(radio).not.toBeNull();
+    radio!.click();
+    radio!.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    botonPorTexto(el, 'Guardar').click();
+    await asentar(fixture);
+
+    expect(guardadas[0].elemento).toMatchObject({ icon: 'camera' });
   });
 
   it('edita con el id del elemento y borra con confirmación', async () => {

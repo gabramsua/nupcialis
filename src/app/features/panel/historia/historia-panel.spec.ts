@@ -144,6 +144,45 @@ describe('Nuestra historia en el panel', () => {
     expect(articulo.querySelector('input[type="file"]')).toBeNull();
   });
 
+  it('tiene dos botones de guardar, arriba y abajo, y no uno por apartado', async () => {
+    const { fixture, el } = montar();
+    await asentar(fixture);
+
+    const botones = el.querySelectorAll<HTMLButtonElement>('[data-accion="guardar"]');
+    expect(botones).toHaveLength(2);
+    expect(el.querySelector('article [data-accion="guardar"]')).toBeNull();
+    expect([...botones].every((b) => b.disabled)).toBe(true);
+  });
+
+  it('guarda de una vez todos los apartados con cambios', async () => {
+    const { fixture, el, textos } = montar();
+    await asentar(fixture);
+
+    const panel = fixture.componentInstance as unknown as {
+      editar(clave: ClaveHistoria, html: string): void;
+    };
+    panel.editar('beso', '<p>Lisboa</p>');
+    panel.editar('pedida', '<p>En la playa</p>');
+    fixture.detectChanges();
+
+    const botones = el.querySelectorAll<HTMLButtonElement>('[data-accion="guardar"]');
+    expect([...botones].every((b) => !b.disabled)).toBe(true);
+
+    botones[1].click();
+    await asentar(fixture);
+    await asentar(fixture);
+
+    expect(textos).toEqual([
+      { clave: 'beso', html: '<p>Lisboa</p>' },
+      { clave: 'pedida', html: '<p>En la playa</p>' },
+    ]);
+    expect(
+      [...el.querySelectorAll<HTMLButtonElement>('[data-accion="guardar"]')].every(
+        (b) => b.disabled,
+      ),
+    ).toBe(true);
+  });
+
   it('quita una foto: primero del documento y después el fichero', async () => {
     const { fixture, store, fotosGuardadas, borrados } = montar(
       conFoto('pedida', [{ url: URL_A, path: PATH_A }]),

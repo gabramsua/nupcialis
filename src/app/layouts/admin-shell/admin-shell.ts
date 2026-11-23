@@ -10,7 +10,6 @@ import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { PUERTA_ALTA } from '../../core/alta/alta-gateway';
-import { PUERTA_AUTH } from '../../core/auth/auth-gateway';
 import {
   accionesDe,
   claveDeNombre,
@@ -79,22 +78,6 @@ type Carga = 'cargando' | 'lista' | 'error';
               [label]="t('superadmin.bodas.incidencias', { n: incidencias() })"
             />
           }
-          <a class="np-admin__ver" routerLink="/superadmin/estadisticas">
-            <np-icon name="chart-bar" />
-            {{ t('superadmin.estadisticas.enlace') }}
-          </a>
-          <a class="np-admin__ver" routerLink="/superadmin/finanzas">
-            <np-icon name="currency-eur" />
-            {{ t('superadmin.finanzas.enlace') }}
-          </a>
-          <a class="np-admin__ver" routerLink="/superadmin/recordatorios">
-            <np-icon name="bell" />
-            {{ t('superadmin.recordatorios.enlace') }}
-          </a>
-          <a class="np-admin__ver" routerLink="/superadmin/catalogos">
-            <np-icon name="list-checks" />
-            {{ t('superadmin.catalogos.enlace') }}
-          </a>
           <button
             npButton
             variant="ghost"
@@ -108,10 +91,6 @@ type Carga = 'cargando' | 'lista' | 'error';
           <button npButton type="button" (click)="abrirAlta()">
             <np-icon name="plus" />
             {{ t('superadmin.alta.abrir') }}
-          </button>
-          <button npButton variant="ghost" type="button" (click)="salir()">
-            <np-icon name="sign-out" />
-            {{ t('superadmin.salir') }}
           </button>
         </div>
       </header>
@@ -506,7 +485,6 @@ export class AdminShell {
   private readonly fuente = crearFuenteBodasFirestore();
   private readonly puerta = inject(PUERTA_ALTA);
   private readonly i18n = inject(TranslocoService);
-  private readonly auth = inject(PUERTA_AUTH);
 
   /**
    * La tabla guarda el estado de ordenación; ordenar las filas es de aquí.
@@ -596,13 +574,6 @@ export class AdminShell {
 
   protected cerrarAlta(): void {
     this.altaAbierta.set(false);
-  }
-
-  protected async salir(): Promise<void> {
-    await this.auth.salir();
-    // Recarga completa y no navegación del router: se tira con ella todo lo que
-    // el superadmin había cargado en memoria (correos, cobros).
-    location.assign('/superadmin/acceso');
   }
 
   protected async recargar(): Promise<void> {

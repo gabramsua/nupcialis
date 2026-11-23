@@ -18,6 +18,10 @@ export function cargarPlantilla(id: PlantillaId): Promise<Type<unknown>> {
   switch (id) {
     case 'botanica':
       return import('./botanica/botanica').then((m) => m.PlantillaBotanica);
+    case 'romantica':
+      return import('./romantica/romantica').then((m) => m.PlantillaRomantica);
+    case 'moderna':
+      return import('./moderna/moderna').then((m) => m.PlantillaModerna);
     case 'clasica':
     default:
       return import('./clasica/clasica').then((m) => m.PlantillaClasica);

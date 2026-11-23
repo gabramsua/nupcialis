@@ -79,9 +79,6 @@ const PUERTA: PuertaInvitados = {
   async guardar() {
     return { ok: true, id: 'i1', creado: true };
   },
-  async cupoEnLote() {
-    return { ok: true as const, cambiados: 0, omitidos: 0 };
-  },
   async borrar() {
     return { ok: true };
   },
@@ -110,7 +107,7 @@ function montar() {
   return {
     fixture,
     componente: fixture.componentInstance as unknown as {
-      leer(texto: string): void;
+      leerFilas(filas: readonly (readonly string[])[]): void;
       comprobar(): Promise<void>;
       importar(): Promise<void>;
     },
@@ -118,52 +115,42 @@ function montar() {
   };
 }
 
+/** «A\tB\nC\tD» → filas de celdas, como las dejaría la lectura del Excel. */
+function filas(texto: string): string[][] {
+  return texto.split('\n').map((fila) => fila.split('\t'));
+}
+
 describe('los textos de la pantalla de importar', () => {
-  it('el primer paso ofrece los tres caminos de entrada', () => {
+  it('el primer paso explica los tres pasos y solo habla de Excel', () => {
     const { texto } = montar();
 
     expect(texto()).toContain('Descargar plantilla');
-    expect(texto()).toContain('Elegir fichero');
-    expect(texto()).toContain('O pegar la lista');
+    expect(texto()).toContain('Elegir el Excel');
+    // Ya no hay otros caminos: ni CSV que subir ni celdas que pegar.
+    expect(texto()).not.toContain('pegar');
+    expect(texto()).not.toContain('Continuar');
   });
 
-  /**
-   * Esto se me escapó y lo vio Gabriel en pantalla.
-   *
-   * El reconocimiento de columnas era correcto —la señal traía
-   * `['fullName', 'phone', …]`— pero **los desplegables enseñaban «No importar
-   * esta columna»** en todos. `[value]` sobre un `<select>` se aplica antes de
-   * que el `@for` haya creado sus `<option>`, así que el navegador se lo come y
-   * se queda en la primera opción.
-   *
-   * Mis pruebas miraban la señal y el mapeo era correcto, así que pasaban. Lo
-   * que ve la pareja es otra cosa: que no hemos reconocido nada y que tiene que
-   * poner las cuatro columnas a mano. Se comprueba el DOM, no el modelo.
-   */
-  it('los desplegables enseñan la columna reconocida, no la opción vacía', () => {
+  it('el paso de columnas enseña qué se ha entendido de cada una', () => {
     const { componente, fixture } = montar();
 
-    componente.leer('Nombre y apellidos;Teléfono;Acompañantes\nMaría José Pérez;666123456;1');
+    componente.leerFilas(
+      filas('Nombre y apellidos\tTeléfono\tLo que sea\nMaría José Pérez\t666123456\tx'),
+    );
     fixture.detectChanges();
 
-    const selects = (fixture.nativeElement as HTMLElement).querySelectorAll('select');
-    expect([...selects].map((s) => s.value)).toEqual(['fullName', 'phone', 'maxCompanions']);
-  });
-
-  it('una columna que no se reconoce se queda sin asignar', () => {
-    const { componente, fixture } = montar();
-
-    componente.leer('Nombre y apellidos;Lo que sea\nMaría José Pérez;x');
-    fixture.detectChanges();
-
-    const selects = (fixture.nativeElement as HTMLElement).querySelectorAll('select');
-    expect([...selects].map((s) => s.value)).toEqual(['fullName', '']);
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Nombre y apellidos');
+    expect(texto).toContain('Teléfono');
+    // La que no encaja se dice, no se importa a ciegas.
+    expect(texto).toContain('Se ignora');
+    expect((fixture.nativeElement as HTMLElement).querySelector('select')).toBeNull();
   });
 
   it('el paso de columnas dice cuántas filas se han leído', () => {
     const { componente, fixture, texto } = montar();
 
-    componente.leer('Nombre y apellidos\tTeléfono\nMaría José Pérez\t666123456');
+    componente.leerFilas(filas('Nombre y apellidos\tTeléfono\nMaría José Pérez\t666123456'));
     fixture.detectChanges();
 
     // La interpolación del contador tiene que haber entrado: si la clave
@@ -175,7 +162,7 @@ describe('los textos de la pantalla de importar', () => {
   it('el resultado nombra cada estado con palabras, no con el código', async () => {
     const { componente, fixture, texto } = montar();
 
-    componente.leer('Nombre y apellidos\tTeléfono\nMaría José Pérez\t666123456');
+    componente.leerFilas(filas('Nombre y apellidos\tTeléfono\nMaría José Pérez\t666123456'));
     await componente.comprobar();
     fixture.detectChanges();
 
@@ -198,7 +185,7 @@ describe('los textos de la pantalla de importar', () => {
   it('al importar de verdad dice cuántos han entrado', async () => {
     const { componente, fixture, texto } = montar();
 
-    componente.leer('Nombre y apellidos\tTeléfono\nMaría José Pérez\t666123456');
+    componente.leerFilas(filas('Nombre y apellidos\tTeléfono\nMaría José Pérez\t666123456'));
     await componente.comprobar();
     await componente.importar();
     fixture.detectChanges();
@@ -206,15 +193,14 @@ describe('los textos de la pantalla de importar', () => {
     expect(texto()).toContain('Se han añadido 1 invitados');
   });
 
-  it('avisa de los acentos rotos y explica cómo arreglarlo', () => {
+  it('un Excel que no es la plantilla se rechaza y dice qué hacer', () => {
     const { componente, fixture, texto } = montar();
 
-    componente.leer('Nombre y apellidos\nMarÃ­a JosÃ© PÃ©rez');
+    componente.leerFilas(filas('María José Pérez\t666123456\nÍñigo Muñoz\t+34677000111'));
     fixture.detectChanges();
 
-    expect(texto()).toContain('Los acentos se ven raros');
-    // Un aviso que no dice qué hacer no sirve de nada.
-    expect(texto()).toContain('CSV UTF-8');
+    expect(texto()).toContain('no es nuestra plantilla');
+    expect(texto()).toContain('Descargad la plantilla');
   });
 
   it('un fichero de más de mil filas se para antes de mandarlo', () => {
@@ -224,7 +210,7 @@ describe('los textos de la pantalla de importar', () => {
       'Nombre y apellidos',
       ...Array.from({ length: 1001 }, (_, i) => `Invitado ${i}`),
     ];
-    componente.leer(muchas.join('\n'));
+    componente.leerFilas(filas(muchas.join('\n')));
     fixture.detectChanges();
 
     expect(texto()).toContain('1002');

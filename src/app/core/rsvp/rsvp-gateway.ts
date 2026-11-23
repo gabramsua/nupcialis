@@ -103,8 +103,7 @@ export interface FalloPregunta {
  * dé cinco veces al botón.
  */
 /** Por qué no puede añadir a nadie, cuando no puede. */
-export type MotivoSinCupo =
-  'modulo-apagado' | 'sin-cupo' | 'cupo-lleno' | 'es-acompanante' | 'inactivo';
+export type MotivoSinCupo = 'modulo-apagado' | 'cupo-lleno' | 'es-acompanante' | 'inactivo';
 
 export interface CampoDelAcompanante {
   readonly campo: 'fullName' | 'phone' | 'ageGroup';

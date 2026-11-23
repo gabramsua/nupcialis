@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -33,10 +40,8 @@ import { SessionStore } from '../../../core/auth/session.store';
 import { PUERTA_MESAS } from '../../../core/mesas/mesas-gateway';
 import { nombreDeMesaPorId } from '../mesas/exportar-mesas';
 import { BodaStore } from '../boda.store';
-import { NpCompartirInvitado } from './compartir';
 import { NpRespuestaDeInvitado } from '../rsvp/respuesta-de-invitado';
 import { NpRespuestaEnLote } from './respuesta-en-lote';
-import { NpCupoEnLote } from './cupo-en-lote';
 import { NpFiltroGrupos } from './filtro-grupos';
 import { hojas, nombreDelFichero, type RespuestasDelFormulario } from './exportacion';
 import { descargarXlsx } from './exportar-xlsx';
@@ -78,10 +83,8 @@ type Carga = 'cargando' | 'lista' | 'error';
     NpIcon,
     NpGrupoChip,
     NpListaInvitados,
-    NpCompartirInvitado,
     NpRespuestaDeInvitado,
     NpRespuestaEnLote,
-    NpCupoEnLote,
     NpFiltroGrupos,
     NpInput,
   ],
@@ -103,7 +106,7 @@ type Carga = 'cargando' | 'lista' | 'error';
               <np-icon name="eye" />
               {{ t('panel.invitados.accesos') }}
             </a>
-            <a npButton variant="secondary" routerLink="/panel/guests/importar">
+            <a npButton variant="ghost" routerLink="/panel/guests/importar">
               <np-icon name="upload-simple" />
               {{ t('panel.invitados.importar') }}
             </a>
@@ -199,7 +202,7 @@ type Carga = 'cargando' | 'lista' | 'error';
             </np-alert>
           }
 
-          @if (grupos.grupos().length > 1 && !familiaDe()) {
+          @if (gruposVisibles().length > 0 && !familiaDe()) {
             <np-filtro-grupos
               [grupos]="gruposParaFiltrar()"
               [elegido]="grupoElegido()"
@@ -218,23 +221,12 @@ type Carga = 'cargando' | 'lista' | 'error';
           </label>
 
           <!--
-            El cupo de acompañantes, a todos los que se estén viendo (F1.5b).
-            Se apoya en los filtros de arriba a propósito: «los amigos, uno
-            cada uno» es filtrar por ese grupo y poner 1, en vez de abrir
-            cuarenta fichas. El botón dice a cuántos va a afectar **antes** de
-            pulsarlo, que es la única confirmación que hace falta cuando el
-            cambio es un número y se puede deshacer.
+            «Viene / no viene» para varios a la vez, solo cuando se está mirando
+            una familia o un grupo: sobre una lista suelta de X invitados no
+            tiene sentido y es fácil marcar a quien no tocaba.
           -->
-          @if (visibles().length > 0) {
+          @if (visibles().length > 0 && (familiaDe() !== null || grupoElegido() !== null)) {
             <np-respuesta-en-lote [ids]="idsVisibles()" (hecho)="recargar()" />
-          }
-
-          @if (destinatariosDelCupo().length > 0 && !familiaDe()) {
-            <np-cupo-en-lote
-              [ids]="idsDelCupo()"
-              (hecho)="recargar()"
-              (fallo)="fallo.set($event)"
-            />
           }
         }
 
@@ -294,14 +286,13 @@ type Carga = 'cargando' | 'lista' | 'error';
               }
               <np-lista-invitados
                 [invitados]="visibles()"
-                [grupos]="grupos.grupos()"
+                [grupos]="gruposVisibles()"
                 [nombres]="porId()"
                 [traen]="acompanantesPorTitular()"
                 [pareja]="pareja()"
                 (familia)="verFamilia($event)"
                 (acompanante)="nuevo($event)"
                 (responder)="respondiendoPor.set($event)"
-                (compartir)="compartir($event)"
                 (editar)="editar($event)"
                 (borrar)="pedirBorrado($event)"
               />
@@ -341,7 +332,7 @@ type Carga = 'cargando' | 'lista' | 'error';
               Con quién viene (F1.5d). Quien ya trae gente no puede ser
               acompañante de otro —se encadenaría—, así que ni se ofrece.
             -->
-            @if (!enEdicionTraeGente()) {
+            @if (enEdicion() && !enEdicionTraeGente()) {
               <label>
                 <span>{{ t('panel.invitados.campo.vieneCon') }}</span>
                 <select npInput [value]="titularElegido()" (change)="elegirTitular($event)">
@@ -353,13 +344,6 @@ type Carga = 'cargando' | 'lista' | 'error';
                   }
                 </select>
                 <small>{{ t('panel.invitados.campo.vieneConPista') }}</small>
-              </label>
-            }
-            @if (!titularElegido()) {
-              <label>
-                <span>{{ t('panel.invitados.campo.acompanantes') }}</span>
-                <input npInput formControlName="maxCompanions" type="number" min="0" max="10" />
-                <small>{{ t('panel.invitados.campo.acompanantesPista') }}</small>
               </label>
             }
             <fieldset>
@@ -391,7 +375,7 @@ type Carga = 'cargando' | 'lista' | 'error';
             } @else {
               <fieldset>
                 <legend>{{ t('panel.invitados.campo.grupos') }}</legend>
-                @if (grupos.grupos().length === 0) {
+                @if (gruposVisibles().length === 0) {
                   <small>
                     {{ t('panel.invitados.campo.sinGrupos') }}
                     <a routerLink="/panel/guests/grupos" (click)="cerrar()">{{
@@ -400,12 +384,11 @@ type Carga = 'cargando' | 'lista' | 'error';
                   </small>
                 } @else {
                   <div class="inv__opciones inv__opciones--grupos">
-                    @for (grupo of grupos.grupos(); track grupo.id) {
+                    @for (grupo of gruposVisibles(); track grupo.id) {
                       <label class="inv__opcion">
                         <input
                           type="checkbox"
                           [checked]="seleccionados().includes(grupo.id)"
-                          [disabled]="grupo.porDefecto"
                           (change)="alternarGrupo(grupo.id)"
                         />
                         <np-grupo-chip
@@ -478,10 +461,6 @@ type Carga = 'cargando' | 'lista' | 'error';
             </button>
           </div>
         </np-modal>
-      }
-
-      @if (compartiendo(); as quien) {
-        <np-compartir-invitado [invitado]="quien" (cerrado)="compartiendo.set(null)" />
       }
 
       @if (respondiendoPor(); as quien) {
@@ -707,6 +686,7 @@ export class Invitados {
   private readonly puertaMesas = inject(PUERTA_MESAS, { optional: true });
   private readonly sesion = inject(SessionStore, { optional: true });
   private readonly fb = inject(FormBuilder);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly boda = inject(BodaStore);
   private readonly i18n = inject(TranslocoService);
   protected readonly grupos = inject(GruposStore);
@@ -819,8 +799,6 @@ export class Invitados {
     return this.acompanantesPorTitular().get(invitado.id) ?? null;
   }
 
-  /** A quién se le está mandando la invitación, si a alguien. */
-  protected readonly compartiendo = signal<Invitado | null>(null);
   /** A quién se le está apuntando la respuesta en su nombre (D-45). */
   protected readonly respondiendoPor = signal<Invitado | null>(null);
 
@@ -869,6 +847,15 @@ export class Invitados {
       : this.vistasFijas,
   );
 
+  /**
+   * Los grupos que la pareja ve. El de todos («Invitados») se queda por
+   * debajo —todo invitado está en él, D-47— pero no se enseña: como grupo no
+   * dice nada y estorba en filtros y fichas (D-52).
+   */
+  protected readonly gruposVisibles = computed(() =>
+    this.grupos.grupos().filter((g) => !g.porDefecto),
+  );
+
   /** El grupo por el que se está filtrando, o `null` si son todos. */
   protected readonly grupoElegido = signal<string | null>(null);
 
@@ -893,7 +880,9 @@ export class Invitados {
       ),
       campo,
       sentido,
-      this.grupos.grupos().map((g) => g.id),
+      // Solo los grupos que la pareja ve: el general (oculto) lo tienen todos y
+      // empataría a todo el mundo en el primer puesto, dejando el orden por nombre.
+      this.gruposVisibles().map((g) => g.id),
     );
   });
 
@@ -935,6 +924,9 @@ export class Invitados {
   /** Salta a un titular con sus acompañantes; `null` vuelve a la lista. */
   protected verFamilia(titularId: string | null): void {
     this.familiaDe.set(titularId);
+    // Se llega desde el fondo de una lista larga: sin subir, la pantalla
+    // enseña un hueco en blanco donde antes estaba la fila.
+    this.host.nativeElement.scrollIntoView?.({ block: 'start' });
   }
 
   protected elegirTitular(evento: Event): void {
@@ -976,23 +968,7 @@ export class Invitados {
     this.vista.update((actual) => (actual === vista ? 'todos' : vista));
   }
 
-  /**
-   * A quién le va a caer el cupo: los que se están viendo, menos los
-   * acompañantes.
-   *
-   * Un acompañante no puede tener cupo —se encadenaría— y el servidor los
-   * omite de todas formas, así que contarlos aquí prometería un número que
-   * luego no se cumple.
-   */
-  protected readonly destinatariosDelCupo = computed(() =>
-    this.visibles().filter((invitado) => !invitado.isCompanion),
-  );
-
   protected readonly idsVisibles = computed(() => this.visibles().map((invitado) => invitado.id));
-
-  protected readonly idsDelCupo = computed(() =>
-    this.destinatariosDelCupo().map((invitado) => invitado.id),
-  );
 
   /** Igual que las cifras: pulsar el grupo que ya está puesto lo quita. */
   protected verGrupo(groupId: string): void {
@@ -1010,9 +986,10 @@ export class Invitados {
   protected readonly gruposParaFiltrar = computed(() => {
     const dentroDeLaVista = porVista(this.todos(), this.vista());
 
-    return this.grupos
-      .grupos()
-      .map((grupo) => ({ grupo, cuantos: porGrupo(dentroDeLaVista, grupo.id).length }));
+    return this.gruposVisibles().map((grupo) => ({
+      grupo,
+      cuantos: porGrupo(dentroDeLaVista, grupo.id).length,
+    }));
   });
 
   /**
@@ -1028,7 +1005,6 @@ export class Invitados {
     phone: [''],
     side: ['both' as Lado],
     ageGroup: ['adult' as Edad],
-    maxCompanions: [0],
     notes: [''],
   });
 
@@ -1101,7 +1077,6 @@ export class Invitados {
       phone: '',
       side: titular?.side ?? 'both',
       ageGroup: 'adult',
-      maxCompanions: 0,
       notes: '',
     });
     if (titular) {
@@ -1132,7 +1107,6 @@ export class Invitados {
       phone: invitado.phone ?? '',
       side: invitado.side,
       ageGroup: invitado.ageGroup,
-      maxCompanions: invitado.maxCompanions,
       notes: invitado.notes,
     });
     // El grupo de todos va siempre (D-47), también en invitados que aún no lo tenían.
@@ -1177,7 +1151,6 @@ export class Invitados {
       side: valores.side,
       ageGroup: valores.ageGroup,
       groupIds: this.seleccionados(),
-      maxCompanions: this.titularElegido() ? 0 : Number(valores.maxCompanions) || 0,
       notes: valores.notes,
       invitedById: this.titularElegido() || null,
     };
@@ -1198,10 +1171,6 @@ export class Invitados {
     this.fallo.set(null);
     await this.recargar();
     if (titular) this.familiaDe.set(titular);
-  }
-
-  protected compartir(invitado: Invitado): void {
-    this.compartiendo.set(invitado);
   }
 
   protected pedirBorrado(invitado: Invitado): void {

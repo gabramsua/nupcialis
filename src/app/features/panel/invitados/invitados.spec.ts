@@ -43,9 +43,6 @@ function puertaQueFalla(fallo: FalloInvitado): PuertaInvitados {
     async guardar() {
       return { ok: false, fallo };
     },
-    async cupoEnLote() {
-      return { ok: true as const, cambiados: 0, omitidos: 0 };
-    },
     async borrar() {
       return { ok: false, fallo };
     },
@@ -119,7 +116,7 @@ describe('cuando el listado falla', () => {
  * sentarlos juntos y para saber a quién preguntar si alguien no contesta.
  */
 describe('acompañantes en la lista', () => {
-  const MARIA: Invitado = { ...INVITADO_DE_PRUEBA, maxCompanions: 2 };
+  const MARIA: Invitado = { ...INVITADO_DE_PRUEBA };
 
   const ANA: Invitado = {
     ...MARIA,
@@ -128,7 +125,6 @@ describe('acompañantes en la lista', () => {
     nickname: '',
     isCompanion: true,
     invitedById: 'g1',
-    maxCompanions: 0,
   };
 
   async function conLista(invitados: readonly Invitado[], abrirTodas = false) {
@@ -141,9 +137,6 @@ describe('acompañantes en la lista', () => {
       },
       async guardar() {
         throw new Error('no se usa');
-      },
-      async cupoEnLote() {
-        return { ok: true as const, cambiados: 0, omitidos: 0 };
       },
       async borrar() {
         throw new Error('no se usa');
@@ -158,7 +151,7 @@ describe('acompañantes en la lista', () => {
               panel: {
                 invitados: {
                   loTrae: 'Lo trae {{nombre}}',
-                  trae: 'Trae a {{n}}',
+                  familia: { ver: 'Ver acompañantes' },
                   esAcompanante: 'Es acompañante',
                 },
               },
@@ -196,8 +189,8 @@ describe('acompañantes en la lista', () => {
     expect(await conLista([MARIA, ANA])).toContain('Lo trae Majo');
   });
 
-  it('y al titular, a cuántos trae', async () => {
-    expect(await conLista([MARIA, ANA], true)).toContain('Trae a 1');
+  it('y al titular, un enlace para ver a sus acompañantes', async () => {
+    expect(await conLista([MARIA, ANA], true)).toContain('Ver acompañantes');
   });
 
   /** Puede pasar: la pareja borra al titular y deja al acompañante. */
@@ -209,14 +202,14 @@ describe('acompañantes en la lista', () => {
   });
 
   it('a quien no trae a nadie no se le pinta un cero', async () => {
-    expect(await conLista([MARIA])).not.toContain('Trae a');
+    expect(await conLista([MARIA], true)).not.toContain('Ver acompañantes');
   });
 });
 
 /**
  * Navegar de un titular a sus acompañantes y al revés.
  *
- * Es lo que la pareja usa para sentarlos juntos: de «Trae a 2» a ver quiénes
+ * Es lo que la pareja usa para sentarlos juntos: de «Ver acompañantes» a ver quiénes
  * son, sin buscarlos a mano entre trescientos.
  */
 describe('la familia de un invitado', () => {
@@ -245,9 +238,6 @@ describe('la familia de un invitado', () => {
         guardados.push(datos);
         return { ok: true as const, id: 'nuevo', creado: true };
       },
-      async cupoEnLote() {
-        return { ok: true as const, cambiados: 0, omitidos: 0 };
-      },
       async borrar() {
         throw new Error('no se usa');
       },
@@ -261,12 +251,11 @@ describe('la familia de un invitado', () => {
               panel: {
                 invitados: {
                   loTrae: 'Lo trae {{nombre}}',
-                  trae: 'Trae a {{n}}',
                   anadirAcompanante: 'Añadir acompañante',
                   familia: {
                     titulo: 'Mirando una familia',
                     verTodos: 'Ver toda la lista',
-                    ver: 'Ver su familia',
+                    ver: 'Ver acompañantes',
                   },
                 },
               },
@@ -318,12 +307,12 @@ describe('la familia de un invitado', () => {
     f.detectChanges();
   }
 
-  it('«Trae a 1» deja al titular y a los suyos, y «Ver toda la lista» lo devuelve todo', async () => {
+  it('«Ver acompañantes» deja al titular y a los suyos, y «Ver toda la lista» lo devuelve todo', async () => {
     const f = await montarLista();
     expect(texto(f)).toContain('Luis');
 
     abrir(f, 'María');
-    pulsar(f, 'Trae a 1');
+    pulsar(f, 'Ver acompañantes');
     expect(texto(f)).toContain('María');
     expect(texto(f)).toContain('Ana');
     expect(texto(f)).not.toContain('Luis');
@@ -337,7 +326,7 @@ describe('la familia de un invitado', () => {
     const f = await montarLista();
 
     abrir(f, 'Ana');
-    pulsar(f, 'Ver su familia');
+    pulsar(f, 'Ver acompañantes');
     expect(texto(f)).toContain('Ana');
     expect(texto(f)).not.toContain('Luis');
   });
@@ -376,7 +365,7 @@ describe('la familia de un invitado', () => {
     f.detectChanges();
 
     expect(guardados).toHaveLength(1);
-    expect(guardados[0]).toMatchObject({ fullName: 'Marta', invitedById: 'g3', maxCompanions: 0 });
+    expect(guardados[0]).toMatchObject({ fullName: 'Marta', invitedById: 'g3' });
     expect((f.nativeElement as HTMLElement).textContent).toContain('Mirando una familia');
   });
 });
@@ -407,9 +396,6 @@ describe('filtrar por la cifra de la cabecera', () => {
       },
       async guardar() {
         throw new Error('no se usa');
-      },
-      async cupoEnLote() {
-        return { ok: true as const, cambiados: 0, omitidos: 0 };
       },
       async borrar() {
         throw new Error('no se usa');
@@ -507,19 +493,19 @@ describe('la lista, en acordeón y ordenable', () => {
     rsvpStatus: 'pending',
   };
 
-  async function montar() {
+  async function montar(
+    invitados: readonly Invitado[] = [CARLA, ANA, BORJA],
+    grupos?: Parameters<typeof gruposStoreFalso>[0],
+  ) {
     const puerta: PuertaInvitados = {
       async listar() {
-        return { ok: true, invitados: [CARLA, ANA, BORJA] };
+        return { ok: true, invitados };
       },
       async importar() {
         throw new Error('no se usa');
       },
       async guardar() {
         throw new Error('no se usa');
-      },
-      async cupoEnLote() {
-        return { ok: true as const, cambiados: 0, omitidos: 0 };
       },
       async borrar() {
         throw new Error('no se usa');
@@ -538,7 +524,7 @@ describe('la lista, en acordeón y ordenable', () => {
         { provide: PUERTA_RESPUESTAS, useValue: PUERTA_RESPUESTAS_FALSA },
         { provide: PUERTA_INVITADOS, useValue: puerta },
         { provide: BodaStore, useValue: bodaStoreFalso() },
-        { provide: GruposStore, useValue: gruposStoreFalso() },
+        { provide: GruposStore, useValue: gruposStoreFalso(grupos) },
       ],
     });
     const fixture = TestBed.createComponent(Invitados);
@@ -628,5 +614,34 @@ describe('la lista, en acordeón y ordenable', () => {
 
     p.ordenarPor('nombre');
     expect(p.nombres()).toEqual(['Ana Viene', 'Borja Falta', 'Carla Duda']);
+  });
+
+  it('ordena por grupo aunque todos estén también en el grupo general (oculto)', async () => {
+    const general = {
+      id: 'general',
+      name: 'Invitados',
+      photoAudience: 'public' as const,
+      color: 'gris',
+      order: 0,
+      porDefecto: true,
+    };
+    const grupos = [
+      general,
+      { ...general, id: 'uni', name: 'Universidad', order: 1, porDefecto: false },
+      { ...general, id: 'padel', name: 'Pádel', order: 2, porDefecto: false },
+    ] as Parameters<typeof gruposStoreFalso>[0];
+
+    // Alfabéticamente irían Ana, Borja, Carla; por grupo: Universidad, Pádel, ninguno.
+    const p = await montar(
+      [
+        { ...CARLA, groupIds: ['general', 'uni'] },
+        { ...ANA, groupIds: ['general'] },
+        { ...BORJA, groupIds: ['general', 'padel'] },
+      ],
+      grupos,
+    );
+    p.ordenarPor('grupo');
+
+    expect(p.nombres()).toEqual(['Carla Duda', 'Borja Falta', 'Ana Viene']);
   });
 });

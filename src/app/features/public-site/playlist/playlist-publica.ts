@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -11,6 +11,9 @@ import {
   type ResultadoPlaylist,
 } from '../../../core/playlist/playlist-gateway';
 import { MAX_ARTISTA, MAX_PROPUESTAS_POR_INVITADO, MAX_TITULO } from './playlist';
+import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 
 /**
  * La playlist, como la ve el invitado (§8.14).
@@ -24,15 +27,21 @@ import { MAX_ARTISTA, MAX_PROPUESTAS_POR_INVITADO, MAX_TITULO } from './playlist
  */
 @Component({
   selector: 'np-playlist-publica',
-  imports: [FormsModule, RouterLink, TranslocoDirective, NpIcon],
+  imports: [NpCabeceraBoda, FormsModule, RouterLink, TranslocoDirective, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style]': 'tema()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <div class="pl">
-        <a class="pl__volver" routerLink="/">
-          <np-icon name="caret-left" />
-          {{ t('publico.playlist.volver') }}
-        </a>
+        @if (!cabecera()) {
+          <a class="pl__volver" routerLink="/">
+            <np-icon name="caret-left" />
+            {{ t('publico.playlist.volver') }}
+          </a>
+        }
 
         <header class="pl__cabecera">
           <h1>{{ t('publico.playlist.titulo') }}</h1>
@@ -125,7 +134,7 @@ import { MAX_ARTISTA, MAX_PROPUESTAS_POR_INVITADO, MAX_TITULO } from './playlist
       max-inline-size: 42rem;
       margin-inline: auto;
       padding: 1.25rem 1rem 3rem;
-      color: var(--np-marca-texto, inherit);
+      color: var(--np-marca-text, inherit);
     }
     .pl__volver {
       display: inline-flex;
@@ -262,6 +271,11 @@ import { MAX_ARTISTA, MAX_PROPUESTAS_POR_INVITADO, MAX_TITULO } from './playlist
   `,
 })
 export class NpPlaylistPublica {
+  /** La boda, que resuelve la ruta: de aquí sale el tema (D-55). */
+  readonly tenant = input<ResultadoTenant | null>(null);
+  protected readonly tema = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
+
   private readonly puerta = inject(PUERTA_PLAYLIST);
 
   protected readonly maxTitulo = MAX_TITULO;

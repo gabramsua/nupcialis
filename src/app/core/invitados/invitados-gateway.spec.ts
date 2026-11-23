@@ -24,7 +24,6 @@ function invitado(parcial: Partial<Invitado>): Invitado {
     rsvpStatus: 'pending',
     isCompanion: false,
     invitedById: null,
-    maxCompanions: 0,
     loginCount: 0,
     notes: '',
     menu: '',

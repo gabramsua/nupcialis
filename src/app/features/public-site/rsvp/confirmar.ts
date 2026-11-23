@@ -10,7 +10,8 @@ import {
 import { TranslocoDirective } from '@jsverse/transloco';
 
 import { NpIcon } from '../../../design-system/icons/icon';
-import { variablesDeMarca } from '../../../core/tenant/marca';
+import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
+import { conCabecera, usarTemaDeLaBoda } from '../tema';
 import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
 import {
   PUERTA_RSVP,
@@ -50,13 +51,16 @@ type Carga = 'cargando' | 'lista' | 'error' | 'verificar';
  */
 @Component({
   selector: 'np-confirmar',
-  imports: [TranslocoDirective, NpIcon, NpAcompanantes, NpVerificar],
+  imports: [NpCabeceraBoda, TranslocoDirective, NpIcon, NpAcompanantes, NpVerificar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Los colores de la pareja, igual que en la web y en la puerta: el invitado
   // no debería notar que esto es otra pantalla.
   host: { '[style]': 'colores()' },
   template: `
     <ng-container *transloco="let t">
+      @if (cabecera()) {
+        <np-cabecera-boda [tenant]="tenant()" />
+      }
       <main class="cf">
         <div class="cf__hoja">
           @switch (carga()) {
@@ -523,6 +527,11 @@ type Carga = 'cargando' | 'lista' | 'error' | 'verificar';
       margin: 0 0 var(--np-space-2);
       font-weight: var(--np-weight-medium);
     }
+    /* Los títulos, con la letra de la plantilla de la pareja (D-55). */
+    h1,
+    h2 {
+      font-family: var(--np-marca-titulos, inherit);
+    }
   `,
 })
 export class Confirmar {
@@ -531,10 +540,8 @@ export class Confirmar {
   /** Lo resuelve `tenantResolver`, igual que en la web. Solo se usa para la marca. */
   readonly tenant = input<ResultadoTenant | null>(null);
 
-  protected readonly colores = computed(() => {
-    const t = this.tenant();
-    return variablesDeMarca(t?.tipo === 'ok' ? t.sitio.theme.palette : null);
-  });
+  protected readonly colores = usarTemaDeLaBoda(this.tenant);
+  protected readonly cabecera = computed(() => conCabecera(this.tenant()));
 
   protected readonly carga = signal<Carga>('cargando');
   protected readonly formulario = signal<Formulario | null>(null);
