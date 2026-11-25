@@ -9,6 +9,7 @@ import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpIcon } from '../../../design-system/icons/icon';
 import type { FalloQuizPanel, JugadorDelQuiz } from '../../../core/quiz/quiz-admin-gateway';
 import { RankingQuizStore } from './ranking-quiz.store';
+import { telefonoVisible } from '../../../shared/telefono';
 
 /**
  * Quién ha jugado al quiz (§8.7).
@@ -82,7 +83,7 @@ import { RankingQuizStore } from './ranking-quiz.store';
                         homónimos (D-11).
                       -->
                       @if (jugador.telefono) {
-                        <small class="qr__telefono">{{ jugador.telefono }}</small>
+                        <small class="qr__telefono">{{ telefonoVisible(jugador.telefono) }}</small>
                       }
                     </span>
 
@@ -212,6 +213,7 @@ import { RankingQuizStore } from './ranking-quiz.store';
   `,
 })
 export class PanelRankingQuiz {
+  protected readonly telefonoVisible = telefonoVisible;
   protected readonly store = inject(RankingQuizStore);
 
   protected readonly vaciando = signal(false);

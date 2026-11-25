@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 
-import type { FotoPublica } from '../../features/public-site/galeria/galeria';
+import type { AlbumFoto, FotoPublica } from '../../features/public-site/galeria/galeria';
 
 /**
  * La galería, del lado del invitado (§8.5).
@@ -39,12 +39,13 @@ export type ResultadoBorrado =
   { readonly ok: true } | { readonly ok: false; readonly fallo: FalloGaleria };
 
 export interface PuertaGaleria {
-  listar(cursor: string | null): Promise<ResultadoFotos>;
+  /** Las fotos de un álbum. Cada álbum tiene su propio cursor. */
+  listar(cursor: string | null, album: AlbumFoto): Promise<ResultadoFotos>;
   /** La foto se reduce **en el navegador** antes de salir de aquí. */
-  subir(archivo: File, pie: string): Promise<ResultadoSubida>;
+  subir(archivo: File, pie: string, album: AlbumFoto): Promise<ResultadoSubida>;
   borrar(photoId: string): Promise<ResultadoBorrado>;
 }
 
 export const PUERTA_GALERIA = new InjectionToken<PuertaGaleria>('PUERTA_GALERIA');
 
-export type { FotoPublica };
+export type { AlbumFoto, FotoPublica };

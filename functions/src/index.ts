@@ -40,7 +40,9 @@ export { clearQuizRanking, listQuizPlays } from './quiz-admin';
 export { assignGuestsToTable } from './tables';
 export { clearGallery, deletePhoto, listPhotos, uploadPhoto } from './gallery';
 export { getGifts, releaseGift, reserveGift } from './gifts';
+export { getOpenGifts } from './gifts-abiertos';
 export { listPlaylist, suggestSong, voteSong } from './playlist';
+export { deleteGuestbookEntry, listGuestbook, signGuestbook } from './libro';
 export { recomputeCounters } from './recompute-counters';
 export { listRsvpAnswers } from './rsvp-answers';
 export { getRsvpForm, submitRsvp } from './rsvp';
@@ -63,6 +65,7 @@ export {
   syncPublicAccommodations,
   syncPublicFaqs,
   syncPublicLocations,
+  syncPublicParty,
   syncPublicProjection,
   syncPublicTimeline,
 } from './sync-public-projection';

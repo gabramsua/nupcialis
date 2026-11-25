@@ -89,7 +89,33 @@ type Carga = 'cargando' | 'lista' | 'error';
                     <h3>{{ resumen.pregunta.label }}</h3>
                     <p class="rp__cuantas">
                       {{ t('panel.respuestas.contestada', { n: resumen.total }) }}
+                      @if (resumen.deAcompanantes > 0) {
+                        ·
+                        {{
+                          t('panel.respuestas.deAcompanantes', {
+                            n: resumen.deAcompanantes,
+                          })
+                        }}
+                      }
                     </p>
+                    @if (resumen.forma === 'recuento' && resumen.faltan.total > 0) {
+                      <!--
+                        «Autobús, 40» parece el total y no lo es si faltan los
+                        acompañantes por apuntar: se dice cuántos y quiénes.
+                      -->
+                      <details class="rp__faltan">
+                        <summary>
+                          <np-icon name="warning" />
+                          {{
+                            t('panel.respuestas.faltan', {
+                              n: resumen.faltan.total,
+                              a: resumen.faltan.acompanantes,
+                            })
+                          }}
+                        </summary>
+                        <p>{{ resumen.faltan.nombres.join(', ') }}</p>
+                      </details>
+                    }
 
                     @if (resumen.forma === 'recuento') {
                       <dl class="rp__barras">
@@ -246,6 +272,24 @@ type Carga = 'cargando' | 'lista' | 'error';
       margin: var(--np-space-1) 0 0;
       color: var(--np-surface-text-muted);
       font-size: var(--np-text-sm);
+    }
+    .rp__faltan {
+      margin-block-end: var(--np-space-3);
+      padding: var(--np-space-2) var(--np-space-3);
+      border: 1px solid var(--np-attention-border);
+      border-radius: var(--np-radius-sm);
+      background: var(--np-attention-bg);
+      font-size: var(--np-text-sm);
+    }
+    .rp__faltan summary {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      cursor: pointer;
+    }
+    .rp__faltan p {
+      margin: var(--np-space-2) 0 0;
+      color: var(--np-surface-text-muted);
     }
     .rp__barras {
       display: flex;

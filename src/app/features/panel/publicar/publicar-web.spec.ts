@@ -109,7 +109,7 @@ describe('publicar la web desde el panel', () => {
 
     it('abajo, con la web publicada sale el volver a borrador, en pequeño', async () => {
       const p = await montar(BODA_DE_PRUEBA, [], 'abajo');
-      expect(p.raiz.querySelector('section.pw--pequena')).not.toBeNull();
+      expect(p.raiz.querySelector('section.pw--flota')).not.toBeNull();
       expect(p.boton('Volver a borrador')?.getAttribute('data-size')).toBe('sm');
     });
 

@@ -4,10 +4,14 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
+import { PlantillaBarroca } from './barroca/barroca';
+import { PlantillaAcuarela } from './acuarela/acuarela';
 import { PlantillaBotanica } from './botanica/botanica';
 import { PlantillaClasica } from './clasica/clasica';
+import { PlantillaCottage } from './cottage/cottage';
 import { PlantillaModerna } from './moderna/moderna';
 import { PlantillaRomantica } from './romantica/romantica';
+import { PlantillaSevillana } from './sevillana/sevillana';
 
 /**
  * Regresión del 2026-09-16: la portada enseñaba los nombres y nada más.
@@ -22,6 +26,10 @@ const PLANTILLAS: readonly [string, Type<unknown>][] = [
   ['botánica', PlantillaBotanica],
   ['romántica', PlantillaRomantica],
   ['moderna', PlantillaModerna],
+  ['barroca', PlantillaBarroca],
+  ['sevillana', PlantillaSevillana],
+  ['cottage', PlantillaCottage],
+  ['acuarela', PlantillaAcuarela],
 ];
 
 describe.each(PLANTILLAS)('plantilla %s', (_nombre, Plantilla) => {

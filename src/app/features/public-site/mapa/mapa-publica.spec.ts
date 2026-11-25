@@ -40,6 +40,8 @@ function tenant(ubicaciones: readonly UbicacionPublica[]): ResultadoTenant {
       faqs: [],
       cronologia: [],
       alojamientos: [],
+      autobuses: [],
+      cortejo: [],
       ubicaciones,
       dressCode: DRESS_CODE_VACIO,
       historia: [],

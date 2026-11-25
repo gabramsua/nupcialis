@@ -29,6 +29,8 @@ const TENANT: ResultadoTenant = {
     faqs: [],
     cronologia: [],
     alojamientos: [],
+    autobuses: [],
+    cortejo: [],
     dressCode: DRESS_CODE_VACIO,
     historia: [],
     modulos: {},

@@ -802,6 +802,131 @@ El primer recorrido completo salió mal. Arreglado en esta tanda:
       módulos con página propia salen del apilado de la portada; velo de foto con el
       color del fondo (arregla Romántica con paletas oscuras); 4 paletas nuevas
       (Tinto y rosa, Burdeos y oro, Grafito y oro, Perla y oro).
+- [x] `S4g` **Tanda 28** (D-58): mesas con lista lateral y filtros (nombre/apellidos,
+      grupo, ocultar a quien no viene); «Lo que han contestado» cuenta y nombra a los
+      acompañantes y avisa de quién falta por contestar; teléfonos sin `+34` en toda la
+      app (se guardan en E.164 y se admite prefijo de otro país); filtros de fechas en
+      finanzas; fuera los atajos del Resumen y «Volver a borrador» flotante en una fila;
+      el error de publicar enseña un detalle técnico; plantilla **Barroca**.
+      **Hay que desplegar functions** (`listRsvpAnswers`, `exigirPareja`).
+- [x] `S4h` **Tanda 29** (D-59): «Cambiar de plan» en la ficha de superadmin (vista previa
+      de módulos, aviso de bajada, nuevo precio, sin cobro automático); **libro de
+      firmas** completo (funciones `listGuestbook`/`signGuestbook`/`deleteGuestbookEntry`,
+      sección `libro`, página pública y moderación en el panel); galería con dos álbumes
+      («El día» y «Nuestro camino»). **Hay que desplegar functions y reglas.**
+- [x] `S4i` **Tanda 30** (D-60): `/panel/web` y la web pública solo ofrecen las secciones
+      de los módulos del plan de la boda (cliente, proyección y guardas de `quiz`, `gallery`
+      y `libro`); plantillas **Sevillana** y **Cottage**; consejos de superadmin a todo el
+      ancho. **Hay que desplegar functions.**
+- [x] `S4j` **Tanda 31** (D-61): **proveedores** (`F4`, `/panel/vendors`: fichas con contacto
+      pulsable, presupuesto y precio acordado, pagos, contratos en PDF, valoración,
+      comparativa de candidatos por categoría con el más barato marcado) y **personas
+      importantes** (`F2.6`, `/panel/party`: foto, nombre, papel, lado, bio, teléfono
+      interno, visibilidad por persona, orden; sección `cortejo` en la web). **Foto =
+      casilla de consentimiento obligatoria** (D-14 → D-61). Solo plan extendido. **Hay que
+      desplegar functions y reglas.**
+- [x] `S4k` **Tanda 32** (D-62): los tres enlaces que faltaban. **Tarea ↔ proveedor y
+      partida** (selectores en la tarea; la ficha del proveedor y la de la partida listan sus
+      tareas, enlazan una existente, quitan el enlace o crean una nueva ya enlazada),
+      **partida ↔ proveedor** (selector, y botones «usar presupuesto / precio acordado» que
+      solo proponen) y **persona ↔ invitado** (selector y chip de respuesta). Sin desplegar
+      nada: no cambian reglas ni functions.
+- [x] `S4l` **Tanda 33** (D-63): lo que pediste tras validar la 32. **Plan básico**: ahora trae
+      también regalos, alojamiento y autobuses (y `completeWeddings` los enciende una vez en
+      las bodas básicas ya creadas). **Autobuses**: módulo nuevo en los dos planes (rutas de
+      ida y vuelta con nombre, salida, hora, destino y nota; solo información, sin reservas;
+      viven en `modules.buses.config.rutas`, sin colección ni regla nueva). **Mismo sitio**:
+      dato `sameVenue` de la boda (casilla del alta, solo civil, e interruptor en
+      `/panel/web`) → la web publica una sola tarjeta «Ceremonia y banquete» y la hora del
+      banquete como «a continuación» o «a las HH:MM». **Aviso de cambios sin guardar** como
+      tarjeta fija con título y botón. **Tema «Acuarela»** (ambos planes, con huecos de imagen).
+      **Hay que desplegar functions** (proyección con `buses` y `sameVenue`, y `completeWeddings`).
+- [x] `S4m` **Tanda 34** (D-64): repaso tras probar la 33. `buses` faltaba en la visibilidad
+      pública (el catálogo del superadmin sale de `getPlans`: hay que **desplegar functions**).
+      «Cómo llegar» pinta los sitios del mapa dentro de la web (con «Ceremonia y banquete»
+      fusionados si coinciden) y la vista previa los trae. Retiradas las tarjetas Ceremonia y
+      Banquete (y el interruptor «mismo sitio» de la tanda 33). Nueva sección «Confirmad vuestra
+      asistencia» que lleva a `/confirmar`.
+- [x] `S4n` Guardar de Autobuses y Dress code: faltaba el icono de check (que es lo que gira al
+      cargar) y el «Guardado» de confirmación que ya tienen Datos de la boda y las demás.
+- [x] `S4o` D-65: módulos añadidos a un plan ya nacen visibles; «Añadir módulos nuevos» repara
+      los que quedaron encendidos y ocultos y deja de escribir el módulo entero (borraba su `config`).
+- [x] `S4p` Botones Guardar: el check que gira en los 16 que no lo tenían (panel y superadmin), el
+      «Guardado» en historia, aportación de regalos y consejos, y un test que vigila que no vuelva
+      a faltar (`guardar-con-icono.spec.ts`).
+- [x] `S4q` **Bug de raíz de la web pública:** el navegador volvía a sanear lo ya publicado y los
+      sitios del mapa (`lat`/`lng` planos, se leían de `coords`) y las personas importantes
+      (`name`, se leía `displayName`) se caían todos: «Todavía no hay sitios». Saneador de
+      ubicaciones válido para las dos formas, lector propio del cortejo publicado y un test del
+      ciclo completo servidor → navegador para todas las listas (`proyeccion-ciclo.spec.ts`).
+- [x] `S4r` D-66: regalos del básico dentro de la web sin identificarse (`getOpenGifts`),
+      plazo del formulario por defecto a 7 días de la boda (servidor y panel) y «Volver al
+      plazo por defecto» alineado con el campo.
+- [x] `S4s` Web pública: el color de fondo de las 8 plantillas llega de borde a borde en escritorio
+      (las secciones siguen centradas) y «Cómo llegar» enseña la dirección corta del buscador
+      —sitio, calle y localidad— en vez de la cadena completa (`direccion-corta.ts`).
+- [x] `S4t` Web pública: «Cómo llegar» pasa de lista apretada a tarjetas centradas por sitio
+      (icono en círculo, tipo, nombre, hora en pastilla, dirección y nota tras un filtro,
+      botón al pie); en escritorio caben en rejilla y los botones quedan alineados abajo.
+- [x] `S4u` Panel: «Qué os falta» ya no pide cargar invitados ni cuenta quién no ha entrado o
+      contestado en el plan básico (sin lista de invitados, D-66); queda fecha, publicar,
+      módulos ocultos y portada (`pendientes.ts` + spec).
+- [x] `S4v` Panel: en el plan básico el resumen cambia «vienen/han abierto la web» por
+      «Confirmaciones recibidas» y «Han dicho que vienen», con botón «Ver las respuestas»
+      (`/panel/rsvp/respuestas`). El extendido no cambia.
+- [x] `S4w` Web pública (plan básico): si `getOpenGifts` dice «no disponible» (not-found), la
+      sección de regalos desaparece entera —título incluido— en vez de enseñar «Algo ha ido
+      mal». La portada y la sección comparten una sola llamada por boda (caché en la puerta).
+      La fecha ya es obligatoria al dar de alta (formulario y `alta.ts`) y el panel no deja
+      vaciarla, así que «Poned la fecha» solo sale en bodas antiguas.
+- [x] `S4x` Panel · Diseño: el aviso «Autoguardado. El cambio se ve en vuestra web en unos
+      segundos.» sube justo debajo de «Elegid una plantilla…», en verde y con check, para que
+      se vea que no hay botón de guardar.
+- [x] `S4y` Panel · Diseño: el aviso «Autoguardado» también en paleta y foto de portada; la
+      vista previa de la portada baja a 14 rem de ancho para que los botones de acción queden
+      a la vista sin hacer scroll.
+- [ ] `S4k.b` Pendiente tras la tanda 32: presupuesto objetivo y exportación de proveedores;
+      que «pagada» de la partida salga del proveedor (descartado, ver D-62); vista de
+      «tareas de proveedores» en el resumen.
+- [ ] `F3.5b` Exportar el libro de firmas a PDF maquetado (segunda pasada).
+
+## Auditoría del plan básico (2026-11-24) — lo que falta para venderlo
+
+Comprobado en el código, no de memoria. **A** = sin esto no se puede vender; **B** = lo
+que hace que el básico se sienta completo; **C** = segunda ola. **G** = lo hace Gabriel.
+
+- [ ] `B-A1` **El botón «Confirmar asistencia» no sale en bodas abiertas**, que es el modo
+      por defecto del alta: `puedeConfirmar` exige sesión identificada
+      (`public-shell.ts`, `cabecera-boda.ts`). `/confirmar` ya sabe pedir los dígitos.
+- [ ] `B-A2` **Embudo de contratación**: landing real (hoy es un rótulo), formulario de
+      solicitud (`weddingRequests`, no existe), bandeja en superadmin y pantalla con la
+      referencia de Bizum (D-25). Une con `S1.1`, `F0.7.7` y la bandeja de F5.
+- [ ] `B-A3` **RGPD mínimo**: aviso de privacidad y términos visibles (hoy una sola línea
+      en acompañantes), aviso de almacenamiento local, contrato de encargo aceptado en el
+      alta, botón de supresión de un invitado (§9.4, no existe) y retención + purga (D-01).
+- [ ] `B-A4` **G** Correo transaccional: instalar «Trigger Email» y un SMTP (D-05). Sin él,
+      el acceso de la pareja y los avisos solo salen copiando el enlace.
+- [ ] `B-A5` **G** Producción: proyecto aparte (`RE.7`), hosting con wildcard (`F0.3.7`),
+      cabecera COOP (`RE.8`), App Check en modo exigente.
+- [ ] `B-A6` **G** Decidir qué incluye el plan básico y su precio (D-02). Hoy un básico
+      puede activar todos los módulos salvo galería, quiz e historia.
+- [ ] `B-A7` **G** Prueba de punta a punta en navegador y en móvil de 360 px (`F1.4c`).
+- [ ] `B-A8` Fiabilidad: copia diaria de Firestore, monitorización de errores y alerta de
+      coste. No hay ninguna función programada ni reporte de errores (§9.5).
+- [ ] `B-B1` **Vista previa al compartir** (Open Graph) y título por boda: hoy WhatsApp
+      enseña «Nupcialis» sin foto. Pide una función en el hosting (depende de `B-A5`).
+- [ ] `B-B2` **Añadir al calendario** (`.ics` y enlace de Google) en la portada.
+- [ ] `B-B3` **Recordatorio a quien no ha contestado** (WhatsApp en lote con plantilla) y
+      `F1.4b`.
+- [ ] `B-B4` **Personas importantes** (§8.12, sin construir).
+- [ ] `B-B5` **«¿En qué mesa estoy?»** para el invitado, y exportar el esquema de mesas a
+      PDF (§8.4, no existe).
+- [ ] `B-B6` Navegación ligera de la página única del básico (hoy solo el botón flotante).
+- [ ] `B-B7` Sesión de validación de las ~30 decisiones «pendiente de validar» (D-24…D-59).
+- [ ] `B-C1` Segunda ola: moodboard del dress code, PDF del libro (`F3.5b`), inglés y
+      catalán, PWA (D-08), reserva de regalos en modo abierto (D-13), endurecer cookies
+      (`F0.4.8`), registro de accesos de la pareja (`F0.4.7`), reordenar arrastrando
+      (`PL.7c`), lint de `functions/` en el CI.
 
 Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
 

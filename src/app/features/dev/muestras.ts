@@ -9,6 +9,8 @@
 import { sanearFaqs } from '../public-site/faqs/faqs';
 import { sanearCronologia } from '../public-site/cronologia/cronologia';
 import { sanearAlojamientos } from '../public-site/alojamientos/alojamientos';
+import { sanearAutobuses } from '../public-site/autobuses/autobuses';
+import { sanearCortejo } from '../public-site/cortejo/cortejo';
 import { sanearUbicaciones } from '../public-site/mapa/ubicaciones';
 import { sanearDressCode } from '../public-site/dress-code/dress-code';
 import { SECCIONES_INICIALES, sanearSecciones } from '../public-site/secciones/secciones';
@@ -174,6 +176,41 @@ export const BODA_DE_MUESTRA: Muestra = {
       visibleToGuests: false,
     },
   ]),
+  cortejo: sanearCortejo([
+    {
+      id: 'madrina',
+      displayName: 'Carmen Ruiz',
+      role: 'Madrina',
+      side: 'A',
+      bio: 'La tía que lo organiza todo y no se pierde una boda.',
+      photoUrl: null,
+      photoConsent: false,
+      visibleToGuests: true,
+      order: 1,
+    },
+    {
+      id: 'padrino',
+      displayName: 'Antonio Pérez',
+      role: 'Padrino',
+      side: 'B',
+      bio: 'Amigo de Gabriel desde el instituto.',
+      photoUrl: null,
+      photoConsent: false,
+      visibleToGuests: true,
+      order: 2,
+    },
+    {
+      id: 'anillos',
+      displayName: 'Lucía',
+      role: 'Portaanillos',
+      side: 'both',
+      bio: 'Tiene cinco años y ya ha ensayado dos veces.',
+      photoUrl: null,
+      photoConsent: false,
+      visibleToGuests: true,
+      order: 3,
+    },
+  ]),
   alojamientos: sanearAlojamientos([
     {
       id: 'hotel-del-rio',
@@ -235,6 +272,35 @@ export const BODA_DE_MUESTRA: Muestra = {
       order: 1,
     },
   ]),
+  autobuses: sanearAutobuses([
+    {
+      id: 'ida-sevilla',
+      sentido: 'ida',
+      nombre: 'Autobús 1',
+      salida: 'Plaza de Armas, Sevilla',
+      hora: '16:00',
+      destino: 'Finca Los Olmos',
+      nota: 'Un solo viaje; salimos puntuales.',
+    },
+    {
+      id: 'vuelta-1',
+      sentido: 'vuelta',
+      nombre: '',
+      salida: 'Finca Los Olmos',
+      hora: '02:00',
+      destino: 'Plaza de Armas, Sevilla',
+      nota: '',
+    },
+    {
+      id: 'vuelta-2',
+      sentido: 'vuelta',
+      nombre: '',
+      salida: 'Finca Los Olmos',
+      hora: '04:30',
+      destino: 'Plaza de Armas, Sevilla',
+      nota: 'El último; después, taxi.',
+    },
+  ]),
   dressCode: sanearDressCode({
     description:
       '<p>Nos encantaría veros <strong>arreglados pero cómodos</strong>. La ceremonia y el cóctel son al aire libre.</p>',
@@ -259,6 +325,8 @@ export const VACIA: Muestra = {
   faqs: [],
   cronologia: [],
   alojamientos: [],
+  autobuses: [],
+  cortejo: [],
   ubicaciones: [],
   dressCode: sanearDressCode(null),
 };

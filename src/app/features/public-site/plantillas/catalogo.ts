@@ -11,7 +11,15 @@
  * producto necesita enterarse.
  */
 
-export type PlantillaId = 'clasica' | 'botanica' | 'romantica' | 'moderna';
+export type PlantillaId =
+  | 'clasica'
+  | 'botanica'
+  | 'romantica'
+  | 'moderna'
+  | 'barroca'
+  | 'sevillana'
+  | 'cottage'
+  | 'acuarela';
 
 export interface Plantilla {
   readonly id: PlantillaId;
@@ -86,6 +94,54 @@ export const PLANTILLAS: readonly Plantilla[] = [
     tipografia: {
       titulos: "'Montserrat', system-ui, sans-serif",
       texto: "'Montserrat', system-ui, sans-serif",
+    },
+  },
+  {
+    id: 'barroca',
+    nombre: 'Barroca',
+    descripcion:
+      'Pergamino, doble filete y letras con adornos, como una invitación hecha a mano. Recargada a propósito.',
+    fuentes: ['Cinzel+Decorative:wght@400;700', 'IM+Fell+English:ital@0;1'],
+    colores: { fondo: '#f3e9d2', texto: '#2e1f14', acento: '#7a1f2b', superficie: '#fbf5e6' },
+    tipografia: {
+      titulos: "'Cinzel Decorative', 'Cinzel', georgia, 'Times New Roman', serif",
+      texto: "'IM Fell English', georgia, 'Times New Roman', serif",
+    },
+  },
+  {
+    id: 'sevillana',
+    nombre: 'Sevillana',
+    descripcion:
+      'Banderines de papel picado, arco de patio y cenefa de azulejos, con letra de rotulador. Cálida y hecha a mano.',
+    fuentes: ['Caveat:wght@500;700', 'Lora:wght@400;500;600'],
+    colores: { fondo: '#fbf3e2', texto: '#2b2a33', acento: '#1f5aa6', superficie: '#ffffff' },
+    tipografia: {
+      titulos: "'Caveat', 'Segoe Print', 'Comic Sans MS', cursive",
+      texto: "'Lora', georgia, 'Times New Roman', serif",
+    },
+  },
+  {
+    id: 'cottage',
+    nombre: 'Cottage',
+    descripcion:
+      'Papel con textura, portada en polaroid sujeta con cinta y margaritas recortadas. Luminosa, de jardín.',
+    fuentes: ['Playfair+Display:ital,wght@0,400;1,400', 'Lato:wght@300;400;700'],
+    colores: { fondo: '#f4efe4', texto: '#4a4036', acento: '#6f8460', superficie: '#fffdf8' },
+    tipografia: {
+      titulos: "'Playfair Display', georgia, 'Times New Roman', serif",
+      texto: "'Lato', system-ui, sans-serif",
+    },
+  },
+  {
+    id: 'acuarela',
+    nombre: 'Acuarela',
+    descripcion:
+      'Fondo blanco, todo centrado en una columna, letra manuscrita en verde y manchas de acuarela con huecos para vuestras fotos.',
+    fuentes: ['Pinyon+Script', 'Cormorant+Garamond:ital,wght@0,400;0,500;1,400'],
+    colores: { fondo: '#ffffff', texto: '#233d00', acento: '#7c9a5b', superficie: '#f6f9f1' },
+    tipografia: {
+      titulos: "'Pinyon Script', 'Brush Script MT', cursive",
+      texto: "'Cormorant Garamond', georgia, 'Times New Roman', serif",
     },
   },
 ];

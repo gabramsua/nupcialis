@@ -145,6 +145,8 @@ function aInvitado(crudo: unknown): readonly RespuestasDeInvitado[] {
       nombre: typeof i['nombre'] === 'string' ? i['nombre'] : '',
       mote: typeof i['mote'] === 'string' ? i['mote'] : '',
       estado: estado === 'confirmed' || estado === 'declined' ? estado : 'pending',
+      esAcompanante: i['esAcompanante'] === true,
+      traidoPor: typeof i['traidoPor'] === 'string' ? i['traidoPor'] : '',
       cuando: typeof i['cuando'] === 'string' ? i['cuando'] : null,
       respuestas:
         respuestas !== null && typeof respuestas === 'object' && !Array.isArray(respuestas)

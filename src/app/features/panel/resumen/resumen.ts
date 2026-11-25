@@ -15,7 +15,6 @@ import { PUERTA_INVITADOS, type Invitado } from '../../../core/invitados/invitad
 import { PUERTA_TAREAS } from '../../../core/checklist/tareas-gateway';
 import { fechaLarga, fechaMedia } from '../../../shared/fecha';
 import { BodaStore } from '../boda.store';
-import { ICONO_MODULO, rutaDeModulo, type Modulo } from '../boda';
 import {
   plazoDeTarea,
   resumirTareas,
@@ -35,7 +34,7 @@ import { cifras, diasParaLaBoda, pendientes } from './pendientes';
  *    que de verdad se consultan; el resto del detalle está en su pantalla.
  * 3. **Qué falta por hacer**, sacado de lo que ya sabemos y no de una lista
  *    que ellos tengan que mantener. Cada cosa lleva a donde se arregla.
- * 4. **Los atajos** a lo que se usa a diario.
+ * (Los atajos a invitados y respuestas se quitaron: el menú ya los tiene.)
  *
  * Primero móvil: una columna, las cifras grandes y lo pendiente en una lista
  * que se lee de un vistazo.
@@ -113,20 +112,44 @@ function avisoYaDescartado(): boolean {
           ya filtrada: mirar «84 sin contestar» y tener que buscarlos a mano
           era el paso que sobraba.
         -->
-        <dl class="re__cifras">
-          <a class="re__cifra" routerLink="/panel/guests">
-            <dt>{{ t('panel.inicio.vienen') }}</dt>
-            <dd>
-              {{ cuenta().confirmados }}<span>/{{ cuenta().invitados }}</span>
-            </dd>
-          </a>
-          <a class="re__cifra" routerLink="/panel/guests/accesos">
-            <dt>{{ t('panel.inicio.hanEntrado') }}</dt>
-            <dd>
-              {{ cuenta().hanEntrado }}<span>/{{ cuenta().invitados }}</span>
-            </dd>
-          </a>
-        </dl>
+        @if (esBasico()) {
+          <!--
+            El plan básico no tiene lista de invitados ni enlaces personales
+            (D-66): lo que se cuenta son las confirmaciones que van llegando por
+            el formulario abierto.
+          -->
+          <div class="re__recibidas">
+            <dl class="re__cifras">
+              <a class="re__cifra" routerLink="/panel/rsvp/respuestas">
+                <dt>{{ t('panel.inicio.recibidas') }}</dt>
+                <dd>{{ cuenta().contestados }}</dd>
+              </a>
+              <a class="re__cifra" routerLink="/panel/rsvp/respuestas">
+                <dt>{{ t('panel.inicio.vienen') }}</dt>
+                <dd>{{ cuenta().confirmados }}</dd>
+              </a>
+            </dl>
+            <a npButton variant="secondary" routerLink="/panel/rsvp/respuestas">
+              <np-icon name="list-checks" />
+              {{ t('panel.inicio.verRespuestas') }}
+            </a>
+          </div>
+        } @else {
+          <dl class="re__cifras">
+            <a class="re__cifra" routerLink="/panel/guests">
+              <dt>{{ t('panel.inicio.vienen') }}</dt>
+              <dd>
+                {{ cuenta().confirmados }}<span>/{{ cuenta().invitados }}</span>
+              </dd>
+            </a>
+            <a class="re__cifra" routerLink="/panel/guests/accesos">
+              <dt>{{ t('panel.inicio.hanEntrado') }}</dt>
+              <dd>
+                {{ cuenta().hanEntrado }}<span>/{{ cuenta().invitados }}</span>
+              </dd>
+            </a>
+          </dl>
+        }
 
         <!--
           Lo que falta. No es una lista que la pareja mantenga —eso son las
@@ -199,39 +222,6 @@ function avisoYaDescartado(): boolean {
           </section>
         }
 
-        <section class="re__atajos">
-          <h3>{{ t('panel.inicio.atajos') }}</h3>
-          <div>
-            <a npButton variant="secondary" routerLink="/panel/rsvp/respuestas">
-              <np-icon name="chat-circle-text" />
-              {{ t('panel.inicio.verRespuestas') }}
-            </a>
-            <a npButton variant="secondary" routerLink="/panel/guests">
-              <np-icon name="users" />
-              {{ t('panel.inicio.verInvitados') }}
-            </a>
-            <!--
-              Los módulos que la pareja tiene encendidos y todavía no tienen
-              pantalla salen igual, apagados y diciendo que llegan pronto: los
-              ha contratado, y esconderlos haría pensar que no están.
-            -->
-            @for (modulo of otrosModulos(); track modulo) {
-              @if (ruta(modulo); as destino) {
-                <a npButton variant="ghost" [routerLink]="destino">
-                  <np-icon [name]="icono(modulo)" />
-                  {{ t('panel.modulo.' + modulo) }}
-                </a>
-              } @else {
-                <span class="re__enCamino">
-                  <np-icon [name]="icono(modulo)" />
-                  {{ t('panel.modulo.' + modulo) }}
-                  <small>{{ t('panel.enCamino') }}</small>
-                </span>
-              }
-            }
-          </div>
-        </section>
-
         <np-publicar-web posicion="abajo" />
       </section>
     </ng-container>
@@ -285,6 +275,15 @@ function avisoYaDescartado(): boolean {
       gap: var(--np-space-3);
       margin: 0;
     }
+    .re__recibidas {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--np-space-3);
+    }
+    .re__recibidas .re__cifras {
+      align-self: stretch;
+    }
     .re__cifra {
       display: block;
       padding: var(--np-space-4);
@@ -310,8 +309,7 @@ function avisoYaDescartado(): boolean {
       font-weight: var(--np-weight-regular);
     }
     .re__tareas h3,
-    .re__pendientes h3,
-    .re__atajos h3 {
+    .re__pendientes h3 {
       margin: 0 0 var(--np-space-2);
       font-size: var(--np-text-base);
       font-weight: var(--np-weight-medium);
@@ -353,24 +351,6 @@ function avisoYaDescartado(): boolean {
     .re__cargando {
       margin: 0;
       color: var(--np-surface-text-muted);
-    }
-    .re__atajos div {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--np-space-2);
-    }
-    .re__enCamino {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--np-space-1);
-      padding: var(--np-space-2) var(--np-space-3);
-      border: 1px dashed var(--np-surface-border);
-      border-radius: var(--np-radius-md);
-      color: var(--np-surface-text-muted);
-      font-size: var(--np-text-sm);
-    }
-    .re__enCamino small {
-      opacity: 0.8;
     }
     .re__tareas h3 {
       display: flex;
@@ -460,6 +440,7 @@ export class PanelResumen {
   }
 
   protected readonly cuenta = computed(() => cifras(this.invitados()));
+  protected readonly esBasico = computed(() => this.store.boda()?.plan === 'basic');
   protected readonly loQueFalta = computed(() => pendientes(this.store.boda(), this.invitados()));
 
   protected readonly nombres = computed(() => {
@@ -471,28 +452,6 @@ export class PanelResumen {
 
   protected fechaDeLaBoda(): string {
     return fechaLarga(this.store.boda()?.weddingDate ?? null, 'es');
-  }
-
-  /**
-   * Los módulos encendidos que no son los dos que ya tienen su atajo arriba.
-   *
-   * Salen aunque no tengan pantalla: la pareja los tiene contratados y
-   * encendidos, y un módulo que desaparece del panel parece un módulo que no
-   * está incluido.
-   */
-  protected readonly otrosModulos = computed(() =>
-    this.store
-      .menu()
-      .map((entrada) => entrada.modulo)
-      .filter((modulo) => modulo !== 'guests' && modulo !== 'rsvp' && modulo !== 'publicSite'),
-  );
-
-  protected ruta(modulo: Modulo): string | null {
-    return rutaDeModulo(modulo);
-  }
-
-  protected icono(modulo: Modulo) {
-    return ICONO_MODULO[modulo];
   }
 
   constructor() {

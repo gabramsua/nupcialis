@@ -49,6 +49,7 @@ const REGLAS: Partial<Record<TipoSeccion, Regla>> = {
   evento: { grupo: 'boda', ruta: null },
   cronologia: { grupo: 'boda', ruta: null },
   alojamientos: { grupo: 'boda', ruta: null },
+  buses: { grupo: 'boda', ruta: null },
   dressCode: { grupo: 'boda', ruta: null },
   preguntas: { grupo: 'boda', ruta: null },
   historia: { grupo: 'boda', ruta: '/historia' },
@@ -57,6 +58,8 @@ const REGLAS: Partial<Record<TipoSeccion, Regla>> = {
   galeria: { grupo: 'participa', ruta: '/galeria', conIdentidad: true },
   playlist: { grupo: 'participa', ruta: '/playlist', conIdentidad: true },
   regalos: { grupo: 'participa', ruta: '/regalos', conIdentidad: true },
+  libro: { grupo: 'participa', ruta: '/libro', conIdentidad: true },
+  cortejo: { grupo: 'boda', ruta: null },
 };
 
 /** Las claves de traducción de los tipos que tienen nombre corto propio. */
@@ -65,6 +68,7 @@ const CLAVE: Partial<Record<TipoSeccion, string>> = {
   evento: 'evento',
   cronologia: 'programa',
   alojamientos: 'alojamiento',
+  buses: 'autobuses',
   dressCode: 'dressCode',
   preguntas: 'preguntas',
   historia: 'historia',
@@ -73,6 +77,8 @@ const CLAVE: Partial<Record<TipoSeccion, string>> = {
   galeria: 'galeria',
   playlist: 'playlist',
   regalos: 'regalos',
+  libro: 'libro',
+  cortejo: 'cortejo',
 };
 
 /** Los elementos del menú: el grupo de la boda primero y luego el de participar. */

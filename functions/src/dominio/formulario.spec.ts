@@ -10,6 +10,7 @@ import {
   esVisible,
   estadoTrasEnviar,
   plazoAbierto,
+  plazoPorDefecto,
   preguntasPara,
   validarRespuestas,
   visibles,
@@ -473,5 +474,18 @@ describe('lo que llega de Firestore', () => {
     expect(respuestasGuardadas(null)).toEqual({});
     expect(respuestasGuardadas(['a'])).toEqual({});
     expect(respuestasGuardadas('a')).toEqual({});
+  });
+});
+
+describe('el plazo por defecto (D-66)', () => {
+  it('es una semana antes de la boda', () => {
+    const boda = new Date('2027-06-12T00:00:00.000Z');
+    expect(plazoPorDefecto(boda).toISOString()).toBe('2027-06-05T00:00:00.000Z');
+  });
+
+  it('el día del límite cuenta entero, y el siguiente ya no', () => {
+    const limite = plazoPorDefecto(new Date('2027-06-12T00:00:00.000Z'));
+    expect(plazoAbierto(limite, new Date('2027-06-05T23:59:00.000Z'))).toBe(true);
+    expect(plazoAbierto(limite, new Date('2027-06-06T00:00:01.000Z'))).toBe(false);
   });
 });

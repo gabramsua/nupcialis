@@ -11,6 +11,8 @@ import {
 } from '../../../core/checklist/tareas-gateway';
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
 import { BODA_DE_PRUEBA, abrirDialogosEnPruebas } from '../boda.testing';
+import { doblesDeEnlaces } from '../enlaces/dobles-enlaces.testing';
+
 import { BodaStore } from '../boda.store';
 import { PanelChecklist } from './checklist-panel';
 import type { TareaDelPanel } from './tareas';
@@ -73,6 +75,9 @@ async function montar(inicial: readonly TareaDelPanel[]) {
       marcadas.push({ id, hecha, por });
       return { ok: true };
     },
+    async enlazar() {
+      return { ok: true };
+    },
     async borrar(_w, id) {
       borradas.push(id);
       lista = lista.filter((x) => x.id !== id);
@@ -89,6 +94,7 @@ async function montar(inicial: readonly TareaDelPanel[]) {
     ],
     providers: [
       provideIconSprite('panel'),
+      ...doblesDeEnlaces().providers,
       { provide: PUERTA_TAREAS, useValue: doble },
       {
         provide: SessionStore,

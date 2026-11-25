@@ -9,7 +9,7 @@
 import { inject } from '@angular/core';
 import { httpsCallable } from 'firebase/functions';
 
-import { sanearFotos } from '../../features/public-site/galeria/galeria';
+import { sanearFotos, type AlbumFoto } from '../../features/public-site/galeria/galeria';
 import {
   type PuertaGaleriaPanel,
   type ResultadoBorradoPanel,
@@ -23,10 +23,10 @@ export function crearPuertaGaleriaPanelFirebase(): PuertaGaleriaPanel {
   const functions = inject(FIREBASE_FUNCTIONS);
 
   return {
-    async listar(cursor: string | null): Promise<ResultadoFotosPanel> {
+    async listar(cursor: string | null, album: AlbumFoto): Promise<ResultadoFotosPanel> {
       try {
         const llamar = httpsCallable(functions, 'listPhotos');
-        const { data } = await llamar({ cursor });
+        const { data } = await llamar({ cursor, album });
         const datos = (data ?? {}) as Record<string, unknown>;
 
         return {

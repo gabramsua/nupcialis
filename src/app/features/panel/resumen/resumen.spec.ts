@@ -109,7 +109,7 @@ describe('el resumen del panel', () => {
   });
 
   it('enseña cuántos vienen y cuántos han abierto la web', async () => {
-    const p = await montar(MONTADA, [
+    const p = await montar({ ...MONTADA, plan: 'extended' }, [
       invitado({ id: '1', rsvpStatus: 'confirmed', loginCount: 2 }),
       invitado({ id: '2', rsvpStatus: 'pending', loginCount: 1 }),
       invitado({ id: '3', rsvpStatus: 'pending', loginCount: 0 }),
@@ -121,6 +121,24 @@ describe('el resumen del panel', () => {
 
     expect(cifras[0]).toContain('1/3');
     expect(cifras[1]).toContain('2/3');
+  });
+
+  /** El básico no tiene lista ni enlaces: cuenta las confirmaciones que llegan. */
+  it('en el plan básico cuenta confirmaciones recibidas y lleva a las respuestas', async () => {
+    const p = await montar(MONTADA, [
+      invitado({ id: '1', rsvpStatus: 'confirmed' }),
+      invitado({ id: '2', rsvpStatus: 'declined' }),
+      invitado({ id: '3', rsvpStatus: 'confirmed' }),
+    ]);
+
+    const cifras = [...p.raiz.querySelectorAll('.re__cifra')].map((c) =>
+      c.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(cifras[0]).toContain('Confirmaciones recibidas3');
+    expect(cifras[1]).toContain('2');
+    expect(p.texto()).not.toContain('Han abierto la web');
+    expect(p.raiz.querySelector('a[href="/panel/rsvp/respuestas"]')).not.toBeNull();
+    expect(p.texto()).toContain('Ver las respuestas');
   });
 
   it('lo que falta lleva a la pantalla donde se arregla', async () => {
@@ -140,53 +158,12 @@ describe('el resumen del panel', () => {
     expect(p.texto()).toContain('No os falta nada');
   });
 
-  it('lleva a las respuestas del formulario y a los invitados', async () => {
+  /** Los atajos se quitaron: el menú lateral ya lleva a cada módulo. */
+  it('no repite el menú en forma de atajos', async () => {
     const p = await montar(MONTADA);
-    const enlaces = [...p.raiz.querySelectorAll('a')].map((a) => a.getAttribute('href'));
 
-    expect(enlaces).toContain('/panel/rsvp/respuestas');
-    expect(enlaces).toContain('/panel/guests');
-  });
-
-  /**
-   * El fallo que esto evita: la galería estaba encendida, el menú la enlazaba
-   * y llevaba a una página en blanco. Se enseña, pero sin enlace y diciendo lo
-   * que es.
-   *
-   * El ejemplo es el **libro de visitas**, que aún no tiene pantalla. El día
-   * que la tenga, hay que mover esta prueba al siguiente módulo sin pantalla,
-   * no borrarla: lo que vigila no es ese módulo, es el menú.
-   */
-  it('un módulo encendido que aún no tiene pantalla se enseña sin enlace', async () => {
-    const conLibro: BodaDelPanel = {
-      ...MONTADA,
-      modulos: {
-        ...MONTADA.modulos,
-        guestbook: { enabled: true, visibility: 'visible' },
-      },
-    };
-
-    const p = await montar(conLibro);
-    const enlaces = [...p.raiz.querySelectorAll('a')].map((a) => a.getAttribute('href'));
-
-    expect(p.texto()).toContain('En camino');
-    expect(enlaces).not.toContain('/panel/guestbook');
-  });
-
-  /** Y la galería, que ya la tiene, sí se enlaza. */
-  it('la galería encendida se enlaza a su pantalla', async () => {
-    const conGaleria: BodaDelPanel = {
-      ...MONTADA,
-      modulos: {
-        ...MONTADA.modulos,
-        gallery: { enabled: true, visibility: 'visible' },
-      },
-    };
-
-    const p = await montar(conGaleria);
-    const enlaces = [...p.raiz.querySelectorAll('a')].map((a) => a.getAttribute('href'));
-
-    expect(enlaces).toContain('/panel/gallery');
+    expect(p.raiz.querySelector('.re__atajos')).toBeNull();
+    expect(p.texto()).not.toContain('Atajos');
   });
 });
 

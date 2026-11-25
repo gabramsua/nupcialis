@@ -6,6 +6,7 @@ import { PUERTA_LLAMADAS } from '../../../core/llamadas/llamadas-gateway';
 import type { FalloGestion } from '../../../core/superadmin/gestion-gateway';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
+import { NpIcon } from '../../../design-system/icons/icon';
 import { NpInput } from '../../../design-system/components/field/input';
 import { textoDeFalloSuperadmin } from '../texto-de-fallo';
 import { leerConsejos, leerOk, type ConsejoEditable } from './consejos';
@@ -21,7 +22,7 @@ type Carga = 'cargando' | 'lista' | 'error';
  */
 @Component({
   selector: 'np-consejos',
-  imports: [FormsModule, TranslocoDirective, NpAlert, NpButton, NpInput],
+  imports: [FormsModule, TranslocoDirective, NpAlert, NpButton, NpInput, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -72,6 +73,7 @@ type Carga = 'cargando' | 'lista' | 'error';
                     [loading]="ocupado() === c.modulo"
                     (click)="guardar(c)"
                   >
+                    <np-icon name="check" />
                     {{ t('common.save') }}
                   </button>
                   @if (c.personalizado) {
@@ -88,6 +90,12 @@ type Carga = 'cargando' | 'lista' | 'error';
                   @if (borrador(c.modulo) === '') {
                     <small>{{ t('superadmin.consejos.sinConsejo') }}</small>
                   }
+                  @if (guardado() === c.modulo && borrador(c.modulo) === c.texto) {
+                    <small class="cs__hecho" role="status">
+                      <np-icon name="check-circle" weight="fill" />
+                      {{ t('common.saved') }}
+                    </small>
+                  }
                 </div>
               </section>
             }
@@ -97,6 +105,14 @@ type Carga = 'cargando' | 'lista' | 'error';
     </ng-container>
   `,
   styles: `
+    .cs__hecho {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
+    }
     :host {
       display: block;
       min-block-size: 100dvh;
@@ -122,7 +138,6 @@ type Carga = 'cargando' | 'lista' | 'error';
       display: grid;
       gap: var(--np-space-3);
       padding: var(--np-space-4);
-      max-inline-size: 50rem;
     }
     .cs__consejo {
       display: grid;
@@ -153,6 +168,7 @@ export class PantallaConsejos {
   protected readonly consejos = signal<readonly ConsejoEditable[]>([]);
   protected readonly max = signal(800);
   protected readonly ocupado = signal<string | null>(null);
+  protected readonly guardado = signal<string | null>(null);
   private readonly escritos = signal<Readonly<Record<string, string>>>({});
 
   constructor() {
@@ -182,6 +198,7 @@ export class PantallaConsejos {
 
   protected async guardar(c: ConsejoEditable): Promise<void> {
     this.ocupado.set(c.modulo);
+    this.guardado.set(null);
     this.fallo.set(null);
     const r = await this.puerta.llamar(
       'saveTip',
@@ -190,7 +207,10 @@ export class PantallaConsejos {
     );
     this.ocupado.set(null);
     if (!r.ok) this.fallo.set(r.fallo);
-    else await this.cargar();
+    else {
+      await this.cargar();
+      this.guardado.set(c.modulo);
+    }
   }
 
   protected async volverAlOriginal(c: ConsejoEditable): Promise<void> {

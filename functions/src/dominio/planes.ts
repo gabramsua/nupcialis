@@ -22,6 +22,7 @@ export const MODULOS = [
   'gifts',
   'playlist',
   'guestbook',
+  'buses',
   'timeline',
   'faqs',
   'accommodation',
@@ -66,17 +67,28 @@ const ACTIVOS_BASICO: readonly Modulo[] = [
   'map',
   'timeline',
   'faqs',
+  // Contenido informativo para el invitado (D-63): lo que el básico enseña en su
+  // única página, sin necesitar ruta propia pesada.
+  'gifts',
+  'accommodation',
+  'buses',
 ];
+
+/**
+ * Los módulos que el plan básico ganó en D-63. Las bodas básicas anteriores
+ * los tienen apagados; `completeWeddings` los enciende una vez (ver
+ * `completar-boda.ts`). No se añaden más a esta lista: es una migración, no un
+ * catálogo.
+ */
+export const MODULOS_NUEVOS_EN_BASICO: readonly Modulo[] = ['gifts', 'accommodation', 'buses'];
 
 const ACTIVOS_EXTENDIDO: readonly Modulo[] = [
   ...ACTIVOS_BASICO,
   'tables',
   'gallery',
   'quiz',
-  'gifts',
   'playlist',
   'guestbook',
-  'accommodation',
   'dressCode',
   'weddingParty',
   'story',
@@ -162,9 +174,13 @@ export function diferenciaDePlan(
 /**
  * Qué escribir en una boda cuando su plan gana o pierde módulos.
  *
- * - **Añadir** es inmediato: el módulo pasa a estar activo. Si la pareja nunca
- *   lo tuvo, nace oculto para los invitados (decide ella qué anuncia); si ya
- *   tenía configuración, se respeta su visibilidad.
+ * - **Añadir** es inmediato: el módulo pasa a estar activo **y visible**, igual
+ *   que los que el plan trae al nacer la boda (D-65). Antes nacía oculto «para
+ *   que decida la pareja», pero la pareja no tiene ningún mando para cambiar la
+ *   visibilidad de un módulo: el que decide qué se ve es el interruptor de su
+ *   sección en la web. Si ya tenía una visibilidad propia (`soon` o `visible`),
+ *   se respeta; solo se sustituye `hidden`, que en un módulo apagado es el
+ *   valor con el que nació y no una decisión.
  * - **Quitar** lo **desactiva** y nada más: la configuración y los datos
  *   (preguntas, fotos, tareas…) se quedan donde estaban, por si se vuelve a
  *   añadir. El superadmin lo confirma antes (D-53).
@@ -182,11 +198,13 @@ export function cambiosDeModulosEnBoda(
   for (const modulo of diferencia.anadidos) {
     const config = actuales[modulo];
     if (config !== null && typeof config === 'object') {
-      if ((config as Record<string, unknown>)['enabled'] !== true) {
-        escritura[`modules.${modulo}.enabled`] = true;
+      const c = config as Record<string, unknown>;
+      if (c['enabled'] !== true) escritura[`modules.${modulo}.enabled`] = true;
+      if (c['visibility'] !== 'soon' && c['visibility'] !== 'visible') {
+        escritura[`modules.${modulo}.visibility`] = 'visible';
       }
     } else {
-      escritura[`modules.${modulo}`] = { enabled: true, visibility: 'hidden' };
+      escritura[`modules.${modulo}`] = { enabled: true, visibility: 'visible' };
     }
   }
 

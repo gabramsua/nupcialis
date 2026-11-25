@@ -2,6 +2,7 @@ import type { Grupo } from '../../../core/invitados/grupos-gateway';
 import type { Invitado } from '../../../core/invitados/invitados-gateway';
 import type { RespuestasDeInvitado } from '../../../core/rsvp/respuestas-gateway';
 import type { Pregunta } from '../../../core/rsvp/rsvp-gateway';
+import { telefonoVisible } from '../../../shared/telefono';
 
 /**
  * La lista de invitados, en filas de hoja de cálculo.
@@ -115,7 +116,7 @@ export function hojaDeInvitados(datos: DatosExportacion): Hoja {
       etiquetas.lado[i.side] ?? i.side,
       gruposDe(i, grupos),
       mesaDe(i.tableId),
-      i.phone ?? '',
+      telefonoVisible(i.phone),
       quienLoTrae(i, porId),
       i.loginCount,
       i.notes,

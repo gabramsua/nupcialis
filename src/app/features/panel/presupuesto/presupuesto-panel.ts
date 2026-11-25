@@ -9,6 +9,18 @@ import { NpInput } from '../../../design-system/components/field/input';
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
 import { NpIcon } from '../../../design-system/icons/icon';
+import { BodaStore } from '../boda.store';
+import { TareasStore } from '../checklist/tareas.store';
+import {
+  idVigente,
+  proponerImportes,
+  resolver,
+  tareasEnlazadas,
+  tareasLibres,
+} from '../enlaces/enlaces';
+import { NpTareasEnlazadas } from '../enlaces/tareas-enlazadas';
+import { ProveedoresStore } from '../proveedores/proveedores.store';
+import { pagado } from '../proveedores/proveedores';
 import { centimosAEuros, centimosATexto, eurosACentimosOCero } from '../../../shared/dinero';
 import { fechaMedia } from '../../../shared/fecha';
 import {
@@ -41,6 +53,7 @@ import { PresupuestoStore } from './presupuesto.store';
     NpInput,
     NpModal,
     NpStatusChip,
+    NpTareasEnlazadas,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -158,6 +171,18 @@ import { PresupuestoStore } from './presupuesto.store';
                             {{ t('panel.presupuesto.vence', { fecha: dia(p.dueOn) }) }}
                           </small>
                         }
+                        @if (proveedorDe(p); as proveedor) {
+                          <small>
+                            <np-icon name="briefcase" />
+                            {{ proveedor.name }}
+                          </small>
+                        }
+                        @if (tareasAbiertas(p); as n) {
+                          <small>
+                            <np-icon name="list-checks" />
+                            {{ t('panel.presupuesto.tareasAbiertas', { n }) }}
+                          </small>
+                        }
                         @if (p.notes) {
                           <small>{{ p.notes }}</small>
                         }
@@ -227,6 +252,64 @@ import { PresupuestoStore } from './presupuesto.store';
                 }
               </datalist>
             </label>
+            @if (conProveedores()) {
+              <label>
+                <span>{{ t('panel.presupuesto.campo.proveedor') }}</span>
+                <select
+                  npInput
+                  formControlName="vendorId"
+                  (change)="vendorElegido.set($any($event.target).value)"
+                >
+                  <option value="">{{ t('panel.presupuesto.campo.sinProveedor') }}</option>
+                  @for (v of proveedores.proveedores(); track v.id) {
+                    <option [value]="v.id">{{ v.name }}</option>
+                  }
+                </select>
+              </label>
+              @if (propuesta(); as pr) {
+                <div class="pr__propuesta">
+                  <small>
+                    {{
+                      t('panel.presupuesto.propuesta.pista', {
+                        pagado: euros(pr.pagadoCents),
+                        acordado:
+                          pr.proveedor.agreedCents > 0 ? euros(pr.proveedor.agreedCents) : '—',
+                      })
+                    }}
+                  </small>
+                  @if (pr.importes.estimadoCents !== null) {
+                    <button
+                      npButton
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      (click)="usarEstimado(pr.importes.estimadoCents)"
+                    >
+                      {{
+                        t('panel.presupuesto.propuesta.estimado', {
+                          importe: euros(pr.importes.estimadoCents),
+                        })
+                      }}
+                    </button>
+                  }
+                  @if (pr.importes.realCents !== null) {
+                    <button
+                      npButton
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      (click)="usarReal(pr.importes.realCents)"
+                    >
+                      {{
+                        t('panel.presupuesto.propuesta.real', {
+                          importe: euros(pr.importes.realCents),
+                        })
+                      }}
+                    </button>
+                  }
+                </div>
+              }
+            }
             <label>
               <span>{{ t('panel.presupuesto.campo.estimado') }}</span>
               <input npInput type="text" inputmode="decimal" formControlName="estimado" />
@@ -253,6 +336,18 @@ import { PresupuestoStore } from './presupuesto.store';
               <input type="checkbox" formControlName="paid" />
               <span>{{ t('panel.presupuesto.campo.pagada') }}</span>
             </label>
+            @if (actual(); as ficha) {
+              @if (conTareas()) {
+                <np-tareas-enlazadas
+                  [enlazadas]="tareasDe(ficha)"
+                  [libres]="tareasLibresDePartida()"
+                  [ocupado]="enlazando() || tareasStore.lleno()"
+                  (enlazar)="enlazarTarea($event)"
+                  (desenlazar)="desenlazarTarea($event)"
+                  (crear)="crearTarea($event)"
+                />
+              }
+            }
             @if (errorForm(); as e) {
               <p class="pr__error" role="alert">
                 <np-icon name="warning" />
@@ -409,6 +504,12 @@ import { PresupuestoStore } from './presupuesto.store';
       align-items: center;
       gap: var(--np-space-2);
     }
+    .pr__propuesta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--np-space-2);
+    }
     .pr__error {
       display: flex;
       align-items: center;
@@ -421,7 +522,20 @@ import { PresupuestoStore } from './presupuesto.store';
 })
 export class PanelPresupuesto {
   protected readonly store = inject(PresupuestoStore);
+  protected readonly proveedores = inject(ProveedoresStore);
+  protected readonly tareasStore = inject(TareasStore);
+  private readonly boda = inject(BodaStore);
   private readonly i18n = inject(TranslocoService);
+
+  /** Cada bloque de enlaces existe solo si la boda tiene ese módulo. */
+  protected readonly conProveedores = computed(
+    () => this.boda.boda()?.modulos['vendors']?.enabled === true,
+  );
+  protected readonly conTareas = computed(
+    () => this.boda.boda()?.modulos['checklist']?.enabled === true,
+  );
+  protected readonly vendorElegido = signal('');
+  protected readonly enlazando = signal(false);
 
   protected readonly maxConcepto = MAX_CONCEPTO;
   protected readonly maxCategoria = MAX_CATEGORIA;
@@ -441,6 +555,26 @@ export class PanelPresupuesto {
     dueOn: new FormControl('', { nonNullable: true }),
     notes: new FormControl('', { nonNullable: true }),
     paid: new FormControl(false, { nonNullable: true }),
+    vendorId: new FormControl('', { nonNullable: true }),
+  });
+
+  /** La partida que se está editando, tal como está ahora. */
+  protected readonly actual = computed(
+    () => this.store.partidas().find((p) => p.id === this.editandoId()) ?? null,
+  );
+
+  /**
+   * Lo que el proveedor elegido ofrece para rellenar la partida. Es solo una
+   * propuesta: no se aplica sin que la pareja pulse el botón.
+   */
+  protected readonly propuesta = computed(() => {
+    const proveedor = resolver(this.proveedores.proveedores(), this.vendorElegido());
+    if (!proveedor) return null;
+    return {
+      proveedor,
+      pagadoCents: pagado(proveedor),
+      importes: proponerImportes(proveedor),
+    };
   });
 
   /** Para no recalcular el formateador en cada fila. */
@@ -451,10 +585,72 @@ export class PanelPresupuesto {
 
   constructor() {
     void this.store.cargar();
+    if (this.conProveedores()) void this.proveedores.cargar();
+    if (this.conTareas()) void this.tareasStore.cargar();
+  }
+
+  protected proveedorDe(p: PartidaDelPanel) {
+    return resolver(this.proveedores.proveedores(), p.vendorId);
+  }
+
+  protected tareasDe(p: PartidaDelPanel) {
+    return tareasEnlazadas(this.tareasStore.tareas(), 'budgetItemId', p.id);
+  }
+
+  protected tareasAbiertas(p: PartidaDelPanel): number {
+    return this.tareasDe(p).filter((t) => !t.done).length;
+  }
+
+  protected tareasLibresDePartida() {
+    return tareasLibres(this.tareasStore.tareas(), 'budgetItemId');
+  }
+
+  protected usarEstimado(centimos: number): void {
+    this.form.patchValue({ estimado: centimosATexto(centimos) });
+  }
+
+  protected usarReal(centimos: number): void {
+    this.form.patchValue({ real: centimosATexto(centimos) });
+  }
+
+  private async enlazar(operacion: () => Promise<unknown>): Promise<void> {
+    if (this.enlazando()) return;
+    this.enlazando.set(true);
+    await operacion();
+    this.enlazando.set(false);
+  }
+
+  protected enlazarTarea(id: string): Promise<void> {
+    const ficha = this.actual();
+    if (!ficha) return Promise.resolve();
+    return this.enlazar(() => this.tareasStore.enlazar(id, { budgetItemId: ficha.id }));
+  }
+
+  protected desenlazarTarea(id: string): Promise<void> {
+    return this.enlazar(() => this.tareasStore.enlazar(id, { budgetItemId: null }));
+  }
+
+  /** Una tarea nueva ya enlazada a esta partida, a nombre de los dos y sin fecha. */
+  protected crearTarea(titulo: string): Promise<void> {
+    const ficha = this.actual();
+    if (!ficha) return Promise.resolve();
+    return this.enlazar(() =>
+      this.tareasStore.guardar({
+        title: titulo,
+        description: '',
+        category: 'Proveedores',
+        dueDate: null,
+        assignedTo: 'both',
+        priority: 'normal',
+        vendorId: ficha.vendorId,
+        budgetItemId: ficha.id,
+      }),
+    );
   }
 
   protected nueva(): void {
-    this.form.reset({ paid: false });
+    this.form.reset({ paid: false, vendorId: '' });
+    this.vendorElegido.set('');
     this.editandoId.set(null);
     this.errorForm.set(null);
     this.formAbierto.set(true);
@@ -469,7 +665,10 @@ export class PanelPresupuesto {
       dueOn: p.dueOn ?? '',
       notes: p.notes,
       paid: p.paid,
+      // Un proveedor borrado se ve «sin proveedor» y, al guardar, se limpia.
+      vendorId: idVigente(this.proveedores.proveedores(), p.vendorId),
     });
+    this.vendorElegido.set(idVigente(this.proveedores.proveedores(), p.vendorId));
     this.editandoId.set(p.id);
     this.errorForm.set(null);
     this.formAbierto.set(true);
@@ -488,7 +687,15 @@ export class PanelPresupuesto {
 
     const v = this.form.getRawValue();
     const validado = validarBorrador(
-      { ...v, category: v.category, estimado: v.estimado, real: v.real },
+      {
+        ...v,
+        category: v.category,
+        estimado: v.estimado,
+        real: v.real,
+        // Sin el módulo de proveedores el selector no existe: se conserva el
+        // enlace que ya hubiera en vez de borrarlo a escondidas.
+        vendorId: this.conProveedores() ? v.vendorId : (this.actual()?.vendorId ?? ''),
+      },
       eurosACentimosOCero,
     );
 

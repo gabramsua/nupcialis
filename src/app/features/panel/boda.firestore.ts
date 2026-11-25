@@ -18,6 +18,7 @@ import { FIRESTORE } from '../../core/firebase/firestore.providers';
 import { CLAVES_PALETA, type ColoresPaleta } from '../public-site/paletas/paletas';
 import { sanearSecciones, type Seccion } from '../public-site/secciones/secciones';
 import { sanearAportacion } from '../public-site/regalos/regalos';
+import { sanearAutobuses, type RutaAutobus } from '../public-site/autobuses/autobuses';
 import {
   sanearDressCode,
   type DressCodePublico,
@@ -57,6 +58,7 @@ export interface FuenteBoda {
   guardarMensajeInvitacion(weddingId: string, mensaje: string): Promise<void>;
   /** El dress code (§8.11), que vive en la configuración de su módulo. */
   guardarDressCode(weddingId: string, dress: DressCodeParaGuardar): Promise<void>;
+  guardarAutobuses(weddingId: string, rutas: readonly RutaAutobus[]): Promise<void>;
   guardarAportacion(weddingId: string, aportacion: AportacionParaGuardar): Promise<void>;
 }
 
@@ -180,6 +182,15 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
       });
     },
 
+    async guardarAutobuses(weddingId: string, rutas: readonly RutaAutobus[]): Promise<void> {
+      // Solo `rutas` bajo `config`: escribir `modules.buses` entero apagaría el
+      // módulo. Se sanea al salir, como las secciones: lo que se guarda es lo
+      // que se publicaría.
+      await updateDoc(doc(db, 'weddings', weddingId), {
+        'modules.buses.config.rutas': sanearAutobuses(rutas) as RutaAutobus[],
+      });
+    },
+
     async guardarAportacion(weddingId: string, aportacion: AportacionParaGuardar): Promise<void> {
       // Campo a campo bajo `content.gifts`, no el objeto entero: `content`
       // guarda también las secciones, y escribirlo completo se las llevaría.
@@ -208,6 +219,16 @@ export function crearFuenteBodaFirestore(): FuenteBoda {
       });
     },
   };
+}
+
+/** Las rutas que haya en la configuración del módulo de autobuses. */
+function autobusesDe(valor: unknown): readonly RutaAutobus[] {
+  if (valor === null || typeof valor !== 'object') return [];
+  const modulo = (valor as Record<string, unknown>)['buses'];
+  if (modulo === null || typeof modulo !== 'object') return [];
+  const config = (modulo as Record<string, unknown>)['config'];
+  if (config === null || typeof config !== 'object') return [];
+  return sanearAutobuses((config as Record<string, unknown>)['rutas']);
 }
 
 /** El dress code que haya en la configuración de su módulo. */
@@ -300,6 +321,7 @@ function desdeDocumento(weddingId: string, datos: Record<string, unknown>): Boda
     secciones: sanearSecciones(seccionesDe(datos['content'])),
     modulos: modulos(datos['modules']),
     dressCode: dressCodeDe(datos['modules']),
+    autobuses: autobusesDe(datos['modules']),
     aportacion: sanearAportacion(aportacionDe(datos['content'])),
     rsvpDeadline: fechaLimiteRsvp(datos['modules']),
     allowGuestAddedCompanions: datos['allowGuestAddedCompanions'] === true,

@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 
-import type { FalloGaleria, FotoPublica } from './galeria-gateway';
+import type { AlbumFoto, FalloGaleria, FotoPublica } from './galeria-gateway';
 
 /**
  * La galería, del lado de la pareja (§8.5).
@@ -27,7 +27,7 @@ export type ResultadoBorradoPanel =
   { readonly ok: true } | { readonly ok: false; readonly fallo: FalloGaleria };
 
 export interface PuertaGaleriaPanel {
-  listar(cursor: string | null): Promise<ResultadoFotosPanel>;
+  listar(cursor: string | null, album: AlbumFoto): Promise<ResultadoFotosPanel>;
   borrar(photoId: string): Promise<ResultadoBorradoPanel>;
   /** Vacía la galería entera. No tiene vuelta: la pantalla lo confirma antes. */
   vaciar(): Promise<ResultadoVaciadoGaleria>;
@@ -35,4 +35,4 @@ export interface PuertaGaleriaPanel {
 
 export const PUERTA_GALERIA_PANEL = new InjectionToken<PuertaGaleriaPanel>('PUERTA_GALERIA_PANEL');
 
-export type { FotoPublica, FalloGaleria };
+export type { AlbumFoto, FotoPublica, FalloGaleria };

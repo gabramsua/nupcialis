@@ -123,7 +123,7 @@ describe('el .xlsx que se descarga', () => {
     const filas = datosDeHoja(invitados!) as { value?: unknown; type?: unknown }[][];
     const fila = filas[1]!;
 
-    const telefono = fila.find((c) => c?.value === '+34600111222');
+    const telefono = fila.find((c) => c?.value === '600111222');
     expect(telefono?.type).toBe(String);
 
     const entradas = fila.find((c) => c?.value === 3);

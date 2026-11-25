@@ -20,7 +20,7 @@ Estados: `abierta` · `en estudio` · `decidida` (con fecha y resultado).
 | D-11 | Repeticiones del quiz: valor por defecto y qué muestra el ranking                   | F3                               | **decidida 2026-11-16**                                      |
 | D-12 | Familia de iconos base                                                              | **F0**                           | **decidida 2026-09-08: Phosphor**                            |
 | D-13 | Reserva de regalos sin identidad en modo abierto                                    | F3                               | abierta                                                      |
-| D-14 | Consentimiento para publicar fotos de terceros en Personas importantes              | F2, RGPD                         | abierta                                                      |
+| D-14 | Consentimiento para publicar fotos de terceros en Personas importantes              | F2, RGPD                         | **decidida 2026-11-24: casilla obligatoria (D-61)**          |
 | D-15 | Dominio definitivo                                                                  | **Bloque 1 de puesta en marcha** | **decidida 2026-09-08: `nupcialis.com`, comprado**           |
 | D-16 | Dónde vive el panel de la pareja                                                    | F0.3, F0.4                       | **decidida 2026-09-08: subdominio de la boda**               |
 | D-17 | Acceso a Firebase desde el cliente: AngularFire o SDK directo                       | F0.1                             | **decidida 2026-09-08: SDK modular directo**                 |
@@ -237,7 +237,7 @@ En modo de acceso abierto, una reserva anónima la puede deshacer cualquiera.
 **Propuesta a validar:** en modo A la reserva se desactiva y la lista de regalos
 es solo informativa.
 
-### D-14 · Fotos de terceros en Personas importantes
+### D-14 · Fotos de terceros en Personas importantes — **DECIDIDA 2026-11-24: casilla obligatoria al subir la foto (D-61)**
 
 Son fotos de personas identificables publicadas en una web. Decidir si basta con
 el consentimiento verbal que gestiona la pareja o si conviene un aviso explícito
@@ -1902,3 +1902,242 @@ móvil = cajón agrupado** («La boda» / «Participa»). Lo que hice y supuse y
 7. **Pregunta para ti:** ¿quieres también cabecera en el plan básico, con anclas a
    las secciones de la misma página? Es el mismo componente; solo cambian los
    enlaces.
+
+### D-58 · Tanda 28: mesas, acompañantes, teléfonos, finanzas, panel, plantilla Barroca — **pendiente de validar**
+
+1. **Mesas:** a partir de 64 rem, dos columnas (lista de «faltan por sentar» a la
+   izquierda con su propio scroll y filtros, mesas a la derecha); en móvil la lista va
+   arriba con altura propia. Filtros: texto (nombre y apellidos a la vez, sin acentos;
+   un acompañante sale también si buscas a su titular), grupo y «ocultar a los que no
+   vienen». _Supuesto mío:_ un solo cuadro de texto para nombre y apellidos.
+2. **Respuestas y acompañantes:** los acompañantes son invitados de pleno derecho y ya
+   salían, pero **sin distinguirlos** y **sin avisar de los que no han contestado**.
+   Ahora cada uno sale como «Nombre (con Titular)», el recuento dice cuántos son de
+   acompañantes y cada pregunta de opciones enseña «Faltan por contestar N (de ellos M
+   acompañantes)» con los nombres. No cuentan como faltantes quien no viene, quien no
+   ve la pregunta por lo que contestó antes, ni las preguntas apagadas.
+   **Pregunta para ti:** ¿el titular puede contestar el autobús por sus acompañantes
+   (hoy cada uno contesta lo suyo)? Es lo que haría que «falten» bajara solo.
+3. **Teléfonos:** se siguen **guardando** en E.164 (`+34677000111`), porque el login
+   del invitado lo necesita. Lo que cambia es lo que se **ve y se exporta**: sin `+34`
+   (`677000111`); los de otro país se enseñan con su `+`. Al escribirlos no hace falta
+   prefijo y el servidor ya aceptaba ambas formas.
+4. **Finanzas:** «Cobrado desde / hasta» y atajos (este mes, mes anterior, este año,
+   todo). _Supuesto mío:_ con rango puesto, lo pendiente sin fecha de cobro queda fuera
+   (se avisa en pantalla).
+5. **Resumen del panel:** quitado el bloque «Atajos» (invitados, respuestas y módulos).
+   _Supuesto mío:_ «ese atajo» era el bloque entero. «Volver a borrador» pasa a una fila
+   horizontal pegada abajo (estado + enlace + botón).
+6. **Publicar (error de permiso) — sin cerrar.** Con `setMyWebStatus` ya desplegada, el
+   mensaje «Vuestra sesión no tiene permiso» sale cuando el servidor devuelve
+   `permission-denied` o `unauthenticated`; no puedo distinguirlos sin el log. El
+   modal ahora enseña un **detalle técnico**: `sesion-sin-boda` = el token no lleva
+   `role: owner` ni `weddingId`; `permission-denied` a secas = lo rechazó el acceso a
+   la función (invoker de Cloud Run sin `allUsers`); `Unauthenticated` = App Check o
+   sesión caducada. Dime qué pone.
+7. **Plantilla Barroca:** pergamino, doble filete, capitales con adorno y florones entre
+   secciones; tipografías Cinzel Decorative e IM Fell English. Todo el ornamento es CSS
+   y caracteres de texto. Total 5 plantillas.
+8. **Quiz:** no se ha tocado (esperas a tener 10 preguntas).
+
+### D-66 · Regalos sin identificarse en el básico y plazo de confirmación por defecto — **pendiente de validar**
+
+**Pedido por ti (2026-11-25).** Dos decisiones mías al aplicarlo:
+
+1. **Regalos del plan básico, dentro de la web y sin pedir identificarse.** No hay lista de
+   invitados que comprobar, así que se pintan en la propia página (aportación con botones que
+   copian IBAN y Bizum, y la lista, **sin reservas**: sin invitado no hay a quién apuntárselas).
+   **Esto cambia una decisión de seguridad anterior** (el IBAN «nunca en la web pública»): sigue sin
+   viajar en `public/site` —no se indexa ni se rastrea—, pero ahora **cualquiera que conozca el
+   slug lo puede leer**, igual que ya pasaba en una boda con acceso abierto. Va por una función
+   nueva, `getOpenGifts`, con App Check, que solo contesta si la boda es **básica, está publicada y
+   tiene el módulo de regalos encendido**; en cualquier otro caso responde lo mismo que si no
+   existiera. El plan extendido no cambia: sigue con `/regalos` e identificación.
+2. **Plazo del formulario por defecto: una semana antes de la boda.** Sin plazo puesto por la
+   pareja, el servidor cierra el formulario 7 días antes (cuenta ese día entero) y la web lo
+   dice («Hasta cuándo se puede confirmar»). El panel lo explica bajo el campo con la fecha
+   concreta. «Quitar el plazo» pasa a «Volver al plazo por defecto»: ya no existe «sin plazo
+   para siempre». Sin fecha de boda, sigue sin plazo. **Ojo:** el plazo cierra también las
+   respuestas de las bodas que ya existían sin plazo.
+
+### D-65 · Módulos añadidos a un plan nacían ocultos y la pareja no tiene mando para verlos — **pendiente de validar**
+
+**Qué pasaba (lo viste con Autobuses):** al añadir un módulo a un plan desde el superadmin,
+las bodas lo recibían **encendido pero con visibilidad `hidden`** (D-52 punto 3: «decide ella
+qué anuncia»). Pero la pareja **no tiene ningún control** para cambiar esa visibilidad, así que
+salían el aviso azul «secciones activas que los invitados no ven» y la etiqueta «Oculta» en el
+menú, sin salida. Además la visibilidad de módulo hoy solo la lee la web para el botón
+«Confirmar»: lo que decide si el invitado ve algo es el interruptor de su sección en `/panel/web`.
+
+**Supuesto mío:** al añadir un módulo a un plan se activa **y se pone visible**, igual que los
+que el plan trae al nacer la boda. Se respeta «muy pronto» y lo ya visible. «Añadir módulos
+nuevos» repara de paso las bodas que ya quedaron en encendido+oculto. Si algún día quieres que la
+pareja anuncie módulos «muy pronto», hará falta ese mando; no existe todavía.
+
+### D-64 · Tanda 34: repaso tras probar la tanda 33 — **pendiente de validar**
+
+**Pedido por ti (2026-11-24):** autobuses en el superadmin, «Cómo llegar» que refleje el mapa,
+quitar Ceremonia y Banquete de `/panel/web`, y poder publicar el formulario de confirmación.
+
+**Supuestos míos, para que los valides:**
+
+1. **Autobuses en el superadmin**: el catálogo de módulos de `/superadmin/planes` lo devuelve la
+   función `getPlans` (`MODULOS` del servidor), que ya incluye `buses` **pero solo tras
+   `npm run deploy:functions`**. Faltaba además `buses` en `MODULOS_PUBLICOS` (visibilidad que
+   publica la proyección); corregido. He repasado el resto de listas (cliente, servidor,
+   traducciones, iconos, rutas): no falta ningún otro módulo.
+2. **«Cómo llegar» enseña los sitios del mapa dentro de la web**: nombre, tipo y hora, dirección,
+   descripción y botón «Cómo llegar», más un enlace «Ver todos los sitios en el mapa» a `/mapa`.
+   Antes era una tarjeta genérica que solo llevaba a esa página. Solo salen los sitios que ya se
+   publican (con pin puesto y visibles para invitados: los demás no, igual que antes). La
+   **ceremonia y el banquete en el mismo punto se cuentan como uno** («Ceremonia y banquete»).
+   La vista previa de `/panel/web` ahora trae los sitios reales.
+3. **Ceremonia y Banquete retirados**: el tipo de sección `evento` ya no se ofrece ni se publica
+   (`TIPOS_RETIRADOS`); las bodas que lo tenían conservan los datos guardados, solo no se
+   enseñan. Las bodas nuevas no los siembran. Si quieres recuperar lo que escribiste, está en
+   Firestore (`content.sections`). El interruptor «mismo sitio» y `conMismoSitio` desaparecen.
+   La hora de la ceremonia que sale en la portada es `weddingTime`, no esta tarjeta.
+4. **Formulario de confirmación**: nueva sección «Confirmad vuestra asistencia» (tipo `rsvp`,
+   módulo `rsvp`): un cartel que lleva a `/confirmar`, que sigue pidiendo nombre y 4 dígitos.
+   **Nace apagada**, como las demás, y «Añadir módulos nuevos» la pone **justo tras la portada**
+   en las bodas existentes. En el plan completo ya había botón «Confirmar» en la cabecera; esto
+   añade el cartel dentro de la página (y es la única forma en el plan básico de tenerlo
+   a la vista dentro de la web además del botón fijo de abajo).
+
+### D-63 · Tanda 33: plan básico completo, autobuses, mismo sitio y tema Acuarela — **pendiente de validar**
+
+**Decidido por ti (2026-11-24):** autobuses = **información de rutas** (sin reservas); plan básico =
+**solo añadir regalos, alojamiento y autobuses** a los seis que ya tenía; el tema nuevo vale para
+**los dos planes, con huecos de imagen**; «mismo sitio» = **interruptor en `/panel/web` + casilla
+en el alta**.
+
+**Supuestos míos, para que los valides:**
+
+1. **Plan básico**: `ACTIVOS_BASICO` = publicSite, rsvp, guests, map, timeline, faqs, gifts,
+   accommodation, buses. Lo que ofrece `/panel/web` en el básico sale solo de ahí: cronología,
+   preguntas, mapa, regalos, alojamientos y autobuses (más ceremonia, banquete y texto libre).
+   Las bodas básicas **ya creadas** tenían esos tres módulos apagados y la pareja no puede
+   encenderlos: `completeWeddings` («Añadir módulos nuevos») los enciende **una vez** y solo en
+   plan básico. Si el superadmin personalizó la lista del plan en Firestore (`plans/basic`), esa
+   lista manda y hay que añadirlos allí a mano.
+2. **Autobuses**: hasta 12 rutas; cada una con sentido (ida/vuelta), nombre opcional, salida,
+   hora opcional, destino y nota. Sin salida **o** sin destino no se publica (el panel avisa).
+   Salen primero las de ida y dentro de cada sentido por hora. Vive en el documento de la boda
+   (`modules.buses.config.rutas`), igual que el dress code: no hay reglas nuevas.
+3. ~~**Mismo sitio**~~ **Sustituido en D-64**: las tarjetas «Ceremonia» y «Banquete» ya no existen, y con ellas desaparece el interruptor y el dato `sameVenue`.
+4. **Aviso de cambios sin guardar**: tarjeta fija arriba (se queda visible al hacer scroll), con
+   título «Tenéis cambios sin guardar», explicación y botón «Guardar». El interruptor de mismo
+   sitio cuenta como cambio sin guardar y se guarda junto con las secciones.
+5. **Tema «Acuarela»** (en los dos planes): blanco, una columna centrada, letra manuscrita
+   (Pinyon Script) en verde oscuro `#233d00`, manchas de acuarela hechas con degradados de CSS
+   (nada de imágenes ajenas ni de copiar nada de la web de referencia). La portada enseña la
+   foto de la boda dentro de un arco; mientras no la hay, una mancha. Los huecos para más
+   imágenes (eventos, etc.) llegarán cuando decidas qué fotos y dónde.
+
+### D-62 · Tanda 32: enlaces entre tareas, partidas, proveedores e invitados — **pendiente de validar**
+
+**Decidido por ti (2026-11-24):** la partida solo **propone** importes del proveedor (botones, nunca
+automático); la persona se enlaza con el invitado **solo como vínculo + chip de respuesta**; los
+enlaces con tareas se hacen **desde ambos lados**.
+
+**Supuestos míos, para que los valides:**
+
+1. **El enlace es un identificador**: no se copian importes ni nombres. Si borras un proveedor,
+   una partida o un invitado, lo que colgaba de él **se ve «sin enlace»** (no se borra nada) y el
+   id roto se limpia solo al guardar esa ficha. Así no hay que tocar varias colecciones al borrar.
+2. **Un selector solo existe si la boda tiene ese módulo** (el plan básico no ve proveedores ni
+   presupuesto) y, **sin él, guardar conserva el enlace que hubiera** en vez de borrarlo.
+3. **Si la lista de invitados no carga**, la persona conserva su enlace y no se avisa de «ya no
+   está»: sin lista no se sabe si existe.
+4. Desde la ficha del proveedor o de la partida, **«nueva tarea» nace en la categoría
+   «Proveedores», a nombre de los dos y sin fecha** (se edita luego en `/panel/checklist`); la
+   de una partida hereda además el proveedor de la partida.
+5. La lista de tareas enlazables solo ofrece las **abiertas y sin enlace de ese tipo**: una tarea
+   ya colgada de otro proveedor no se roba desde aquí (se desenlaza antes desde su propia ficha).
+6. **El invitado enlazado no se publica nunca**: `guestId` lo descarta la proyección (test) y la
+   web enseña lo mismo que antes. El chip de respuesta solo lo ve la pareja.
+7. «Pagada» de la partida **sigue siendo a mano**: el proveedor solo la informa en una línea
+   («lleva pagado X; acordado Y»). Si prefieres que se marque sola cuando el proveedor esté
+   pagado, dímelo y se hace.
+
+### D-61 · Tanda 31: proveedores y personas importantes — **pendiente de validar**
+
+**Decidido por ti (2026-11-24):** consentimiento = casilla obligatoria al subir la foto
+(se guarda que se confirmó y cuándo, `photoConsent` + `photoConsentAt`; sin ella no se
+guarda la ficha y, si no hay foto, la persona sale con su inicial); los dos módulos solo
+en el plan extendido (por defecto; lo cambias en «Planes y módulos»); la sección pública
+enseña foto, nombre, papel y bio, con interruptor «visible para invitados» por persona.
+
+**Supuestos míos, para que los valides:**
+
+1. **El teléfono de una persona no se publica nunca**: la proyección es lista blanca y lo
+   descarta; el editor tampoco lo usa en la vista previa.
+2. **Foto**: JPG, PNG o WebP hasta 10 MB, reducida al subirla. Cambiar la foto obliga a
+   confirmar otra vez. Quitarla borra el fichero y el consentimiento. Sin `visibleToGuests`
+   ni foto con consentimiento, la persona no se publica (o sale sin foto).
+3. **Reglas**: `weddingParty` ya **no la leen los invitados** (todo va por la proyección);
+   la regla de Firestore rechaza guardar `photoPath` sin `photoConsent == true`, y la de
+   Storage deja leer `party/` en público (las fotos ya publicadas) y escribir solo a la
+   pareja. **La batería de reglas está escrita (`tests/rules/personas-importantes.spec.ts`)
+   pero no la he podido ejecutar aquí** (no se descarga el emulador): que la pase el CI.
+4. **Proveedores**: importes en céntimos; pagos con fecha ISO y concepto (máx. 30); contratos
+   solo PDF ≤ 20 MB y ≤ 10 por proveedor, en `vendors/{id}/`; «el más barato» solo se marca
+   con ≥ 2 candidatos con precio y un único mínimo; los descartados no suman en los totales;
+   «pendiente» nunca sale negativo.
+5. **Sin hacer aún** (anotado en TAREAS): enlace tarea↔proveedor, partida↔proveedor,
+   persona↔invitado.
+
+### D-60 · Tanda 30: el editor respeta el plan, dos plantillas nuevas — **pendiente de validar**
+
+1. **El plan manda sobre las secciones.** El alta siembra las 15 secciones en todas las
+   bodas, así que una del plan básico veía en `/panel/web` quiz, galería, historia, etc.
+   Ahora `MODULO_DE_SECCION` + `conModulosActivos` (copia literal cliente/servidor, con
+   test que las compara) filtran en **tres sitios**: la lista del editor y su vista
+   previa, la **proyección pública** (lo que el invitado ve) y las funciones `quiz`,
+   `gallery` y `libro` (`exigirModulo`: un invitado no puede usarlas por URL si la boda
+   no tiene el módulo). Los datos no se borran: si la boda sube de plan, la sección
+   reaparece como estaba. _Supuesto mío:_ el texto libre, los eventos y el contacto salen
+   siempre; el resto depende de que el módulo esté activo, que a su vez sale de la lista
+   del plan en superadmin.
+2. **Sevillana** (papel picado, arco de patio, cenefa de azulejos, letra de rotulador) y
+   **Cottage** (papel con textura, polaroid con cinta, margaritas de papel, fecha en
+   mayúsculas abiertas). Todo el ornamento es CSS/Unicode. _Supuesto mío:_ Cottage no copia
+   la página de referencia (no pude abrirla); si la quieres más fiel, capturas.
+3. Los consejos de superadmin pasan a ancho completo.
+4. **El superadmin se perdía solo.** `provisionWedding` fijaba `{weddingId, role}` con
+   `setCustomUserClaims` (que reemplaza todo) y borrar una boda ponía los claims a `null`
+   o borraba la cuenta; además la guarda miraba `role === 'superadmin'`, un claim que no
+   existe. Si el correo de una boda de pruebas era el tuyo, perdías el permiso cada vez.
+   Ahora `dominio/claims.ts` lo conserva en las tres rutas (con tests).
+
+### D-59 · Tanda 29: cambiar de plan, libro de firmas, álbumes de la galería — **pendiente de validar**
+
+1. **Cambiar de plan (superadmin).** Botón «Cambiar de plan» en la ficha, aparte de
+   «Editar datos» (de ahí se ha quitado el selector). El diálogo carga las listas de
+   módulos de cada plan, enseña **qué gana y qué pierde** la boda, avisa si es una
+   bajada (los módulos se desactivan y se ocultan, **los datos se conservan**), y deja
+   fijar el **nuevo precio acordado**. **No registra ningún cobro**: lo cobrado lo
+   apuntas tú en Finanzas, por bloques. El servidor ya aplicaba la diferencia de
+   módulos (D-53); no cambia. _Supuesto mío:_ una bajada no pide escribir nada, solo
+   un botón rojo «Sí, bajar de plan»; si quieres freno extra (escribir el slug), dímelo.
+2. **Libro de firmas** (`guestbook`, §8.15). Sección nueva `libro` en la web (cartel en
+   la portada + página `/libro`) y pantalla `/panel/guestbook`.
+   - **Se publica al enviar y se modera a posteriori** (lo que elegiste): la pareja
+     puede **ocultar** (reversible) o **borrar**.
+   - Exige **identificarse siempre** (como la galería y el quiz), porque cada firma va a
+     nombre del invitado, con su mote. _Supuesto mío:_ también con la web «abierta».
+   - Límites míos: 800 caracteres por firma, 3 firmas por invitado, 500 en total.
+   - **El muro es público** para los demás invitados identificados (**decidido por Gabriel,
+     2026-11-24**), y cada firma sale con el **mote o, si no lo tiene, solo el nombre de
+     pila**, sin apellidos, «para darle un poco de misterio». El panel de la pareja ve el
+     mismo nombre. _Pendiente menor:_ la pareja no ve quién es en realidad cada firma.
+   - **Exportar a PDF queda para una segunda pasada** (`F3.5b`).
+   - Las bodas que ya existen **no tienen la sección**: pulsa «Añadir módulos nuevos»
+     en superadmin.
+3. **Galería: dos álbumes**, «El día» y «Nuestro camino». Mismas fotos, mismas
+   subidas, mismo borrado; cada foto lleva su `album` (las anteriores cuentan como «El
+   día»). En «Nuestro camino» los invitados suben fotos de los novios a lo largo de su
+   historia. **«Nuestra historia» sigue siendo solo de la pareja**: mezclar fotos de
+   invitados ahí rompería el texto que escribís. El panel también tiene las dos
+   pestañas; «Vaciar la galería» vacía **ambas**.
+   _Supuesto mío:_ el álbum se filtra en el servidor, sin índice nuevo.

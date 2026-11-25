@@ -33,6 +33,12 @@ export interface PuertaPresupuesto {
   ): Promise<ResultadoEscrituraPartida>;
   /** Marcar o desmarcar como pagada. */
   marcarPagada(weddingId: string, id: string, pagada: boolean): Promise<ResultadoEscrituraPartida>;
+  /** Enlaza o desenlaza (`null`) la partida con un proveedor, desde la ficha de éste. */
+  enlazarProveedor(
+    weddingId: string,
+    id: string,
+    vendorId: string | null,
+  ): Promise<ResultadoEscrituraPartida>;
   borrar(weddingId: string, id: string): Promise<ResultadoEscrituraPartida>;
 }
 

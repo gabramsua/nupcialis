@@ -300,6 +300,7 @@ import { NpCronologiaPublica } from '../../public-site/cronologia/cronologia-pub
                 [disabled]="formulario.invalid"
                 (click)="guardar()"
               >
+                <np-icon name="check" />
                 {{ t('common.save') }}
               </button>
             </div>

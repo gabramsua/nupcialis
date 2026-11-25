@@ -235,3 +235,61 @@ describe('cuantosHanContestado', () => {
     ).toBe(2);
   });
 });
+
+/**
+ * Los acompañantes cuentan. «Autobús, 40» no puede ser el total si veinte
+ * acompañantes no están apuntados: se dice cuántos faltan y quiénes.
+ */
+describe('acompañantes', () => {
+  const bus = pregunta({
+    id: 'bus',
+    type: 'radio',
+    options: [
+      { value: 'si', label: 'Sí' },
+      { value: 'no', label: 'No' },
+    ],
+  });
+
+  const titular = invitado('t1', 'Ana Ruiz', { bus: 'si' }, { estado: 'confirmed' });
+  const conBus = invitado(
+    'a1',
+    'Leo',
+    { bus: 'si' },
+    { estado: 'confirmed', esAcompanante: true, traidoPor: 'Ana Ruiz' },
+  );
+  const sinContestar = invitado(
+    'a2',
+    'Marta',
+    {},
+    { estado: 'pending', esAcompanante: true, traidoPor: 'Ana Ruiz' },
+  );
+  const noViene = invitado('a3', 'Pablo', {}, { estado: 'declined', esAcompanante: true });
+
+  it('los nombra con quien los trajo y los cuenta aparte', () => {
+    const r = resumirPregunta(bus, [titular, conBus], [bus]);
+
+    expect(r.forma).toBe('recuento');
+    if (r.forma !== 'recuento') return;
+    expect(r.total).toBe(2);
+    expect(r.deAcompanantes).toBe(1);
+    expect(r.opciones.find((o) => o.value === 'si')?.quienes).toEqual([
+      'Ana Ruiz',
+      'Leo (con Ana Ruiz)',
+    ]);
+  });
+
+  it('avisa de quién falta por contestar, sin contar a los que no vienen', () => {
+    const r = resumirPregunta(bus, [titular, conBus, sinContestar, noViene], [bus]);
+
+    expect(r.faltan.total).toBe(1);
+    expect(r.faltan.acompanantes).toBe(1);
+    expect(r.faltan.nombres).toEqual(['Marta (con Ana Ruiz)']);
+  });
+
+  it('no pide la pregunta a quien no se le hace', () => {
+    const soloTitulares = { ...bus, target: 'guest' as const };
+    const r = resumirPregunta(soloTitulares, [titular, sinContestar], [soloTitulares]);
+
+    expect(r.faltan.total).toBe(0);
+  });
+});

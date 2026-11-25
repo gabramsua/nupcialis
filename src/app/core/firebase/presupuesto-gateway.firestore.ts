@@ -56,8 +56,8 @@ export function crearPuertaPresupuestoFirestore(): PuertaPresupuesto {
 
     async guardar(weddingId, id, datos: DatosDePartida, orden): Promise<ResultadoEscrituraPartida> {
       try {
-        // Ruta de campos concreta: al editar no se tocan `vendorId`, `icon`,
-        // `color` ni lo que algún día cuelgue de la partida.
+        // Ruta de campos concreta: al editar no se tocan `icon`, `color` ni lo
+        // que algún día cuelgue de la partida.
         const campos = {
           category: datos.category,
           concept: datos.concept,
@@ -66,6 +66,7 @@ export function crearPuertaPresupuestoFirestore(): PuertaPresupuesto {
           paid: datos.paid,
           dueDate: deDia(datos.dueOn),
           notes: datos.notes,
+          vendorId: datos.vendorId,
         };
 
         if (id) {
@@ -73,7 +74,6 @@ export function crearPuertaPresupuestoFirestore(): PuertaPresupuesto {
         } else {
           await addDoc(ruta(weddingId), {
             ...campos,
-            vendorId: null,
             icon: '',
             color: null,
             order: orden,
@@ -89,6 +89,15 @@ export function crearPuertaPresupuestoFirestore(): PuertaPresupuesto {
     async marcarPagada(weddingId, id, pagada): Promise<ResultadoEscrituraPartida> {
       try {
         await updateDoc(doc(ruta(weddingId), id), { paid: pagada });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, fallo: traducirPresupuesto(error) };
+      }
+    },
+
+    async enlazarProveedor(weddingId, id, vendorId): Promise<ResultadoEscrituraPartida> {
+      try {
+        await updateDoc(doc(ruta(weddingId), id), { vendorId });
         return { ok: true };
       } catch (error) {
         return { ok: false, fallo: traducirPresupuesto(error) };

@@ -7,6 +7,7 @@ import { PUERTA_LLAMADAS } from '../../../core/llamadas/llamadas-gateway';
 import type { FalloGestion } from '../../../core/superadmin/gestion-gateway';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
+import { NpIcon } from '../../../design-system/icons/icon';
 import { NpField } from '../../../design-system/components/field/field';
 import { NpInput } from '../../../design-system/components/field/input';
 import { textoDeFalloSuperadmin } from '../texto-de-fallo';
@@ -29,7 +30,7 @@ type Carga = 'cargando' | 'lista' | 'error';
  */
 @Component({
   selector: 'np-correos',
-  imports: [FormsModule, TranslocoDirective, NpAlert, NpButton, NpField, NpInput],
+  imports: [FormsModule, TranslocoDirective, NpAlert, NpButton, NpField, NpInput, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -118,6 +119,7 @@ type Carga = 'cargando' | 'lista' | 'error';
                     [loading]="ocupado() === 'guardar'"
                     (click)="guardar()"
                   >
+                    <np-icon name="check" />
                     {{ t('common.save') }}
                   </button>
                   <button

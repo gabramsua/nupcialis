@@ -375,6 +375,7 @@ const VACIO = (): Formulario => ({
                 {{ t('common.cancel') }}
               </button>
               <button npButton type="button" [loading]="guardando()" (click)="guardar()">
+                <np-icon name="check" />
                 {{ t('common.save') }}
               </button>
             </div>

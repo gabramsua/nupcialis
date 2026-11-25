@@ -5,6 +5,7 @@ import { PUERTA_LLAMADAS } from '../../../core/llamadas/llamadas-gateway';
 import type { FalloGestion } from '../../../core/superadmin/gestion-gateway';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
+import { NpIcon } from '../../../design-system/icons/icon';
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { textoDeFalloSuperadmin } from '../texto-de-fallo';
 import { leerGuardado, leerPlanes, type ModuloAfectado, type PlanEditable } from './planes';
@@ -23,7 +24,7 @@ const OBLIGATORIO = 'publicSite';
  */
 @Component({
   selector: 'np-planes',
-  imports: [TranslocoDirective, NpAlert, NpButton, NpModal],
+  imports: [TranslocoDirective, NpAlert, NpButton, NpModal, NpIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ng-container *transloco="let t">
@@ -88,6 +89,7 @@ const OBLIGATORIO = 'publicSite';
                     [loading]="guardando() === plan.id"
                     (click)="guardar(plan.id, false)"
                   >
+                    <np-icon name="check" />
                     {{ t('superadmin.planes.guardar') }}
                   </button>
                 </div>

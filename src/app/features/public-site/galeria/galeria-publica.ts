@@ -16,7 +16,7 @@ import {
   type FalloGaleria,
   type FotoPublica,
 } from '../../../core/galeria/galeria-gateway';
-import { MAX_POR_SUBIDA, puedeBorrar } from './galeria';
+import { ALBUMES, MAX_POR_SUBIDA, puedeBorrar, type AlbumFoto } from './galeria';
 import type { ResultadoTenant } from '../../../core/tenant/tenant-loader';
 import { NpCabeceraBoda } from '../navegacion/cabecera-boda';
 import { conCabecera, usarTemaDeLaBoda } from '../tema';
@@ -59,6 +59,21 @@ import { conCabecera, usarTemaDeLaBoda } from '../tema';
           <h1>{{ t('publico.galeria.titulo') }}</h1>
           <p>{{ t('publico.galeria.ayuda', { max: maxPorSubida }) }}</p>
         </header>
+
+        <div class="gl__albumes" role="tablist" [attr.aria-label]="t('publico.galeria.albumes')">
+          @for (a of albumes; track a) {
+            <button
+              type="button"
+              role="tab"
+              [attr.data-album]="a"
+              [attr.aria-selected]="album() === a"
+              (click)="elegirAlbum(a)"
+            >
+              {{ t('publico.galeria.album.' + a) }}
+            </button>
+          }
+        </div>
+        <p class="gl__albumAyuda">{{ t('publico.galeria.albumAyuda.' + album()) }}</p>
 
         <!--
           El botón es una etiqueta sobre un campo de fichero escondido: en un móvil
@@ -416,6 +431,32 @@ import { conCabecera, usarTemaDeLaBoda } from '../tema';
     h2 {
       font-family: var(--np-marca-titulos, inherit);
     }
+    .gl__albumes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--np-space-2);
+      margin-block: var(--np-space-3) var(--np-space-2);
+    }
+    .gl__albumes button {
+      min-block-size: var(--np-tap-target);
+      padding-inline: var(--np-space-3);
+      border: 1px solid currentColor;
+      border-radius: var(--np-radius-md);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+    .gl__albumes button[aria-selected='true'] {
+      background: var(--np-marca-primary, var(--np-surface-text));
+      color: var(--np-marca-background, var(--np-surface-canvas));
+      font-weight: var(--np-weight-semibold);
+    }
+    .gl__albumAyuda {
+      margin: 0 0 var(--np-space-3);
+      font-size: var(--np-text-sm);
+      opacity: 0.8;
+    }
   `,
 })
 export class NpGaleriaPublica {
@@ -427,6 +468,10 @@ export class NpGaleriaPublica {
   private readonly puerta = inject(PUERTA_GALERIA);
 
   protected readonly maxPorSubida = MAX_POR_SUBIDA;
+  protected readonly albumes = ALBUMES;
+
+  /** El álbum que se mira, y al que van las fotos que se suben. */
+  protected readonly album = signal<AlbumFoto>('dia');
 
   protected readonly fotos = signal<readonly FotoPublica[]>([]);
   protected readonly cursor = signal<string | null>(null);
@@ -490,13 +535,24 @@ export class NpGaleriaPublica {
     void this.cargar();
   }
 
+  protected async elegirAlbum(album: AlbumFoto): Promise<void> {
+    if (album === this.album()) return;
+
+    this.album.set(album);
+    this.soloMias.set(false);
+    this.cerrar();
+    this.fotos.set([]);
+    this.cursor.set(null);
+    await this.cargar();
+  }
+
   protected puedoBorrar(foto: FotoPublica): boolean {
     return puedeBorrar(foto, { guestId: this.miGuestId(), esPareja: false });
   }
 
   private async cargar(): Promise<void> {
     this.cargando.set(true);
-    const resultado = await this.puerta.listar(null);
+    const resultado = await this.puerta.listar(null, this.album());
     this.cargando.set(false);
 
     if (!resultado.ok) {
@@ -514,7 +570,7 @@ export class NpGaleriaPublica {
     if (!this.hayMas() || this.cargandoMas()) return;
 
     this.cargandoMas.set(true);
-    const resultado = await this.puerta.listar(this.cursor());
+    const resultado = await this.puerta.listar(this.cursor(), this.album());
     this.cargandoMas.set(false);
 
     if (!resultado.ok) {
@@ -545,7 +601,9 @@ export class NpGaleriaPublica {
     this.fallo.set(null);
 
     const resultados = await Promise.all(
-      archivos.slice(0, MAX_POR_SUBIDA).map((archivo) => this.puerta.subir(archivo, '')),
+      archivos
+        .slice(0, MAX_POR_SUBIDA)
+        .map((archivo) => this.puerta.subir(archivo, '', this.album())),
     );
 
     const primerFallo = resultados.find((resultado) => !resultado.ok);

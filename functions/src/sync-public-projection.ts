@@ -65,3 +65,15 @@ export const syncPublicFaqs = onDocumentWritten(
     if (weddingId) await reconstruirProyeccion(weddingId);
   },
 );
+
+/**
+ * Las personas importantes (§8.12): subcolección, así que escribir una no
+ * dispara el trigger de la boda. Misma razón que los alojamientos.
+ */
+export const syncPublicParty = onDocumentWritten(
+  { document: 'weddings/{weddingId}/weddingParty/{personaId}', region: REGION },
+  async (evento) => {
+    const weddingId = evento.params['weddingId'];
+    if (weddingId) await reconstruirProyeccion(weddingId);
+  },
+);

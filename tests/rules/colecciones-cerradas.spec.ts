@@ -39,6 +39,11 @@ beforeEach(async () => {
       title: 'Despacito',
       votes: ['otro-invitado'],
     });
+    await setDoc(doc(db, 'weddings', WEDDING_A, 'guestbookEntries', 'f1'), {
+      guestId: GUEST_A1,
+      message: 'Enhorabuena',
+      status: 'visible',
+    });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'guestAccessLog', 'l1'), { ip: '1.2.3.4' });
     await setDoc(doc(db, 'weddings', WEDDING_A, 'loginAttempts', 'abc'), { intentos: 9 });
   });
@@ -169,6 +174,33 @@ describe('playlistSuggestions: la lista la sirve listPlaylist, no una lectura di
     );
     await assertFails(
       updateDoc(doc(db, 'weddings', WEDDING_A, 'playlistSuggestions', 'despacito'), { votes: [] }),
+    );
+  });
+});
+
+describe('guestbookEntries: el libro lo sirve listGuestbook, no una lectura directa', () => {
+  it('la pareja lo lee y lo modera', async () => {
+    const db = ownerOf(env, WEDDING_A);
+    await assertSucceeds(getDoc(doc(db, 'weddings', WEDDING_A, 'guestbookEntries', 'f1')));
+    await assertSucceeds(
+      updateDoc(doc(db, 'weddings', WEDDING_A, 'guestbookEntries', 'f1'), { status: 'hidden' }),
+    );
+  });
+
+  /** Cada firma guarda el `guestId` de su autor: leer la colección es saber quién es quién. */
+  it('un invitado NO lo lee directamente', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(getDoc(doc(db, 'weddings', WEDDING_A, 'guestbookEntries', 'f1')));
+    await assertFails(getDocs(collection(db, 'weddings', WEDDING_A, 'guestbookEntries')));
+  });
+
+  it('un invitado NO escribe directamente: ni firma ni se salta el tope', async () => {
+    const db = guestOf(env, WEDDING_A, GUEST_A1);
+    await assertFails(
+      setDoc(doc(db, 'weddings', WEDDING_A, 'guestbookEntries', 'nueva'), { message: 'X' }),
+    );
+    await assertFails(
+      updateDoc(doc(db, 'weddings', WEDDING_A, 'guestbookEntries', 'f1'), { status: 'hidden' }),
     );
   });
 });

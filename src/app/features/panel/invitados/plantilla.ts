@@ -142,7 +142,7 @@ function ejemplos(pareja: Pareja): readonly (readonly string[])[] {
 
   return [
     ['María José Pérez', 'Majo', '666123456', 'Familia', a, 'adulto', 'Viene en autobús'],
-    ['Íñigo Muñoz', '', '+34677000111', 'Universidad, Pádel', b, 'adulto', ''],
+    ['Íñigo Muñoz', '', '677000111', 'Universidad, Pádel', b, 'adulto', ''],
     ['Lucía Muñoz', 'Lu', '', 'Familia', 'Los dos', 'niño', 'Menú infantil'],
   ];
 }
@@ -152,7 +152,7 @@ function ejemplos(pareja: Pareja): readonly (readonly string[])[] {
  *
  * Un `.xlsx` y no un CSV: se abre con doble clic en cualquier Excel, Numbers o
  * Google Sheets sin separadores ni codificaciones, que era donde se rompían las
- * listas. Todas las celdas van como texto, así el teléfono conserva su `+34`.
+ * listas. Todas las celdas van como texto, así el teléfono conserva el cero inicial y el `+` de un prefijo extranjero.
  */
 export function hojaDePlantilla(pareja: Pareja = { partnerA: '', partnerB: '' }): Hoja {
   const anchos = [28, 14, 16, 24, 14, 10, 30];

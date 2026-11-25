@@ -10,6 +10,7 @@
 import type { ModoAcceso } from '../../core/acceso/acceso';
 import type { NpIconName } from '../../design-system/icons/icon-name.generated';
 import type { ColoresPaleta } from '../public-site/paletas/paletas';
+import type { RutaAutobus } from '../public-site/autobuses/autobuses';
 import type { DressCodePublico } from '../public-site/dress-code/dress-code';
 import type { AportacionPublica } from '../public-site/regalos/regalos';
 import type { Seccion } from '../public-site/secciones/secciones';
@@ -25,6 +26,7 @@ export const MODULOS = [
   'gifts',
   'playlist',
   'guestbook',
+  'buses',
   'timeline',
   'faqs',
   'accommodation',
@@ -128,6 +130,11 @@ export interface BodaDelPanel {
    * `modules.dressCode.config` porque es un contenido único y no una lista.
    */
   readonly dressCode: DressCodePublico;
+  /**
+   * Las rutas de autobús (D-63). Como el dress code, viven en
+   * `modules.buses.config.rutas`: son pocas y de una boda.
+   */
+  readonly autobuses: readonly RutaAutobus[];
 
   /**
    * Lo que la pareja publica para que le aporten (§8.8).
@@ -157,6 +164,7 @@ export const ICONO_MODULO: Record<Modulo, NpIconName> = {
   gifts: 'gift',
   playlist: 'playlist',
   guestbook: 'note-pencil',
+  buses: 'bus',
   timeline: 'clock',
   faqs: 'question',
   accommodation: 'bed',
@@ -193,8 +201,12 @@ export const RUTA_MODULO: Partial<Record<Modulo, string>> = {
   gifts: '/panel/gifts',
   map: '/panel/map',
   playlist: '/panel/playlist',
+  guestbook: '/panel/guestbook',
+  buses: '/panel/buses',
   checklist: '/panel/checklist',
   budget: '/panel/budget',
+  vendors: '/panel/vendors',
+  weddingParty: '/panel/party',
   story: '/panel/story',
   tables: '/panel/tables',
 };

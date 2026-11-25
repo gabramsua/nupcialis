@@ -74,6 +74,11 @@ export class PresupuestoStore {
     return this.escribirYRecargar((w) => this.puerta.borrar(w, id));
   }
 
+  /** Enlaza o desenlaza (`null`) una partida con un proveedor. */
+  async enlazarProveedor(id: string, vendorId: string | null): Promise<ResultadoEscrituraPartida> {
+    return this.escribirYRecargar((w) => this.puerta.enlazarProveedor(w, id, vendorId));
+  }
+
   async marcarPagada(id: string, pagada: boolean): Promise<boolean> {
     const weddingId = this.sesion.weddingId();
     if (!weddingId) return false;

@@ -28,8 +28,14 @@ import { HistoriaStore } from './historia/historia.store';
 import { provideHistoria } from '../../core/historia/historia.providers';
 import { PresupuestoStore } from './presupuesto/presupuesto.store';
 import { PlaylistStore } from './playlist/playlist.store';
+import { LibroStore } from './libro/libro.store';
+import { provideLibroDelPanel } from '../../core/libro/libro-panel.providers';
 import { providePlaylistDelPanel } from '../../core/playlist/playlist-panel.providers';
 import { providePresupuesto } from '../../core/presupuesto/presupuesto.providers';
+import { provideProveedores } from '../../core/proveedores/proveedores.providers';
+import { providePersonas } from '../../core/personas/personas.providers';
+import { PersonasStore } from './personas/personas.store';
+import { ProveedoresStore } from './proveedores/proveedores.store';
 import { provideTareas } from '../../core/checklist/tareas.providers';
 import { provideUbicaciones } from '../../core/mapa/ubicaciones.providers';
 import { ConsejosDelPanel } from './consejo/consejos-panel';
@@ -68,8 +74,11 @@ export const panelRoutes: Routes = [
       provideUbicaciones(),
       provideTareas(),
       providePresupuesto(),
+      provideProveedores(),
+      providePersonas(),
       provideHistoria(),
       providePlaylistDelPanel(),
+      provideLibroDelPanel(),
       provideQuizDelPanel(),
       provideCatalogos(),
       provideLlamadas(),
@@ -174,14 +183,27 @@ export const panelRoutes: Routes = [
           {
             // El módulo se llama `budget` y la ruta como él.
             path: 'budget',
-            providers: [PresupuestoStore],
+            providers: [PresupuestoStore, ProveedoresStore, TareasStore],
             loadComponent: () =>
               import('./presupuesto/presupuesto-panel').then((m) => m.PanelPresupuesto),
           },
           {
+            // El módulo es `weddingParty`; la ruta es más corta: `/panel/party`.
+            path: 'party',
+            providers: [PersonasStore],
+            loadComponent: () => import('./personas/personas-panel').then((m) => m.PanelPersonas),
+          },
+          {
+            // El módulo se llama `vendors` y la ruta como él.
+            path: 'vendors',
+            providers: [ProveedoresStore, TareasStore, PresupuestoStore],
+            loadComponent: () =>
+              import('./proveedores/proveedores-panel').then((m) => m.PanelProveedores),
+          },
+          {
             // El módulo se llama `checklist` y la ruta como él.
             path: 'checklist',
-            providers: [TareasStore],
+            providers: [TareasStore, ProveedoresStore, PresupuestoStore],
             loadComponent: () =>
               import('./checklist/checklist-panel').then((m) => m.PanelChecklist),
           },
@@ -190,6 +212,17 @@ export const panelRoutes: Routes = [
             path: 'playlist',
             providers: [PlaylistStore],
             loadComponent: () => import('./playlist/playlist-panel').then((m) => m.PanelPlaylist),
+          },
+          {
+            // El módulo se llama `guestbook` y la ruta como él.
+            path: 'guestbook',
+            providers: [LibroStore],
+            loadComponent: () => import('./libro/libro-panel').then((m) => m.PanelLibro),
+          },
+          {
+            // El módulo se llama `buses` y la ruta como él (D-63).
+            path: 'buses',
+            loadComponent: () => import('./autobuses/autobuses').then((m) => m.PanelAutobuses),
           },
           {
             // El módulo es `dressCode` y la ruta se llama como él, en minúsculas
@@ -246,7 +279,13 @@ export const panelRoutes: Routes = [
             path: 'web',
             // La vista previa pinta las cuatro listas de contenido con sus
             // datos de verdad, así que necesita sus almacenes aquí.
-            providers: [FaqsStore, CronologiaStore, AlojamientosStore],
+            providers: [
+              FaqsStore,
+              CronologiaStore,
+              AlojamientosStore,
+              PersonasStore,
+              UbicacionesStore,
+            ],
             loadComponent: () => import('./web/editor-secciones').then((m) => m.EditorSecciones),
           },
           {

@@ -19,6 +19,7 @@ const partida = (parcial: Partial<PartidaDelPanel> & { id: string }): PartidaDel
   paid: false,
   dueOn: null,
   notes: '',
+  vendorId: null,
   order: 1,
   ...parcial,
 });
@@ -30,6 +31,7 @@ const BORRADOR: BorradorDePartida = {
   real: '',
   paid: false,
   dueOn: '',
+  vendorId: '',
   notes: '',
 };
 
@@ -46,6 +48,14 @@ describe('dinero opcional', () => {
 });
 
 describe('leerPartida', () => {
+  it('lee el proveedor enlazado, y lo vacío o raro es «sin proveedor»', () => {
+    const lee = (vendorId: unknown) => leerPartida('p', { concept: 'X', vendorId }, null)?.vendorId;
+    expect(lee('v1')).toBe('v1');
+    expect(lee('')).toBeNull();
+    expect(lee(7)).toBeNull();
+    expect(lee(undefined)).toBeNull();
+  });
+
   it('lee lo que siembra el servidor', () => {
     expect(
       leerPartida(
@@ -88,8 +98,16 @@ describe('validarBorrador', () => {
         paid: true,
         dueOn: null,
         notes: '',
+        vendorId: null,
       },
     });
+  });
+
+  it('el proveedor se limpia: vacío es null y el id se recorta', () => {
+    const con = validarBorrador({ ...BORRADOR, vendorId: ' v1 ' }, eurosACentimosOCero);
+    expect(con.ok && con.datos.vendorId).toBe('v1');
+    const sin = validarBorrador({ ...BORRADOR, vendorId: '' }, eurosACentimosOCero);
+    expect(sin.ok && sin.datos.vendorId).toBeNull();
   });
 
   it('sin categoría cae en «Otros»', () => {

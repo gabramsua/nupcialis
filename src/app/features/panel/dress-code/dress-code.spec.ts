@@ -133,6 +133,20 @@ describe('el dress code en el panel', () => {
     expect(p.colores('sugeridos').length).toBeGreaterThan(20);
   });
 
+  it('al guardar enseña el check que gira y después «Guardado»', async () => {
+    const p = montar();
+    expect(p.texto()).not.toContain('Guardado');
+    expect(p.boton('Guardar').querySelector('np-icon')).not.toBeNull();
+
+    p.pulsar(p.boton('Guardar'));
+    expect(p.boton('Guardar').hasAttribute('data-loading')).toBe(true);
+
+    await p.fixture.whenStable();
+    p.fixture.detectChanges();
+    expect(p.boton('Guardar').hasAttribute('data-loading')).toBe(false);
+    expect(p.texto()).toContain('Guardado');
+  });
+
   /** Lo que de verdad sostiene el módulo: se guardan ids, no colores. */
   it('guarda ids de la lista cerrada, no hexadecimales', async () => {
     const p = montar();

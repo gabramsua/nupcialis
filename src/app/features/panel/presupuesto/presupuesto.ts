@@ -28,6 +28,8 @@ export interface PartidaDelPanel {
   /** Día límite de pago, `'2027-05-01'`, o `null`. */
   readonly dueOn: string | null;
   readonly notes: string;
+  /** El proveedor al que corresponde la partida (F4), o `null`. */
+  readonly vendorId: string | null;
   readonly order: number;
 }
 
@@ -70,6 +72,7 @@ export function leerPartida(
     paid: d['paid'] === true,
     dueOn,
     notes: texto(d['notes']),
+    vendorId: typeof d['vendorId'] === 'string' && d['vendorId'] !== '' ? d['vendorId'] : null,
     order: typeof orden === 'number' && Number.isFinite(orden) ? orden : 0,
   };
 }
@@ -84,6 +87,8 @@ export interface BorradorDePartida {
   readonly paid: boolean;
   readonly dueOn: string;
   readonly notes: string;
+  /** `''` si no tiene proveedor. */
+  readonly vendorId: string;
 }
 
 export interface DatosDePartida {
@@ -94,6 +99,7 @@ export interface DatosDePartida {
   readonly paid: boolean;
   readonly dueOn: string | null;
   readonly notes: string;
+  readonly vendorId: string | null;
 }
 
 /**
@@ -138,6 +144,7 @@ export function validarBorrador(
       paid: b.paid,
       dueOn: dueOn === '' ? null : dueOn,
       notes,
+      vendorId: b.vendorId.trim() === '' ? null : b.vendorId.trim(),
     },
   };
 }

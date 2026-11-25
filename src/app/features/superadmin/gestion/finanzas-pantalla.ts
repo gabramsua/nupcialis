@@ -50,6 +50,42 @@ const MOTIVOS: Record<string, string> = {
  * factura, que se emite fuera de aquí. Lo que no hace es inventar precios: el
  * importe lo escribe quien cobra (D-02 sigue abierta).
  */
+/**
+ * ¿Cae este cobro dentro del rango? Los días son `AAAA-MM-DD`, así que comparar
+ * cadenas es comparar fechas. Con rango puesto, lo que no tiene fecha de cobro
+ * (lo pendiente) queda fuera: no se sabe en qué periodo caería.
+ */
+export function enRango(dia: string | null, desde: string, hasta: string): boolean {
+  if (desde === '' && hasta === '') return true;
+  if (!dia) return false;
+  return (desde === '' || dia >= desde) && (hasta === '' || dia <= hasta);
+}
+
+function iso(f: Date): string {
+  const m = String(f.getMonth() + 1).padStart(2, '0');
+  const d = String(f.getDate()).padStart(2, '0');
+  return `${f.getFullYear()}-${m}-${d}`;
+}
+
+/** Los extremos de un rango rápido, a partir de «hoy». `todo` los vacía. */
+export function limitesDeRango(
+  rango: 'mes' | 'mesAnterior' | 'anio' | 'todo',
+  hoy: Date,
+): readonly [string, string] {
+  const a = hoy.getFullYear();
+  const m = hoy.getMonth();
+  switch (rango) {
+    case 'mes':
+      return [iso(new Date(a, m, 1)), iso(new Date(a, m + 1, 0))];
+    case 'mesAnterior':
+      return [iso(new Date(a, m - 1, 1)), iso(new Date(a, m, 0))];
+    case 'anio':
+      return [`${a}-01-01`, `${a}-12-31`];
+    default:
+      return ['', ''];
+  }
+}
+
 @Component({
   selector: 'np-finanzas',
   imports: [
@@ -140,6 +176,46 @@ const MOTIVOS: Record<string, string> = {
                     }
                   </select>
                 </label>
+                <label>
+                  <span>{{ t('superadmin.finanzas.desde') }}</span>
+                  <input
+                    npInput
+                    type="date"
+                    [value]="desde()"
+                    [max]="hasta() || null"
+                    (change)="desde.set($any($event.target).value)"
+                  />
+                </label>
+                <label>
+                  <span>{{ t('superadmin.finanzas.hasta') }}</span>
+                  <input
+                    npInput
+                    type="date"
+                    [value]="hasta()"
+                    [min]="desde() || null"
+                    (change)="hasta.set($any($event.target).value)"
+                  />
+                </label>
+                <div
+                  class="fi__rapidos"
+                  role="group"
+                  [attr.aria-label]="t('superadmin.finanzas.rango')"
+                >
+                  @for (r of rangos; track r) {
+                    <button
+                      npButton
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      (click)="aplicarRango(r)"
+                    >
+                      {{ t('superadmin.finanzas.rangos.' + r) }}
+                    </button>
+                  }
+                </div>
+                @if (hayRango()) {
+                  <p class="fi__aviso">{{ t('superadmin.finanzas.rangoAviso') }}</p>
+                }
                 <div class="fi__acciones">
                   <button
                     npButton
@@ -410,6 +486,16 @@ const MOTIVOS: Record<string, string> = {
       display: grid;
       gap: var(--np-space-1);
     }
+    .fi__rapidos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--np-space-1);
+    }
+    .fi__aviso {
+      margin: 0;
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
+    }
     .fi__acciones {
       display: flex;
       flex-wrap: wrap;
@@ -429,7 +515,12 @@ const MOTIVOS: Record<string, string> = {
     }
     @media (min-width: 40rem) {
       .fi__barra {
-        grid-template-columns: 1fr 1fr auto;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .fi__rapidos,
+      .fi__aviso,
+      .fi__acciones {
+        grid-column: 1 / -1;
       }
     }
   `,
@@ -446,6 +537,11 @@ export class PantallaFinanzas {
 
   protected readonly filtroBoda = signal('');
   protected readonly filtroEstado = signal('');
+  /** Rango de fechas de cobro, en `AAAA-MM-DD`; vacío = sin límite por ese lado. */
+  protected readonly desde = signal('');
+  protected readonly hasta = signal('');
+  protected readonly rangos = ['mes', 'mesAnterior', 'anio', 'todo'] as const;
+  protected readonly hayRango = computed(() => this.desde() !== '' || this.hasta() !== '');
 
   protected readonly formAbierto = signal(false);
   protected readonly editandoId = signal<string | null>(null);
@@ -476,9 +572,14 @@ export class PantallaFinanzas {
   protected readonly visibles = computed(() => {
     const boda = this.filtroBoda();
     const estado = this.filtroEstado();
+    const desde = this.desde();
+    const hasta = this.hasta();
     return (this.datos()?.pagos ?? [])
       .filter(
-        (p) => (boda === '' || p.weddingId === boda) && (estado === '' || p.status === estado),
+        (p) =>
+          (boda === '' || p.weddingId === boda) &&
+          (estado === '' || p.status === estado) &&
+          enRango(p.paidOn, desde, hasta),
       )
       .sort(
         (a, b) =>
@@ -504,6 +605,12 @@ export class PantallaFinanzas {
       this.fallo.set(r.fallo);
       this.carga.set('error');
     }
+  }
+
+  protected aplicarRango(rango: 'mes' | 'mesAnterior' | 'anio' | 'todo'): void {
+    const [d, h] = limitesDeRango(rango, new Date());
+    this.desde.set(d);
+    this.hasta.set(h);
   }
 
   protected euros(centimos: number): string {

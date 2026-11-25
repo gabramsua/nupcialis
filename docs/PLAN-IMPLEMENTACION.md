@@ -8,14 +8,14 @@ el _cuándo_.
 
 _Actualizado el 2026-11-16. Se revisa cada vez que se cierra un bloque._
 
-| Fase                                | Estado                  | Qué falta                                                                                    |
-| ----------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
-| **F0** Fundaciones                  | Hecha en lo que bloquea | Infraestructura de producción (tres proyectos, hosting wildcard) y datos de cobro en el alta |
-| **F1** Núcleo vendible              | **En curso**            | Ver el desglose de abajo                                                                     |
-| **F2** Banquete, ubicaciones y día  | **En curso**            | Mapa (hecho, con Leaflet + OSM), mesas, dress code y las sueltas de `TAREAS.md`              |
-| **F3** Participación de invitados   | **En curso**            | Galería, quiz, regalos y playlist hechos; falta el libro de firmas                           |
-| **F4** Gestión interna de la pareja | **En curso**            | Tareas hechas; faltan presupuesto, proveedores y regalos recibidos (este último ya está)     |
-| **F5** Comercialización             | Sin empezar             | Todo. No bloquea la primera venta                                                            |
+| Fase                                | Estado                  | Qué falta                                                                                                  |
+| ----------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **F0** Fundaciones                  | Hecha en lo que bloquea | Infraestructura de producción (tres proyectos, hosting wildcard) y datos de cobro en el alta               |
+| **F1** Núcleo vendible              | **En curso**            | Ver el desglose de abajo                                                                                   |
+| **F2** Banquete, ubicaciones y día  | **En curso**            | Mapa (hecho, con Leaflet + OSM), mesas, dress code y las sueltas de `TAREAS.md`                            |
+| **F3** Participación de invitados   | **En curso**            | Galería (con dos álbumes), quiz, regalos, playlist y libro de firmas hechos; falta exportar el libro a PDF |
+| **F4** Gestión interna de la pareja | **En curso**            | Tareas hechas; faltan presupuesto, proveedores y regalos recibidos (este último ya está)                   |
+| **F5** Comercialización             | Sin empezar             | Todo. No bloquea la primera venta                                                                          |
 
 **F1, bloque a bloque**, en el orden en que se van a hacer:
 

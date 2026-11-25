@@ -45,6 +45,15 @@ import {
   type PuertaRankingQuiz,
 } from '../../core/quiz/quiz-admin-gateway';
 import { AlojamientosStore } from './alojamientos/alojamientos.store';
+import { PersonasStore } from './personas/personas.store';
+import { proveerUbicacionesDePrueba } from './mapa/ubicaciones.testing';
+import { doblesDeEnlaces } from './enlaces/dobles-enlaces.testing';
+import {
+  ALMACEN_FOTOS_PERSONAS,
+  PUERTA_PERSONAS,
+  type AlmacenFotosPersonas,
+  type PuertaPersonas,
+} from '../../core/personas/personas-gateway';
 import {
   PUERTA_ALOJAMIENTOS,
   type PuertaAlojamientos,
@@ -146,6 +155,7 @@ function montar(componente: Type<unknown>) {
     ],
     providers: [
       provideIconSprite('panel'),
+      ...doblesDeEnlaces().providers,
       // Las pantallas con `routerLink` no se montan sin router.
       provideRouter([]),
       { provide: BodaStore, useClass: BodaStoreFalso },
@@ -162,7 +172,11 @@ function montar(componente: Type<unknown>) {
       { provide: PUERTA_CRONOLOGIA, useValue: PUERTA_CRONOLOGIA_FALSA },
       CronologiaStore,
       { provide: PUERTA_ALOJAMIENTOS, useValue: PUERTA_ALOJAMIENTOS_FALSA },
+      { provide: PUERTA_PERSONAS, useValue: PUERTA_PERSONAS_FALSA },
+      { provide: ALMACEN_FOTOS_PERSONAS, useValue: ALMACEN_FOTOS_FALSO },
+      PersonasStore,
       AlojamientosStore,
+      ...proveerUbicacionesDePrueba(),
       { provide: PUERTA_PREGUNTAS_QUIZ, useValue: PUERTA_PREGUNTAS_QUIZ_FALSA },
       { provide: PUERTA_CATALOGOS, useValue: PUERTA_CATALOGOS_FALSA },
       PreguntasQuizStore,
@@ -285,6 +299,30 @@ const PUERTA_RANKING_QUIZ_FALSA: PuertaRankingQuiz = {
   },
 };
 
+const PUERTA_PERSONAS_FALSA: PuertaPersonas = {
+  async listar() {
+    return { ok: true, personas: [] };
+  },
+  async guardar() {
+    return { ok: true };
+  },
+  async borrar() {
+    return { ok: true };
+  },
+  async reordenar() {
+    return { ok: true };
+  },
+};
+
+const ALMACEN_FOTOS_FALSO: AlmacenFotosPersonas = {
+  async subir() {
+    return { path: 'weddings/w1/party/1.jpg', url: 'https://x.test/1.jpg' };
+  },
+  async borrar() {
+    return undefined;
+  },
+};
+
 const PUERTA_ALOJAMIENTOS_FALSA: PuertaAlojamientos = {
   async listar() {
     return { ok: true as const, alojamientos: [] };
@@ -349,6 +387,21 @@ describe.each(PANTALLAS)('la pantalla de %s', (_nombre, Pantalla) => {
   });
 });
 
+/** El autoguardado se dice arriba, pegado a la ayuda, y no al pie de la rejilla. */
+describe.each([
+  ['plantilla', SelectorPlantilla],
+  ['paleta', SelectorPaleta],
+  ['portada', SelectorPortada],
+] as const)('el selector de %s', (nombre, Selector) => {
+  it('avisa del autoguardado justo debajo de la ayuda', () => {
+    const raiz = montar(Selector).nativeElement as HTMLElement;
+    const intro = raiz.querySelector('header');
+
+    expect(intro?.textContent).toContain(`panel.diseno.${nombre}.autoguardado`);
+    expect(intro?.textContent).toContain(`panel.diseno.${nombre}.nota`);
+  });
+});
+
 /**
  * El caso que de verdad rompe: una boda a medio cargar.
  *
@@ -371,6 +424,7 @@ describe('con la boda todavía sin cargar', () => {
       ],
       providers: [
         provideIconSprite('panel'),
+        ...doblesDeEnlaces().providers,
         // Las pantallas con `routerLink` no se montan sin router.
         provideRouter([]),
         { provide: BodaStore, useClass: StoreVacio },
@@ -385,7 +439,11 @@ describe('con la boda todavía sin cargar', () => {
         { provide: PUERTA_CRONOLOGIA, useValue: PUERTA_CRONOLOGIA_FALSA },
         CronologiaStore,
         { provide: PUERTA_ALOJAMIENTOS, useValue: PUERTA_ALOJAMIENTOS_FALSA },
+        { provide: PUERTA_PERSONAS, useValue: PUERTA_PERSONAS_FALSA },
+        { provide: ALMACEN_FOTOS_PERSONAS, useValue: ALMACEN_FOTOS_FALSO },
+        PersonasStore,
         AlojamientosStore,
+        ...proveerUbicacionesDePrueba(),
         { provide: PUERTA_PREGUNTAS_QUIZ, useValue: PUERTA_PREGUNTAS_QUIZ_FALSA },
         { provide: PUERTA_CATALOGOS, useValue: PUERTA_CATALOGOS_FALSA },
         { provide: PUERTA_CATALOGOS, useValue: PUERTA_CATALOGOS_FALSA },

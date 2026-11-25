@@ -11,6 +11,7 @@ import type {
   DatosBasicosParaGuardar,
   DressCodeParaGuardar,
 } from './boda.firestore';
+import { sanearAutobuses, type RutaAutobus } from '../public-site/autobuses/autobuses';
 import { sanearDressCode } from '../public-site/dress-code/dress-code';
 import { sanearAportacion } from '../public-site/regalos/regalos';
 
@@ -154,6 +155,21 @@ export class BodaStore {
         ...boda,
         dressCode: sanearDressCode({ ...dress }),
       });
+      return true;
+    } catch (error) {
+      this._error.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /** Guarda las rutas de autobús (D-63). */
+  async guardarAutobuses(rutas: readonly RutaAutobus[]): Promise<boolean> {
+    const boda = this._boda();
+    if (!boda) return false;
+
+    try {
+      await this.fuente.guardarAutobuses(boda.weddingId, rutas);
+      this._boda.set({ ...boda, autobuses: sanearAutobuses(rutas) });
       return true;
     } catch (error) {
       this._error.set(error instanceof Error ? error.message : String(error));

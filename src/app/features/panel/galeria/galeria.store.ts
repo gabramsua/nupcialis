@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 
 import {
   PUERTA_GALERIA_PANEL,
+  type AlbumFoto,
   type FalloGaleria,
   type FotoPublica,
 } from '../../../core/galeria/galeria-panel-gateway';
@@ -11,7 +12,7 @@ type Estado = 'cargando' | 'lista' | 'error';
 /**
  * La galería vista por la pareja.
  *
- * Acumula páginas en vez de reemplazarlas: la rejilla crece hacia abajo y lo
+ * Cada álbum se lee aparte. Acumula páginas en vez de reemplazarlas: la rejilla crece hacia abajo y lo
  * que ya se ha mirado no se vuelve a pedir. Borrar quita la foto de la lista
  * sin recargar nada, que con cien fotos cargadas sería tirar el trabajo.
  */
@@ -24,21 +25,31 @@ export class GaleriaPanelStore {
   private readonly _estado = signal<Estado>('cargando');
   private readonly _fallo = signal<FalloGaleria | null>(null);
   private readonly _trayendoMas = signal(false);
+  private readonly _album = signal<AlbumFoto>('dia');
 
   readonly fotos = this._fotos.asReadonly();
   readonly estado = this._estado.asReadonly();
   readonly fallo = this._fallo.asReadonly();
   readonly trayendoMas = this._trayendoMas.asReadonly();
+  /** El álbum que se está mirando. Cada uno se lee aparte. */
+  readonly album = this._album.asReadonly();
 
   readonly hayMas = computed(() => this._cursor() !== null);
   readonly cuantas = computed(() => this._fotos().length);
+
+  /** Cambia de álbum y lo carga de cero. */
+  async elegirAlbum(album: AlbumFoto): Promise<void> {
+    if (album === this._album()) return;
+    this._album.set(album);
+    await this.cargar();
+  }
 
   async cargar(): Promise<void> {
     this._estado.set('cargando');
     this._fotos.set([]);
     this._cursor.set(null);
 
-    const resultado = await this.puerta.listar(null);
+    const resultado = await this.puerta.listar(null, this._album());
 
     if (resultado.ok) {
       this._fotos.set(resultado.fotos);
@@ -56,7 +67,7 @@ export class GaleriaPanelStore {
     if (cursor === null || this._trayendoMas()) return;
 
     this._trayendoMas.set(true);
-    const resultado = await this.puerta.listar(cursor);
+    const resultado = await this.puerta.listar(cursor, this._album());
     this._trayendoMas.set(false);
 
     if (!resultado.ok) {

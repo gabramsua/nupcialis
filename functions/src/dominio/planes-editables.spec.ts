@@ -63,7 +63,7 @@ describe('diferenciaDePlan y cambiosDeModulosEnBoda', () => {
       diferencia,
     );
     expect(cambios).toEqual({
-      'modules.quiz': { enabled: true, visibility: 'hidden' },
+      'modules.quiz': { enabled: true, visibility: 'visible' },
       'modules.rsvp.enabled': false,
     });
   });
@@ -76,10 +76,35 @@ describe('diferenciaDePlan y cambiosDeModulosEnBoda', () => {
     expect(cambios).toEqual({ 'modules.quiz.enabled': true });
   });
 
+  it('D-65: un módulo apagado que nació oculto se activa también visible', () => {
+    const cambios = cambiosDeModulosEnBoda(
+      { buses: { enabled: false, visibility: 'hidden' } },
+      diferenciaDePlan([], ['buses']),
+    );
+    expect(cambios).toEqual({
+      'modules.buses.enabled': true,
+      'modules.buses.visibility': 'visible',
+    });
+  });
+
+  it('D-65: «muy pronto» no se pisa', () => {
+    const cambios = cambiosDeModulosEnBoda(
+      { quiz: { enabled: false, visibility: 'soon' } },
+      diferenciaDePlan([], ['quiz']),
+    );
+    expect(cambios).toEqual({ 'modules.quiz.enabled': true });
+  });
+
   it('no escribe nada si ya está como se pide (idempotente)', () => {
     expect(
       cambiosDeModulosEnBoda({ rsvp: { enabled: false, visibility: 'hidden' } }, diferencia),
-    ).toEqual({ 'modules.quiz': { enabled: true, visibility: 'hidden' } });
+    ).toEqual({ 'modules.quiz': { enabled: true, visibility: 'visible' } });
+    expect(
+      cambiosDeModulosEnBoda(
+        { quiz: { enabled: true, visibility: 'visible' } },
+        diferenciaDePlan([], ['quiz']),
+      ),
+    ).toEqual({});
   });
 });
 

@@ -19,9 +19,11 @@ export const TIPOS_SECCION = [
   'portada',
   'texto',
   'evento',
+  'rsvp',
   'preguntas',
   'cronologia',
   'alojamientos',
+  'buses',
   'dressCode',
   'quiz',
   'galeria',
@@ -29,6 +31,8 @@ export const TIPOS_SECCION = [
   'mapa',
   'playlist',
   'historia',
+  'libro',
+  'cortejo',
 ] as const;
 export type TipoSeccion = (typeof TIPOS_SECCION)[number];
 
@@ -53,6 +57,9 @@ export const CAMPOS_POR_TIPO: Record<TipoSeccion, Readonly<Record<string, number
   portada: {},
   texto: { titulo: 80, texto: 5000 },
   evento: { titulo: 80, hora: 5, lugar: 120, direccion: 200, nota: 300 },
+  // El formulario de confirmación (D-64) vive en su página; esta sección es el
+  // cartel que lleva a él.
+  rsvp: { titulo: 80 },
   // Las preguntas no se escriben aquí: viven en su colección (§8.9). Esta
   // sección solo decide **dónde** van en la página y con qué título.
   preguntas: { titulo: 80 },
@@ -60,6 +67,9 @@ export const CAMPOS_POR_TIPO: Record<TipoSeccion, Readonly<Record<string, number
   cronologia: { titulo: 80 },
   // Y los alojamientos (§8.10).
   alojamientos: { titulo: 80 },
+  // Y los autobuses (D-63): las rutas viven en `modules.buses.config`, como el
+  // dress code; aquí va el título y el sitio en la página.
+  buses: { titulo: 80 },
   // Y el dress code (§8.11), que tampoco se escribe aquí: vive en
   // `modules.dressCode.config` porque es un contenido único y no una lista.
   dressCode: { titulo: 80 },
@@ -82,6 +92,10 @@ export const CAMPOS_POR_TIPO: Record<TipoSeccion, Readonly<Record<string, number
   // Nuestra historia: el cartel que lleva a su página, donde están los cinco
   // apartados con su texto y sus fotos.
   historia: { titulo: 80 },
+  // El libro de firmas (§8.15): el cartel que lleva a su página.
+  libro: { titulo: 80 },
+  // Las personas importantes (§8.12) se escriben en su pantalla; aquí va su título.
+  cortejo: { titulo: 80 },
 };
 
 /**
@@ -98,9 +112,11 @@ export const CAMPOS_RICOS: Record<TipoSeccion, readonly string[]> = {
   portada: [],
   texto: ['texto'],
   evento: [],
+  rsvp: [],
   preguntas: [],
   cronologia: [],
   alojamientos: [],
+  buses: [],
   dressCode: [],
   quiz: [],
   galeria: [],
@@ -108,6 +124,8 @@ export const CAMPOS_RICOS: Record<TipoSeccion, readonly string[]> = {
   mapa: [],
   playlist: [],
   historia: [],
+  libro: [],
+  cortejo: [],
 };
 
 export function esCampoRico(tipo: TipoSeccion, campo: string): boolean {
@@ -192,6 +210,52 @@ export function sanearSecciones(valor: unknown): readonly Seccion[] {
 }
 
 /**
+ * A qué módulo del plan pertenece cada tipo de sección.
+ *
+ * Es lo que decide qué secciones le salen a una boda: una del plan básico no
+ * debe ver (ni publicar) «Quiz» ni «Galería» solo porque el alta siembre todas
+ * las secciones. Los tipos que no están aquí —portada, texto libre y eventos—
+ * son de la web en sí y salen siempre.
+ */
+export const MODULO_DE_SECCION: Partial<Record<TipoSeccion, string>> = {
+  historia: 'story',
+  cronologia: 'timeline',
+  preguntas: 'faqs',
+  alojamientos: 'accommodation',
+  rsvp: 'rsvp',
+  buses: 'buses',
+  dressCode: 'dressCode',
+  quiz: 'quiz',
+  galeria: 'gallery',
+  regalos: 'gifts',
+  mapa: 'map',
+  playlist: 'playlist',
+  libro: 'guestbook',
+  cortejo: 'weddingParty',
+};
+
+/**
+ * Tipos que ya no se ofrecen ni se publican (D-64).
+ *
+ * Las tarjetas «Ceremonia» y «Banquete» (tipo `evento`) repetían lo que ya dicen
+ * la cronología del día y «Cómo llegar». Las bodas que las tienen guardadas las
+ * conservan, con sus datos, pero ni el editor ni la web pública las enseñan.
+ */
+export const TIPOS_RETIRADOS: readonly TipoSeccion[] = ['evento'];
+
+/** Deja las secciones cuyo módulo está activo en la boda. Es una función pura. */
+export function conModulosActivos<T extends { readonly type: TipoSeccion }>(
+  secciones: readonly T[],
+  activo: (modulo: string) => boolean,
+): readonly T[] {
+  return secciones.filter((s) => {
+    if (TIPOS_RETIRADOS.includes(s.type)) return false;
+    const modulo = MODULO_DE_SECCION[s.type];
+    return modulo === undefined || activo(modulo);
+  });
+}
+
+/**
  * Con lo que nace una boda.
  *
  * Nace con secciones de verdad y **apagadas salvo la portada**: la pareja entra
@@ -210,39 +274,39 @@ export const SECCIONES_INICIALES: readonly Seccion[] = [
     fields: { titulo: 'Nuestra historia' },
   },
   {
-    id: 'ceremonia',
-    type: 'evento',
+    id: 'confirmar',
+    type: 'rsvp',
     enabled: false,
     order: 2,
-    fields: { titulo: 'Ceremonia', hora: '', lugar: '', direccion: '', nota: '' },
-  },
-  {
-    id: 'banquete',
-    type: 'evento',
-    enabled: false,
-    order: 3,
-    fields: { titulo: 'Banquete', hora: '', lugar: '', direccion: '', nota: '' },
+    fields: { titulo: 'Confirmad vuestra asistencia' },
   },
   {
     id: 'cronologia',
     type: 'cronologia',
     enabled: false,
-    order: 4,
+    order: 3,
     fields: { titulo: 'El día' },
   },
   {
     id: 'preguntas',
     type: 'preguntas',
     enabled: false,
-    order: 5,
+    order: 4,
     fields: { titulo: 'Preguntas frecuentes' },
   },
   {
     id: 'alojamientos',
     type: 'alojamientos',
     enabled: false,
-    order: 6,
+    order: 5,
     fields: { titulo: 'Dónde dormir' },
+  },
+  {
+    id: 'autobuses',
+    type: 'buses',
+    enabled: false,
+    order: 6,
+    fields: { titulo: 'Autobuses' },
   },
   {
     id: 'dress-code',
@@ -252,45 +316,59 @@ export const SECCIONES_INICIALES: readonly Seccion[] = [
     fields: { titulo: 'Cómo vestir' },
   },
   {
+    id: 'cortejo',
+    type: 'cortejo',
+    enabled: false,
+    order: 8,
+    fields: { titulo: 'Personas importantes' },
+  },
+  {
     id: 'quiz',
     type: 'quiz',
     enabled: false,
-    order: 8,
+    order: 9,
     fields: { titulo: 'El juego de la boda' },
   },
   {
     id: 'galeria',
     type: 'galeria',
     enabled: false,
-    order: 9,
+    order: 10,
     fields: { titulo: 'Las fotos' },
   },
   {
     id: 'regalos',
     type: 'regalos',
     enabled: false,
-    order: 10,
+    order: 11,
     fields: { titulo: 'Regalos' },
   },
   {
     id: 'mapa',
     type: 'mapa',
     enabled: false,
-    order: 11,
+    order: 12,
     fields: { titulo: 'Cómo llegar' },
   },
   {
     id: 'playlist',
     type: 'playlist',
     enabled: false,
-    order: 12,
+    order: 13,
     fields: { titulo: 'La música' },
+  },
+  {
+    id: 'libro',
+    type: 'libro',
+    enabled: false,
+    order: 14,
+    fields: { titulo: 'Libro de firmas' },
   },
   {
     id: 'contacto',
     type: 'texto',
     enabled: false,
-    order: 13,
+    order: 15,
     fields: { titulo: 'Contacto', texto: '' },
   },
 ];

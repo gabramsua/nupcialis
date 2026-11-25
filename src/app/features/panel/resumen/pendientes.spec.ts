@@ -24,7 +24,8 @@ function invitado(parcial: Partial<Invitado>): Invitado {
 }
 
 function boda(parcial: Partial<BodaDelPanel> = {}): BodaDelPanel {
-  return { ...BODA_DE_PRUEBA, ...parcial };
+  // Extendido por defecto: es el plan que lleva lista de invitados.
+  return { ...BODA_DE_PRUEBA, plan: 'extended', ...parcial };
 }
 
 /** Una boda ya montada: con fecha, publicada, con portada y sin módulos ocultos. */
@@ -38,11 +39,23 @@ describe('cifras', () => {
       invitado({ id: '3', rsvpStatus: 'declined', loginCount: 0 }),
     ]);
 
-    expect(cuenta).toEqual({ invitados: 3, confirmados: 1, sinContestar: 1, hanEntrado: 2 });
+    expect(cuenta).toEqual({
+      invitados: 3,
+      confirmados: 1,
+      sinContestar: 1,
+      hanEntrado: 2,
+      contestados: 2,
+    });
   });
 
   it('sin invitados son ceros, no huecos', () => {
-    expect(cifras([])).toEqual({ invitados: 0, confirmados: 0, sinContestar: 0, hanEntrado: 0 });
+    expect(cifras([])).toEqual({
+      invitados: 0,
+      confirmados: 0,
+      sinContestar: 0,
+      hanEntrado: 0,
+      contestados: 0,
+    });
   });
 });
 
@@ -142,5 +155,19 @@ describe('diasParaLaBoda', () => {
   it('sin fecha, nada', () => {
     expect(diasParaLaBoda(null, hoy)).toBeNull();
     expect(diasParaLaBoda(new Date('no es una fecha'), hoy)).toBeNull();
+  });
+
+  /** El básico no tiene lista de invitados (D-66): nada de eso se le reclama. */
+  it('en el plan básico no pide cargar invitados ni cuenta quién no ha entrado', () => {
+    const basica = boda({ plan: 'basic', heroImageUrl: null });
+
+    expect(pendientes(basica, []).map((p) => p.clave)).toEqual(['portada']);
+    expect(
+      pendientes(basica, [invitado({ loginCount: 0, rsvpStatus: 'pending' })]).map((p) => p.clave),
+    ).toEqual(['portada']);
+  });
+
+  it('en el plan extendido sigue pidiendo la lista', () => {
+    expect(pendientes(boda(), []).map((p) => p.clave)).toContain('invitados');
   });
 });

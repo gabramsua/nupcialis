@@ -3,6 +3,8 @@ import type { Seccion } from '../../features/public-site/secciones/secciones';
 import type { FaqPublica } from '../../features/public-site/faqs/faqs';
 import type { HitoPublico } from '../../features/public-site/cronologia/cronologia';
 import type { AlojamientoPublico } from '../../features/public-site/alojamientos/alojamientos';
+import type { RutaAutobus } from '../../features/public-site/autobuses/autobuses';
+import type { PersonaPublica } from '../../features/public-site/cortejo/cortejo';
 import type { UbicacionPublica } from '../../features/public-site/mapa/ubicaciones';
 import type { DressCodePublico } from '../../features/public-site/dress-code/dress-code';
 import type { ApartadoPublicoDeHistoria } from '../../features/public-site/historia/historia';
@@ -100,6 +102,10 @@ export interface SitioPublico {
   readonly cronologia: readonly HitoPublico[];
   /** Los alojamientos para los invitados de fuera (§8.10). */
   readonly alojamientos: readonly AlojamientoPublico[];
+  /** Las rutas de autobús (D-63). */
+  readonly autobuses: readonly RutaAutobus[];
+  /** Las personas importantes visibles (§8.12). */
+  readonly cortejo: readonly PersonaPublica[];
   /** Los sitios del mapa (§8.6): solo los visibles y con coordenadas. */
   readonly ubicaciones: readonly UbicacionPublica[];
   /** El dress code (§8.11). Vacío si el módulo está apagado. */

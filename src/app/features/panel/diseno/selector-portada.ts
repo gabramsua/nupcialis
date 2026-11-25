@@ -33,6 +33,11 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
         <header class="pf__intro">
           <h2>{{ t('panel.diseno.portada.titulo') }}</h2>
           <p>{{ t('panel.diseno.portada.ayuda') }}</p>
+          <p class="pf__auto" role="note">
+            <np-icon name="check-circle" weight="fill" />
+            <strong>{{ t('panel.diseno.portada.autoguardado') }}</strong>
+            <span>{{ t('panel.diseno.portada.nota') }}</span>
+          </p>
         </header>
 
         @if (error(); as mensaje) {
@@ -118,9 +123,16 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
       margin: 0;
       color: var(--np-surface-text-muted);
     }
+    p.pf__auto {
+      display: flex;
+      gap: var(--np-space-2);
+      margin: var(--np-space-2) 0 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
+    }
     .pf__foto,
     .pf__hueco {
-      inline-size: 100%;
+      inline-size: min(100%, 14rem);
       aspect-ratio: 16 / 10;
       border-radius: var(--np-radius-lg);
       object-fit: cover;

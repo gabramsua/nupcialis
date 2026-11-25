@@ -50,6 +50,7 @@ export function traducirRegalos(error: unknown): FalloRegalos {
 
   if (motivo.motivo === 'sin-verificar') return { tipo: 'sin-verificar' };
   if (motivo.motivo === 'ya-reservado') return { tipo: 'ya-reservado' };
+  if (motivo.motivo === 'no-disponible') return { tipo: 'no-disponible' };
 
   switch (fallo.code) {
     case 'unavailable':
@@ -60,6 +61,10 @@ export function traducirRegalos(error: unknown): FalloRegalos {
     case 'permission-denied':
     case 'functions/permission-denied':
       return { tipo: 'no-es-tuyo' };
+
+    case 'not-found':
+    case 'functions/not-found':
+      return { tipo: 'no-disponible' };
 
     case 'failed-precondition':
     case 'functions/failed-precondition':

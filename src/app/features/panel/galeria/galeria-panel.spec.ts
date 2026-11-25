@@ -39,6 +39,7 @@ function foto(parcial: Partial<FotoPublica> & { id: string }): FotoPublica {
     guestId: 'g1',
     autor: 'Ana Ruiz',
     pie: '',
+    album: 'dia',
     creadoEn: '2027-06-12T18:00:00.000Z',
     ...parcial,
   };
@@ -47,10 +48,12 @@ function foto(parcial: Partial<FotoPublica> & { id: string }): FotoPublica {
 function montar(iniciales: readonly FotoPublica[], enLugarDe?: PuertaGaleriaPanel) {
   let fotos = [...iniciales];
   const llamadas: string[] = [];
+  const albumes: string[] = [];
 
   const doble: PuertaGaleriaPanel = enLugarDe ?? {
-    async listar() {
+    async listar(_cursor, album) {
       llamadas.push('listar');
+      albumes.push(album);
       return { ok: true, fotos, cursor: null };
     },
     async borrar(photoId: string) {
@@ -94,6 +97,7 @@ function montar(iniciales: readonly FotoPublica[], enLugarDe?: PuertaGaleriaPane
   return {
     raiz,
     llamadas,
+    albumes,
     asentar,
     texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
     fotos: () => [...raiz.querySelectorAll('.pg__foto')] as HTMLImageElement[],
@@ -274,5 +278,29 @@ describe('la vista previa de la galería', () => {
     await p.asentar();
 
     expect(p.texto()).not.toContain('Cómo lo ven los invitados');
+  });
+});
+
+describe('los álbumes en el panel', () => {
+  it('abre en «El día» y cambiar de álbum lo vuelve a leer', async () => {
+    const p = montar([foto({ id: 'a' })]);
+    await p.asentar();
+    expect(p.albumes).toEqual(['dia']);
+
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    expect(p.albumes).toEqual(['dia', 'camino']);
+    expect(p.raiz.querySelector('[data-album="camino"]')?.getAttribute('aria-selected')).toBe(
+      'true',
+    );
+  });
+
+  it('elegir el álbum que ya está abierto no vuelve a leer nada', async () => {
+    const p = montar([foto({ id: 'a' })]);
+    await p.asentar();
+
+    await p.pulsar(p.raiz.querySelector('[data-album="dia"]') as HTMLButtonElement);
+
+    expect(p.albumes).toEqual(['dia']);
   });
 });

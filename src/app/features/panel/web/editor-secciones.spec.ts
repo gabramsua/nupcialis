@@ -24,6 +24,15 @@ import { abrirDialogosEnPruebas } from '../invitados/dobles.testing';
 import { FaqsStore } from '../faqs/faqs.store';
 import { CronologiaStore } from '../cronologia/cronologia.store';
 import { AlojamientosStore } from '../alojamientos/alojamientos.store';
+import { PersonasStore } from '../personas/personas.store';
+import { proveerUbicacionesDePrueba } from '../mapa/ubicaciones.testing';
+import { PUERTA_INVITADOS } from '../../../core/invitados/invitados-gateway';
+import {
+  ALMACEN_FOTOS_PERSONAS,
+  PUERTA_PERSONAS,
+  type AlmacenFotosPersonas,
+  type PuertaPersonas,
+} from '../../../core/personas/personas-gateway';
 import { EditorSecciones } from './editor-secciones';
 
 /**
@@ -174,13 +183,98 @@ const ALOJAMIENTOS: PuertaAlojamientos = {
   },
 };
 
-async function montar() {
+const FOTO = 'https://firebasestorage.googleapis.com/v0/b/x/o/madrina.jpg';
+
+const PERSONAS: PuertaPersonas = {
+  async listar() {
+    const base = {
+      side: 'both' as const,
+      bio: '',
+      phone: '600112233',
+      photoPath: null,
+      photoUrl: null,
+      photoConsent: false,
+      visible: true,
+      guestId: null,
+      order: 1,
+    };
+    return {
+      ok: true,
+      personas: [
+        {
+          ...base,
+          id: 'madrina',
+          name: 'Carmen Ruiz',
+          role: 'Madrina',
+          photoPath: 'weddings/w1/party/1.jpg',
+          photoUrl: FOTO,
+          photoConsent: true,
+        },
+        // Oculta: fuera de la web y fuera de la vista previa.
+        {
+          ...base,
+          id: 'padrino',
+          name: 'Antonio Oculto',
+          role: 'Padrino',
+          visible: false,
+          order: 2,
+        },
+      ],
+    };
+  },
+  async guardar() {
+    return { ok: true };
+  },
+  async borrar() {
+    return { ok: true };
+  },
+  async reordenar() {
+    return { ok: true };
+  },
+};
+
+const ALMACEN_FOTOS: AlmacenFotosPersonas = {
+  async subir() {
+    return { path: 'weddings/w1/party/1.jpg', url: FOTO };
+  },
+  async borrar() {
+    return undefined;
+  },
+};
+
+const CON = { enabled: true, visibility: 'visible' } as const;
+
+/**
+ * Los módulos del plan básico de fábrica (D-63): la web, el RSVP, el mapa, la
+ * cronología, las preguntas, los regalos, el alojamiento y los autobuses.
+ */
+const MODULOS_BASICO = {
+  publicSite: CON,
+  rsvp: CON,
+  guests: CON,
+  map: CON,
+  timeline: CON,
+  faqs: CON,
+  gifts: CON,
+  accommodation: CON,
+};
+const guardadas: { secciones: readonly unknown[]; mismoSitio: boolean | undefined }[] = [];
+
+async function montar(
+  modulos: Record<string, typeof CON> = { ...MODULOS_BASICO, dressCode: CON },
+  extra: Partial<typeof BODA_DE_PRUEBA> = {},
+) {
+  guardadas.length = 0;
   const boda = signal({
     ...BODA_DE_PRUEBA,
+    ...extra,
+    modulos,
     dressCode: sanearDressCode({ suggestedColors: ['verde-salvia'] }),
     // Las cuatro secciones de contenido, encendidas.
     secciones: BODA_DE_PRUEBA.secciones.map((seccion) =>
-      ['preguntas', 'cronologia', 'alojamientos', 'dressCode'].includes(seccion.type)
+      ['preguntas', 'cronologia', 'alojamientos', 'dressCode', 'cortejo', 'mapa'].includes(
+        seccion.type,
+      )
         ? { ...seccion, enabled: true }
         : seccion,
     ),
@@ -204,7 +298,8 @@ async function montar() {
           boda,
           estado: () => 'lista',
           error: () => null,
-          async guardarSecciones() {
+          async guardarSecciones(secciones: readonly unknown[], mismoSitio?: boolean) {
+            guardadas.push({ secciones, mismoSitio });
             return true;
           },
           async guardarIndexable() {
@@ -217,7 +312,19 @@ async function montar() {
       { provide: PUERTA_ALOJAMIENTOS, useValue: ALOJAMIENTOS },
       FaqsStore,
       CronologiaStore,
+      { provide: PUERTA_PERSONAS, useValue: PERSONAS },
+      {
+        provide: PUERTA_INVITADOS,
+        useValue: {
+          async listar() {
+            return { ok: true, invitados: [] };
+          },
+        },
+      },
+      { provide: ALMACEN_FOTOS_PERSONAS, useValue: ALMACEN_FOTOS },
+      PersonasStore,
       AlojamientosStore,
+      ...proveerUbicacionesDePrueba(),
     ],
   });
 
@@ -243,7 +350,14 @@ async function montar() {
   // llegara a pintarse nunca, que es justo el fallo que este fichero vigila.
   expect(raiz.textContent, 'la vista previa no se ha pintado').toContain('Hotel Central');
 
-  return { fixture, raiz, texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '' };
+  return {
+    fixture,
+    raiz,
+    texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
+    /** Los nombres de las secciones que la lista del editor ofrece. */
+    nombres: () =>
+      [...raiz.querySelectorAll('.es__lista .es__nombre')].map((e) => e.textContent?.trim()),
+  };
 }
 
 describe('la vista previa del editor de la web', () => {
@@ -265,10 +379,148 @@ describe('la vista previa del editor de la web', () => {
     expect(p.texto()).not.toContain('Hostal Apagado');
   });
 
+  /**
+   * Son datos de terceros: la vista previa pinta lo que publicaría el servidor
+   * —con su mismo saneado— y nada más. Sin teléfono, sin las ocultas.
+   */
+  it('pinta a las personas importantes visibles, sin teléfono y sin las ocultas', async () => {
+    const p = await montar({
+      ...MODULOS_BASICO,
+      accommodation: CON,
+      dressCode: CON,
+      weddingParty: CON,
+    });
+
+    // La vista previa se pinta antes de que lleguen las personas.
+    for (let vuelta = 0; vuelta < 100 && !p.texto().includes('Carmen Ruiz'); vuelta += 1) {
+      await new Promise((listo) => setTimeout(listo, 5));
+      p.fixture.detectChanges();
+    }
+
+    expect(p.texto()).toContain('Carmen Ruiz');
+    expect(p.texto()).toContain('Madrina');
+    expect(p.texto()).not.toContain('Antonio Oculto');
+    expect(p.texto()).not.toContain('600112233');
+    expect(p.raiz.querySelector(`img[src="${FOTO}"]`)).not.toBeNull();
+  });
+
   it('enseña los nombres de la pareja en la portada', async () => {
     const p = await montar();
 
     expect(p.texto()).toContain('María');
     expect(p.texto()).toContain('Gabriel');
+  });
+});
+
+/**
+ * Qué secciones ofrece el editor según el plan.
+ *
+ * El alta siembra **todas** las secciones, así que sin filtrar una boda del
+ * plan básico veía el quiz y la galería —que son del extendido— y podía
+ * encenderlos.
+ */
+describe('las secciones que ofrece el editor', () => {
+  it('una boda del plan básico solo ve las de los módulos de su plan', async () => {
+    const p = await montar({ ...MODULOS_BASICO, dressCode: CON });
+    const nombres = p.nombres().join('|');
+
+    for (const dentro of [
+      'Confirmad vuestra asistencia',
+      'El día',
+      'Preguntas frecuentes',
+      'Cómo llegar',
+      'Regalos',
+    ]) {
+      expect(nombres, dentro).toContain(dentro);
+    }
+    for (const fuera of [
+      'Nuestra historia',
+      'El juego de la boda',
+      'Las fotos',
+      'La música',
+      'Libro de firmas',
+      'Personas importantes',
+    ]) {
+      expect(nombres, fuera).not.toContain(fuera);
+    }
+  });
+
+  it('con el plan extendido salen también las del extendido', async () => {
+    const todos = {
+      ...MODULOS_BASICO,
+      accommodation: CON,
+      dressCode: CON,
+      story: CON,
+      quiz: CON,
+      gallery: CON,
+      gifts: CON,
+      playlist: CON,
+      guestbook: CON,
+      weddingParty: CON,
+    };
+    const p = await montar(todos);
+    const nombres = p.nombres().join('|');
+
+    for (const dentro of [
+      'Nuestra historia',
+      'El juego de la boda',
+      'Las fotos',
+      'Libro de firmas',
+      'Personas importantes',
+    ]) {
+      expect(nombres, dentro).toContain(dentro);
+    }
+  });
+
+  it('el texto libre sale siempre, aunque no haya ningún módulo', async () => {
+    const p = await montar({
+      publicSite: CON,
+      accommodation: CON,
+      dressCode: CON,
+      timeline: CON,
+      faqs: CON,
+    });
+    expect(p.nombres().join('|')).toContain('Contacto');
+  });
+});
+
+describe('las tarjetas fijas de ceremonia y banquete (D-64)', () => {
+  it('ya no se ofrecen: lo cuentan la cronología y «Cómo llegar»', async () => {
+    const p = await montar();
+    expect(p.nombres()).not.toContain('Ceremonia');
+    expect(p.nombres()).not.toContain('Banquete');
+  });
+
+  it('se ofrece publicar el formulario de confirmación', async () => {
+    const p = await montar();
+    expect(p.nombres()).toContain('Confirmad vuestra asistencia');
+  });
+
+  it('«Cómo llegar» enseña en la vista previa los sitios del mapa, no una tarjeta vacía', async () => {
+    const p = await montar();
+    // La publicada sale con su dirección y su botón; la oculta a los invitados, no.
+    expect(p.texto()).toContain('Iglesia de San Pedro');
+    expect(p.texto()).toContain('Plaza Mayor, 1');
+    expect(p.texto()).not.toContain('Entrada de proveedores');
+  });
+});
+
+describe('el aviso de cambios sin guardar', () => {
+  it('es una tarjeta con título y botón de guardar, y solo sale con cambios', async () => {
+    const p = await montar();
+    expect(p.raiz.querySelector('.es__aviso')).toBeNull();
+
+    const titulo = p.raiz.querySelector<HTMLInputElement>('input[id^="np-sec-preguntas-"]');
+    expect(titulo).not.toBeNull();
+    if (titulo) {
+      titulo.value = 'El gran día';
+      titulo.dispatchEvent(new Event('input'));
+    }
+    p.fixture.detectChanges();
+
+    const aviso = p.raiz.querySelector('.es__aviso');
+    expect(aviso?.getAttribute('role')).toBe('status');
+    expect(aviso?.querySelector('strong')?.textContent).toContain('Tenéis cambios sin guardar');
+    expect(aviso?.querySelector('button')?.textContent).toContain('Guardar');
   });
 });

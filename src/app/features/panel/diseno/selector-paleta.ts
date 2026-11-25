@@ -33,6 +33,11 @@ import { BodaStore } from '../boda.store';
         <header class="sp__intro">
           <h2>{{ t('panel.diseno.paleta.titulo') }}</h2>
           <p>{{ t('panel.diseno.paleta.ayuda') }}</p>
+          <p class="sp__auto" role="note">
+            <np-icon name="check-circle" weight="fill" />
+            <strong>{{ t('panel.diseno.paleta.autoguardado') }}</strong>
+            <span>{{ t('panel.diseno.paleta.nota') }}</span>
+          </p>
         </header>
 
         @if (fallo()) {
@@ -115,6 +120,13 @@ import { BodaStore } from '../boda.store';
     .sp__intro p {
       margin: 0;
       color: var(--np-surface-text-muted);
+    }
+    p.sp__auto {
+      display: flex;
+      gap: var(--np-space-2);
+      margin: var(--np-space-2) 0 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
     }
     /* Primero móvil: dos columnas en un teléfono, más según quepan. */
     .sp__rejilla {

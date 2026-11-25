@@ -69,6 +69,132 @@ un grupo; y en el alta, con ceremonia civil, la casilla «mismo sitio».
    «Precio acordado», y mira acordado / cobrado / falta.
 3. **Pregunta pendiente:** ver el punto 6 de D-56 en PENDIENTES.
 
+**Tanda D-66.** El 401 de «publicar/borrador» y del formulario RSVP **no es un fallo del código**:
+en `carnivale.localhost:4200` el token de depuración de App Check no está registrado (cada subdominio
+tiene el suyo; el superadmin va en otro origen y sí lo tiene). Abre
+`http://carnivale.localhost:4200/?appcheck=<el uuid que ya registraste>` (se guarda para ese
+subdominio) o registra el que sale en la consola (`4bca3e8d-…`) en Firebase → App Check → Administrar
+tokens de depuración. Hay que hacerlo **una vez por subdominio**.
+
+Despliega **solo lo que cambia**, para no chocar otra vez con la cuota de Cloud Run:
+
+`firebase deploy --only functions:getOpenGifts,functions:getRsvpForm,functions:submitRsvp,functions:addCompanion`
+
+Con eso
+funcionan los regalos directos del básico y el plazo por defecto. Valida las dos decisiones de D-66,
+sobre todo que el IBAN ya no exige identificarse en el básico.
+
+**Arreglo D-65.** `npm run deploy:functions` y, en el **superadmin** (cabecera, junto al
+selector de bodas), pulsa **«Añadir módulos nuevos»**: es lo que añade la sección Autobuses a
+`/panel/web`, quita el «Oculta» de Autobuses y el aviso azul. Es un botón del superadmin, no del
+panel de la pareja.
+
+**Tanda D-64 (la 34).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`** — **es lo que hace que veas `Autobuses` en `/superadmin/planes`**
+   (el catálogo lo devuelve la función, no el cliente) y la proyección pública deja de publicar
+   las tarjetas de ceremonia/banquete y publica el estado de `buses`. No cambian reglas.
+2. Pulsa **«Añadir módulos nuevos»** en las bodas existentes: añade la sección «Confirmad vuestra
+   asistencia» tras la portada, apagada. Enciéndela en `/panel/web` si la quieres.
+3. Pruébalo: «Cómo llegar» debe enseñar los sitios de `/panel/map` (solo los que tienen pin y
+   están visibles para invitados). Mira que el aviso del panel de mapa «sin pin» coincide con lo
+   que falta en la web.
+4. Mis supuestos están en D-64 de PENDIENTES; el 3 (retirar Ceremonia y Banquete) es el que
+   cambia algo que ya había escrito, así que dime si no era eso.
+
+**Tanda D-63 (la 33).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`** (la proyección pública publica `buses` y respeta `sameVenue`, y
+   `completeWeddings` enciende los módulos nuevos del básico). **No cambian las reglas**: los
+   autobuses viven dentro del documento de la boda, como el dress code.
+2. En `/superadmin`, abre las bodas **ya creadas** y pulsa **«Añadir módulos nuevos»**: añade la
+   sección «Autobuses» y, en las bodas básicas, enciende regalos, alojamiento y autobuses.
+   Si en Firestore tienes `plans/basic` personalizado, añade `gifts`, `accommodation` y `buses`
+   a mano (esa lista manda sobre el código).
+3. Pruébalo: en una boda **básica**, `/panel/web` debe ofrecer cronología, preguntas, mapa,
+   regalos, alojamientos y autobuses (y no quiz, galería, historia…). Rellena `/panel/buses`,
+   enciende la sección y mira la web. Marca «ceremonia y banquete en el mismo sitio» en
+   `/panel/web`: la vista previa debe enseñar una sola tarjeta. Cambia algo y comprueba que el
+   aviso de «cambios sin guardar» se ve bien (también en el móvil). Elige el tema «Acuarela»
+   en `/panel/diseno` y mírala con y sin foto de portada.
+4. Mis supuestos están en D-63 de PENDIENTES; el 1 (qué entra en el básico) y el 3 (cómo se
+   combina la tarjeta) son los que más me interesa que valides.
+5. Las fuentes de Acuarela (Pinyon Script, Cormorant Garamond) vienen de Google Fonts: en mi
+   contenedor no hay red hacia ellas, así que **no he podido ver la letra real**, solo la
+   maqueta con la tipografía de reserva. Mírala tú.
+
+**Tanda D-62 (la 32).** Sin dependencias ni iconos nuevos, **y nada que desplegar**: no cambian
+reglas ni functions, solo el panel.
+
+1. Pruébalo en una boda **extendida**: en `/panel/vendors` abre un proveedor y mira los bloques
+   «Tareas» y «Partidas del presupuesto» (crea una tarea desde ahí y comprueba que sale en
+   `/panel/checklist` con el nombre del proveedor). En una partida de `/panel/budget`, elige
+   proveedor y pulsa «Usar el precio acordado como real»: solo rellena el campo, no guarda hasta
+   que pulsas Guardar. En `/panel/party`, enlaza a la madrina con su ficha de invitados y mira el
+   chip de «Confirmado / Pendiente».
+2. En una boda **básica** no debe aparecer ninguno de esos bloques (no tiene proveedores ni
+   presupuesto) y las tareas siguen como siempre.
+3. Mis supuestos están en D-62 de PENDIENTES; el 7 (pagada a mano) es el que más me interesa que
+   valides.
+
+**Tanda D-61 (la 31).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions` y `npm run deploy:rules`, las dos.** Functions: trigger nuevo
+   **`syncPublicParty`** y la proyección pública cambia (publica `cortejo`). Reglas: `weddingParty`
+   (la pareja guarda foto solo con consentimiento; los invitados ya no la leen) y Storage
+   (`vendors/` para contratos PDF, `party/` para las fotos).
+2. Después, en `/superadmin`, pulsa **«Añadir módulos nuevos»** una vez: las bodas ya creadas
+   ganan el cartel `Personas importantes` (apagado).
+3. Pruébalo en una boda **extendida**: `/panel/vendors` (crea dos fotógrafos de la misma
+   categoría con precio: sale «el más barato»; añade un pago y un contrato PDF) y `/panel/party`
+   (crea una persona con foto: **no te deja guardar sin marcar la casilla**; apágala con
+   «visible» y mira que desaparece de la web). El teléfono nunca sale en la web.
+4. En el plan básico ninguno de los dos módulos aparece (lo controlas en «Planes y módulos»).
+5. **La batería de reglas nueva** (`tests/rules/personas-importantes.spec.ts`) no la he podido
+   ejecutar en mi entorno: que la pase el CI y dime si falla algo.
+6. Decisión D-14 cerrada con tu respuesta (casilla obligatoria); el detalle y mis supuestos
+   están en D-61 de PENDIENTES.
+
+**Tanda D-60 (la 30).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`.** Cambian la proyección pública (una boda solo publica
+   las secciones de los módulos de su plan) y `quiz`, `gallery` y `libro` (rechazan a una
+   boda sin ese módulo). Sin reglas nuevas.
+2. Pruébalo: en una boda del plan básico, `/panel/web` solo debe ofrecer texto, eventos,
+   preguntas, cronología, alojamientos y dress code **si el plan los incluye**; en una
+   extendida salen todas. Cambia de plan una boda de prueba y mira que aparecen o
+   desaparecen. Los módulos de cada plan los controlas tú en superadmin → «Planes y módulos».
+3. Plantillas nuevas **Sevillana** y **Cottage**: elígelas en `/panel/diseno` y mira la web
+   en móvil. **Cottage** es inspirada en el estilo de la página que me pasaste, no copiada:
+   desde mi entorno no pude abrir trantanestudio.com. Si quieres que se parezca más,
+   pásame capturas.
+4. Los consejos de superadmin ocupan ya todo el ancho.
+5. **Si pierdes el superadmin**, era un fallo mío: dar de alta o borrar una boda con tu
+   propio correo te quitaba el claim. Arreglado; tras desplegar, concédelo una última vez
+   con `dar-superadmin.mjs`, sal y vuelve a entrar.
+6. En el despliegue, a la pregunta de borrar `setCompanionQuota`: **sí** (está retirada).
+
+**Tanda D-59 (la 29).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions` y `npm run deploy:rules`.** Funciones nuevas:
+   `listGuestbook`, `signGuestbook`, `deleteGuestbookEntry`. Cambian `listPhotos` y
+   `uploadPhoto` (álbumes) y `completeWeddings`. Regla nueva: `guestbookEntries`
+   (solo la pareja).
+2. En superadmin pulsa **«Añadir módulos nuevos»** para que las bodas que ya existen
+   reciban la sección del libro de firmas.
+3. Pruébalo: «Cambiar de plan» en una boda de prueba (sube y baja); firma el libro
+   como invitado y modéralo desde `/panel/guestbook`; sube una foto en «Nuestro
+   camino» y mira que no sale en «El día».
+4. El muro del libro es público y las firmas llevan solo el nombre de pila (o el mote): ya decidido.
+
+**Tanda D-58 (la 28).** Sin dependencias ni iconos nuevos.
+
+1. **`npm run deploy:functions`.** Cambian `listRsvpAnswers` (acompañantes) y las
+   comprobaciones de pareja (`exigirPareja` añade el motivo). Reglas: sin cambios.
+2. Publica una web: si vuelve a fallar, **copia el «Detalle técnico»** del aviso.
+3. Mira Mesas con muchos invitados, «Lo que han contestado» con acompañantes, los
+   filtros de fechas en Finanzas y la plantilla Barroca en Diseño.
+
 **Tanda D-55 (la 25).** Sin dependencias ni iconos nuevos.
 
 1. **`npm run deploy:functions`** (sin reglas nuevas). Funciones nuevas:

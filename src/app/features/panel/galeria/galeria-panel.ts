@@ -9,6 +9,7 @@ import { NpField } from '../../../design-system/components/field/field';
 import { NpModal } from '../../../design-system/components/modal/modal';
 import { NpIcon } from '../../../design-system/icons/icon';
 import type { FalloGaleria, FotoPublica } from '../../../core/galeria/galeria-panel-gateway';
+import { ALBUMES, type AlbumFoto } from '../../public-site/galeria/galeria';
 import { NpGaleriaPrevia } from './galeria-previa';
 import { GaleriaPanelStore } from './galeria.store';
 import { NpInput } from '../../../design-system/components/field/input';
@@ -56,6 +57,20 @@ const PALABRA_VACIAR = 'VACIAR';
           <p>{{ t('panel.galeria.identidadTexto') }}</p>
           <a routerLink="/panel/guests">{{ t('panel.galeria.identidadLista') }}</a>
         </np-alert>
+
+        <div class="pg__albumes" role="tablist" [attr.aria-label]="t('panel.galeria.albumes')">
+          @for (a of albumes; track a) {
+            <button
+              type="button"
+              role="tab"
+              [attr.data-album]="a"
+              [attr.aria-selected]="store.album() === a"
+              (click)="elegirAlbum(a)"
+            >
+              {{ t('publico.galeria.album.' + a) }}
+            </button>
+          }
+        </div>
 
         @if (store.fallo(); as fallo) {
           <np-alert status="declined" [heading]="t('panel.galeria.error')">
@@ -261,6 +276,26 @@ const PALABRA_VACIAR = 'VACIAR';
       display: flex;
       margin: var(--np-space-4) 0 0;
     }
+    .pg__albumes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--np-space-2);
+      margin-block-end: var(--np-space-3);
+    }
+    .pg__albumes button {
+      min-block-size: 2.75rem;
+      padding-inline: var(--np-space-3);
+      border: 1px solid var(--np-surface-border);
+      border-radius: var(--np-radius-md);
+      background: var(--np-surface-surface);
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+    .pg__albumes button[aria-selected='true'] {
+      border-width: 2px;
+      font-weight: var(--np-weight-semibold);
+    }
     .pg__resumen {
       margin: 0;
       color: var(--np-surface-text-muted);
@@ -338,6 +373,7 @@ export class PanelGaleria {
 
   protected readonly palabra = PALABRA_VACIAR;
 
+  protected readonly albumes = ALBUMES;
   protected readonly aBorrar = signal<FotoPublica | null>(null);
   protected readonly borrando = signal<string | null>(null);
   protected readonly previa = signal(false);
@@ -351,6 +387,10 @@ export class PanelGaleria {
 
   constructor() {
     void this.store.cargar();
+  }
+
+  protected elegirAlbum(album: AlbumFoto): void {
+    void this.store.elegirAlbum(album);
   }
 
   /** «1 foto» o «24 fotos»: el plural mal puesto canta igual que en una tabla. */

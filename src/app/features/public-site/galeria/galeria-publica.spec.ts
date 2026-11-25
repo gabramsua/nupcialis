@@ -34,25 +34,28 @@ function foto(parcial: Partial<FotoPublica> & { id: string }): FotoPublica {
     guestId: 'g1',
     autor: 'Ana Ruiz',
     pie: '',
+    album: 'dia',
     creadoEn: '2027-06-12T20:00:00.000Z',
     ...parcial,
   };
 }
 
 function montar(paginas: readonly ResultadoFotos[]) {
-  const subidas: { nombre: string }[] = [];
+  const subidas: { nombre: string; album: string }[] = [];
+  const pedidos: string[] = [];
   const borradas: string[] = [];
   let n = 0;
 
   const doble: PuertaGaleria = {
-    async listar(cursor) {
+    async listar(cursor, album) {
+      pedidos.push(album);
       // La primera llamada y las recargas tras subir vuelven a la página uno.
-      const pagina = cursor === null ? 0 : n;
+      const pagina = cursor === null ? (album === 'camino' ? 1 : 0) : n;
       n = pagina + 1;
       return paginas[pagina] ?? { ok: true, fotos: [], cursor: null };
     },
-    async subir(archivo) {
-      subidas.push({ nombre: archivo.name });
+    async subir(archivo, _pie, album) {
+      subidas.push({ nombre: archivo.name, album });
       return { ok: true, id: 'nueva' };
     },
     async borrar(photoId) {
@@ -89,6 +92,7 @@ function montar(paginas: readonly ResultadoFotos[]) {
     fixture,
     raiz,
     subidas,
+    pedidos,
     borradas,
     asentar,
     texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
@@ -246,5 +250,59 @@ describe('la galería del invitado', () => {
       const camara = p.raiz.querySelector('input[data-origen="camara"]');
       expect(camara?.getAttribute('capture')).toBe('environment');
     });
+  });
+});
+
+describe('los álbumes de la galería', () => {
+  it('abre en «El día» y pide ese álbum', async () => {
+    const p = montar([PAGINA_UNA]);
+    await p.asentar();
+
+    expect(p.pedidos).toEqual(['dia']);
+    expect(p.raiz.querySelector('[data-album="dia"]')?.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ofrece los dos álbumes con su nombre', async () => {
+    const p = montar([PAGINA_UNA]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('El día');
+    expect(p.texto()).toContain('Nuestro camino');
+  });
+
+  it('cambiar a «Nuestro camino» pide ese álbum y deja de enseñar las fotos del otro', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+    expect(p.miniaturas()).toHaveLength(2);
+
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    expect(p.pedidos).toEqual(['dia', 'camino']);
+    expect(p.miniaturas()).toHaveLength(0);
+    expect(p.raiz.querySelector('[data-album="camino"]')?.getAttribute('aria-selected')).toBe(
+      'true',
+    );
+  });
+
+  it('explica de qué va «Nuestro camino»', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    expect(p.texto()).toContain('a lo largo de su camino');
+  });
+
+  it('la foto que se sube va al álbum que se está mirando', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    const entrada = p.raiz.querySelector('input[type="file"]') as HTMLInputElement;
+    const archivo = new File(['x'], 'viaje.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(entrada, 'files', { value: [archivo], configurable: true });
+    entrada.dispatchEvent(new Event('change'));
+    await p.asentar();
+
+    expect(p.subidas).toEqual([{ nombre: 'viaje.jpg', album: 'camino' }]);
   });
 });

@@ -1,5 +1,5 @@
 import { CdkDrag, CdkDropList, CdkDropListGroup, type CdkDragDrop } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
@@ -24,6 +24,14 @@ import { descargarXlsx } from '../invitados/exportar-xlsx';
 import { hojasDeMesas, nombreDelFicheroDeMesas } from './exportar-mesas';
 import { MesasStore } from './mesas.store';
 import { NpInput } from '../../../design-system/components/field/input';
+
+function sinAcentos(valor: string): string {
+  return valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
 /** Lo que hay que saber para preguntar por los acompañantes de alguien. */
 interface CasoDeAcompanantes {
@@ -148,7 +156,13 @@ interface CasoDeAcompanantes {
               </span>
             </div>
 
-            <div cdkDropListGroup>
+            <!--
+              Dos columnas, como un correo: los que faltan a la izquierda, con
+              su propio scroll y sus filtros, y las mesas a la derecha. Con
+              trescientos invitados una lista a lo ancho de la página se
+              come la pantalla; aquí ocupa un lateral y se busca.
+            -->
+            <div cdkDropListGroup class="ms__reparto">
               <section
                 class="ms__pendientes"
                 cdkDropList
@@ -158,14 +172,68 @@ interface CasoDeAcompanantes {
               >
                 <h3>{{ t('panel.mesas.porSentar', { n: store.porSentar().length }) }}</h3>
 
+                <div class="ms__filtros" role="search">
+                  <input
+                    npInput
+                    type="search"
+                    autocomplete="off"
+                    [attr.aria-label]="t('panel.mesas.filtro.texto')"
+                    [placeholder]="t('panel.mesas.filtro.texto')"
+                    [value]="filtroTexto()"
+                    (input)="filtroTexto.set($any($event.target).value)"
+                  />
+                  @if (store.grupos().length > 0) {
+                    <select
+                      npInput
+                      [attr.aria-label]="t('panel.mesas.filtro.grupo')"
+                      [value]="filtroGrupo()"
+                      (change)="filtroGrupo.set($any($event.target).value)"
+                    >
+                      <option value="">{{ t('panel.mesas.filtro.todosLosGrupos') }}</option>
+                      @for (g of store.grupos(); track g.id) {
+                        <option [value]="g.id">{{ g.name }}</option>
+                      }
+                    </select>
+                  }
+                  <label class="ms__check">
+                    <input
+                      type="checkbox"
+                      [checked]="ocultarNoVienen()"
+                      (change)="ocultarNoVienen.set($any($event.target).checked)"
+                    />
+                    {{ t('panel.mesas.filtro.ocultarNoVienen') }}
+                  </label>
+                  @if (hayFiltro()) {
+                    <p class="ms__filtroEstado" role="status">
+                      {{
+                        t('panel.mesas.filtro.resultado', {
+                          n: porSentarVisibles().length,
+                          total: store.porSentar().length,
+                        })
+                      }}
+                      <button
+                        npButton
+                        size="sm"
+                        variant="ghost"
+                        type="button"
+                        (click)="limpiarFiltros()"
+                      >
+                        {{ t('panel.mesas.filtro.limpiar') }}
+                      </button>
+                    </p>
+                  }
+                </div>
+
                 @if (store.porSentar().length === 0) {
                   <p class="ms__hecho">
                     <np-icon name="check-circle" />
                     {{ t('panel.mesas.todosSentados') }}
                   </p>
+                } @else if (porSentarVisibles().length === 0) {
+                  <p class="ms__vacio">{{ t('panel.mesas.filtro.nadie') }}</p>
                 } @else {
                   <ul class="ms__fichas">
-                    @for (invitado of store.porSentar(); track invitado.id) {
+                    @for (invitado of porSentarVisibles(); track invitado.id) {
                       <li
                         cdkDrag
                         cdkDragPreviewContainer="parent"
@@ -464,6 +532,7 @@ interface CasoDeAcompanantes {
                 [disabled]="formulario.invalid"
                 (click)="guardar()"
               >
+                <np-icon name="check" />
                 {{ t('common.save') }}
               </button>
             </div>
@@ -531,8 +600,71 @@ interface CasoDeAcompanantes {
       margin: var(--np-space-1) 0 0;
       padding-inline-start: 1.1em;
     }
+    .ms__reparto {
+      display: grid;
+      gap: var(--np-space-3);
+      grid-template-columns: minmax(0, 1fr);
+      margin-block-start: var(--np-space-3);
+    }
+    .ms__reparto > .ms__lienzo {
+      margin: 0;
+    }
+    .ms__filtros {
+      display: grid;
+      gap: var(--np-space-2);
+      margin-block-end: var(--np-space-2);
+    }
+    .ms__check {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      font-size: var(--np-text-sm);
+    }
+    .ms__filtroEstado {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--np-space-1);
+      margin: 0;
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
+    }
+    .ms__vacio {
+      margin: 0;
+      color: var(--np-surface-text-muted);
+      font-size: var(--np-text-sm);
+    }
+    /* En el móvil la lista va arriba con altura propia y scroll; en pantalla
+       ancha pasa a ser un lateral pegado que se desplaza por su cuenta. */
     .ms__pendientes {
-      margin-block: var(--np-space-3);
+      display: flex;
+      flex-direction: column;
+      min-block-size: 0;
+      max-block-size: 60dvh;
+      overflow-y: auto;
+      margin-block: 0;
+    }
+    .ms__pendientes .ms__fichas {
+      flex-direction: column;
+      flex-wrap: nowrap;
+    }
+    .ms__pendientes .ms__ficha {
+      inline-size: 100%;
+    }
+    @media (min-width: 64rem) {
+      .ms__reparto {
+        grid-template-columns: 19rem minmax(0, 1fr);
+        align-items: start;
+      }
+      .ms__pendientes {
+        position: sticky;
+        inset-block-start: var(--np-space-3);
+        max-block-size: calc(100dvh - 7rem);
+      }
+    }
+    .ms__pendientes {
+      margin-block: 0;
       padding: var(--np-space-3);
       border: 1px solid var(--np-surface-border);
       border-radius: var(--np-radius-md);
@@ -811,6 +943,42 @@ export class PanelMesas {
   private readonly fb = inject(FormBuilder);
 
   protected readonly formas = FORMAS;
+
+  protected readonly filtroTexto = signal('');
+  protected readonly filtroGrupo = signal('');
+  protected readonly ocultarNoVienen = signal(false);
+
+  protected readonly hayFiltro = computed(
+    () => this.filtroTexto().trim() !== '' || this.filtroGrupo() !== '' || this.ocultarNoVienen(),
+  );
+
+  /**
+   * La lista de «faltan por sentar» tras los filtros. El texto busca en nombre
+   * y apellidos a la vez y sin mirar acentos: «garcia» encuentra «María García».
+   * Un acompañante también sale si se busca a su titular.
+   */
+  protected readonly porSentarVisibles = computed(() => {
+    const texto = sinAcentos(this.filtroTexto());
+    const grupo = this.filtroGrupo();
+    const ocultar = this.ocultarNoVienen();
+    const sentados = this.store.comoSentados();
+    const porId = new Map(sentados.map((i) => [i.id, i]));
+
+    return this.store.porSentar().filter((i) => {
+      if (ocultar && i.rsvpStatus === 'declined') return false;
+      if (grupo !== '' && !i.groupIds.includes(grupo)) return false;
+      if (texto === '') return true;
+      const titular = i.invitedById ? (porId.get(i.invitedById)?.fullName ?? '') : '';
+      return sinAcentos(`${i.fullName} ${titular}`).includes(texto);
+    });
+  });
+
+  protected limpiarFiltros(): void {
+    this.filtroTexto.set('');
+    this.filtroGrupo.set('');
+    this.ocultarNoVienen.set(false);
+  }
+
   protected readonly maximoNombre = MAX_NOMBRE_MESA;
 
   /** A quién tiene la pareja «en la mano»: por toque o por arrastre. */

@@ -36,6 +36,7 @@ import {
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { validarAlta, sugerirSlugs, type DatosAlta, type EntradaAlta } from './dominio/alta';
+import { claimsDeBoda } from './dominio/claims';
 import { dominioDeBoda } from './dominio/dominios';
 import { layoutDePlan, modulosIniciales, type Modulo } from './dominio/planes';
 import { proyeccionPublica, type BodaParaProyectar } from './dominio/proyeccion';
@@ -117,7 +118,9 @@ export const provisionWedding = onCall<Partial<EntradaAlta>, Promise<RespuestaAl
     // a una boda inexistente es un acceso concedido a la nada, y las reglas lo
     // aceptarían tan campante.
     for (const cuenta of cuentas) {
-      await auth().setCustomUserClaims(cuenta.uid, { weddingId, role: 'owner' });
+      // Conserva el superadmin si el correo de la pareja es el suyo (boda de pruebas).
+      const actuales = (await auth().getUser(cuenta.uid)).customClaims;
+      await auth().setCustomUserClaims(cuenta.uid, claimsDeBoda(actuales, weddingId));
     }
 
     const avisos: string[] = [];

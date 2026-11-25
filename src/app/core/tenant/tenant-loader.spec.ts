@@ -17,6 +17,8 @@ const SITIO: SitioPublico = {
   faqs: [],
   cronologia: [],
   alojamientos: [],
+  autobuses: [],
+  cortejo: [],
   ubicaciones: [],
   dressCode: DRESS_CODE_VACIO,
   historia: [],

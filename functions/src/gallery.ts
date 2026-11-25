@@ -32,7 +32,9 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import {
   MAX_BYTES,
   POR_PAGINA,
+  albumDe,
   bytesDeBase64,
+  esAlbum,
   esTipoPermitido,
   extensionDe,
   puedeBorrar,
@@ -42,13 +44,14 @@ import {
 import { topeDeFotos } from './dominio/limites';
 import { EXIGIR_APP_CHECK, REGION, bucket, db } from './firebase';
 import { exigirInvitado, exigirPareja, exigirVerificado } from './infra/permisos';
-import { modoDeAcceso } from './infra/boda';
+import { exigirModulo, modoDeAcceso } from './infra/boda';
 
 interface EntradaSubir {
   readonly contenidoBase64?: unknown;
   readonly miniaturaBase64?: unknown;
   readonly contentType?: unknown;
   readonly pie?: unknown;
+  readonly album?: unknown;
 }
 
 /**
@@ -62,6 +65,7 @@ export const uploadPhoto = onCall<EntradaSubir>(
   async (peticion): Promise<{ id: string; url: string }> => {
     const invitado = exigirInvitado(peticion);
     exigirVerificado(invitado, await modoDeAcceso(invitado.weddingId));
+    await exigirModulo(invitado.weddingId, 'gallery');
 
     const datos = peticion.data ?? {};
     const contentType = datos.contentType;
@@ -80,6 +84,7 @@ export const uploadPhoto = onCall<EntradaSubir>(
       throw new HttpsError('invalid-argument', 'La imagen pesa demasiado.');
     }
 
+    const album = albumDePeticion(datos.album);
     const base = db();
 
     // El techo se mira antes de guardar nada en Storage: una galería llena no
@@ -123,6 +128,7 @@ export const uploadPhoto = onCall<EntradaSubir>(
       // Las audiencias por grupo llegan con el módulo de grupos. Hasta
       // entonces toda foto es de la boda entera, y `null` es exactamente eso.
       audienceGroupId: null,
+      album,
       caption: sanearPie(datos.pie),
       status: 'approved',
       createdAt: FieldValue.serverTimestamp(),
@@ -134,10 +140,25 @@ export const uploadPhoto = onCall<EntradaSubir>(
 
 interface EntradaListar {
   readonly cursor?: unknown;
+  readonly album?: unknown;
+}
+
+/** Cuántos documentos se leen por vuelta al buscar las fotos de un álbum. */
+const LOTE = 60;
+
+/**
+ * El álbum que pide el cliente. Sin decir nada es el del día; uno que no existe
+ * es un error, no un «el del día»: así un cliente roto no sube al álbum
+ * equivocado sin que nadie se entere.
+ */
+function albumDePeticion(valor: unknown) {
+  if (valor === undefined || valor === null) return albumDe(undefined);
+  if (!esAlbum(valor)) throw new HttpsError('invalid-argument', 'Ese álbum no existe.');
+  return valor;
 }
 
 /**
- * Las fotos, de la última a la primera, por páginas.
+ * Las fotos de un álbum, de la última a la primera, por páginas.
  *
  * El cursor es la fecha de la última que se llevó, en ISO: no se guarda estado
  * en el servidor y dos páginas seguidas no repiten nada aunque entre medias
@@ -156,24 +177,41 @@ export const listPhotos = onCall<EntradaListar>(
     const quien = await quienMira(peticion);
 
     const cursor = typeof peticion.data?.cursor === 'string' ? peticion.data.cursor : null;
+    const album = albumDePeticion(peticion.data?.album);
 
     const coleccion = db().collection(`weddings/${quien.weddingId}/photos`);
 
     // La pareja ve la galería entera, sin filtrar por estado: es su boda y es
     // quien responde de lo que hay colgado. El invitado ve lo aprobado.
-    let consulta = (quien.esPareja ? coleccion : coleccion.where('status', '==', 'approved'))
-      .orderBy('createdAt', 'desc')
-      .limit(POR_PAGINA);
+    const base = quien.esPareja ? coleccion : coleccion.where('status', '==', 'approved');
 
-    if (cursor) {
-      const desde = new Date(cursor);
-      if (!Number.isNaN(desde.getTime())) {
-        consulta = consulta.startAfter(Timestamp.fromDate(desde));
+    // El álbum se filtra aquí y no en la consulta: las fotos anteriores a los
+    // álbumes no tienen el campo y una consulta por igualdad no las encontraría
+    // (ni haría falta un índice nuevo). Con el tope de la galería, son pocas
+    // vueltas.
+    const fotos: FotoPublica[] = [];
+    let desde = cursor && !Number.isNaN(new Date(cursor).getTime()) ? new Date(cursor) : null;
+    let agotada = false;
+
+    while (fotos.length < POR_PAGINA && !agotada) {
+      let consulta = base.orderBy('createdAt', 'desc').limit(LOTE);
+      if (desde) consulta = consulta.startAfter(Timestamp.fromDate(desde));
+
+      const snap = await consulta.get();
+      agotada = snap.size < LOTE;
+
+      for (const d of snap.docs) {
+        const foto = aFotoPublica(d.id, d.data());
+        if (foto.album !== album) continue;
+        fotos.push(foto);
+        if (fotos.length === POR_PAGINA) break;
       }
+
+      const ultimoDoc = snap.docs.at(-1)?.data()['createdAt'];
+      if (ultimoDoc instanceof Timestamp) desde = ultimoDoc.toDate();
+      else agotada = true;
     }
 
-    const snap = await consulta.get();
-    const fotos = snap.docs.map((d) => aFotoPublica(d.id, d.data()));
     const ultima = fotos.at(-1);
 
     return {
@@ -310,6 +348,7 @@ async function quienMira(
 
   const invitado = exigirInvitado(peticion);
   exigirVerificado(invitado, await modoDeAcceso(invitado.weddingId));
+  await exigirModulo(invitado.weddingId, 'gallery');
   return { weddingId: invitado.weddingId, esPareja: false, guestId: invitado.guestId };
 }
 
@@ -340,6 +379,7 @@ function aFotoPublica(id: string, datos: Record<string, unknown>): FotoPublica {
     guestId: typeof subidaPor['guestId'] === 'string' ? subidaPor['guestId'] : '',
     autor: typeof subidaPor['displayName'] === 'string' ? subidaPor['displayName'] : '',
     pie: typeof datos['caption'] === 'string' ? datos['caption'] : '',
+    album: albumDe(datos['album']),
     creadoEn: creado instanceof Timestamp ? creado.toDate().toISOString() : '',
   };
 }

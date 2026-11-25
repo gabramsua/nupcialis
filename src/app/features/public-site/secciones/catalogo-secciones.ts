@@ -58,6 +58,8 @@ export const TIPOS_EDITABLES: Record<TipoSeccion, TipoEditable> = {
   portada: { tipo: 'portada', icono: 'images', campos: campos('portada') },
   texto: { tipo: 'texto', icono: 'note-pencil', campos: campos('texto') },
   evento: { tipo: 'evento', icono: 'champagne', campos: campos('evento') },
+  // El formulario de confirmación vive en `/confirmar`; aquí va su cartel (D-64).
+  rsvp: { tipo: 'rsvp', icono: 'check-circle', campos: campos('rsvp') },
   // Las preguntas no se escriben en la sección: viven en su propia pantalla
   // (§8.9). Aquí solo se les pone el título y se decide dónde van.
   preguntas: { tipo: 'preguntas', icono: 'question', campos: campos('preguntas') },
@@ -65,6 +67,8 @@ export const TIPOS_EDITABLES: Record<TipoSeccion, TipoEditable> = {
   cronologia: { tipo: 'cronologia', icono: 'clock', campos: campos('cronologia') },
   // Los alojamientos se escriben en su pantalla (§8.10); aquí va su título.
   alojamientos: { tipo: 'alojamientos', icono: 'bed', campos: campos('alojamientos') },
+  // Los autobuses se escriben en su pantalla (D-63); aquí va su título.
+  buses: { tipo: 'buses', icono: 'bus', campos: campos('buses') },
   // El dress code se escribe en su pantalla (§8.11); aquí va su título.
   dressCode: { tipo: 'dressCode', icono: 't-shirt', campos: campos('dressCode') },
   // El quiz vive en su propia página; aquí solo se decide si hay cartel y qué
@@ -81,6 +85,10 @@ export const TIPOS_EDITABLES: Record<TipoSeccion, TipoEditable> = {
   playlist: { tipo: 'playlist', icono: 'music-notes', campos: campos('playlist') },
   // Nuestra historia (cinco apartados) vive en su página; aquí va su cartel.
   historia: { tipo: 'historia', icono: 'book-open', campos: campos('historia') },
+  // El libro de firmas (§8.15) vive en su página; aquí va su cartel.
+  libro: { tipo: 'libro', icono: 'pencil-simple', campos: campos('libro') },
+  // Las personas importantes (§8.12) se escriben en su pantalla; aquí va su título.
+  cortejo: { tipo: 'cortejo', icono: 'crown-simple', campos: campos('cortejo') },
 };
 
 /**
@@ -102,6 +110,36 @@ export function mover(
   if (hasta < 0 || hasta >= secciones.length) return secciones;
   if (secciones[hasta].type === 'portada') return secciones;
 
+  const copia = [...secciones];
+  [copia[desde], copia[hasta]] = [copia[hasta], copia[desde]];
+  return copia.map((seccion, indice) => ({ ...seccion, order: indice }));
+}
+
+/**
+ * Mueve una sección entre las que **se ven**.
+ *
+ * El editor solo enseña las secciones cuyo módulo trae el plan de la boda, pero
+ * la lista guardada las lleva todas. Subir una al lado de otra que no se ve
+ * parecería no hacer nada, así que se intercambia con su vecina visible y las
+ * ocultas se quedan donde estaban.
+ */
+export function moverEntreVisibles(
+  secciones: readonly { id: string; type: TipoSeccion; order: number }[],
+  visible: (s: { id: string; type: TipoSeccion }) => boolean,
+  id: string,
+  direccion: -1 | 1,
+): readonly { id: string; type: TipoSeccion; order: number }[] {
+  const visibles = secciones.filter(visible);
+  const actual = visibles.findIndex((s) => s.id === id);
+  if (actual < 0) return secciones;
+
+  const vecina = visibles[actual + direccion];
+  if (!vecina || vecina.type === 'portada' || visibles[actual].type === 'portada') {
+    return secciones;
+  }
+
+  const desde = secciones.findIndex((s) => s.id === id);
+  const hasta = secciones.findIndex((s) => s.id === vecina.id);
   const copia = [...secciones];
   [copia[desde], copia[hasta]] = [copia[hasta], copia[desde]];
   return copia.map((seccion, indice) => ({ ...seccion, order: indice }));

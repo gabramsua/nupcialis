@@ -16,6 +16,10 @@ export interface RespuestasDeInvitado {
   readonly nombre: string;
   readonly mote: string;
   readonly estado: 'pending' | 'confirmed' | 'declined';
+  /** Lo trajo otro invitado. Cuenta igual que el titular en los recuentos. */
+  readonly esAcompanante?: boolean;
+  /** Quién lo trajo, para no confundir a dos «Ana». */
+  readonly traidoPor?: string;
   /** Cuándo contestó, en ISO, o `null` si no ha contestado. */
   readonly cuando: string | null;
   readonly respuestas: Respuestas;

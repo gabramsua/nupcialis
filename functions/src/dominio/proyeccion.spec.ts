@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SECCIONES_INICIALES } from './secciones';
+import { SECCIONES_INICIALES, conModulosActivos } from './secciones';
 
 import { modulosIniciales } from './planes';
 import {
@@ -317,8 +317,141 @@ describe('proyeccionPublica', () => {
     expect(publico.theme.heroImagePath).toBeNull();
     // Una boda sin `content` no se publica vacía: se publica con las secciones
     // iniciales. Una web en blanco es peor que una con la portada y poco más,
-    // y el invitado ya está delante con el enlace abierto.
-    expect(publico.content.sections).toEqual(SECCIONES_INICIALES);
+    // y el invitado ya está delante con el enlace abierto. Sin módulos activos
+    // solo entran las que son de la web en sí: portada y texto.
+    expect(publico.content.sections).toEqual(conModulosActivos(SECCIONES_INICIALES, () => false));
+  });
+});
+
+describe('secciones según el plan de la boda', () => {
+  const tipos = (modules: ReturnType<typeof modulosIniciales>) =>
+    proyeccionPublica({ modules }).content.sections.map((s) => s.type);
+
+  it('una boda del plan básico no publica quiz, galería ni historia', () => {
+    const publicadas = tipos(modulosIniciales('basic'));
+    for (const fuera of ['quiz', 'galeria', 'historia', 'playlist', 'libro', 'cortejo']) {
+      expect(publicadas, fuera).not.toContain(fuera);
+    }
+    // D-63: el plan básico ofrece cronología, preguntas, mapa, regalos y alojamiento.
+    for (const dentro of [
+      'portada',
+      'texto',
+      'rsvp',
+      'cronologia',
+      'preguntas',
+      'mapa',
+      'regalos',
+      'alojamientos',
+      'buses',
+    ]) {
+      expect(publicadas, dentro).toContain(dentro);
+    }
+  });
+
+  it('una boda del plan extendido las publica todas', () => {
+    const publicadas = tipos(modulosIniciales('extended'));
+    for (const tipo of ['quiz', 'galeria', 'historia', 'playlist', 'regalos', 'libro', 'cortejo']) {
+      expect(publicadas, tipo).toContain(tipo);
+    }
+  });
+
+  it('un módulo apagado se lleva su sección aunque la pareja la tuviera encendida', () => {
+    const modules = modulosIniciales('extended');
+    modules.quiz = { enabled: false, visibility: 'hidden' };
+    expect(tipos(modules)).not.toContain('quiz');
+  });
+});
+
+describe('autobuses en la proyección (D-63)', () => {
+  const RUTAS = [
+    { id: 'r1', sentido: 'ida', salida: 'Plaza Mayor', destino: 'Finca', hora: '17:30', x: 1 },
+    { id: 'r2', sentido: 'vuelta', salida: 'Finca', destino: 'Plaza Mayor', hora: '01:00' },
+    { id: 'mala', sentido: 'ida', salida: '', destino: 'Finca' },
+  ];
+  const conRutas = (enabled: boolean) => {
+    const modules = modulosIniciales('basic');
+    modules.buses = { enabled, visibility: 'visible', config: { rutas: RUTAS } };
+    return proyeccionPublica({ modules }).content.buses;
+  };
+
+  it('publica las rutas saneadas, solo con lo permitido', () => {
+    const rutas = conRutas(true);
+    expect(rutas.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(contieneClave(rutas, 'x')).toBe(false);
+  });
+
+  it('con el módulo apagado no publica nada, aunque haya rutas guardadas', () => {
+    expect(conRutas(false)).toEqual([]);
+  });
+
+  it('sin configuración publica una lista vacía', () => {
+    expect(proyeccionPublica({ modules: modulosIniciales('basic') }).content.buses).toEqual([]);
+  });
+});
+
+describe('personas importantes en la proyección (§8.12, D-61)', () => {
+  const persona = (parcial: Record<string, unknown> = {}) => ({
+    id: 'madrina',
+    displayName: 'Carmen Ruiz',
+    role: 'Madrina',
+    side: 'A',
+    bio: 'La tía que lo organiza todo.',
+    phone: '600112233',
+    guestId: 'g1',
+    photoPath: 'weddings/w1/party/1.jpg',
+    photoUrl: 'https://firebasestorage.googleapis.com/v0/b/x/o/1.jpg',
+    photoConsent: true,
+    photoConsentAt: { seconds: 1 },
+    visibleToGuests: true,
+    order: 1,
+    ...parcial,
+  });
+
+  const cortejo = (personas: unknown[], modules = modulosIniciales('extended')) =>
+    proyeccionPublica({ ...BODA, modules }, [], [], [], [], personas).content.cortejo;
+
+  it('publica a las visibles con lo justo: nunca el teléfono ni el vínculo con la lista', () => {
+    const [publica] = cortejo([persona()]);
+    expect(publica).toEqual({
+      id: 'madrina',
+      name: 'Carmen Ruiz',
+      role: 'Madrina',
+      side: 'A',
+      bio: 'La tía que lo organiza todo.',
+      photoUrl: 'https://firebasestorage.googleapis.com/v0/b/x/o/1.jpg',
+      order: 1,
+    });
+    for (const secreto of ['phone', 'guestId', 'photoPath', 'photoConsent', 'photoConsentAt']) {
+      expect(contieneClave(publica, secreto), secreto).toBe(false);
+    }
+  });
+
+  it('no publica a quien la pareja no ha marcado como visible', () => {
+    expect(
+      cortejo([persona({ visibleToGuests: false }), persona({ id: 'x', visibleToGuests: 'sí' })]),
+    ).toEqual([]);
+  });
+
+  it('la foto solo sale si hay consentimiento registrado', () => {
+    for (const photoConsent of [false, undefined, 'true', 1]) {
+      const [publica] = cortejo([persona({ photoConsent })]);
+      expect(publica?.photoUrl, String(photoConsent)).toBeNull();
+      // La persona sigue saliendo, con su inicial en la web.
+      expect(publica?.name).toBe('Carmen Ruiz');
+    }
+  });
+
+  it('una foto que no es https no sale aunque haya consentimiento', () => {
+    expect(cortejo([persona({ photoUrl: 'javascript:alert(1)' })])[0]?.photoUrl).toBeNull();
+    expect(cortejo([persona({ photoUrl: 'http://x.test/a.jpg' })])[0]?.photoUrl).toBeNull();
+  });
+
+  it('con el módulo apagado no se publica a nadie: son datos de terceros', () => {
+    const modules = modulosIniciales('extended');
+    modules.weddingParty = { enabled: false, visibility: 'hidden' };
+    expect(cortejo([persona()], modules)).toEqual([]);
+    // Y en el plan básico, que no lo incluye, tampoco.
+    expect(cortejo([persona()], modulosIniciales('basic'))).toEqual([]);
   });
 });
 

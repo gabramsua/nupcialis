@@ -260,7 +260,7 @@ export function traducirAcceso(error: unknown): FalloAcceso {
 }
 
 /** Las páginas que piden identificarse, con el nombre con el que vuelven de la puerta. */
-export const PAGINAS_CON_IDENTIDAD = ['quiz', 'galeria', 'regalos', 'playlist'] as const;
+export const PAGINAS_CON_IDENTIDAD = ['quiz', 'galeria', 'regalos', 'playlist', 'libro'] as const;
 export type PaginaConIdentidad = (typeof PAGINAS_CON_IDENTIDAD)[number];
 
 export function esPaginaConIdentidad(valor: unknown): valor is PaginaConIdentidad {

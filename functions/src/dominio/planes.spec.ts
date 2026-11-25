@@ -43,6 +43,15 @@ describe('modulosIniciales', () => {
     expect(conf.guests.enabled).toBe(true);
   });
 
+  it('D-63: el básico trae también regalos, alojamiento y autobuses, y el extendido los conserva', () => {
+    for (const plan of ['basic', 'extended'] as const) {
+      const conf = modulosIniciales(plan);
+      for (const modulo of ['gifts', 'accommodation', 'buses'] as const) {
+        expect(conf[modulo].enabled, `${plan}/${modulo}`).toBe(true);
+      }
+    }
+  });
+
   it('el básico NO trae galería ni quiz, ni siquiera apagados como opción', () => {
     const conf = modulosIniciales('basic');
     for (const modulo of SOLO_EXTENDIDO) {

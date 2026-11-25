@@ -34,6 +34,7 @@ import { faltaParaPublicar } from './publicar';
   selector: 'np-publicar-web',
   imports: [RouterLink, TranslocoDirective, NpAlert, NpButton, NpIcon, NpModal, NpStatusChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.pw-host--flota]': 'flota()' },
   template: `
     <ng-container *transloco="let t">
       @if (hayPuerto && boda.boda(); as b) {
@@ -69,15 +70,20 @@ import { faltaParaPublicar } from './publicar';
           }
 
           @if (b.status === 'active' && posicion() !== 'arriba') {
-            <section class="pw pw--pequena" data-estado="active" aria-labelledby="pw-titulo-pie">
-              <div class="pw__cab">
-                <h3 id="pw-titulo-pie">{{ t('panel.publicar.titulo') }}</h3>
-                <np-status-chip status="confirmed" [label]="t('panel.estado.active')" />
-              </div>
-              <p class="pw__url">
+            <!--
+              Flota abajo, en una sola fila: es algo que casi nadie va a querer
+              y no merece un bloque entero, pero tiene que estar a mano.
+            -->
+            <section
+              class="pw pw--flota"
+              data-estado="active"
+              [attr.aria-label]="t('panel.publicar.titulo')"
+            >
+              <np-status-chip status="confirmed" [label]="t('panel.estado.active')" />
+              <a class="pw__url" [href]="web()" target="_blank" rel="noopener">
                 <np-icon name="link-simple" />
-                <a [href]="web()" target="_blank" rel="noopener">{{ web() }}</a>
-              </p>
+                {{ web() }}
+              </a>
               <button npButton variant="ghost" size="sm" type="button" (click)="abrir('draft')">
                 <np-icon name="eye-slash" />
                 {{ t('panel.publicar.aBorrador') }}
@@ -111,6 +117,13 @@ import { faltaParaPublicar } from './publicar';
                   <p class="pw__detalle">
                     {{ detalle.texto ?? t('panel.publicar.detalle.' + detalle.clave) }}
                   </p>
+                  @if (detalle.pista) {
+                    <p class="pw__detalle">
+                      <small>{{
+                        t('panel.publicar.detalle.tecnico', { pista: detalle.pista })
+                      }}</small>
+                    </p>
+                  }
                 }
               </np-alert>
             }
@@ -131,6 +144,12 @@ import { faltaParaPublicar } from './publicar';
     :host {
       display: block;
     }
+    /* El anfitrión es el que se pega: un sticky dentro de su propia caja no flota. */
+    :host(.pw-host--flota) {
+      position: sticky;
+      inset-block-end: var(--np-space-3);
+      z-index: 2;
+    }
     .pw {
       display: grid;
       gap: var(--np-space-3);
@@ -142,18 +161,23 @@ import { faltaParaPublicar } from './publicar';
     .pw[data-estado='draft'] {
       border-color: var(--np-cat-rosa);
     }
-    .pw--pequena {
-      gap: var(--np-space-2);
-      padding: var(--np-space-3);
+    /* Una fila que flota pegada al borde de abajo del contenido. */
+    .pw--flota {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--np-space-2) var(--np-space-3);
+      padding: var(--np-space-2) var(--np-space-3);
       font-size: var(--np-text-sm);
-      background: transparent;
+      box-shadow: var(--np-shadow-md, 0 4px 14px rgb(0 0 0 / 0.12));
     }
-    .pw--pequena h3 {
-      font-size: var(--np-text-sm);
-      font-weight: 600;
-    }
-    .pw--pequena button {
-      justify-self: start;
+    .pw--flota .pw__url {
+      flex: 1 1 12rem;
+      min-inline-size: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      word-break: normal;
     }
     .pw__cab {
       display: flex;
@@ -187,6 +211,11 @@ export class PublicarWeb {
   readonly posicion = input<'arriba' | 'abajo' | 'todo'>('todo');
 
   protected readonly hayPuerto = this.puerta !== null;
+
+  /** Publicada y con la parte de abajo a la vista: la fila flota. */
+  protected readonly flota = computed(
+    () => this.boda.boda()?.status === 'active' && this.posicion() !== 'arriba',
+  );
   protected readonly confirmando = signal<'active' | 'draft' | null>(null);
   protected readonly ocupado = signal(false);
   protected readonly fallo = signal(false);
@@ -196,7 +225,8 @@ export class PublicarWeb {
   protected readonly detalleFallo = computed(() => {
     const f = this.falloCrudo();
     if (!f) return null;
-    return f.tipo === 'error' ? { texto: f.mensaje } : { clave: f.tipo };
+    if (f.tipo === 'error') return { texto: f.mensaje, clave: f.tipo, pista: undefined };
+    return { texto: undefined, clave: f.tipo, pista: 'pista' in f ? f.pista : undefined };
   });
   protected readonly resultado = signal<'publicada' | 'borrador' | null>(null);
 

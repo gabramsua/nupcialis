@@ -31,8 +31,17 @@ export interface DatosTarea {
   readonly dueDate: Date | null;
   readonly assignedTo: TareaDelPanel['assignedTo'];
   readonly priority: TareaDelPanel['priority'];
+  /** Proveedor y partida a los que cuelga (F4.1c), o `null`. Al editar se escriben tal cual. */
+  readonly vendorId: string | null;
+  readonly budgetItemId: string | null;
   /** Solo se usa al crear; al editar no se toca. */
   readonly order: number;
+}
+
+/** Los enlaces que se pueden cambiar sin tocar nada más. Ausente = no se toca; `null` = desenlaza. */
+export interface EnlacesDeTarea {
+  readonly vendorId?: string | null;
+  readonly budgetItemId?: string | null;
 }
 
 export interface QuienMarca {
@@ -54,6 +63,8 @@ export interface PuertaTareas {
     hecha: boolean,
     por: QuienMarca,
   ): Promise<ResultadoEscrituraTarea>;
+  /** Enlaza o desenlaza una tarea desde la ficha del proveedor o de la partida. */
+  enlazar(weddingId: string, id: string, enlaces: EnlacesDeTarea): Promise<ResultadoEscrituraTarea>;
   borrar(weddingId: string, id: string): Promise<ResultadoEscrituraTarea>;
 }
 

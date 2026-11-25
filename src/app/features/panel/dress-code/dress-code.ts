@@ -61,9 +61,17 @@ type Lista = 'sugeridos' | 'evitar';
             <p>{{ t('panel.dressCode.ayuda') }}</p>
           </div>
           <button npButton type="button" [loading]="guardando()" (click)="guardar()">
+            <np-icon name="check" />
             {{ t('common.save') }}
           </button>
         </header>
+
+        @if (recienGuardado()) {
+          <p class="dc__hecho" role="status">
+            <np-icon name="check-circle" weight="fill" />
+            {{ t('panel.datos.guardado') }}
+          </p>
+        }
 
         @if (store.error(); as error) {
           <np-alert status="declined" [heading]="t('panel.dressCode.errorGuardar')">
@@ -217,6 +225,14 @@ type Lista = 'sugeridos' | 'evitar';
       display: flex;
       flex-direction: column;
       gap: var(--np-space-4);
+    }
+    .dc__hecho {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
     }
     .dc__intro {
       display: flex;
@@ -376,6 +392,7 @@ export class PanelDressCode {
   protected readonly maximoDescripcion = MAX_DESCRIPCION_DRESS;
 
   protected readonly guardando = signal(false);
+  protected readonly recienGuardado = signal(false);
 
   /**
    * El dress code que hay guardado, o el vacío mientras la boda carga.
@@ -491,7 +508,8 @@ export class PanelDressCode {
     if (this.guardando()) return;
 
     this.guardando.set(true);
-    await this.store.guardarDressCode({
+    this.recienGuardado.set(false);
+    const ok = await this.store.guardarDressCode({
       description: this.descripcion(),
       suggestedColors: this.sugeridos(),
       avoidColors: this.evitar(),
@@ -502,5 +520,6 @@ export class PanelDressCode {
         .filter((tip) => tip !== ''),
     });
     this.guardando.set(false);
+    this.recienGuardado.set(ok);
   }
 }

@@ -19,13 +19,21 @@ import { plantillaDe } from '../../public-site/plantillas/catalogo';
 import { cargarPlantilla } from '../../public-site/plantillas/cargador';
 import { Fuentes } from '../../public-site/plantillas/fuentes';
 import type { DatosPortada } from '../../public-site/plantillas/portada';
-import { TIPOS_EDITABLES, mover } from '../../public-site/secciones/catalogo-secciones';
+import {
+  TIPOS_EDITABLES,
+  moverEntreVisibles,
+} from '../../public-site/secciones/catalogo-secciones';
+import { conModulosActivos } from '../../public-site/secciones/secciones';
 import type { Seccion } from '../../public-site/secciones/secciones';
 import { BodaStore } from '../boda.store';
 import { DRESS_CODE_VACIO } from '../../public-site/dress-code/dress-code';
 import { FaqsStore } from '../faqs/faqs.store';
 import { CronologiaStore } from '../cronologia/cronologia.store';
 import { AlojamientosStore } from '../alojamientos/alojamientos.store';
+import { PersonasStore } from '../personas/personas.store';
+import { UbicacionesStore } from '../mapa/ubicaciones.store';
+import { sanearUbicaciones } from '../../public-site/mapa/ubicaciones';
+import { sanearCortejo } from '../../public-site/cortejo/cortejo';
 import { sanearFaqs } from '../../public-site/faqs/faqs';
 import { sanearCronologia } from '../../public-site/cronologia/cronologia';
 import { sanearAlojamientos } from '../../public-site/alojamientos/alojamientos';
@@ -87,10 +95,22 @@ import { NpInput } from '../../../design-system/components/field/input';
           </np-alert>
         }
         @if (sucio()) {
-          <p class="es__aviso">
-            <np-icon name="warning" />
-            {{ t('panel.secciones.sinGuardar') }}
-          </p>
+          <!--
+            Es una tarjeta pegada arriba y no una línea de texto: quien edita la
+            lista de secciones baja mucho y la línea se quedaba fuera de la
+            pantalla, de modo que se cerraba el panel creyendo que estaba guardado.
+          -->
+          <div class="es__aviso" role="status">
+            <np-icon name="warning" weight="fill" />
+            <div class="es__aviso-texto">
+              <strong>{{ t('panel.secciones.sinGuardarTitulo') }}</strong>
+              <span>{{ t('panel.secciones.sinGuardar') }}</span>
+            </div>
+            <button npButton type="button" size="sm" [loading]="guardando()" (click)="guardar()">
+              <np-icon name="check" />
+              {{ t('common.save') }}
+            </button>
+          </div>
         }
 
         <div class="es__pestanas" role="tablist">
@@ -140,7 +160,11 @@ import { NpInput } from '../../../design-system/components/field/input';
 
         <div class="es__cuerpo" [attr.data-vista]="vista()">
           <div class="es__lista">
-            @for (seccion of secciones(); track seccion.id; let primera = $first, ultima = $last) {
+            @for (
+              seccion of disponibles();
+              track seccion.id;
+              let primera = $first, ultima = $last
+            ) {
               <article class="es__seccion" [class.es__seccion--apagada]="!seccion.enabled">
                 <header class="es__cabecera">
                   <np-icon
@@ -292,12 +316,32 @@ import { NpInput } from '../../../design-system/components/field/input';
       color: var(--np-surface-text-muted);
     }
     .es__aviso {
+      position: sticky;
+      inset-block-start: var(--np-space-2);
+      z-index: 5;
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--np-space-2);
-      margin: 0;
+      gap: var(--np-space-3);
+      padding: var(--np-space-3) var(--np-space-4);
+      border: 2px solid var(--np-pending-border);
+      border-radius: var(--np-radius-lg);
+      background: var(--np-pending-bg);
+      color: var(--np-pending-fg);
+      box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+    }
+    .es__aviso np-icon {
+      flex: none;
+      font-size: var(--np-text-xl);
+    }
+    .es__aviso-texto {
+      display: grid;
+      flex: 1 1 14rem;
+      gap: var(--np-space-1);
       font-size: var(--np-text-sm);
-      color: var(--np-status-pending-text);
+    }
+    .es__aviso-texto strong {
+      font-size: var(--np-text-base);
     }
     .es__pestanas {
       display: flex;
@@ -456,6 +500,8 @@ export class EditorSecciones {
   private readonly faqs = inject(FaqsStore);
   private readonly cronologia = inject(CronologiaStore);
   private readonly alojamientos = inject(AlojamientosStore);
+  private readonly personas = inject(PersonasStore);
+  private readonly mapa = inject(UbicacionesStore);
   private readonly fuentes = inject(Fuentes);
 
   protected readonly vista = signal<'editar' | 'previa'>('editar');
@@ -467,6 +513,24 @@ export class EditorSecciones {
   protected readonly secciones = signal<readonly Seccion[]>([]);
 
   protected readonly plantilla = signal<Type<unknown> | null>(null);
+
+  /**
+   * Las secciones que puede tocar esta boda: las de los módulos de su plan.
+   *
+   * El alta las siembra todas, así que sin este filtro una boda del plan básico
+   * veía «Quiz», «Galería» o «Nuestra historia» y podía encenderlas. Las que
+   * quedan fuera se conservan en el borrador y se guardan tal cual: si la boda
+   * sube de plan, vuelven con lo que tuvieran escrito.
+   */
+  protected readonly disponibles = computed(() =>
+    conModulosActivos(this.secciones(), (modulo) => this.moduloActivo(modulo)),
+  );
+
+  private moduloActivo(modulo: string): boolean {
+    const modulos: Readonly<Record<string, { readonly enabled: boolean } | undefined>> =
+      this.store.boda()?.modulos ?? {};
+    return modulos[modulo]?.enabled === true;
+  }
 
   protected readonly sucio = computed(
     () => JSON.stringify(this.secciones()) !== JSON.stringify(this.store.boda()?.secciones ?? []),
@@ -492,15 +556,34 @@ export class EditorSecciones {
       timezone: boda?.timezone ?? 'Europe/Madrid',
       locale: 'es',
       heroImageUrl: boda?.heroImageUrl ?? null,
-      secciones: this.secciones(),
+      secciones: this.disponibles(),
       // Se pasan por el saneador del dominio, el mismo que usa la proyección:
       // así lo que no se publicaría —una pregunta sin respuesta, un hito
       // interno, una ficha sin nombre— tampoco se ve aquí.
       faqs: sanearFaqs(this.faqs.faqs()),
       cronologia: sanearCronologia(this.cronologia.hitos()),
       alojamientos: sanearAlojamientos(this.alojamientos.alojamientos()),
-      // La vista previa del editor no trae el mapa: los «Cómo llegar» salen en la web.
-      ubicaciones: [],
+      autobuses: this.store.boda()?.autobuses ?? [],
+      // Con el mismo saneado que la proyección: sin teléfono y con foto solo si
+      // hay consentimiento registrado.
+      cortejo: sanearCortejo(
+        this.personas.personas().map((p) => ({
+          id: p.id,
+          displayName: p.name,
+          role: p.role,
+          side: p.side,
+          bio: p.bio,
+          photoUrl: p.photoUrl,
+          photoConsent: p.photoConsent,
+          visibleToGuests: p.visible,
+          order: p.order,
+        })),
+      ),
+      // Los sitios del mapa, con el mismo saneado que la proyección: sin pin o ocultos
+      // a los invitados no se publican, y aquí tampoco se ven.
+      ubicaciones: sanearUbicaciones(
+        this.mapa.ubicaciones().map((u) => ({ ...u, coords: { lat: u.lat, lng: u.lng } })),
+      ),
       dressCode: boda?.dressCode ?? DRESS_CODE_VACIO,
     };
   });
@@ -512,6 +595,8 @@ export class EditorSecciones {
     void this.faqs.cargar();
     void this.cronologia.cargar();
     void this.alojamientos.cargar();
+    void this.personas.cargar();
+    void this.mapa.cargar();
 
     // El borrador arranca de lo guardado, y se rehace si la boda se recarga.
     effect(() => {
@@ -577,7 +662,12 @@ export class EditorSecciones {
 
   private reordenar(id: string, direccion: -1 | 1): void {
     this.secciones.update((lista) => {
-      const movidas = mover(lista, id, direccion);
+      const movidas = moverEntreVisibles(
+        lista,
+        (s) => conModulosActivos([s], (modulo) => this.moduloActivo(modulo)).length > 0,
+        id,
+        direccion,
+      );
       // `mover` solo conoce id, tipo y orden: se vuelven a casar con su sección.
       const porId = new Map(lista.map((seccion) => [seccion.id, seccion]));
       return movidas.map((m) => ({ ...porId.get(m.id)!, order: m.order }));

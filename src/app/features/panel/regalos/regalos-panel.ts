@@ -177,8 +177,15 @@ const VACIO: Formulario = {
             [loading]="guardandoAportacion()"
             (click)="guardarAportacion()"
           >
+            <np-icon name="check" />
             {{ t('common.save') }}
           </button>
+          @if (aportacionGuardada()) {
+            <p class="pr__hecho" role="status">
+              <np-icon name="check-circle" weight="fill" />
+              {{ t('common.saved') }}
+            </p>
+          }
         </section>
 
         <!-- La lista -->
@@ -334,6 +341,7 @@ const VACIO: Formulario = {
                 [loading]="guardandoRegalo()"
                 (click)="guardarRegalo()"
               >
+                <np-icon name="check" />
                 {{ t('common.save') }}
               </button>
             </div>
@@ -343,6 +351,14 @@ const VACIO: Formulario = {
     </ng-container>
   `,
   styles: `
+    .pr__hecho {
+      display: flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
+    }
     .pr__intro {
       display: flex;
       flex-direction: column;
@@ -478,6 +494,7 @@ export class PanelRegalos {
   protected readonly mensaje = linkedSignal(() => this.boda.boda()?.aportacion.mensaje ?? '');
 
   protected readonly guardandoAportacion = signal(false);
+  protected readonly aportacionGuardada = signal(false);
   protected readonly guardandoRegalo = signal(false);
   protected readonly editando = signal(false);
   protected readonly forma = signal<Formulario>(VACIO);
@@ -547,13 +564,15 @@ export class PanelRegalos {
     if (this.guardandoAportacion()) return;
 
     this.guardandoAportacion.set(true);
-    await this.boda.guardarAportacion({
+    this.aportacionGuardada.set(false);
+    const ok = await this.boda.guardarAportacion({
       iban: this.iban().trim(),
       titular: this.titular().trim(),
       bizum: this.bizum().trim(),
       mensaje: this.mensaje(),
     });
     this.guardandoAportacion.set(false);
+    this.aportacionGuardada.set(ok);
   }
 
   protected async guardarRegalo(): Promise<void> {

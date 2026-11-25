@@ -11,6 +11,7 @@ import {
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
 import { traducirPresupuesto } from '../../../core/firebase/presupuesto-gateway.firestore';
 import { abrirDialogosEnPruebas } from '../boda.testing';
+import { doblesDeEnlaces } from '../enlaces/dobles-enlaces.testing';
 import { PanelPresupuesto } from './presupuesto-panel';
 import type { DatosDePartida, PartidaDelPanel } from './presupuesto';
 import { PresupuestoStore } from './presupuesto.store';
@@ -27,6 +28,7 @@ const partida = (parcial: Partial<PartidaDelPanel> & { id: string }): PartidaDel
   paid: false,
   dueOn: null,
   notes: '',
+  vendorId: null,
   order: 1,
   ...parcial,
 });
@@ -49,6 +51,9 @@ function montar(partidas: readonly PartidaDelPanel[], falloAlMarcar = false) {
       marcadas.push({ id, pagada });
       return { ok: true };
     },
+    async enlazarProveedor() {
+      return { ok: true };
+    },
     async borrar(_w, id) {
       borradas.push(id);
       return { ok: true };
@@ -64,6 +69,7 @@ function montar(partidas: readonly PartidaDelPanel[], falloAlMarcar = false) {
     ],
     providers: [
       provideIconSprite('panel'),
+      ...doblesDeEnlaces().providers,
       { provide: PUERTA_PRESUPUESTO, useValue: puerta },
       { provide: SessionStore, useValue: { weddingId: () => 'w1' } },
       PresupuestoStore,

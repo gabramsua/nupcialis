@@ -401,7 +401,7 @@ describe('quién ha jugado', () => {
     await p.asentar();
 
     expect(p.texto()).toContain('Ana Ruiz');
-    expect(p.texto()).toContain('+34600111222');
+    expect(p.texto()).toContain('600111222');
   });
 
   /**

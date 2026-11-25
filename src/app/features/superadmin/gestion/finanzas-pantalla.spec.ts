@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { PagoEnEdicion } from './gestion';
 import { abrirDialogosEnPruebas } from '../../panel/invitados/dobles.testing';
-import { PantallaFinanzas } from './finanzas-pantalla';
+import { PantallaFinanzas, enRango, limitesDeRango } from './finanzas-pantalla';
 import { crearMontaje, pago } from './gestion.testing';
 
 const montar = crearMontaje(
@@ -172,5 +172,28 @@ describe('los cobros', () => {
     });
     expect(p.texto()).toContain('No se han podido cargar los cobros');
     expect(p.texto()).toContain('Reintentar');
+  });
+});
+
+describe('filtro por fechas', () => {
+  it('sin rango entra todo, también lo pendiente sin fecha', () => {
+    expect(enRango(null, '', '')).toBe(true);
+    expect(enRango('2026-03-01', '', '')).toBe(true);
+  });
+
+  it('con rango, cuenta los extremos y deja fuera lo que no tiene fecha', () => {
+    expect(enRango('2026-03-01', '2026-03-01', '2026-03-31')).toBe(true);
+    expect(enRango('2026-03-31', '2026-03-01', '2026-03-31')).toBe(true);
+    expect(enRango('2026-04-01', '2026-03-01', '2026-03-31')).toBe(false);
+    expect(enRango('2026-02-28', '2026-03-01', '')).toBe(false);
+    expect(enRango(null, '2026-03-01', '')).toBe(false);
+  });
+
+  it('calcula los rangos rápidos', () => {
+    const hoy = new Date(2026, 0, 15);
+    expect(limitesDeRango('mes', hoy)).toEqual(['2026-01-01', '2026-01-31']);
+    expect(limitesDeRango('mesAnterior', hoy)).toEqual(['2025-12-01', '2025-12-31']);
+    expect(limitesDeRango('anio', hoy)).toEqual(['2026-01-01', '2026-12-31']);
+    expect(limitesDeRango('todo', hoy)).toEqual(['', '']);
   });
 });

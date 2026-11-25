@@ -122,7 +122,10 @@ function vaciarCola(): Promise<void> {
   return new Promise((listo) => setTimeout(listo, 0));
 }
 
-async function montar(preguntas: readonly PreguntaDelPanel[] = [ASISTENCIA, MENU, CANCION]) {
+async function montar(
+  preguntas: readonly PreguntaDelPanel[] = [ASISTENCIA, MENU, CANCION],
+  bodaExtra: Partial<typeof BODA_DE_PRUEBA> = {},
+) {
   const puerta = puertaFalsa(preguntas);
   const limites: (Date | null)[] = [];
 
@@ -146,7 +149,7 @@ async function montar(preguntas: readonly PreguntaDelPanel[] = [ASISTENCIA, MENU
       {
         provide: BodaStore,
         useValue: {
-          boda: () => BODA_DE_PRUEBA,
+          boda: () => ({ ...BODA_DE_PRUEBA, ...bodaExtra }),
           async guardarFechaLimite(limite: Date | null) {
             limites.push(limite);
             return true;
@@ -360,6 +363,23 @@ describe('el editor del formulario', () => {
     await vaciarCola();
 
     expect(p.limites[0]?.toISOString()).toBe('2027-06-01T00:00:00.000Z');
+  });
+
+  it('sin plazo, dice que se cierra una semana antes de la boda y cuándo (D-66)', async () => {
+    const p = await montar();
+    // La boda de prueba es el 12 de junio de 2027.
+    expect(p.raiz.querySelector('.pr__plazo small')?.textContent).toContain(
+      'una semana antes de la boda: el 5 de junio de 2027',
+    );
+    // Sin plazo propio no hay nada que «volver a poner por defecto».
+    expect(p.raiz.querySelector('.pr__plazo button')).toBeNull();
+  });
+
+  it('el botón de volver al plazo por defecto va en la misma fila que el campo', async () => {
+    const p = await montar(undefined, { rsvpDeadline: new Date('2027-06-01T00:00:00.000Z') });
+    const fila = p.raiz.querySelector('.pr__plazo-fila')!;
+    expect(fila.querySelector('input')).not.toBeNull();
+    expect(fila.querySelector('button')?.textContent).toContain('plazo por defecto');
   });
 });
 

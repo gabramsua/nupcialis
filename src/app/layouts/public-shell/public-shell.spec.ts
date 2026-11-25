@@ -5,6 +5,8 @@ import { TranslocoTestingModule } from '@jsverse/transloco';
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PUERTA_REGALOS_ABIERTOS } from '../../core/regalos/regalos-abiertos-gateway';
+import type { ResultadoRegalos } from '../../core/regalos/regalos-gateway';
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
 import { SesionInvitado } from '../../core/firebase/sesion-invitado';
 import type { ResultadoTenant } from '../../core/tenant/tenant-loader';
@@ -115,6 +117,8 @@ function bodaOk(modo: ModoAcceso, layout: 'onepage' | 'multipage' = 'onepage'): 
       faqs: [],
       cronologia: [],
       alojamientos: [],
+      autobuses: [],
+      cortejo: [],
       ubicaciones: [],
       dressCode: DRESS_CODE_VACIO,
       historia: [],
@@ -277,5 +281,67 @@ describe('PublicShell: la cabecera de navegación', () => {
 
     expect(el.querySelector('np-cabecera-boda')).toBeNull();
     expect(el.querySelector('.np-confirmar')).not.toBeNull();
+  });
+});
+
+describe('PublicShell: la sección de regalos del plan básico (D-66)', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  async function conRegalos(resultado: ResultadoRegalos) {
+    TestBed.configureTestingModule({
+      imports: [
+        TranslocoTestingModule.forRoot({
+          langs: { es: ES },
+          translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+        }),
+      ],
+      providers: [
+        provideRouter([]),
+        provideIconSprite('public'),
+        { provide: SesionInvitado, useValue: new SesionFalsa() },
+        { provide: PUERTA_REGALOS_ABIERTOS, useValue: { listar: async () => resultado } },
+      ],
+    });
+    const tenant = bodaOk('open');
+    if (tenant.tipo !== 'ok') throw new Error('boda de prueba');
+    const fixture = TestBed.createComponent(PublicShell);
+    fixture.componentRef.setInput('tenant', {
+      ...tenant,
+      sitio: {
+        ...tenant.sitio,
+        secciones: [
+          {
+            id: 'r',
+            type: 'regalos',
+            enabled: true,
+            order: 1,
+            fields: { titulo: 'Regalos de boda' },
+          },
+        ],
+      },
+    });
+    fixture.detectChanges();
+    await asentar(fixture);
+    return fixture;
+  }
+
+  it('si el servidor dice que no hay regalos, la sección entera desaparece', async () => {
+    const fixture = await conRegalos({ ok: false, fallo: { tipo: 'no-disponible' } });
+
+    expect(texto(fixture)).not.toContain('Regalos de boda');
+    expect(texto(fixture)).not.toContain('Algo ha ido mal');
+  });
+
+  it('si hay regalos, la sección sale', async () => {
+    const fixture = await conRegalos({
+      ok: true,
+      aportacion: null,
+      regalos: [],
+      misReservados: [],
+    } as unknown as ResultadoRegalos);
+
+    expect(texto(fixture)).toContain('Regalos de boda');
   });
 });

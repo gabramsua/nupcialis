@@ -27,6 +27,11 @@ import { BodaStore } from '../boda.store';
         <header class="sp__intro">
           <h2>{{ t('panel.diseno.plantilla.titulo') }}</h2>
           <p>{{ t('panel.diseno.plantilla.ayuda') }}</p>
+          <p class="sp__auto" role="note">
+            <np-icon name="check-circle" weight="fill" />
+            <strong>{{ t('panel.diseno.plantilla.autoguardado') }}</strong>
+            <span>{{ t('panel.diseno.plantilla.nota') }}</span>
+          </p>
         </header>
 
         @if (fallo()) {
@@ -72,11 +77,6 @@ import { BodaStore } from '../boda.store';
             </button>
           }
         </div>
-
-        <p class="sp__nota">
-          <np-icon name="info" />
-          {{ t('panel.diseno.plantilla.nota') }}
-        </p>
       </section>
     </ng-container>
   `,
@@ -98,6 +98,13 @@ import { BodaStore } from '../boda.store';
       margin: 0;
       color: var(--np-surface-text-muted);
     }
+    p.sp__auto {
+      display: flex;
+      gap: var(--np-space-2);
+      margin: var(--np-space-2) 0 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
+    }
     .sp__rejilla {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
@@ -106,7 +113,6 @@ import { BodaStore } from '../boda.store';
     .sp__opcion {
       display: flex;
       flex-direction: column;
-      gap: 0;
       padding: 0;
       overflow: hidden;
       border: 2px solid var(--np-surface-border);
@@ -189,6 +195,55 @@ import { BodaStore } from '../boda.store';
     .sp__muestra[data-plantilla='moderna'] .sp__muestra-fecha {
       color: #d6452f;
     }
+    .sp__muestra[data-plantilla='barroca'] {
+      background: #f3e9d2;
+      color: #2e1f14;
+      border: 4px double #7a1f2b;
+    }
+    .sp__muestra[data-plantilla='barroca'] .sp__muestra-nombres {
+      color: #7a1f2b;
+      font-family: 'Cinzel Decorative', georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .sp__muestra[data-plantilla='barroca'] .sp__muestra-fecha {
+      color: #7a1f2b;
+      font-family: 'IM Fell English', georgia, serif;
+    }
+    .sp__muestra[data-plantilla='sevillana'] {
+      background: #fbf3e2;
+      color: #2b2a33;
+      border: 4px solid #1f5aa6;
+      border-radius: 2.5rem 2.5rem 0.25rem 0.25rem;
+    }
+    .sp__muestra[data-plantilla='sevillana'] .sp__muestra-nombres {
+      color: #1f5aa6;
+      font-family: 'Caveat', 'Segoe Print', cursive;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .sp__muestra[data-plantilla='sevillana'] .sp__muestra-fecha {
+      color: #c03a2b;
+      font-family: 'Caveat', 'Segoe Print', cursive;
+    }
+    .sp__muestra[data-plantilla='cottage'] {
+      background: #f4efe4;
+      color: #4a4036;
+    }
+    .sp__muestra[data-plantilla='cottage'] .sp__muestra-nombres {
+      font-family: 'Playfair Display', georgia, serif;
+      font-size: 1.4rem;
+      font-style: italic;
+    }
+    .sp__muestra[data-plantilla='cottage'] .sp__muestra-fecha {
+      color: #6f8460;
+      letter-spacing: 0.35em;
+    }
+    .sp__muestra[data-plantilla='acuarela'] {
+      background: radial-gradient(circle at 10% 15%, #fcd, #0000 50%) #fff;
+      color: #233d00;
+      font-family: 'Pinyon Script', cursive;
+    }
     .sp__muestra-fecha {
       font-size: var(--np-text-xs);
       letter-spacing: 0.2em;
@@ -211,14 +266,6 @@ import { BodaStore } from '../boda.store';
       --np-icon-size: 1.1em;
     }
     .sp__descripcion {
-      font-size: var(--np-text-sm);
-      color: var(--np-surface-text-muted);
-    }
-    .sp__nota {
-      display: flex;
-      align-items: center;
-      gap: var(--np-space-2);
-      margin: 0;
       font-size: var(--np-text-sm);
       color: var(--np-surface-text-muted);
     }

@@ -5,12 +5,16 @@ import { NpIcon } from '../../../../design-system/icons/icon';
 import { NpFaqsPublicas } from '../../faqs/faqs-publicas';
 import { NpCronologiaPublica } from '../../cronologia/cronologia-publica';
 import { NpAlojamientosPublicos } from '../../alojamientos/alojamientos-publicos';
+import { NpAutobusesPublicos } from '../../autobuses/autobuses-publicos';
+import { NpCortejoPublico } from '../../cortejo/cortejo-publico';
 import { NpDressCodePublico } from '../../dress-code/dress-code-publico';
 import { NpQuizLlamada } from '../../quiz/quiz-llamada';
 import { NpGaleriaLlamada } from '../../galeria/galeria-llamada';
 import { NpRegalosLlamada } from '../../regalos/regalos-llamada';
 import { NpHistoriaLlamada } from '../../historia/historia-llamada';
 import { NpMapaLlamada } from '../../mapa/mapa-llamada';
+import { NpRsvpLlamada } from '../../rsvp/rsvp-llamada';
+import { NpLibroLlamada } from '../../libro/libro-llamada';
 import { NpPlaylistLlamada } from '../../playlist/playlist-llamada';
 import { fechaLarga } from '../../../../shared/fecha';
 import {
@@ -37,13 +41,17 @@ import {
     NpFaqsPublicas,
     NpCronologiaPublica,
     NpAlojamientosPublicos,
+    NpAutobusesPublicos,
+    NpCortejoPublico,
     NpDressCodePublico,
     NpQuizLlamada,
     NpGaleriaLlamada,
     NpRegalosLlamada,
     NpHistoriaLlamada,
     NpMapaLlamada,
+    NpRsvpLlamada,
     NpPlaylistLlamada,
+    NpLibroLlamada,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -127,6 +135,15 @@ import {
                 [ubicaciones]="datos().ubicaciones"
               />
             }
+            @case ('cortejo') {
+              <np-cortejo-publico [personas]="datos().cortejo" [nombres]="datos().nombres" />
+            }
+            @case ('rsvp') {
+              <np-rsvp-llamada />
+            }
+            @case ('buses') {
+              <np-autobuses-publicos [autobuses]="datos().autobuses" />
+            }
             @case ('dressCode') {
               <np-dress-code-publico [dressCode]="datos().dressCode" />
             }
@@ -137,16 +154,22 @@ import {
               <np-galeria-llamada />
             }
             @case ('regalos') {
-              <np-regalos-llamada />
+              <np-regalos-llamada
+                [directo]="datos().layout !== 'multipage'"
+                [slug]="datos().slug ?? ''"
+              />
             }
             @case ('historia') {
               <np-historia-llamada />
             }
             @case ('mapa') {
-              <np-mapa-llamada />
+              <np-mapa-llamada [ubicaciones]="datos().ubicaciones" />
             }
             @case ('playlist') {
               <np-playlist-llamada />
+            }
+            @case ('libro') {
+              <np-libro-llamada />
             }
             @case ('evento') {
               <!--
@@ -188,6 +211,8 @@ import {
   styles: `
     :host {
       display: block;
+      /* El color llega de borde a borde: las secciones se centran, el fondo no. */
+      background: var(--fondo);
       --fondo: var(--np-marca-background, #fbf1ef);
       --texto: var(--np-marca-text, #4a2f35);
       --acento: var(--np-marca-accent, #b5506a);

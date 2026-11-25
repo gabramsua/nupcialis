@@ -34,6 +34,9 @@ const TIPOS: readonly TipoPregunta[] = [
   'date',
 ];
 
+/** Cuántos días antes de la boda se cierra el formulario sin plazo propio (D-66). Mismo valor que en el servidor. */
+const DIAS_PLAZO_POR_DEFECTO = 7;
+
 /**
  * El formulario de confirmación, como lo configura la pareja.
  *
@@ -101,21 +104,31 @@ const TIPOS: readonly TipoPregunta[] = [
           abierto, y la pareja lo busca aquí y no en «Datos de la boda».
         -->
         <div class="pr__plazo">
-          <label>
-            <span>{{ t('panel.rsvp.limite') }}</span>
+          <label for="rsvp-limite">{{ t('panel.rsvp.limite') }}</label>
+          <div class="pr__plazo-fila">
             <input
               npInput
+              id="rsvp-limite"
               type="date"
+              aria-describedby="rsvp-limite-ayuda"
               [value]="limiteComoTexto()"
               (change)="cambiarLimite($event)"
             />
-            <small>{{ t('panel.rsvp.limiteAyuda') }}</small>
-          </label>
-          @if (limiteComoTexto()) {
-            <button npButton variant="ghost" type="button" (click)="quitarLimite()">
-              {{ t('panel.rsvp.sinLimite') }}
-            </button>
-          }
+            @if (limiteComoTexto()) {
+              <button npButton variant="ghost" type="button" (click)="quitarLimite()">
+                {{ t('panel.rsvp.sinLimite') }}
+              </button>
+            }
+          </div>
+          <small id="rsvp-limite-ayuda">
+            @if (limiteComoTexto()) {
+              {{ t('panel.rsvp.limiteAyuda') }}
+            } @else if (plazoPorDefecto(); as dia) {
+              {{ t('panel.rsvp.limiteDefecto', { fecha: dia }) }}
+            } @else {
+              {{ t('panel.rsvp.limiteDefectoSinFecha') }}
+            }
+          </small>
         </div>
 
         @if (store.estado() === 'error' && store.fallo(); as f) {
@@ -307,6 +320,7 @@ const TIPOS: readonly TipoPregunta[] = [
                 [disabled]="formulario.invalid"
                 (click)="guardar()"
               >
+                <np-icon name="check" />
                 {{ avisoDeTipo() ? t('panel.rsvp.cambioDeTipo.seguir') : t('common.save') }}
               </button>
             </div>
@@ -368,9 +382,9 @@ const TIPOS: readonly TipoPregunta[] = [
     }
     .pr__plazo {
       display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      gap: var(--np-space-3);
+      flex-direction: column;
+      gap: var(--np-space-1);
+      font-size: var(--np-text-sm);
       margin-block-end: var(--np-space-4);
       padding: var(--np-space-3) var(--np-space-4);
       border: 1px solid var(--np-surface-border);
@@ -437,11 +451,15 @@ const TIPOS: readonly TipoPregunta[] = [
       gap: var(--np-space-4);
     }
     .pr__form label,
-    .pr__plazo label {
+    .pr__plazo > label {
+      color: var(--np-surface-text-muted);
+    }
+    /* El botón junto al campo y centrado con él: no con la ayuda de debajo. */
+    .pr__plazo-fila {
       display: flex;
-      flex-direction: column;
-      gap: var(--np-space-1);
-      font-size: var(--np-text-sm);
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--np-space-3);
     }
     .pr__form label > span,
     .pr__plazo label > span {
@@ -514,6 +532,17 @@ export class PreguntasRsvp {
   protected readonly pideOpciones = computed(() =>
     ['select', 'radio', 'checkbox'].includes(this.tipoElegido()),
   );
+
+  /**
+   * El plazo si la pareja no pone ninguno: una semana antes de la boda (D-66),
+   * dicho como se lee. `null` mientras no haya fecha de boda.
+   */
+  protected readonly plazoPorDefecto = computed(() => {
+    const boda = this.boda.boda()?.weddingDate;
+    if (!boda) return null;
+    const limite = new Date(boda.getTime() - DIAS_PLAZO_POR_DEFECTO * 24 * 60 * 60 * 1000);
+    return new Intl.DateTimeFormat('es-ES', { dateStyle: 'long', timeZone: 'UTC' }).format(limite);
+  });
 
   protected readonly limiteComoTexto = computed(() => {
     const limite = this.boda.boda()?.rsvpDeadline;

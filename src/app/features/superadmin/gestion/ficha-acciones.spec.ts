@@ -26,6 +26,14 @@ class Anfitrion {
   borradas = 0;
 }
 
+@Component({
+  imports: [FichaAcciones],
+  template: `<np-ficha-acciones [ficha]="ficha" />`,
+})
+class AnfitrionExtendido {
+  ficha = ficha({ slug: 'maria-y-gabriel', plan: 'extended' });
+}
+
 function entrada(nombre: string): HTMLInputElement | HTMLSelectElement {
   return document.querySelector<HTMLInputElement>(`dialog [name="${nombre}"]`)!;
 }
@@ -180,5 +188,98 @@ describe('editar y borrar una boda', () => {
 
     expect(p.dialogo()).toContain('No se ha podido eliminar');
     expect((p.fixture.componentInstance as Anfitrion).borradas).toBe(0);
+  });
+});
+
+describe('cambiar de plan', () => {
+  const PLANES = {
+    planes: [
+      { id: 'basic', modulos: ['publicSite', 'rsvp', 'map'], porDefecto: true, bodas: 3 },
+      {
+        id: 'extended',
+        modulos: ['publicSite', 'rsvp', 'map', 'gallery', 'guestbook'],
+        porDefecto: true,
+        bodas: 2,
+      },
+    ],
+    catalogo: ['publicSite', 'rsvp', 'map', 'gallery', 'guestbook'],
+  };
+
+  it('una subida enseña los módulos que gana y no avisa de bajada', async () => {
+    const registro: LlamadaRegistrada[] = [];
+    const p = await montarConLlamadas(
+      ES,
+      Anfitrion,
+      puertaDePrueba({ listPlans: () => PLANES }, registro),
+    );
+    await p.pulsar(p.boton('Cambiar de plan'));
+    await p.esperar();
+
+    const dialogo = document.querySelector('dialog')!.textContent ?? '';
+    expect(dialogo).toContain('Gana');
+    expect(dialogo).toContain('Galería');
+    expect(dialogo).toContain('Libro de firmas');
+    expect(dialogo).not.toContain('Es una bajada de plan');
+  });
+
+  it('manda el plan y el nuevo precio, y no registra ningún cobro', async () => {
+    const registro: LlamadaRegistrada[] = [];
+    const p = await montarConLlamadas(
+      ES,
+      Anfitrion,
+      puertaDePrueba({ listPlans: () => PLANES, updateWedding: () => ({ ok: true }) }, registro),
+    );
+    await p.pulsar(p.boton('Cambiar de plan'));
+    await p.esperar();
+
+    escribir(entrada('precioPlan') as HTMLInputElement, '249');
+    await p.esperar();
+    await p.pulsar(p.boton('Cambiar de plan', document.querySelector('dialog')!));
+
+    expect(registro.find((r) => r.nombre === 'updateWedding')?.datos).toEqual({
+      weddingId: 'w1',
+      cambios: { plan: 'extended', agreedPriceCents: 24900 },
+    });
+    expect(registro.map((r) => r.nombre)).not.toContain('recordPayment');
+  });
+
+  it('una bajada avisa de que los datos se conservan y pide confirmarla', async () => {
+    const registro: LlamadaRegistrada[] = [];
+    const p = await montarConLlamadas(
+      ES,
+      AnfitrionExtendido,
+      puertaDePrueba({ listPlans: () => PLANES, updateWedding: () => ({ ok: true }) }, registro),
+    );
+    await p.pulsar(p.boton('Cambiar de plan'));
+    await p.esperar();
+
+    const dialogo = document.querySelector('dialog')!;
+    expect(dialogo.textContent).toContain('Pierde');
+    expect(dialogo.textContent).toContain('Es una bajada de plan');
+    expect(dialogo.textContent).toContain('se conservan');
+
+    await p.pulsar(p.boton('Sí, bajar de plan', dialogo));
+    expect(registro.find((r) => r.nombre === 'updateWedding')?.datos).toEqual({
+      weddingId: 'w1',
+      cambios: { plan: 'basic' },
+    });
+  });
+
+  it('un precio ilegible no se manda', async () => {
+    const registro: LlamadaRegistrada[] = [];
+    const p = await montarConLlamadas(
+      ES,
+      Anfitrion,
+      puertaDePrueba({ listPlans: () => PLANES, updateWedding: () => ({ ok: true }) }, registro),
+    );
+    await p.pulsar(p.boton('Cambiar de plan'));
+    await p.esperar();
+
+    escribir(entrada('precioPlan') as HTMLInputElement, 'barato');
+    await p.esperar();
+    await p.pulsar(p.boton('Cambiar de plan', document.querySelector('dialog')!));
+
+    expect(registro.find((r) => r.nombre === 'updateWedding')).toBeUndefined();
+    expect(document.querySelector('dialog')?.textContent).toContain('Escribe un importe en euros');
   });
 });

@@ -20,6 +20,14 @@ export function cargarPlantilla(id: PlantillaId): Promise<Type<unknown>> {
       return import('./botanica/botanica').then((m) => m.PlantillaBotanica);
     case 'romantica':
       return import('./romantica/romantica').then((m) => m.PlantillaRomantica);
+    case 'barroca':
+      return import('./barroca/barroca').then((m) => m.PlantillaBarroca);
+    case 'sevillana':
+      return import('./sevillana/sevillana').then((m) => m.PlantillaSevillana);
+    case 'acuarela':
+      return import('./acuarela/acuarela').then((m) => m.PlantillaAcuarela);
+    case 'cottage':
+      return import('./cottage/cottage').then((m) => m.PlantillaCottage);
     case 'moderna':
       return import('./moderna/moderna').then((m) => m.PlantillaModerna);
     case 'clasica':

@@ -743,6 +743,8 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
 
 ### 8.1 Web pública y edición de contenidos
 
+> **Dónde y cuándo (D-64).** No hay tarjetas «Ceremonia» y «Banquete»: el cuándo lo cuenta la cronología del día y el dónde, «Cómo llegar», que enseña dentro de la web los sitios del mapa con su botón de ruta (ceremonia y banquete en el mismo punto, como uno solo). El formulario de confirmación se publica con la sección «Confirmad vuestra asistencia», que lleva a `/confirmar`.
+
 - Selección entre **varias plantillas prediseñadas**. La pareja elige plantilla y configura; no maqueta desde cero.
 
   El catálogo es **cerrado y vive en código** (`features/public-site/plantillas`):
@@ -762,8 +764,12 @@ Todos comparten el mismo contrato: se activan desde el panel, tienen su bloque `
   paleta se aplica **entera o nada**: media paleta mezcla tres colores de la
   boda con tres de la plantilla, que es peor que ninguno.
 
-  Catálogo actual (D-54): **Clásica**, **Botánica**, **Romántica** (caligrafía y
-  tonos rosados) y **Moderna** (blanca, sans-serif en mayúsculas); catálogo de
+  Catálogo actual (D-58): **Clásica**, **Botánica**, **Romántica** (caligrafía y
+  tonos rosados), **Moderna** (blanca, sans-serif en mayúsculas), **Barroca**
+  (pergamino, doble filete y capitales adornadas), **Sevillana** (banderines de
+  papel picado, arco de patio y cenefa de azulejos, letra de rotulador) y
+  **Cottage** (papel con textura, portada en polaroid y margaritas recortadas,
+  inspirada en el estilo «cottage» de invitación); catálogo de
   **doce paletas**. La tipografía es la de cada plantilla, no un selector aparte.
 
   **Módulos públicos y tema** (D-55): quiz, galería, regalos, playlist, historia,
@@ -958,6 +964,8 @@ Confirmado el enfoque de arrastrar y soltar, sin plano de finca.
 ### 8.5 Galería con audiencias por grupo
 
 Es el módulo con la lógica de permisos más delicada del producto, y además el que más se mira: las fotos son lo que trae de vuelta a los invitados al día siguiente.
+
+**Dos álbumes (D-59).** La galería tiene dos álbumes con las mismas subidas y el mismo borrado: **«El día»** y **«Nuestro camino»** (fotos de la pareja a lo largo de su historia, que aportan los invitados). Cada foto guarda `album: 'dia' | 'camino'`; una foto sin el campo es del día. `listPhotos` y `uploadPhoto` reciben el álbum y el filtro se aplica en servidor. **«Nuestra historia» (§8.19) sigue siendo solo de la pareja.**
 
 **Se diseña con la plantilla de la boda, no aparte.** La galería hereda el tema de la pareja como cualquier otra sección —tipografía, paleta y aire—, y se diseña **primero para el móvil**, que es por donde la van a abrir casi todos. Una rejilla que se ve bien en un portátil y apretada en un móvil está mal hecha, no al revés.
 
@@ -1215,6 +1223,12 @@ code, verlo en su panel y no entender por qué no sale en la web.
 la vez en «nos encantan» y en «a evitar», y una sección que saldría con el
 título solo porque no hay nada escrito.
 
+### 8.11b Autobuses (D-63)
+
+- Información de rutas para llegar al banquete y volver: **sentido** (ida/vuelta), **nombre** opcional, **salida**, **hora** opcional, **destino** y **nota**. Sin reservas ni plazas: el invitado solo lee. Si algún día hace falta apuntarse, será otro módulo.
+- Disponible en **los dos planes** y entra en el plan básico. Hasta 12 rutas; una ruta sin salida o sin destino no se publica. Las de ida van primero y, dentro de cada sentido, por hora.
+- Vive en `modules.buses.config.rutas` (como el dress code), sin colección propia.
+
 ### 8.12 Personas importantes
 
 El cortejo y quien tiene un papel el día de la boda, con foto.
@@ -1227,10 +1241,20 @@ weddings/{weddingId}/weddingParty/{id}
   roleIcon, roleColor
   side: 'A' | 'B' | 'both'
   photoPath: string | null
+  photoUrl: string | null         // URL de descarga de esa foto
+  photoConsent: bool              // la pareja confirmó que la persona sabe que su foto se publica (D-61)
+  photoConsentAt: timestamp | null
   bio: string                     // 'Amiga de María desde el colegio'
-  phone: string | null            // visible solo para la pareja
+  phone: string | null            // visible solo para la pareja; nunca se publica
   order, visibleToGuests
 ```
+
+**Lo que hay hecho (D-61):** `/panel/party` (plan extendido) y sección `cortejo` en la web.
+Los invitados **no leen** `weddingParty`: la web sale de `content.cortejo` en la proyección
+pública (trigger `syncPublicParty`), que solo publica las personas con `visibleToGuests`,
+con foto únicamente si `photoConsent` es verdadero, y sin teléfono. **Consentimiento
+obligatorio** al subir una foto (casilla; la regla de Firestore lo exige también). La vinculación con la lista de invitados está hecha (D-62): `guestId` apunta a un invitado, solo
+la ve la pareja (con su estado de respuesta) y **nunca sale a la web**.
 
 - **Roles precargados** y editables: madrina, padrino, testigos, damas de honor, portaanillos, arras, chófer de la novia, chófer del novio, lectores, música, wedding planner.
 - Foto por persona, recortada a un formato único para que la cuadrícula quede limpia.
@@ -1287,8 +1311,11 @@ Módulo completo e independiente, además de la pregunta del RSVP.
 ### 8.15 Libro de firmas
 
 - Mensajes de los invitados a la pareja, con moderación opcional.
-- En modos B y C el mensaje queda atribuido al invitado identificado, con su mote.
-- Exportación a PDF maquetado, para imprimirlo y encuadernarlo como recuerdo.
+- En modos B y C el mensaje queda atribuido al invitado identificado, con su mote o su nombre de pila (nunca los apellidos).
+- Exportación a PDF maquetado, para imprimirlo y encuadernarlo como recuerdo (**pendiente**, `F3.5b`).
+
+**Implementado (D-59).** `weddings/{id}/guestbookEntries/{id} = { guestId, authorName, message, status: 'visible' | 'hidden', createdAt }`.
+La colección está **cerrada a los invitados** (guarda el `guestId`): se lee con `listGuestbook` y se firma con `signGuestbook` (nivel verificado, en transacción; 800 caracteres, 3 firmas por invitado, 500 por boda). Se publica al enviar y la pareja modera a posteriori desde el panel: **oculta** (reversible) o **borra**; el invitado puede borrar las suyas con `deleteGuestbookEntry`. Sección `libro` en la web (página propia, identidad obligatoria). El muro es público para los invitados identificados (decidido 2026-11-24) y cada firma lleva el mote o, si no hay, solo el nombre de pila, sin apellidos.
 
 ### 8.16 Presupuesto y proveedores
 
@@ -1319,7 +1346,9 @@ weddings/{weddingId}/vendors/{id}
 - **Asignación a tareas del checklist** (§8.17): una tarea puede colgar de un proveedor, y la ficha del proveedor muestra sus tareas abiertas. Es lo que convierte la lista de proveedores en una herramienta de seguimiento y no en una agenda de teléfonos.
 - Estado de cada proveedor con su color, visible de un vistazo.
 
-**Lo que hay hecho (D-49):** `/panel/budget` (plan extendido): partidas agrupadas por categoría con estimado, real, vencimiento y «pagada» (se refleja al tocar y se deshace si falla), totales y desviación, y exportación a CSV con `;` y BOM para Excel. Todo en **céntimos**. Nace con las partidas del **catálogo del superadmin** (mismo comportamiento que las tareas, §8.17). No hay aún presupuesto objetivo, colores por categoría ni proveedores.
+**Lo que hay hecho (D-49):** `/panel/budget` (plan extendido): partidas agrupadas por categoría con estimado, real, vencimiento y «pagada» (se refleja al tocar y se deshace si falla), totales y desviación, y exportación a CSV con `;` y BOM para Excel. Todo en **céntimos**. Nace con las partidas del **catálogo del superadmin** (mismo comportamiento que las tareas, §8.17). No hay aún presupuesto objetivo ni colores por categoría.
+
+**Proveedores, lo que hay hecho (D-61):** `/panel/vendors` (plan extendido). Ficha con contacto pulsable (`tel:`, `mailto:`, web), precio presupuestado y acordado en céntimos, estado, pagos (importe, día, concepto), contratos en PDF (Storage `vendors/{id}/`, solo la pareja), valoración y notas; agrupados por categoría con **comparativa de candidatos** (el más barato, si hay dos o más con precio). Totales: acordado, pagado y pendiente, sin contar descartados. Enlazado (D-62) con **tareas del checklist** (`vendorId` en la tarea) y **partidas del presupuesto** (`vendorId` en la partida): la ficha del proveedor las lista, enlaza y crea tareas, y la partida puede **proponer** el presupuesto y el precio acordado del proveedor (no se aplican solos). Pendiente: color e icono por proveedor.
 
 ### 8.17 Checklist
 
@@ -1340,7 +1369,7 @@ weddings/{weddingId}/checklistItems/{id}
 - Filtro por responsable, para repartir el trabajo entre los dos sin discutirlo dos veces, y por **estado, categoría y texto**.
 - Al completar una tarea se guardan **cuándo y quién** (`doneAt`, `doneByUid`, `doneByEmail`) y la pantalla los enseña.
 
-**Lo que hay hecho (F4.1):** la pantalla `/panel/checklist` y el aviso del inicio. El **estado no se guarda**: se calcula contra «hoy» a partir de `done` y `dueDate` (vencida si el día ya pasó, «esta semana» hasta siete días, próxima, sin fecha, hecha). El filtro por persona enseña **las suyas y las de los dos**. Quedan para después las vinculaciones a proveedor y partida (no hay aún pantalla de proveedores ni de presupuesto) y recalcular las fechas de la plantilla si cambia la boda.
+**Lo que hay hecho (F4.1):** la pantalla `/panel/checklist` y el aviso del inicio. El **estado no se guarda**: se calcula contra «hoy» a partir de `done` y `dueDate` (vencida si el día ya pasó, «esta semana» hasta siete días, próxima, sin fecha, hecha). El filtro por persona enseña **las suyas y las de los dos**. **Vinculación a proveedor y a partida hecha (D-62):** selectores en la tarea y, desde la ficha del proveedor o de la partida, lista de sus tareas, enlazar una existente, quitar el enlace y crear una nueva ya enlazada. Un enlace roto (se borró el proveedor) se ve «sin enlace». Queda para después recalcular las fechas de la plantilla si cambia la boda.
 
 **Catálogo de originales (D-49):** el superadmin gestiona en `/superadmin/catalogos` las tareas originales (CRUD), que se **vuelcan a cada boda nueva** y luego cada pareja edita a su gusto. Cambiar el catálogo **no toca las bodas ya creadas**. Con el catálogo sin tocar se usan las de fábrica; un catálogo con todo desactivado siembra nada.
 
@@ -1525,7 +1554,7 @@ Esto no es un adorno: la lista de invitados contiene nombres, teléfonos, alergi
 Ninguna bloquea el arranque del desarrollo. **El registro vivo es `docs/PENDIENTES.md`** (las `D-xx`): esta lista es el contexto con el que nacieron, y cuando una se decide se anota aquí también, para que las dos no digan cosas distintas.
 
 1. **Ciclo de vida post-boda.** Cuánto tiempo permanece viva la web y los datos tras la fecha, si se ofrece renovación y cuándo se purga. Afecta a retención RGPD y a coste. Los registros de acceso deberían purgarse antes que el resto.
-2. **Precio y planes.** El reparto de módulos vive en `functions/src/dominio/planes.ts`: el básico es de **una sola página** con seis módulos, y galería y quiz son solo del extendido porque las dos necesitan ruta propia. **El catálogo de dieciocho módulos se mantiene** (decidido el 2026-11-13): lo que todavía no está construido sale en el panel diciendo «En camino», no escondido. Queda por decidir el **precio** de cada plan.
+2. **Precio y planes.** El reparto de módulos vive en `functions/src/dominio/planes.ts`: el básico es de **una sola página** con nueve módulos (los seis de siempre más regalos, alojamiento y autobuses, D-63), y galería y quiz son solo del extendido porque las dos necesitan ruta propia. **El catálogo de dieciocho módulos se mantiene** (decidido el 2026-11-13): lo que todavía no está construido sale en el panel diciendo «En camino», no escondido. Queda por decidir el **precio** de cada plan.
 
    **Navegación de la web del plan completo (D-57).** Con `layout: multipage` la web lleva una cabecera fija con el tema de la boda: en escritorio, barra horizontal con los primeros enlaces y un «Más»; en móvil, un cajón con los enlaces agrupados en «La boda» y «Participa» y el botón de confirmar al alcance del pulgar. El menú sale de las secciones encendidas, no se configura. Los módulos con página propia (historia, mapa, quiz, galería, regalos, playlist) no se apilan como carteles en la portada. El plan básico no cambia.
 

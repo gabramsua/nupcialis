@@ -564,13 +564,13 @@ describe('la lista, en acordeón y ordenable', () => {
 
     expect(cabecera.getAttribute('aria-expanded')).toBe('false');
     expect(p.raiz.querySelector('.lst__detalle')).toBeNull();
-    expect(p.raiz.textContent).not.toContain('+34600111222');
+    expect(p.raiz.textContent).not.toContain('600111222');
 
     cabecera.click();
     p.cambiar();
     expect(cabecera.getAttribute('aria-expanded')).toBe('true');
     const detalle = p.raiz.querySelector('.lst__detalle');
-    expect(detalle?.textContent).toContain('+34600111222');
+    expect(detalle?.textContent).toContain('600111222');
     expect(detalle?.querySelectorAll('.lst__acciones button').length).toBeGreaterThanOrEqual(4);
     expect(cabecera.getAttribute('aria-controls')).toBe(detalle?.id);
 

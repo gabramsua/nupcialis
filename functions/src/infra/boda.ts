@@ -8,14 +8,16 @@
  */
 
 import { Timestamp } from 'firebase-admin/firestore';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { db } from '../firebase';
 import { esModoAcceso, type ModoAcceso } from '../dominio/acceso';
+import { plazoPorDefecto } from '../dominio/formulario';
 
 /**
  * La fecha límite del RSVP, enterrada en la configuración del módulo.
  *
  * Son cuatro saltos (`modules.rsvp.config.deadline`) sobre un documento que
- * puede no tener ninguno. Equivocarse aquí no da un error: da un formulario que
+ * puede no tener ninguno; si no lo tiene, una semana antes de la boda. Equivocarse aquí no da un error: da un formulario que
  * se cierra solo, o que no se cierra nunca.
  */
 export function limiteDe(boda: Record<string, unknown> | undefined): Date | null {
@@ -25,7 +27,12 @@ export function limiteDe(boda: Record<string, unknown> | undefined): Date | null
       : undefined;
 
   const limite = nivel(nivel(nivel(nivel(boda, 'modules'), 'rsvp'), 'config'), 'deadline');
-  return limite instanceof Timestamp ? limite.toDate() : null;
+  if (limite instanceof Timestamp) return limite.toDate();
+
+  // Sin plazo puesto por la pareja, una semana antes de la boda (D-66). Sin
+  // fecha de boda tampoco hay plazo: no hay desde dónde contar.
+  const fechaBoda = nivel(boda, 'weddingDate');
+  return fechaBoda instanceof Timestamp ? plazoPorDefecto(fechaBoda.toDate()) : null;
 }
 
 /**
@@ -40,4 +47,32 @@ export async function modoDeAcceso(weddingId: string): Promise<ModoAcceso> {
   const snap = await db().doc(`weddings/${weddingId}`).get();
   const modo = snap.data()?.['guestAccessMode'];
   return esModoAcceso(modo) ? modo : 'open';
+}
+
+/**
+ * Si un módulo está **activo** en esta boda, es decir, si su plan lo incluye.
+ *
+ * Es lo que impide que una boda del plan básico use la galería o el quiz
+ * entrando por la URL o llamando a la función a mano: ocultar el módulo en el
+ * panel no basta, porque lo que manda es lo que el servidor deja hacer.
+ */
+export function moduloActivo(boda: Record<string, unknown> | undefined, modulo: string): boolean {
+  const modulos = boda?.['modules'];
+  if (modulos === null || typeof modulos !== 'object') return false;
+  const config = (modulos as Record<string, unknown>)[modulo];
+  return (
+    config !== null &&
+    typeof config === 'object' &&
+    (config as Record<string, unknown>)['enabled'] === true
+  );
+}
+
+/** Corta la petición de un invitado si el módulo no está en el plan de la boda. */
+export async function exigirModulo(weddingId: string, modulo: string): Promise<void> {
+  const snap = await db().doc(`weddings/${weddingId}`).get();
+  if (!moduloActivo(snap.data(), modulo)) {
+    throw new HttpsError('failed-precondition', 'Esta boda no tiene ese módulo.', {
+      motivo: 'modulo-desactivado',
+    });
+  }
 }

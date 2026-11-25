@@ -1,4 +1,5 @@
-import type { Pregunta } from '../../../core/rsvp/rsvp-gateway';
+import type { Pregunta, Respuestas } from '../../../core/rsvp/rsvp-gateway';
+import { esVisible } from '../../../core/rsvp/visibilidad';
 import type { RespuestasDeInvitado } from '../../../core/rsvp/respuestas-gateway';
 
 /**
@@ -40,19 +41,33 @@ export interface Escrito {
   readonly texto: string;
 }
 
+/**
+ * Quién tendría que haber contestado esta pregunta y todavía no lo ha hecho.
+ *
+ * Es lo que evita el fallo gordo: «autobús, 40» parece el total, pero si hay
+ * veinte acompañantes que nadie ha apuntado el total real es otro. Entran los
+ * titulares y los acompañantes a quienes se les pregunta y que no han dicho que
+ * no vienen; quedan fuera los que no ven la pregunta por lo que contestaron
+ * antes (el menú de quien no viene).
+ */
+export interface FaltanPorContestar {
+  readonly total: number;
+  readonly acompanantes: number;
+  /** Nombres, con «(con Fulano)» en los acompañantes. */
+  readonly nombres: readonly string[];
+}
+
+interface Comun {
+  readonly pregunta: Pregunta;
+  readonly total: number;
+  /** Cuántos de los que contestaron son acompañantes. */
+  readonly deAcompanantes: number;
+  readonly faltan: FaltanPorContestar;
+}
+
 export type ResumenDePregunta =
-  | {
-      readonly pregunta: Pregunta;
-      readonly forma: 'recuento';
-      readonly total: number;
-      readonly opciones: readonly Recuento[];
-    }
-  | {
-      readonly pregunta: Pregunta;
-      readonly forma: 'escritas';
-      readonly total: number;
-      readonly escritas: readonly Escrito[];
-    };
+  | (Comun & { readonly forma: 'recuento'; readonly opciones: readonly Recuento[] })
+  | (Comun & { readonly forma: 'escritas'; readonly escritas: readonly Escrito[] });
 
 const DE_OPCIONES = ['boolean', 'select', 'radio', 'checkbox'] as const;
 
@@ -61,7 +76,48 @@ function esDeOpciones(pregunta: Pregunta): boolean {
 }
 
 function comoNombre(invitado: RespuestasDeInvitado): string {
-  return invitado.mote || invitado.nombre;
+  const nombre = invitado.mote || invitado.nombre;
+  // Un acompañante se distingue de un titular con su mismo nombre.
+  return invitado.esAcompanante
+    ? invitado.traidoPor
+      ? `${nombre} (con ${invitado.traidoPor})`
+      : `${nombre} (acompañante)`
+    : nombre;
+}
+
+function seLePregunta(pregunta: Pregunta, invitado: RespuestasDeInvitado): boolean {
+  const target = pregunta.target ?? 'both';
+  if (target === 'both') return true;
+  return target === (invitado.esAcompanante ? 'companion' : 'guest');
+}
+
+/** Las respuestas con la asistencia que marca el estado, como las ve el formulario. */
+function conAsistencia(preguntas: readonly Pregunta[], invitado: RespuestasDeInvitado): Respuestas {
+  const asistencia = preguntas.find((p) => p.mapsTo === 'rsvpStatus');
+  if (!asistencia || invitado.estado === 'pending') return invitado.respuestas;
+  return { ...invitado.respuestas, [asistencia.id]: invitado.estado === 'confirmed' };
+}
+
+function faltanDe(
+  pregunta: Pregunta,
+  preguntas: readonly Pregunta[],
+  invitados: readonly RespuestasDeInvitado[],
+  contesto: (i: RespuestasDeInvitado) => boolean,
+): FaltanPorContestar {
+  const faltan = invitados.filter(
+    (i) =>
+      pregunta.enabled !== false &&
+      i.estado !== 'declined' &&
+      pregunta.mapsTo !== 'rsvpStatus' &&
+      seLePregunta(pregunta, i) &&
+      !contesto(i) &&
+      esVisible(pregunta, preguntas, conAsistencia(preguntas, i)),
+  );
+  return {
+    total: faltan.length,
+    acompanantes: faltan.filter((i) => i.esAcompanante).length,
+    nombres: faltan.map(comoNombre).sort((a, b) => a.localeCompare(b, 'es')),
+  };
 }
 
 /** Las opciones de una pregunta, en el orden en que se le enseñan al invitado. */
@@ -84,8 +140,9 @@ function marcadas(valor: unknown): readonly string[] {
 export function resumirPregunta(
   pregunta: Pregunta,
   invitados: readonly RespuestasDeInvitado[],
+  preguntas: readonly Pregunta[] = [pregunta],
 ): ResumenDePregunta {
-  const contestadas = invitados.filter((i) => {
+  const haContestado = (i: RespuestasDeInvitado): boolean => {
     const valor = i.respuestas[pregunta.id];
     return (
       valor !== undefined &&
@@ -93,7 +150,14 @@ export function resumirPregunta(
       valor !== '' &&
       !(Array.isArray(valor) && valor.length === 0)
     );
-  });
+  };
+  const contestadas = invitados.filter(haContestado);
+  const comun = {
+    pregunta,
+    total: contestadas.length,
+    deAcompanantes: contestadas.filter((i) => i.esAcompanante).length,
+    faltan: faltanDe(pregunta, preguntas, invitados, haContestado),
+  };
 
   if (esDeOpciones(pregunta)) {
     const cuenta = new Map<string, string[]>();
@@ -128,17 +192,15 @@ export function resumirPregunta(
       }));
 
     return {
-      pregunta,
+      ...comun,
       forma: 'recuento',
-      total: contestadas.length,
       opciones: [...conocidas, ...sueltas],
     };
   }
 
   return {
-    pregunta,
+    ...comun,
     forma: 'escritas',
-    total: contestadas.length,
     escritas: contestadas.map((invitado) => ({
       guestId: invitado.guestId,
       quien: comoNombre(invitado),
@@ -151,7 +213,7 @@ export function resumir(
   preguntas: readonly Pregunta[],
   invitados: readonly RespuestasDeInvitado[],
 ): readonly ResumenDePregunta[] {
-  return preguntas.map((pregunta) => resumirPregunta(pregunta, invitados));
+  return preguntas.map((pregunta) => resumirPregunta(pregunta, invitados, preguntas));
 }
 
 /**

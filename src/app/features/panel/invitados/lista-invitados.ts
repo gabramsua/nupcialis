@@ -7,6 +7,7 @@ import { NpButton } from '../../../design-system/components/button/button';
 import { NpStatusChip } from '../../../design-system/components/status-chip/status-chip';
 import { NpIcon } from '../../../design-system/icons/icon';
 import { NpGrupoChip } from './grupo-chip';
+import { telefonoVisible } from '../../../shared/telefono';
 
 export interface ParejaDeLaBoda {
   readonly partnerA?: string;
@@ -100,7 +101,7 @@ export function ladoDeInvitado(
                   @if (invitado.phone; as telefono) {
                     <div>
                       <dt>{{ t('panel.invitados.campo.telefono') }}</dt>
-                      <dd>{{ telefono }}</dd>
+                      <dd>{{ telefonoVisible(telefono) }}</dd>
                     </div>
                   }
                   @if (invitado.nickname) {
@@ -351,6 +352,7 @@ export class NpListaInvitados {
 
   /** Id del titular cuya familia se quiere ver. */
   readonly familia = output<string>();
+  protected readonly telefonoVisible = telefonoVisible;
   readonly acompanante = output<Invitado>();
   readonly responder = output<Invitado>();
   readonly editar = output<Invitado>();

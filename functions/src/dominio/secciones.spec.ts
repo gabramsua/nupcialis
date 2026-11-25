@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { CAMPOS_POR_TIPO, MAX_SECCIONES, SECCIONES_INICIALES, sanearSecciones } from './secciones';
+import {
+  CAMPOS_POR_TIPO,
+  MAX_SECCIONES,
+  MODULO_DE_SECCION,
+  SECCIONES_INICIALES,
+  conModulosActivos,
+  sanearSecciones,
+} from './secciones';
 
 const MARCA = '// === COPIA LITERAL';
 
@@ -138,5 +145,19 @@ describe('sanearSecciones', () => {
   it('una boda nueva solo enseña la portada', () => {
     const encendidas = SECCIONES_INICIALES.filter((s) => s.enabled);
     expect(encendidas.map((s) => s.id)).toEqual(['portada']);
+  });
+});
+
+describe('MODULO_DE_SECCION', () => {
+  it('apunta a módulos que existen', async () => {
+    const { MODULOS } = await import('./planes');
+    for (const [tipo, modulo] of Object.entries(MODULO_DE_SECCION)) {
+      expect(MODULOS as readonly string[], tipo).toContain(modulo);
+    }
+  });
+
+  it('cada sección sembrada con módulo propio se va con él', () => {
+    const sin = conModulosActivos(SECCIONES_INICIALES, () => false).map((s) => s.type);
+    expect(sin.sort()).toEqual(['portada', 'texto']);
   });
 });

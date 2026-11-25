@@ -151,8 +151,17 @@ service cloud.firestore {
       // abierta, y lo que está a medio apuntar se queda aquí.
       match /accommodations/{id} { allow read: if isOwner(wid);
                                    allow write: if isOwner(wid); }
-      match /weddingParty/{id}   { allow read: if isOwner(wid) || isGuestOf(wid);
-                                   allow write: if isOwner(wid); }
+      // Las personas importantes (§8.12) **tampoco las lee el invitado de aquí**:
+      // lo visible le llega por la proyección pública, sin el teléfono y con la
+      // foto solo si hay consentimiento. Y la pareja **no puede guardar una foto
+      // sin haber confirmado ese consentimiento** (PENDIENTES D-61): son fotos
+      // de terceros publicadas en una web. Borrar va aparte porque al borrar no
+      // hay documento nuevo contra el que comprobar nada.
+      match /weddingParty/{id}   { allow read: if isOwner(wid);
+                                   allow create, update: if isOwner(wid)
+                                     && (request.resource.data.get('photoPath', null) == null
+                                         || request.resource.data.get('photoConsent', false) == true);
+                                   allow delete: if isOwner(wid); }
       // La cronología **tampoco la lee el invitado de aquí**: lo visible le
       // llega por la proyección pública, y lo interno —la hora a la que llega
       // el fotógrafo, el montaje— se queda en esta colección, que es de la
@@ -232,8 +241,12 @@ service cloud.firestore {
         allow read: if isOwner(wid);
         allow write: if isOwner(wid);
       }
+      // El libro de firmas lo sirve `listGuestbook`, no una lectura directa:
+      // cada firma guarda el `guestId` de su autor y una regla puede negar una
+      // lectura pero no esconder un campo de ella. Firmar y borrar la propia
+      // pasan por `signGuestbook` y `deleteGuestbookEntry`.
       match /guestbookEntries/{id} {
-        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow read: if isOwner(wid);
         allow write: if isOwner(wid);
       }
     }

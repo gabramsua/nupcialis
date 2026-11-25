@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { TIPOS_EDITABLES, mover } from './catalogo-secciones';
+import { TIPOS_EDITABLES, mover, moverEntreVisibles } from './catalogo-secciones';
 import { CAMPOS_POR_TIPO, SECCIONES_INICIALES, TIPOS_SECCION } from './secciones';
 
 describe('TIPOS_EDITABLES', () => {
@@ -31,38 +31,44 @@ describe('mover', () => {
     const salida = mover(lista, 'historia', 1);
     expect(salida.map((s) => s.id)).toEqual([
       'portada',
-      'ceremonia',
+      'confirmar',
       'historia',
-      'banquete',
       'cronologia',
       'preguntas',
       'alojamientos',
+      'autobuses',
       'dress-code',
+      'cortejo',
       'quiz',
       'galeria',
       'regalos',
       'mapa',
       'playlist',
+      'libro',
       'contacto',
     ]);
-    expect(salida.map((s) => s.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+    expect(salida.map((s) => s.order)).toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    ]);
   });
 
   it('sube una sección', () => {
-    expect(mover(lista, 'banquete', -1).map((s) => s.id)).toEqual([
+    expect(mover(lista, 'cronologia', -1).map((s) => s.id)).toEqual([
       'portada',
       'historia',
-      'banquete',
-      'ceremonia',
       'cronologia',
+      'confirmar',
       'preguntas',
       'alojamientos',
+      'autobuses',
       'dress-code',
+      'cortejo',
       'quiz',
       'galeria',
       'regalos',
       'mapa',
       'playlist',
+      'libro',
       'contacto',
     ]);
   });
@@ -78,5 +84,35 @@ describe('mover', () => {
   it('no se sale por los extremos ni con un id que no existe', () => {
     expect(mover(lista, 'contacto', 1)).toEqual(lista);
     expect(mover(lista, 'no-existe', 1)).toEqual(lista);
+  });
+});
+
+describe('moverEntreVisibles', () => {
+  const lista = SECCIONES_INICIALES.map((s) => ({ id: s.id, type: s.type, order: s.order }));
+  // El plan básico no ve la historia: está entre la portada y el cartel de confirmar.
+  const sinHistoria = (s: { type: string }) => s.type !== 'historia';
+
+  it('sube una sección intercambiándola con su vecina visible, no con la oculta', () => {
+    const salida = moverEntreVisibles(lista, sinHistoria, 'cronologia', -1);
+    const ids = salida.map((s) => s.id);
+    expect(ids.indexOf('cronologia')).toBeLessThan(ids.indexOf('confirmar'));
+    // La oculta no se ha movido de su sitio relativo.
+    expect(ids.indexOf('historia')).toBe(1);
+  });
+
+  it('la primera visible no sube por encima de la portada', () => {
+    expect(moverEntreVisibles(lista, sinHistoria, 'confirmar', -1)).toEqual(lista);
+  });
+
+  it('salta las ocultas al bajar', () => {
+    const ids = moverEntreVisibles(lista, (s) => s.type !== 'preguntas', 'cronologia', 1).map(
+      (s) => s.id,
+    );
+    expect(ids.indexOf('alojamientos')).toBeLessThan(ids.indexOf('cronologia'));
+  });
+
+  it('renumera sin huecos', () => {
+    const orden = moverEntreVisibles(lista, sinHistoria, 'cronologia', -1).map((s) => s.order);
+    expect(orden).toEqual(orden.map((_, i) => i));
   });
 });

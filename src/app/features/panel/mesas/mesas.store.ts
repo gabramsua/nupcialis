@@ -9,6 +9,7 @@ import {
   type Mesa,
   type ResultadoEscrituraMesa,
 } from '../../../core/mesas/mesas-gateway';
+import { PUERTA_GRUPOS, type Grupo } from '../../../core/invitados/grupos-gateway';
 import { PUERTA_INVITADOS, type Invitado } from '../../../core/invitados/invitados-gateway';
 import { avisosDeMesas, resumenDeMesas, type InvitadoSentado } from './mesas';
 
@@ -27,6 +28,11 @@ export class MesasStore {
   private readonly puerta = inject(PUERTA_MESAS);
   private readonly sentarse = inject(PUERTA_SENTAR);
   private readonly puertaInvitados = inject(PUERTA_INVITADOS);
+  // Opcional: solo sirve para filtrar la lista por grupo. Sin ella, no hay filtro.
+  private readonly puertaGrupos = inject(PUERTA_GRUPOS, { optional: true });
+
+  private readonly _grupos = signal<readonly Grupo[]>([]);
+  readonly grupos = this._grupos.asReadonly();
 
   private readonly _invitados = signal<readonly Invitado[]>([]);
 
@@ -78,10 +84,13 @@ export class MesasStore {
     this._estado.set('cargando');
 
     // Las dos a la vez: la pantalla no sirve de nada con una sola.
-    const [resultado, listado] = await Promise.all([
+    const [resultado, listado, grupos] = await Promise.all([
       weddingId ? this.puerta.listar(weddingId) : Promise.resolve(null),
       this.puertaInvitados.listar(),
+      weddingId && this.puertaGrupos ? this.puertaGrupos.listar(weddingId) : Promise.resolve(null),
     ]);
+
+    if (grupos?.ok) this._grupos.set(grupos.grupos);
 
     if (listado.ok) this._invitados.set(listado.invitados);
 

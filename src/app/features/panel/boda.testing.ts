@@ -28,6 +28,7 @@ export const BODA_DE_PRUEBA: BodaDelPanel = {
   allowGuestAddedCompanions: false,
   templateId: 'clasica',
   indexable: false,
+  autobuses: [],
   palette: null,
   heroImagePath: null,
   heroImageUrl: null,

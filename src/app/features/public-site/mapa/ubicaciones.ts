@@ -107,8 +107,14 @@ export function sanearUbicaciones(valor: unknown): readonly UbicacionPublica[] {
     if (id === '' || vistas.has(id) || name === '') continue;
     if (u['visibleToGuests'] === false) continue;
 
-    // Las coordenadas viven en `coords`, como dice el modelo (§5.7).
-    const coords = (u['coords'] ?? {}) as Record<string, unknown>;
+    // Las coordenadas viven en `coords`, como dice el modelo (§5.7), y salen
+    // **planas** (`lat`, `lng`) en lo publicado. El saneador tiene que valer
+    // para las dos formas: el servidor lo aplica a lo que escribe la pareja
+    // (`coords`) y el navegador lo vuelve a aplicar a lo ya publicado (`lat`,
+    // `lng`). Si solo entendiera una, la web pública tiraría todos los sitios.
+    const coords = (
+      u['coords'] !== null && typeof u['coords'] === 'object' ? u['coords'] : u
+    ) as Record<string, unknown>;
     if (!coordenadasValidas(coords['lat'], coords['lng'])) continue;
 
     vistas.add(id);

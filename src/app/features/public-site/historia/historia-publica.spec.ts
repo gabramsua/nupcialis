@@ -33,6 +33,8 @@ function tenant(historia: readonly ApartadoPublicoDeHistoria[]): ResultadoTenant
       faqs: [],
       cronologia: [],
       alojamientos: [],
+      autobuses: [],
+      cortejo: [],
       ubicaciones: [],
       dressCode: DRESS_CODE_VACIO,
       historia,

@@ -108,10 +108,10 @@ describe('hojaDePlantilla', () => {
     expect(nombres.some((n) => n.includes('ñ'))).toBe(true);
   });
 
-  it('el teléfono de ejemplo es texto y conserva el +34', () => {
+  it('el teléfono de ejemplo es texto y no lleva +34', () => {
     const filas = tabla();
     const columna = filas[0].indexOf('Teléfono');
-    expect(filas.slice(1).some((f) => f[columna].startsWith('+34'))).toBe(true);
+    expect(filas.slice(1).some((f) => /^[6789]\d{8}$/.test(f[columna]))).toBe(true);
   });
 });
 

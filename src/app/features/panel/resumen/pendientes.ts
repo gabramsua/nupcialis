@@ -50,6 +50,8 @@ export interface CifrasDelPanel {
   readonly sinContestar: number;
   /** Cuántos han abierto la web alguna vez. Es el otro número que preguntan. */
   readonly hanEntrado: number;
+  /** Han dicho que sí o que no. Es lo que cuenta el plan básico. */
+  readonly contestados: number;
 }
 
 export function cifras(invitados: readonly Invitado[]): CifrasDelPanel {
@@ -58,6 +60,7 @@ export function cifras(invitados: readonly Invitado[]): CifrasDelPanel {
     confirmados: invitados.filter((i) => i.rsvpStatus === 'confirmed').length,
     sinContestar: invitados.filter((i) => i.rsvpStatus === 'pending').length,
     hanEntrado: invitados.filter((i) => i.loginCount > 0).length,
+    contestados: invitados.filter((i) => i.rsvpStatus !== 'pending').length,
   };
 }
 
@@ -85,7 +88,11 @@ export function pendientes(
     lista.push({ clave: 'publicar', icono: 'eye-slash', ruta: '/panel/datos', cuantos: 0 });
   }
 
-  if (cuenta.invitados === 0) {
+  // El plan básico no lleva lista de invitados (D-66): no se les pide cargarla
+  // ni se cuenta quién ha entrado o contestado. Solo queda lo de la web.
+  const conLista = boda.plan !== 'basic';
+
+  if (conLista && cuenta.invitados === 0) {
     lista.push({ clave: 'invitados', icono: 'users', ruta: '/panel/guests/importar', cuantos: 0 });
     return lista;
   }
@@ -99,7 +106,7 @@ export function pendientes(
     lista.push({ clave: 'portada', icono: 'images', ruta: '/panel/diseno', cuantos: 0 });
   }
 
-  if (cuenta.hanEntrado < cuenta.invitados) {
+  if (conLista && cuenta.hanEntrado < cuenta.invitados) {
     lista.push({
       clave: 'sin-entrar',
       icono: 'envelope',
@@ -108,7 +115,7 @@ export function pendientes(
     });
   }
 
-  if (cuenta.sinContestar > 0) {
+  if (conLista && cuenta.sinContestar > 0) {
     lista.push({
       clave: 'sin-contestar',
       icono: 'clock-countdown',

@@ -12,6 +12,9 @@ import { NpIcon } from '../../../design-system/icons/icon';
 import type { NpIconName } from '../../../design-system/icons/icon-name.generated';
 import { fechaMedia } from '../../../shared/fecha';
 import { BodaStore } from '../boda.store';
+import { resolver, idVigente } from '../enlaces/enlaces';
+import { PresupuestoStore } from '../presupuesto/presupuesto.store';
+import { ProveedoresStore } from '../proveedores/proveedores.store';
 import {
   CATEGORIAS_BASE,
   MAX_CATEGORIA_TAREA,
@@ -290,6 +293,18 @@ const ICONO_RESPONSABLE: Record<Responsable, NpIconName> = {
                               <np-icon [name]="iconoResponsable(tarea.assignedTo)" />
                               {{ nombreDe(tarea.assignedTo, t) }}
                             </span>
+                            @if (proveedorDe(tarea); as proveedor) {
+                              <span class="tk__enlace">
+                                <np-icon name="briefcase" />
+                                {{ proveedor.name }}
+                              </span>
+                            }
+                            @if (partidaDe(tarea); as partida) {
+                              <span class="tk__enlace">
+                                <np-icon name="currency-eur" />
+                                {{ partida.concept }}
+                              </span>
+                            }
                             @if (tarea.priority === 'high') {
                               <span class="tk__alta">
                                 <np-icon name="star" weight="fill" />
@@ -405,6 +420,29 @@ const ICONO_RESPONSABLE: Record<Responsable, NpIconName> = {
                 }
               </datalist>
             </label>
+
+            @if (conProveedores()) {
+              <label>
+                {{ t('panel.checklist.campo.proveedor') }}
+                <select npInput formControlName="vendorId">
+                  <option value="">{{ t('panel.checklist.campo.sinEnlace') }}</option>
+                  @for (p of proveedores.proveedores(); track p.id) {
+                    <option [value]="p.id">{{ p.name }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (conPresupuesto()) {
+              <label>
+                {{ t('panel.checklist.campo.partida') }}
+                <select npInput formControlName="budgetItemId">
+                  <option value="">{{ t('panel.checklist.campo.sinEnlace') }}</option>
+                  @for (p of presupuesto.partidas(); track p.id) {
+                    <option [value]="p.id">{{ p.concept }}</option>
+                  }
+                </select>
+              </label>
+            }
 
             <label>
               {{ t('panel.checklist.campo.notas') }}
@@ -628,6 +666,12 @@ const ICONO_RESPONSABLE: Record<Responsable, NpIconName> = {
       font-size: var(--np-text-sm);
       color: var(--np-surface-text-muted);
     }
+    .tk__enlace {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--np-space-1);
+      color: var(--np-text-muted);
+    }
     .tk__meta span {
       display: inline-flex;
       align-items: center;
@@ -685,6 +729,17 @@ export class PanelChecklist {
   protected readonly store = inject(TareasStore);
   private readonly boda = inject(BodaStore);
   private readonly fb = inject(FormBuilder);
+  // Solo de lectura: de ahí salen los nombres y las opciones de los enlaces.
+  protected readonly proveedores = inject(ProveedoresStore);
+  protected readonly presupuesto = inject(PresupuestoStore);
+
+  /** Los selectores solo existen si la boda tiene ese módulo (el plan básico no). */
+  protected readonly conProveedores = computed(
+    () => this.boda.boda()?.modulos['vendors']?.enabled === true,
+  );
+  protected readonly conPresupuesto = computed(
+    () => this.boda.boda()?.modulos['budget']?.enabled === true,
+  );
 
   protected readonly responsables = RESPONSABLES;
   protected readonly prioridades = PRIORIDADES;
@@ -726,6 +781,8 @@ export class PanelChecklist {
     dueDate: '',
     assignedTo: 'both' as Responsable,
     priority: 'normal' as Prioridad,
+    vendorId: '',
+    budgetItemId: '',
   });
 
   /** «Hoy» se fija al cargar la pantalla: dentro de una visita no cambia de día. */
@@ -774,6 +831,17 @@ export class PanelChecklist {
 
   constructor() {
     void this.store.cargar();
+    if (this.conProveedores()) void this.proveedores.cargar();
+    if (this.conPresupuesto()) void this.presupuesto.cargar();
+  }
+
+  /** El proveedor de una tarea, o `null` si no tiene o ya no existe. */
+  protected proveedorDe(tarea: TareaDelPanel) {
+    return resolver(this.proveedores.proveedores(), tarea.vendorId);
+  }
+
+  protected partidaDe(tarea: TareaDelPanel) {
+    return resolver(this.presupuesto.partidas(), tarea.budgetItemId);
   }
 
   protected cambiarFiltro(cambio: Partial<{ [K in keyof FiltrosDeTareas]: string }>): void {
@@ -848,6 +916,8 @@ export class PanelChecklist {
       dueDate: '',
       assignedTo: f === 'todas' ? 'both' : f,
       priority: 'normal',
+      vendorId: '',
+      budgetItemId: '',
     });
     this.abierto.set(true);
   }
@@ -863,6 +933,9 @@ export class PanelChecklist {
       dueDate: campoDeFecha(tarea.dueDate),
       assignedTo: tarea.assignedTo,
       priority: tarea.priority,
+      // Un enlace roto (proveedor borrado) se ve vacío y, al guardar, se limpia.
+      vendorId: idVigente(this.proveedores.proveedores(), tarea.vendorId),
+      budgetItemId: idVigente(this.presupuesto.partidas(), tarea.budgetItemId),
     });
     this.abierto.set(true);
   }
@@ -888,10 +961,23 @@ export class PanelChecklist {
       dueDate: fechaDeCampo(v.dueDate),
       assignedTo: v.assignedTo,
       priority: v.priority,
+      vendorId: this.enlaceAGuardar(v.vendorId, 'vendorId'),
+      budgetItemId: this.enlaceAGuardar(v.budgetItemId, 'budgetItemId'),
     });
     this.guardando.set(false);
 
     if (resultado.ok) this.cerrar();
+  }
+
+  /**
+   * El enlace que se escribe. Si el módulo no está en el plan el selector no
+   * existe y el formulario trae `''`: en ese caso se conserva lo que había, no
+   * se borra a escondidas un enlace que la pareja puso cuando sí lo tenía.
+   */
+  private enlaceAGuardar(valor: string, clave: 'vendorId' | 'budgetItemId'): string | null {
+    const activo = clave === 'vendorId' ? this.conProveedores() : this.conPresupuesto();
+    if (!activo) return this.editando()?.[clave] ?? null;
+    return valor === '' ? null : valor;
   }
 
   /** Borrar pide un segundo toque: la primera vez solo cambia la etiqueta. */

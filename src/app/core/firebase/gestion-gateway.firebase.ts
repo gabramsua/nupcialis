@@ -78,6 +78,12 @@ export function crearPuertaGestionFirebase(): PuertaGestion {
   };
 }
 
+function pistaDe(fallo: ErrorInvocable): { pista?: string } {
+  const motivo = (fallo.details as Record<string, unknown> | undefined)?.['motivo'];
+  const texto = typeof motivo === 'string' ? motivo : fallo.message;
+  return typeof texto === 'string' && texto !== '' ? { pista: texto } : {};
+}
+
 /** Exportada para probarla sin red, como las demás traducciones. */
 export function traducirGestion(error: unknown): FalloGestion {
   const fallo = (error ?? {}) as ErrorInvocable;
@@ -85,9 +91,9 @@ export function traducirGestion(error: unknown): FalloGestion {
 
   switch (fallo.code) {
     case 'functions/permission-denied':
-      return { tipo: 'sin-permiso' };
+      return { tipo: 'sin-permiso', ...pistaDe(fallo) };
     case 'functions/unauthenticated':
-      return { tipo: 'sin-verificar' };
+      return { tipo: 'sin-verificar', ...pistaDe(fallo) };
     case 'functions/unavailable':
     case 'functions/deadline-exceeded':
       return { tipo: 'red' };

@@ -74,6 +74,7 @@ import {
   type FaqDelPanel,
   type PuertaFaqs,
 } from '../../core/faqs/faqs-gateway';
+import { sanearAutobuses, type RutaAutobus } from '../public-site/autobuses/autobuses';
 import { sanearDressCode } from '../public-site/dress-code/dress-code';
 import { sanearAportacion } from '../public-site/regalos/regalos';
 import { AlojamientosStore } from '../panel/alojamientos/alojamientos.store';
@@ -286,6 +287,7 @@ const BODA: BodaDelPanel = {
   allowGuestAddedCompanions: true,
   templateId: 'clasica',
   indexable: false,
+  autobuses: [],
   palette: null,
   heroImagePath: null,
   heroImageUrl: null,
@@ -552,6 +554,12 @@ class BodaStoreDeMuestra {
     return true;
   }
 
+  async guardarAutobuses(rutas: readonly RutaAutobus[]): Promise<boolean> {
+    const boda = this._boda();
+    if (boda) this._boda.set({ ...boda, autobuses: sanearAutobuses(rutas) });
+    return true;
+  }
+
   async guardarAportacion(aportacion: {
     iban: string;
     titular: string;
@@ -810,12 +818,14 @@ function puertaTareas(): PuertaTareas {
             doneAt: null,
             doneByUid: null,
             doneByEmail: null,
-            vendorId: null,
-            budgetItemId: null,
             icon: 'list-checks',
           },
         ];
       }
+      return { ok: true };
+    },
+    async enlazar(_w, id, enlaces) {
+      lista = lista.map((t) => (t.id === id ? { ...t, ...enlaces } : t));
       return { ok: true };
     },
     async marcar(_w, id, hecha, por) {
@@ -969,6 +979,7 @@ function fotosDeMuestra(): FotoPublica[] {
       guestId: 'g1',
       autor: 'Ana Ruiz',
       pie: 'Qué guapos',
+      album: 'dia',
       creadoEn: '2027-06-12T18:00:00.000Z',
     },
     {
@@ -978,6 +989,7 @@ function fotosDeMuestra(): FotoPublica[] {
       guestId: 'g2',
       autor: 'Pepe García',
       pie: '',
+      album: 'dia',
       creadoEn: '2027-06-12T19:00:00.000Z',
     },
     {
@@ -987,6 +999,7 @@ function fotosDeMuestra(): FotoPublica[] {
       guestId: 'g1',
       autor: 'Ana Ruiz',
       pie: 'El primer baile',
+      album: 'dia',
       creadoEn: '2027-06-12T23:30:00.000Z',
     },
     {
@@ -996,6 +1009,7 @@ function fotosDeMuestra(): FotoPublica[] {
       guestId: 'g3',
       autor: 'Marta Olmo',
       pie: '',
+      album: 'dia',
       creadoEn: '2027-06-13T00:10:00.000Z',
     },
     {
@@ -1005,6 +1019,7 @@ function fotosDeMuestra(): FotoPublica[] {
       guestId: 'g2',
       autor: 'Pepe García',
       pie: '',
+      album: 'dia',
       creadoEn: '2027-06-13T04:00:00.000Z',
     },
   ];

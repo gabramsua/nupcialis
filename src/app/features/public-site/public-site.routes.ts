@@ -10,6 +10,9 @@ import { crearPuertaRsvpFirebase } from '../../core/firebase/rsvp-gateway.fireba
 import { provideQuiz } from '../../core/quiz/quiz.providers';
 import { provideGaleria } from '../../core/galeria/galeria.providers';
 import { provideRegalos } from '../../core/regalos/regalos.providers';
+import { PUERTA_REGALOS_ABIERTOS } from '../../core/regalos/regalos-abiertos-gateway';
+import { crearPuertaRegalosAbiertosFirebase } from '../../core/firebase/regalos-abiertos-gateway.firebase';
+import { provideLibro } from '../../core/libro/libro.providers';
 import { providePlaylist } from '../../core/playlist/playlist.providers';
 
 /**
@@ -29,6 +32,8 @@ export const publicSiteRoutes: Routes = [
       // ruta. En la raíz no los encuentra y la web se queda en blanco.
       SesionInvitado,
       { provide: PUERTA_RSVP, useFactory: crearPuertaRsvpFirebase },
+      // Los regalos del plan básico, sin identificarse (D-66).
+      { provide: PUERTA_REGALOS_ABIERTOS, useFactory: crearPuertaRegalosAbiertosFirebase },
     ],
     resolve: { tenant: tenantResolver },
     loadComponent: () =>
@@ -123,6 +128,22 @@ export const publicSiteRoutes: Routes = [
     ],
     resolve: { tenant: tenantResolver },
     loadComponent: () => import('./playlist/playlist-publica').then((m) => m.NpPlaylistPublica),
+  },
+  {
+    // El libro de firmas (§8.15): cada firma lleva el nombre de su autor, así
+    // que llega por invocable y solo a quien está identificado.
+    path: 'libro',
+    canActivate: [exigirSesionDeInvitado('libro')],
+    providers: [
+      provideIconSprite('public'),
+      provideFirestore(),
+      provideFirebaseFunctions(),
+      provideAppCheck(),
+      SesionInvitado,
+      provideLibro(),
+    ],
+    resolve: { tenant: tenantResolver },
+    loadComponent: () => import('./libro/libro-publica').then((m) => m.NpLibroPublica),
   },
   {
     // La puerta de los módulos que necesitan saber quién es el invitado (D-56):

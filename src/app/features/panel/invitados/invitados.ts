@@ -50,6 +50,7 @@ import { NpGrupoChip } from './grupo-chip';
 import { NpListaInvitados, ladoDeInvitado } from './lista-invitados';
 import { GruposStore } from './grupos.store';
 import { NpInput } from '../../../design-system/components/field/input';
+import { telefonoVisible } from '../../../shared/telefono';
 
 type Carga = 'cargando' | 'lista' | 'error';
 
@@ -1104,7 +1105,7 @@ export class Invitados {
       // Si el mote es el propio nombre, es que no tenía: se enseña vacío para
       // que no parezca que alguien lo escribió así.
       nickname: invitado.nickname === invitado.fullName ? '' : invitado.nickname,
-      phone: invitado.phone ?? '',
+      phone: telefonoVisible(invitado.phone),
       side: invitado.side,
       ageGroup: invitado.ageGroup,
       notes: invitado.notes,

@@ -143,6 +143,36 @@ describe('sanearUbicaciones', () => {
   });
 });
 
+describe('sanearUbicaciones es idempotente', () => {
+  /**
+   * El servidor publica la lista saneada (con `lat`, `lng` planos) y el
+   * navegador la vuelve a sanear al leerla. Si el saneador solo entendiera
+   * `coords`, la web pública tiraba todos los sitios: «Todavía no hay sitios».
+   */
+  it('lo ya publicado sobrevive a una segunda pasada', () => {
+    const publicado = sanearUbicaciones([
+      {
+        id: 'boda',
+        type: 'ceremonia',
+        name: 'Boda',
+        address: 'Castillo de San Marcos',
+        coords: { lat: 36.5964, lng: -6.2318 },
+        time: '12:00',
+        order: 1,
+        visibleToGuests: true,
+      },
+    ]);
+    expect(publicado).toHaveLength(1);
+    expect(sanearUbicaciones(publicado)).toEqual(publicado);
+  });
+
+  it('un sitio sin pin sigue cayendo, venga como `coords: null` o sin coordenadas', () => {
+    expect(sanearUbicaciones([{ id: 'a', name: 'A', coords: null }])).toEqual([]);
+    expect(sanearUbicaciones([{ id: 'a', name: 'A' }])).toEqual([]);
+    expect(sanearUbicaciones([{ id: 'a', name: 'A', lat: 0, lng: 0 }])).toEqual([]);
+  });
+});
+
 describe('los enlaces a Google Maps', () => {
   const sitio = { lat: 40.41683, lng: -3.70379 };
 

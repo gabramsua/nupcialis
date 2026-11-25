@@ -58,10 +58,16 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
             [disabled]="!hayCambios()"
             (click)="guardarTodo()"
           >
+            <np-icon name="check" />
             {{ t('panel.historia.guardarTodo') }}
           </button>
           @if (hayCambios()) {
             <small>{{ t('panel.historia.sinGuardar') }}</small>
+          } @else if (guardadoOk()) {
+            <small class="hi__hecho" role="status">
+              <np-icon name="check-circle" weight="fill" />
+              {{ t('common.saved') }}
+            </small>
           }
         </div>
 
@@ -155,10 +161,16 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
               [disabled]="!hayCambios()"
               (click)="guardarTodo()"
             >
+              <np-icon name="check" />
               {{ t('panel.historia.guardarTodo') }}
             </button>
             @if (hayCambios()) {
               <small>{{ t('panel.historia.sinGuardar') }}</small>
+            } @else if (guardadoOk()) {
+              <small class="hi__hecho" role="status">
+                <np-icon name="check-circle" weight="fill" />
+                {{ t('common.saved') }}
+              </small>
             }
           </div>
         }
@@ -166,6 +178,14 @@ const MAXIMO_BYTES = 10 * 1024 * 1024;
     </ng-container>
   `,
   styles: `
+    .hi__hecho {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--np-space-2);
+      margin: 0;
+      font-size: var(--np-text-sm);
+      color: var(--np-status-confirmed-text);
+    }
     .hi {
       display: grid;
       gap: var(--np-space-4);
@@ -281,10 +301,13 @@ export class PanelHistoria {
 
   protected readonly hayCambios = computed(() => this.claves.some((c) => this.sinGuardar(c)));
   protected readonly guardando = signal(false);
+  protected readonly guardadoOk = signal(false);
 
   /** Guarda de una vez todos los apartados con texto sin guardar. */
   protected async guardarTodo(): Promise<void> {
     this.guardando.set(true);
+    this.guardadoOk.set(false);
+    let todoBien = true;
     try {
       for (const clave of this.claves) {
         if (!this.sinGuardar(clave)) continue;
@@ -297,10 +320,13 @@ export class PanelHistoria {
             delete resto[clave];
             return resto;
           });
+        } else {
+          todoBien = false;
         }
       }
     } finally {
       this.guardando.set(false);
+      this.guardadoOk.set(todoBien);
     }
   }
 

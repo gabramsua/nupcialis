@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   PUERTA_TAREAS,
   type DatosTarea,
+  type EnlacesDeTarea,
   type FalloTareas,
 } from '../../../core/checklist/tareas-gateway';
 import type { ResultadoEscrituraTarea } from '../../../core/checklist/tareas-gateway';
@@ -71,6 +72,11 @@ export class TareasStore {
 
   async borrar(id: string): Promise<ResultadoEscrituraTarea> {
     return this.escribirYRecargar((w) => this.puerta.borrar(w, id));
+  }
+
+  /** Enlaza o desenlaza una tarea con un proveedor o una partida (F4.1c). */
+  async enlazar(id: string, enlaces: EnlacesDeTarea): Promise<ResultadoEscrituraTarea> {
+    return this.escribirYRecargar((w) => this.puerta.enlazar(w, id, enlaces));
   }
 
   async marcar(id: string, hecha: boolean): Promise<void> {

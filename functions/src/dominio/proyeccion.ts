@@ -13,7 +13,13 @@
  */
 
 import { MODULOS, type Modulo, type Visibilidad } from './planes';
-import { CAMPOS_POR_TIPO, esCampoRico, sanearSecciones, type Seccion } from './secciones';
+import {
+  CAMPOS_POR_TIPO,
+  conModulosActivos,
+  esCampoRico,
+  sanearSecciones,
+  type Seccion,
+} from './secciones';
 import { sanearHtml, tieneContenido } from './html';
 import {
   MAX_TEXTO_HISTORIA,
@@ -24,7 +30,9 @@ import {
 import { MAX_RESPUESTA, sanearFaqs, type FaqPublica } from './faqs';
 import { sanearCronologia, type HitoPublico } from './cronologia';
 import { sanearAlojamientos, type AlojamientoPublico } from './alojamientos';
+import { sanearAutobuses, type RutaAutobus } from './autobuses';
 import { sanearUbicaciones, type UbicacionPublica } from './ubicaciones';
+import { sanearCortejo, type PersonaPublica } from './cortejo';
 import {
   DRESS_CODE_VACIO,
   MAX_DESCRIPCION_DRESS,
@@ -44,6 +52,7 @@ export const MODULOS_PUBLICOS: readonly Modulo[] = [
   'timeline',
   'faqs',
   'accommodation',
+  'buses',
   'dressCode',
   'weddingParty',
   'story',
@@ -122,6 +131,16 @@ export interface ProyeccionPublica {
     readonly cronologia: readonly HitoPublico[];
     /** Los alojamientos para los invitados de fuera (§8.10). */
     readonly alojamientos: readonly AlojamientoPublico[];
+    /** Las rutas de autobús (D-63): información, sin reservas. */
+    readonly buses: readonly RutaAutobus[];
+    /**
+     * Las personas importantes que la pareja ha marcado como visibles (§8.12).
+     *
+     * Sin teléfono ni vínculo con la lista de invitados, y con foto **solo si
+     * hay consentimiento registrado**. Y solo si el módulo está activo: son
+     * datos de terceros, y no se publican para una boda que no los usa.
+     */
+    readonly cortejo: readonly PersonaPublica[];
     /**
      * Los sitios del mapa (§8.6), solo los visibles para invitados y con
      * coordenadas de verdad. Lo apuntado como interno —dónde aparcan los
@@ -270,6 +289,21 @@ function dressCodePublico(modules: BodaParaProyectar['modules']): DressCodePubli
 }
 
 /**
+ * Las rutas de autobús, de `modules.buses.config.rutas`.
+ *
+ * Solo se publican con el módulo encendido, y pasan por el saneador de lista
+ * blanca: lo escribe la pareja desde su panel y acaba en el único documento
+ * que puede leer un anónimo.
+ */
+function busesPublicos(modules: BodaParaProyectar['modules']): readonly RutaAutobus[] {
+  const modulo = modules?.['buses'];
+  if (modulo?.enabled !== true) return [];
+  const config = modulo.config;
+  if (config === null || typeof config !== 'object') return [];
+  return sanearAutobuses((config as Record<string, unknown>)['rutas']);
+}
+
+/**
  * Lo que se publica de una boda.
  *
  * `faqs` llega aparte porque vive en una subcolección y esta función es pura:
@@ -299,6 +333,7 @@ export function proyeccionPublica(
   cronologia: unknown = [],
   alojamientos: unknown = [],
   ubicaciones: unknown = [],
+  cortejo: unknown = [],
 ): ProyeccionPublica {
   const tema = boda.theme ?? {};
   const ubicacionesPublicas = sanearUbicaciones(ubicaciones);
@@ -336,7 +371,12 @@ export function proyeccionPublica(
     // en el panel: lo que decida el navegador de la pareja no protege a quien
     // abre la web (regla de oro 5).
     content: {
-      sections: sanearSecciones(secciones(boda.content)).map(conHtmlSaneado),
+      // Solo las secciones de módulos que el plan de la boda incluye: el alta
+      // las siembra todas, y una del plan básico no debe publicar el quiz.
+      sections: conModulosActivos(
+        sanearSecciones(secciones(boda.content)),
+        (modulo) => boda.modules?.[modulo as Modulo]?.enabled === true,
+      ).map(conHtmlSaneado),
       // La respuesta de una pregunta la escribe la pareja con el editor, así
       // que pasa por el mismo saneador que las secciones (regla de oro 5).
       faqs: sanearFaqs(faqs).map((faq) => ({
@@ -348,6 +388,8 @@ export function proyeccionPublica(
       cronologia: conEnlaceValido(sanearCronologia(cronologia), ubicacionesPublicas),
       alojamientos: conEnlaceValido(sanearAlojamientos(alojamientos), ubicacionesPublicas),
       ubicaciones: ubicacionesPublicas,
+      buses: busesPublicos(boda.modules),
+      cortejo: boda.modules?.['weddingParty']?.enabled === true ? sanearCortejo(cortejo) : [],
       dressCode: dressCodePublico(boda.modules),
       historia: historiaPublica(boda.content),
     },

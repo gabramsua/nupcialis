@@ -50,7 +50,11 @@ export const completeWeddings = onCall<{ weddingId?: string }>(
 
       const escritura: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
       for (const [modulo, config] of Object.entries(cambios.modulos)) {
-        escritura[`modules.${modulo}`] = config;
+        // Campo a campo, nunca el módulo entero: un módulo que ya existía puede
+        // traer `config` (el IBAN de los regalos, las rutas de autobús, el dress
+        // code) y escribirlo de golpe lo borraría.
+        escritura[`modules.${modulo}.enabled`] = config.enabled;
+        escritura[`modules.${modulo}.visibility`] = config.visibility;
         modulosAnadidos++;
       }
       if (cambios.secciones) {

@@ -58,7 +58,11 @@ export function exigirPareja(peticion: CallableRequest<unknown>): Pareja {
 
   const weddingId = auth.token['weddingId'];
   if (auth.token['role'] !== 'owner' || typeof weddingId !== 'string' || weddingId === '') {
-    throw new HttpsError('permission-denied', 'No tienes permiso para esta operación.');
+    // El motivo viaja en `details` para que el panel distinga «tu sesión no es de
+    // pareja» de un rechazo previo, del acceso a la función.
+    throw new HttpsError('permission-denied', 'No tienes permiso para esta operación.', {
+      motivo: 'sesion-sin-boda',
+    });
   }
 
   return {

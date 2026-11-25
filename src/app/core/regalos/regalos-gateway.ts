@@ -17,6 +17,8 @@ export type FalloRegalos =
   /** Alguien lo cogió mientras miraba. Llega con la lista al día. */
   | { readonly tipo: 'ya-reservado' }
   | { readonly tipo: 'no-es-tuyo' }
+  /** El servidor dice que esta boda no tiene regalos que enseñar (plan básico, D-66). */
+  | { readonly tipo: 'no-disponible' }
   | { readonly tipo: 'red' }
   | { readonly tipo: 'error' };
 

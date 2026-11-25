@@ -2,10 +2,13 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
+  ALBUMES,
   MAX_BYTES,
   MAX_PIE,
   TIPOS_PERMITIDOS,
+  albumDe,
   bytesDeBase64,
+  esAlbum,
   esTipoPermitido,
   extensionDe,
   puedeBorrar,
@@ -76,6 +79,7 @@ describe('sanearFotos', () => {
     guestId: 'g1',
     autor: 'Ana',
     pie: 'Qué guapos',
+    album: 'camino',
     creadoEn: '2027-06-12T18:00:00.000Z',
   };
 
@@ -123,5 +127,33 @@ describe('puedeBorrar', () => {
 
   it('sin sesión, ninguna', () => {
     expect(puedeBorrar(foto, { guestId: null, esPareja: false })).toBe(false);
+  });
+});
+
+describe('los álbumes', () => {
+  it('son dos: el día y el camino de la pareja', () => {
+    expect([...ALBUMES]).toEqual(['dia', 'camino']);
+  });
+
+  it('esAlbum solo admite los que existen', () => {
+    expect(esAlbum('dia')).toBe(true);
+    expect(esAlbum('camino')).toBe(true);
+    expect(esAlbum('historia')).toBe(false);
+    expect(esAlbum(undefined)).toBe(false);
+  });
+
+  /** Las fotos de antes de los álbumes no tienen el campo: son del día. */
+  it('una foto sin álbum, o con uno raro, es del día', () => {
+    expect(albumDe(undefined)).toBe('dia');
+    expect(albumDe('otro')).toBe('dia');
+    expect(albumDe('camino')).toBe('camino');
+  });
+
+  it('sanearFotos conserva el álbum y pone «dia» si falta', () => {
+    const fotos = sanearFotos([
+      { id: 'a', url: 'u1', album: 'camino' },
+      { id: 'b', url: 'u2' },
+    ]);
+    expect(fotos.map((f) => f.album)).toEqual(['camino', 'dia']);
   });
 });

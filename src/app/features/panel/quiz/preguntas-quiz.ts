@@ -349,6 +349,7 @@ import { NpInput } from '../../../design-system/components/field/input';
                 [disabled]="formulario.invalid"
                 (click)="guardar()"
               >
+                <np-icon name="check" />
                 {{ t('common.save') }}
               </button>
             </div>

@@ -517,3 +517,45 @@ describe('el reparto de mesas', () => {
     });
   });
 });
+
+describe('filtrar la lista de los que faltan por sentar', () => {
+  const lista = [
+    invitado({ id: 'm', fullName: 'María García López', rsvpStatus: 'confirmed' }),
+    invitado({ id: 'j', fullName: 'Juan Pérez', rsvpStatus: 'confirmed' }),
+    invitado({ id: 'n', fullName: 'Nuria Nogal', rsvpStatus: 'declined' }),
+  ];
+
+  async function escribir(p: ReturnType<typeof montar>, texto: string) {
+    const caja = p.raiz.querySelector<HTMLInputElement>('input[type="search"]')!;
+    caja.value = texto;
+    caja.dispatchEvent(new Event('input'));
+    await p.asentar();
+  }
+
+  it('busca en nombre y apellidos, sin mirar acentos', async () => {
+    const p = montar([mesa({ id: 'm1' })], lista);
+    await p.asentar();
+
+    await escribir(p, 'garcia');
+    expect(p.fichas().map((f) => f.textContent?.trim())).toEqual([
+      expect.stringContaining('María García López'),
+    ]);
+
+    await escribir(p, 'perez');
+    expect(p.fichas()).toHaveLength(1);
+    expect(p.texto()).toContain('Juan Pérez');
+  });
+
+  it('puede ocultar a los que no vienen y quitar los filtros', async () => {
+    const p = montar([mesa({ id: 'm1' })], lista);
+    await p.asentar();
+
+    const casilla = p.raiz.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    casilla.click();
+    await p.asentar();
+    expect(p.texto()).not.toContain('Nuria Nogal');
+
+    await p.pulsar(p.boton('Quitar filtros'));
+    expect(p.texto()).toContain('Nuria Nogal');
+  });
+});

@@ -13,6 +13,8 @@ import type { Seccion } from '../secciones/secciones';
 import type { FaqPublica } from '../faqs/faqs';
 import type { HitoPublico } from '../cronologia/cronologia';
 import type { AlojamientoPublico } from '../alojamientos/alojamientos';
+import type { RutaAutobus } from '../autobuses/autobuses';
+import type { PersonaPublica } from '../cortejo/cortejo';
 import type { UbicacionPublica } from '../mapa/ubicaciones';
 import type { DressCodePublico } from '../dress-code/dress-code';
 
@@ -40,6 +42,10 @@ export interface DatosPortada {
   readonly cronologia: readonly HitoPublico[];
   /** Los alojamientos (§8.10), que pinta la sección de ese tipo. */
   readonly alojamientos: readonly AlojamientoPublico[];
+  /** Las rutas de autobús (D-63), que pinta la sección de ese tipo. */
+  readonly autobuses: readonly RutaAutobus[];
+  /** Las personas importantes (§8.12), que pinta la sección de ese tipo. */
+  readonly cortejo: readonly PersonaPublica[];
   /** Los sitios publicados del mapa (§8.6): de ahí salen los «Cómo llegar» de hitos y alojamientos. */
   readonly ubicaciones: readonly UbicacionPublica[];
   /** El dress code (§8.11), que pinta la sección de ese tipo. */
@@ -50,6 +56,8 @@ export interface DatosPortada {
    * esos se llega desde la cabecera de navegación.
    */
   readonly layout?: LayoutPublico;
+  /** La dirección de la boda: los regalos del plan básico se piden con ella (D-66). */
+  readonly slug?: string;
 }
 
 /**
@@ -79,6 +87,7 @@ export const SECCIONES_CON_PAGINA: readonly Seccion['type'][] = [
   'galeria',
   'regalos',
   'playlist',
+  'libro',
 ];
 
 /**

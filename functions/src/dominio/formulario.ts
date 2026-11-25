@@ -440,6 +440,20 @@ export function estadoTrasEnviar(campos: CamposDelInvitado): EstadoRsvp {
 // Fecha límite
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Cuántos días antes de la boda se cierra el formulario si la pareja no pone fecha (D-66). */
+export const DIAS_PLAZO_POR_DEFECTO = 7;
+
+/**
+ * El plazo cuando la pareja no ha puesto uno: **una semana antes de la boda**.
+ *
+ * Con la boda encima ya no cambian ni el catering ni las mesas, así que
+ * dejarlo abierto hasta el día es prometer algo que nadie va a poder cumplir.
+ * La pareja lo puede mover poniendo su fecha.
+ */
+export function plazoPorDefecto(fechaBoda: Date): Date {
+  return new Date(fechaBoda.getTime() - DIAS_PLAZO_POR_DEFECTO * 24 * 60 * 60 * 1000);
+}
+
 /**
  * ¿Se puede contestar todavía?
  *

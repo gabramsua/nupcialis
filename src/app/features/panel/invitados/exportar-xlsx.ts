@@ -37,7 +37,7 @@ export function datosDeHoja(hoja: Hoja): unknown[][] {
  *
  * Los números van como números —si no, Excel enseña un aviso verde en cada
  * celda— y el resto como texto. Un teléfono es **texto**: como número perdería
- * el `+34` y el cero inicial.
+ * el `+` de un prefijo extranjero y el cero inicial.
  */
 function celda(valor: Celda) {
   if (valor === null || valor === '') return null;

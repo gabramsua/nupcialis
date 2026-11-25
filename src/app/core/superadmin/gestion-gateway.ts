@@ -17,8 +17,9 @@ import type {
  */
 
 export type FalloGestion =
-  | { readonly tipo: 'sin-permiso' }
-  | { readonly tipo: 'sin-verificar' }
+  /** `pista` es el texto crudo del servidor: dice si lo rechazó la función o el acceso a ella. */
+  | { readonly tipo: 'sin-permiso'; readonly pista?: string }
+  | { readonly tipo: 'sin-verificar'; readonly pista?: string }
   | { readonly tipo: 'red' }
   | { readonly tipo: 'no-existe' }
   | { readonly tipo: 'sin-correo' }

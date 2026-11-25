@@ -99,7 +99,7 @@ describe('la hoja de invitados', () => {
   it('la pareja sí ve el teléfono y sus notas', () => {
     const fila = hojaDeInvitados(datos([VIENE])).filas[0]!;
 
-    expect(fila).toContain('+34600111222');
+    expect(fila).toContain('600111222');
     expect(fila).toContain('La prima de mi madre');
   });
 
@@ -129,7 +129,7 @@ describe('la hoja del catering', () => {
     const hoja = hojaParaCatering(datos([VIENE]));
     const todo = JSON.stringify(hoja);
 
-    expect(todo).not.toContain('+34600111222');
+    expect(todo).not.toContain('600111222');
     expect(todo).not.toContain('La prima de mi madre');
     expect(hoja.columnas.map((c) => c.titulo)).toEqual([
       'Nombre',

@@ -18,6 +18,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
+import { claimsSinBoda, esSuperadmin } from './dominio/claims';
 import { validarEdicion } from './dominio/edicion-boda';
 import { dominioDeBoda } from './dominio/dominios';
 import { cambiosDeModulosEnBoda, diferenciaDePlan, layoutDePlan } from './dominio/planes';
@@ -206,7 +207,12 @@ export const deleteWedding = onCall<{ weddingId?: unknown; confirmarSlug?: unkno
     for (const uid of propietarios) {
       try {
         const usuario = await auth().getUser(uid);
-        if (usuario.customClaims?.['role'] === 'superadmin') continue;
+        // Una cuenta de superadmin ni se borra ni pierde el claim, aunque haya
+        // hecho de pareja en una boda de pruebas.
+        if (esSuperadmin(usuario.customClaims)) {
+          await auth().setCustomUserClaims(uid, claimsSinBoda(usuario.customClaims));
+          continue;
+        }
 
         const otras = await db()
           .collection('weddings')

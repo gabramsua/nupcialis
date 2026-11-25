@@ -19,6 +19,7 @@ import {
   LADO_MAXIMO,
   LADO_MINIATURA,
   sanearFotos,
+  type AlbumFoto,
 } from '../../features/public-site/galeria/galeria';
 import {
   type FalloGaleria,
@@ -33,10 +34,10 @@ export function crearPuertaGaleriaFirebase(): PuertaGaleria {
   const functions = inject(FIREBASE_FUNCTIONS);
 
   return {
-    async listar(cursor: string | null): Promise<ResultadoFotos> {
+    async listar(cursor: string | null, album: AlbumFoto): Promise<ResultadoFotos> {
       try {
         const llamar = httpsCallable(functions, 'listPhotos');
-        const { data } = await llamar({ cursor });
+        const { data } = await llamar({ cursor, album });
         const datos = (data ?? {}) as Record<string, unknown>;
 
         return {
@@ -50,7 +51,7 @@ export function crearPuertaGaleriaFirebase(): PuertaGaleria {
       }
     },
 
-    async subir(archivo: File, pie: string): Promise<ResultadoSubida> {
+    async subir(archivo: File, pie: string, album: AlbumFoto): Promise<ResultadoSubida> {
       try {
         const [grande, miniatura] = await Promise.all([
           reducir(archivo, LADO_MAXIMO),
@@ -63,6 +64,7 @@ export function crearPuertaGaleriaFirebase(): PuertaGaleria {
           miniaturaBase64: miniatura,
           contentType: 'image/jpeg',
           pie,
+          album,
         });
         const datos = (data ?? {}) as Record<string, unknown>;
 

@@ -25,6 +25,10 @@ export interface RespuestasDeInvitado {
   /** El mote, si lo tiene: es como la pareja lo llama. */
   readonly mote: string;
   readonly estado: string;
+  /** Si lo trajo otro invitado (D-51): sus respuestas cuentan igual que las del titular. */
+  readonly esAcompanante: boolean;
+  /** Nombre de quien lo trajo, o vacío si no es acompañante o no se encuentra. */
+  readonly traidoPor: string;
   /** Cuándo contestó, en ISO, o `null` si no ha contestado. */
   readonly cuando: string | null;
   readonly respuestas: Respuestas;
@@ -52,8 +56,11 @@ export const listRsvpAnswers = onCall(
       db().collection(`weddings/${weddingId}/guests`).get(),
     ]);
 
+    const nombres = new Map(invitados.docs.map((d) => [d.id, texto(d.data()['fullName'])]));
+
     const respuestas: RespuestasDeInvitado[] = invitados.docs.map((d) => {
       const g = d.data();
+      const trajo = texto(g['invitedById']);
       const cuando = g['rsvpAt'];
 
       return {
@@ -61,6 +68,8 @@ export const listRsvpAnswers = onCall(
         nombre: texto(g['fullName']),
         mote: texto(g['nickname']),
         estado: texto(g['rsvpStatus']) || 'pending',
+        esAcompanante: g['isCompanion'] === true,
+        traidoPor: g['isCompanion'] === true ? (nombres.get(trajo) ?? '') : '',
         cuando: cuando instanceof Timestamp ? cuando.toDate().toISOString() : null,
         respuestas: respuestasGuardadas(g['rsvpAnswers']),
       };

@@ -26,6 +26,7 @@ import {
   type FichaDeBoda,
   type MetodoPago,
 } from './gestion';
+import { telefonoVisible } from '../../../shared/telefono';
 
 type Carga = 'cargando' | 'lista' | 'error';
 
@@ -231,7 +232,7 @@ interface EnlaceGenerado {
                             <span>{{ c.email }}</span>
                           }
                           @if (c.phone) {
-                            <span>{{ c.phone }}</span>
+                            <span>{{ telefonoVisible(c.phone) }}</span>
                           }
                           <span class="fb__tenue">
                             {{
@@ -567,6 +568,7 @@ interface EnlaceGenerado {
   `,
 })
 export class FichaBoda {
+  protected readonly telefonoVisible = telefonoVisible;
   private readonly puerta = inject(PUERTA_GESTION);
   private readonly router = inject(Router);
   private readonly weddingId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';

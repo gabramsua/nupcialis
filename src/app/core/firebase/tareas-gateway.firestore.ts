@@ -93,11 +93,15 @@ export function crearPuertaTareasFirestore(): PuertaTareas {
           dueDate: datos.dueDate === null ? null : Timestamp.fromDate(datos.dueDate),
           assignedTo: datos.assignedTo,
           priority: datos.priority,
+          // Los enlaces viajan con el resto: la pantalla siempre manda los que
+          // tiene delante, y `null` es desenlazar.
+          vendorId: datos.vendorId,
+          budgetItemId: datos.budgetItemId,
         };
 
         if (datos.id) {
           // Al editar solo se tocan los campos que la pantalla edita: ni
-          // `done`, ni los enlaces a proveedor o partida, ni el icono.
+          // `done` ni el icono.
           await updateDoc(doc(ruta(weddingId), datos.id), campos);
         } else {
           await addDoc(ruta(weddingId), {
@@ -106,8 +110,6 @@ export function crearPuertaTareasFirestore(): PuertaTareas {
             doneAt: null,
             doneByUid: null,
             doneByEmail: null,
-            vendorId: null,
-            budgetItemId: null,
             icon: 'list-checks',
             color: null,
             order: datos.order,
@@ -129,6 +131,19 @@ export function crearPuertaTareasFirestore(): PuertaTareas {
           doneByUid: hecha ? por.uid : null,
           doneByEmail: hecha ? por.email : null,
         });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, fallo: traducirTarea(error) };
+      }
+    },
+
+    async enlazar(weddingId, id, enlaces): Promise<ResultadoEscrituraTarea> {
+      try {
+        const campos: Record<string, string | null> = {};
+        if (enlaces.vendorId !== undefined) campos['vendorId'] = enlaces.vendorId;
+        if (enlaces.budgetItemId !== undefined) campos['budgetItemId'] = enlaces.budgetItemId;
+        if (Object.keys(campos).length === 0) return { ok: true };
+        await updateDoc(doc(ruta(weddingId), id), campos);
         return { ok: true };
       } catch (error) {
         return { ok: false, fallo: traducirTarea(error) };

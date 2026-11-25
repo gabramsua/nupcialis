@@ -28,6 +28,7 @@ import {
   type ModoAcceso,
 } from '../../core/acceso/acceso';
 import { FIREBASE_FUNCTIONS } from '../../core/firebase/functions.providers';
+import { PUERTA_REGALOS_ABIERTOS } from '../../core/regalos/regalos-abiertos-gateway';
 import { SesionInvitado } from '../../core/firebase/sesion-invitado';
 import { registrarVisitaWeb } from '../../core/firebase/visita-web';
 import { NpCabeceraBoda } from '../../features/public-site/navegacion/cabecera-boda';
@@ -266,6 +267,9 @@ export class PublicShell {
   private readonly indexacion = inject(Indexacion);
   protected readonly sesion = inject(SesionInvitado);
   private readonly functions = inject(FIREBASE_FUNCTIONS, { optional: true });
+  private readonly puertaRegalos = inject(PUERTA_REGALOS_ABIERTOS, { optional: true });
+  /** El servidor dijo que esta boda no tiene regalos que enseñar: la sección no sale. */
+  private readonly sinRegalos = signal(false);
 
   /**
    * El nombre que trae el enlace que le mandó la pareja (`?n=`).
@@ -396,6 +400,8 @@ export class PublicShell {
         faqs: [],
         cronologia: [],
         alojamientos: [],
+        autobuses: [],
+        cortejo: [],
         ubicaciones: [],
         dressCode: DRESS_CODE_VACIO,
       };
@@ -407,13 +413,18 @@ export class PublicShell {
       timezone: t.sitio.timezone,
       locale: t.sitio.locale,
       heroImageUrl: t.sitio.theme.heroImageUrl,
-      secciones: t.sitio.secciones,
+      secciones: this.sinRegalos()
+        ? t.sitio.secciones.filter((seccion) => seccion.type !== 'regalos')
+        : t.sitio.secciones,
       faqs: t.sitio.faqs,
       cronologia: t.sitio.cronologia,
       alojamientos: t.sitio.alojamientos,
+      autobuses: t.sitio.autobuses,
+      cortejo: t.sitio.cortejo,
       ubicaciones: t.sitio.ubicaciones,
       dressCode: t.sitio.dressCode,
       layout: t.sitio.layout,
+      slug: t.slug,
     };
   });
 
@@ -446,6 +457,19 @@ export class PublicShell {
       const functions = this.functions;
       if (!sitio || sitio.status !== 'active' || !functions) return;
       void registrarVisitaWeb(functions, this.slug());
+    });
+
+    // Los regalos del plan básico van dentro de la página (D-66). Si el servidor
+    // dice que no hay nada que enseñar, la sección entera —título incluido— se
+    // quita, en vez de dejar un «Algo ha ido mal» delante del invitado.
+    effect(() => {
+      const t = this.tenant();
+      const puerta = this.puertaRegalos;
+      if (t.tipo !== 'ok' || !puerta || t.sitio.layout === 'multipage') return;
+      if (!t.sitio.secciones.some((seccion) => seccion.type === 'regalos')) return;
+      void puerta.listar(t.slug).then((resultado) => {
+        if (!resultado.ok && resultado.fallo.tipo === 'no-disponible') this.sinRegalos.set(true);
+      });
     });
 
     effect(() => {

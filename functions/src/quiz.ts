@@ -46,6 +46,7 @@ import {
 import { esModoAcceso, type ModoAcceso } from './dominio/acceso';
 import { EXIGIR_APP_CHECK, REGION, db } from './firebase';
 import { exigirInvitado, exigirVerificado } from './infra/permisos';
+import { moduloActivo } from './infra/boda';
 
 /**
  * Cuánto vale una partida empezada.
@@ -85,6 +86,12 @@ async function boda(weddingId: string): Promise<Boda> {
 
   if (!snap.exists || datos?.['status'] !== 'active') {
     throw new HttpsError('not-found', 'Esta boda no está disponible.');
+  }
+
+  if (!moduloActivo(datos, 'quiz')) {
+    throw new HttpsError('failed-precondition', 'Esta boda no tiene el quiz.', {
+      motivo: 'modulo-desactivado',
+    });
   }
 
   const modulos = datos['modules'];

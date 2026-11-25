@@ -53,6 +53,26 @@ export const MAX_PIE = 140;
 
 export type EstadoFoto = 'pending' | 'approved' | 'rejected';
 
+/**
+ * Los dos álbumes de la galería.
+ *
+ * - `dia`: las fotos del día de la boda.
+ * - `camino`: fotos de la pareja a lo largo de su historia, que aportan los
+ *   invitados. **No** es «Nuestra historia», que es solo de la pareja.
+ *
+ * Una foto sin álbum es del día: son las que había antes de que existieran dos.
+ */
+export const ALBUMES = ['dia', 'camino'] as const;
+export type AlbumFoto = (typeof ALBUMES)[number];
+
+export function esAlbum(valor: unknown): valor is AlbumFoto {
+  return typeof valor === 'string' && (ALBUMES as readonly string[]).includes(valor);
+}
+
+export function albumDe(valor: unknown): AlbumFoto {
+  return esAlbum(valor) ? valor : 'dia';
+}
+
 export interface FotoPublica {
   readonly id: string;
   /** URL de la foto grande, con su token. */
@@ -63,6 +83,7 @@ export interface FotoPublica {
   /** Cómo firma quien la subió. El mote si lo tiene; si no, su nombre. */
   readonly autor: string;
   readonly pie: string;
+  readonly album: AlbumFoto;
   /** ISO. Se ordena por aquí, de lo último a lo primero. */
   readonly creadoEn: string;
 }
@@ -101,6 +122,7 @@ export function sanearFotos(valor: unknown): readonly FotoPublica[] {
       guestId: texto(f['guestId'], 60),
       autor: texto(f['autor'], 80),
       pie: texto(f['pie'], MAX_PIE),
+      album: albumDe(f['album']),
       creadoEn: typeof f['creadoEn'] === 'string' ? f['creadoEn'] : '',
     });
   }
