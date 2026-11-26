@@ -4,10 +4,11 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input } f
 import { NP_ICON_SPRITE } from '../../design-system/icons/icon-sprite.providers';
 import { urlDeFuentesHome, type ContenidoHome } from './home';
 import { NpHomeCierre } from './home-cierre';
+import { NpHomeContacto } from './home-contacto';
+import { NpHomeEscaparate } from './home-escaparate';
 import { NpHomeHero } from './home-hero';
 import { NpHomePaneles } from './home-paneles';
 import { NpHomePasos } from './home-pasos';
-import { NpHomePlanes } from './home-planes';
 import { NpHomeTarjetas } from './home-tarjetas';
 import { variablesDeHome } from './home-tema';
 
@@ -24,7 +25,15 @@ import { variablesDeHome } from './home-tema';
  */
 @Component({
   selector: 'np-home-pagina',
-  imports: [NpHomeHero, NpHomeTarjetas, NpHomePasos, NpHomePaneles, NpHomePlanes, NpHomeCierre],
+  imports: [
+    NpHomeHero,
+    NpHomeTarjetas,
+    NpHomePasos,
+    NpHomeEscaparate,
+    NpHomePaneles,
+    NpHomeContacto,
+    NpHomeCierre,
+  ],
   providers: [{ provide: NP_ICON_SPRITE, useValue: '/icons/home.svg' }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style]': 'variables()', '[attr.data-plantilla]': 'contenido().template' },
@@ -48,6 +57,14 @@ import { variablesDeHome } from './home-tema';
       />
     }
 
+    @if (contenido().escaparate.enabled) {
+      <np-home-escaparate
+        [titulo]="contenido().escaparate.title"
+        [intro]="contenido().escaparate.intro"
+        [escaparate]="contenido().escaparate"
+      />
+    }
+
     @if (contenido().paneles.enabled) {
       <np-home-paneles
         [titulo]="contenido().paneles.title"
@@ -68,12 +85,13 @@ import { variablesDeHome } from './home-tema';
       </div>
     }
 
-    @if (contenido().planes.enabled) {
-      <np-home-planes
-        [titulo]="contenido().planes.title"
-        [intro]="contenido().planes.intro"
-        [planes]="[contenido().planes.basico, contenido().planes.extendido]"
-      />
+    @if (contenido().contacto.enabled) {
+      <div class="hg-alt">
+        <np-home-contacto
+          [contacto]="contenido().contacto"
+          [correoDeContacto]="contenido().cierre.contact"
+        />
+      </div>
     }
 
     <np-home-cierre [cierre]="contenido().cierre" [pie]="contenido().pie" />

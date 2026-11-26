@@ -39,3 +39,32 @@ export interface PuertaHomeAdmin {
 
 export const PUERTA_HOME_PUBLICA = new InjectionToken<PuertaHomePublica>('PUERTA_HOME_PUBLICA');
 export const PUERTA_HOME_ADMIN = new InjectionToken<PuertaHomeAdmin>('PUERTA_HOME_ADMIN');
+
+/**
+ * El formulario de contacto de la HOME. Es un puerto aparte y **opcional** en
+ * la página: la portada se pinta igual sin él (en la vista previa del editor,
+ * por ejemplo) y no arrastra el SDK de Functions hasta que alguien envía.
+ */
+export interface SolicitudHome {
+  readonly names: string;
+  readonly email: string;
+  readonly phone: string;
+  readonly weddingDate: string;
+  readonly plan: 'basic' | 'extended' | 'undecided';
+  readonly message: string;
+  readonly consent: true;
+}
+
+export type FalloSolicitud =
+  | { readonly tipo: 'invalido'; readonly campo: 'nombres' | 'correo' | 'telefono' | 'otro' }
+  | { readonly tipo: 'limite' }
+  | { readonly tipo: 'red' }
+  | { readonly tipo: 'error' };
+
+export interface PuertaSolicitudes {
+  enviar(
+    solicitud: SolicitudHome,
+  ): Promise<{ readonly ok: true } | { readonly ok: false; readonly fallo: FalloSolicitud }>;
+}
+
+export const PUERTA_SOLICITUDES = new InjectionToken<PuertaSolicitudes>('PUERTA_SOLICITUDES');

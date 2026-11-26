@@ -31,6 +31,61 @@ npm run deploy:functions
 npm run deploy:rules
 ```
 
+**Tanda D-70 (escaparate: visibilidad por pantalla y captura de «Diseño»).** Sin funciones nuevas ni
+reglas; **una imagen nueva** `public/home/diseno.webp`. Cambia el modelo de la HOME (`show` en
+mosaico y carrusel, y `design` nuevo) y la copia de `functions/src/dominio/home.ts`:
+`npm run deploy:functions` para que `saveHome` conozca la forma nueva.
+
+1. **`/superadmin/home`** → «Plantillas y paletas (mosaico, diseño y carrusel)»: cada pieza tiene
+   «Mostrar» y «Dónde se ve». La captura de Diseño (debajo del mosaico) tiene su imagen y su pie.
+2. Si ya guardaste la HOME, el escaparate guardado no trae la captura de Diseño y toma la de fábrica;
+   el mosaico y el carrusel conservan su comportamiento de siempre.
+3. Mira **PENDIENTES D-70** (qué entiendo por «visibilidad» y que en móvil la captura se ve pequeña).
+
+**Tanda D-69 (capturas, galería con flechas y precios en los paneles de la HOME).** Sin funciones
+ni reglas nuevas, sin dependencias. **Imágenes nuevas** en `public/home/` (`galeria-basico-1..3`,
+`galeria-extendido-1..4`, y regeneradas `hero`, `mosaico`, `movil-*` y `muestra-portada`);
+**se borran** `panel-basico.webp` y `panel-extendido.webp`. Cambia el modelo de la HOME (ya no hay
+sección `planes`; cada panel lleva `price`, `priceNote`, `cta` y `shots`) y la copia de
+`functions/src/dominio/home.ts`: `npm run deploy:functions` para que `saveHome` conozca la forma
+nueva.
+
+1. Abre **`/superadmin/home`** → **«Capturas del panel y precios»**: precio, letra pequeña, botón y
+   las capturas de cada plan. La sección «Planes y precios» ya no existe. Si ya habías guardado la
+   HOME, **tu título y subtítulo de los paneles se quedan** (lo guardado manda): para ver el
+   subtítulo nuevo («…Podéis empezar con el básico y pasar al extendido cuando lo necesitéis.»)
+   edítalo, o «Restaurar de fábrica».
+2. En **«Estilo»**, los selectores de tipografía enseñan cada una en su letra.
+3. **Valida la ilustración de la playa** (no es una foto real) y las insignias/cifras de la portada
+   (solo están en la imagen). Mira **PENDIENTES D-69**.
+4. Para regenerar las capturas: `npx ng serve --port 4300`, `node tools/capturas-escaparate.cjs
+<carpeta>` y `python3 tools/componer-escaparate.py <carpeta> public/home` (Playwright y Pillow,
+   que no son dependencias del proyecto).
+
+**Tanda D-68 (TRIVIAL, escaparate, precios y formulario de la HOME).** Sin dependencias nuevas.
+**Cuatro funciones nuevas**, **`createHomeRequest`** (pública), **`listHomeRequests`**,
+**`updateHomeRequest`** y **`saveHomeRequestSettings`**, y **regla nueva de Firestore
+(`homeRequests` y `homeRequestLimits`)**: `npm run deploy:functions` y `npm run deploy:rules`.
+También cambia `guest-login` (solo se movieron dos funciones auxiliares a `infra/ip.ts`, sin
+cambio de comportamiento), así que el despliegue de funciones lo incluye.
+**Iconos:** hay dos nuevos (`tray`, y `caret-left` ahora también en la HOME): `npm run icons` si
+tu copia no los trae. **Imágenes nuevas** en `public/home/` (`movil-*.webp`, `mosaico.webp`,
+`muestra-portada.webp`) y **regeneradas** las del panel y la portada.
+
+1. Abre **`/superadmin/home`**: hay secciones nuevas (**«Plantillas y paletas»** con interruptores
+   para el mosaico y el carrusel, y **«Formulario de contacto»**), y los **precios** de «Planes y
+   precios». Si ya habías guardado una HOME, **no cambia sola**: lo guardado manda. Para ver lo
+   nuevo sin perder tus textos, enciende/añade a mano, o «Restaurar de fábrica» (borra lo tuyo).
+2. Abre **`/superadmin/solicitudes`** y **pon el correo de aviso**. Sin la extensión «Trigger
+   Email» los avisos no salen: mira la bandeja.
+3. **Prueba el formulario** en `nupcialis.com` (con App Check real; en local con el token de
+   depuración) y comprueba que la solicitud aparece en la bandeja.
+4. Decide lo que dejé apuntado en **PENDIENTES D-68**: marca «Trivial», fotos reales para el
+   escaparate, texto legal de la casilla de aceptación, y cuánto tiempo guardar las solicitudes.
+5. Para regenerar las capturas móviles (si cambias una plantilla o paleta): `npx ng serve --port
+4300`, `node tools/capturas-home.cjs <carpeta>` y `python3 tools/capturas-home.py <carpeta>
+public/home` (necesitan Playwright y Pillow, que no son dependencias del proyecto).
+
 **Tanda D-67 (proveedores y cobro en el alta).** Tres funciones nuevas, **`listPartners`**,
 **`savePartner`** y **`settlePartnerPayments`**, y **regla nueva de Firestore (`partners`)**:
 `npm run deploy:functions` y `npm run deploy:rules`. Sin las funciones, `/superadmin/proveedores`

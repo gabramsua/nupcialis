@@ -96,7 +96,7 @@ export const devRoutes: Routes = [
   },
   {
     // El panel entero (cabecera, menú y el inicio) con el plan básico. De aquí
-    // salen las capturas de la HOME: `public/home/panel-basico.webp`.
+    // salen las capturas de la HOME: `public/home/galeria-*.webp`.
     path: 'panel-basico',
     providers: [provideIconSprite('panel'), provideDoblesDelPanel('basic', true)],
     loadComponent: () => import('../../layouts/panel-shell/panel-shell').then((m) => m.PanelShell),
@@ -104,6 +104,25 @@ export const devRoutes: Routes = [
       {
         path: '',
         loadComponent: () => import('../panel/resumen/resumen').then((m) => m.PanelResumen),
+      },
+      // Las pantallas que enseña el carrusel de capturas del plan básico.
+      {
+        path: 'rsvp',
+        loadComponent: () => import('../panel/rsvp/preguntas').then((m) => m.PreguntasRsvp),
+      },
+      {
+        path: 'map',
+        loadComponent: () => import('../panel/mapa/mapa-panel').then((m) => m.PanelMapa),
+      },
+      {
+        path: 'timeline',
+        loadComponent: () =>
+          import('../panel/cronologia/cronologia').then((m) => m.PanelCronologia),
+      },
+      // «Diseño»: las plantillas y las paletas que verán los novios.
+      {
+        path: 'design',
+        loadComponent: () => import('../panel/diseno/diseno').then((m) => m.Diseno),
       },
     ],
   },
@@ -116,6 +135,20 @@ export const devRoutes: Routes = [
       {
         path: '',
         loadComponent: () => import('../panel/resumen/resumen').then((m) => m.PanelResumen),
+      },
+      // Las pantallas que enseña el carrusel de capturas del plan extendido.
+      {
+        path: 'tables',
+        loadComponent: () => import('../panel/mesas/mesas-pantalla').then((m) => m.PanelMesas),
+      },
+      {
+        path: 'gallery',
+        loadComponent: () => import('../panel/galeria/galeria-panel').then((m) => m.PanelGaleria),
+      },
+      {
+        path: 'checklist',
+        loadComponent: () =>
+          import('../panel/checklist/checklist-panel').then((m) => m.PanelChecklist),
       },
     ],
   },

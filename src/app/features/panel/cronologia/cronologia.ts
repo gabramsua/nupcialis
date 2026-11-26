@@ -354,6 +354,15 @@ import { NpCronologiaPublica } from '../../public-site/cronologia/cronologia-pub
         align-items: flex-start;
         justify-content: space-between;
       }
+      /* El texto cede; el botón no: con el ancho justo, no se encoge. */
+      .cr__intro > div {
+        flex: 1 1 0;
+        min-inline-size: 0;
+      }
+      .cr__intro > button {
+        flex: none;
+        white-space: nowrap;
+      }
     }
     .cr__avisos {
       margin: var(--np-space-1) 0 0;

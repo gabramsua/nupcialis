@@ -450,6 +450,11 @@
           "surfaces": ["panel", "home"]
         },
         {
+          "id": "tray",
+          "etiqueta": "Bandeja",
+          "surfaces": ["panel"]
+        },
+        {
           "id": "whatsapp-logo",
           "etiqueta": "WhatsApp",
           "surfaces": ["panel"]
@@ -547,7 +552,7 @@
         {
           "id": "caret-left",
           "etiqueta": "Anterior",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "x",
@@ -596,7 +601,7 @@
         },
         {
           "id": "game-controller",
-          "etiqueta": "Quiz",
+          "etiqueta": "Trivial",
           "surfaces": ["public", "panel"]
         },
         {

@@ -286,7 +286,7 @@ describe('pantalla de catálogos', () => {
     const { fixture, el, guardadas } = montar();
     await asentar(fixture);
 
-    botonPorTexto(el, 'Preguntas del quiz').click();
+    botonPorTexto(el, 'Preguntas del Trivial').click();
     await asentar(fixture);
     botonPorTexto(el, 'Añadir').click();
     fixture.detectChanges();

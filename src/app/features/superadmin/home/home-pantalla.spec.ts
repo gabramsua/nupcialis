@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { PUERTA_HOME_ADMIN, type PuertaHomeAdmin } from '../../../core/home/home-gateway';
-import { HOME_DE_FABRICA, sanearHome, type ContenidoHome } from '../../home/home';
+import { FUENTES_HOME, HOME_DE_FABRICA, sanearHome, type ContenidoHome } from '../../home/home';
 import { montarConLlamadas, puertaDePrueba } from '../llamadas.testing';
 import { PantallaHome } from './home-pantalla';
 
@@ -151,5 +151,110 @@ describe('el editor de la web de inicio', () => {
 
     expect(registro.subidas).toBe(1);
     expect(registro.borradas).toEqual(['platform/home/1.jpg']);
+  });
+
+  it('ya no hay una sección de planes: el precio se edita con los paneles', async () => {
+    const { p } = await montar();
+
+    expect(p.boton('Planes y precios')).toBeUndefined();
+    await p.pulsar(p.boton('Capturas del panel y precios'));
+    expect(p.texto()).toContain('Precio');
+    expect(p.texto()).toContain('Letra pequeña del precio');
+  });
+
+  it('cambiar el precio de un plan se ve en la vista previa', async () => {
+    const { p, registro } = await montar();
+
+    await p.pulsar(p.boton('Capturas del panel y precios'));
+    const precio = [...p.raiz.querySelectorAll<HTMLInputElement>('input[type=text]')].find(
+      (i) => i.value === '85 €',
+    )!;
+    escribir(precio, '99 €');
+    await p.esperar();
+
+    const cifras = [...p.raiz.querySelectorAll('np-home-pagina .hn__cifra')].map(
+      (c) => c.textContent,
+    );
+    expect(cifras).toEqual(['99 €', '250 €']);
+
+    await p.pulsar(p.boton('Guardar y publicar'));
+    expect(registro.guardados[0]!.paneles.basico.price).toBe('99 €');
+  });
+
+  it('las capturas de cada plan se añaden y se quitan, y se publican con el borrador', async () => {
+    const { p, registro } = await montar();
+
+    await p.pulsar(p.boton('Capturas del panel y precios'));
+    // 3 del básico + 4 del extendido.
+    expect(p.raiz.querySelectorAll('.ph__item')).toHaveLength(7);
+
+    await p.pulsar(p.raiz.querySelector('.ph__grupo .ph__item button[aria-label="Quitar"]'));
+    expect(p.raiz.querySelectorAll('.ph__item')).toHaveLength(6);
+    await p.pulsar(p.boton('Guardar y publicar'));
+
+    expect(registro.guardados[0]!.paneles.basico.shots).toHaveLength(2);
+    expect(registro.guardados[0]!.paneles.extendido.shots).toHaveLength(4);
+  });
+
+  it('el escaparate: cada pieza se enciende, se apaga y elige en qué pantallas se ve', async () => {
+    const { p, registro } = await montar();
+
+    await p.pulsar(p.boton('Plantillas y paletas'));
+    const grupos = [...p.raiz.querySelectorAll<HTMLElement>('fieldset.ph__grupo')];
+    const del = (nombre: string) => grupos.find((g) => g.textContent?.includes(nombre))!;
+    const visibilidad = (g: HTMLElement) => g.querySelector<HTMLSelectElement>('select')!;
+
+    // Tres piezas, cada una con su «Dónde se ve»; la nueva es la captura de Diseño.
+    expect(p.raiz.querySelectorAll('fieldset.ph__grupo select')).toHaveLength(3);
+    expect(visibilidad(del('Mosaico')).value).toBe('escritorio');
+    expect(visibilidad(del('Carrusel')).value).toBe('todos');
+    expect(del('Captura de Diseño').textContent).toContain('Pie de la captura');
+
+    const carrusel = visibilidad(del('Carrusel'));
+    carrusel.value = 'movil';
+    carrusel.dispatchEvent(new Event('change'));
+    const diseno =
+      del('Captura de Diseño').querySelector<HTMLInputElement>('input[type=checkbox]')!;
+    diseno.checked = false;
+    diseno.dispatchEvent(new Event('change'));
+    await p.esperar();
+
+    // La vista previa lo refleja.
+    expect(p.raiz.querySelector('np-home-pagina .he__carrusel')?.classList).toContain('he--movil');
+    expect(p.raiz.querySelector('np-home-pagina .he__diseno')).toBeNull();
+
+    await p.pulsar(p.boton('Guardar y publicar'));
+    const { escaparate } = registro.guardados[0]!;
+    expect(escaparate.carousel.show).toBe('movil');
+    expect(escaparate.design.enabled).toBe(false);
+    expect(escaparate.mosaic.show).toBe('escritorio');
+  });
+
+  it('el selector de tipografías enseña cada una en su estilo y las descarga todas', async () => {
+    const { p } = await montar();
+
+    const selects = [...p.raiz.querySelectorAll<HTMLSelectElement>('select.ph__fuente')];
+    expect(selects).toHaveLength(2);
+    const opciones = [...selects[0]!.querySelectorAll<HTMLOptionElement>('option.ph__fuente')];
+    expect(opciones).toHaveLength(FUENTES_HOME.filter((f) => f.tipo === 'titulo').length);
+    for (const o of opciones) {
+      const fuente = FUENTES_HOME.find((f) => f.id === o.value)!;
+      expect(o.style.fontFamily).toContain(fuente.nombre);
+    }
+
+    // El selector cerrado enseña la que está elegida; con «la de la plantilla», la normal.
+    expect(selects[0]!.style.fontFamily).toBe('');
+    selects[0]!.value = 'playfair';
+    selects[0]!.dispatchEvent(new Event('change'));
+    await p.esperar();
+    expect(selects[0]!.style.fontFamily).toContain('Playfair Display');
+
+    const enlace = document.head.querySelector<HTMLLinkElement>(
+      'link[href*="fonts.googleapis.com"]',
+    );
+    expect(enlace).not.toBeNull();
+    for (const f of FUENTES_HOME) {
+      expect(document.head.innerHTML).toContain(f.google.replace(/&/g, '&amp;'));
+    }
   });
 });

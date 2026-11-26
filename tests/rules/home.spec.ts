@@ -37,6 +37,8 @@ beforeEach(async () => {
     const db = ctx.firestore();
     await setDoc(doc(db, 'platform/home'), { content: { template: 'luz' } });
     await setDoc(doc(db, 'platform/interno'), { secreto: 'no se ve' });
+    // El correo al que avisar de las solicitudes (D-68): no es público.
+    await setDoc(doc(db, 'platform/homeRequests'), { notifyEmail: 'gabriel@ejemplo.com' });
   });
 });
 
@@ -56,6 +58,7 @@ describe('platform/home: lectura', () => {
   it('cualquier otro documento de platform está cerrado', async () => {
     for (const db of [anonymous(env), ownerOf(env, WEDDING_A), superadmin(env)]) {
       await assertFails(getDoc(doc(db, 'platform/interno')));
+      await assertFails(getDoc(doc(db, 'platform/homeRequests')));
     }
   });
 

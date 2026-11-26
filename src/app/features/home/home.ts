@@ -27,8 +27,9 @@ export const MAX_ALT = 160;
 export const MAX_ITEMS_PROMESA = 4;
 export const MAX_ITEMS_PASOS = 5;
 export const MAX_ITEMS_LIBERTAD = 8;
-export const MAX_VINETAS = 6;
+export const MAX_VINETAS = 12;
 export const MAX_ENLACES_PIE = 4;
+export const MAX_DIAPOSITIVAS = 10;
 
 // ---------------------------------------------------------------------------
 // Plantillas, fuentes y colores: un catálogo cerrado, no texto libre.
@@ -329,7 +330,19 @@ export interface PanelHome {
   /** HTML. */
   readonly text: string;
   readonly bullets: readonly string[];
-  readonly image: ImagenHome | null;
+  /**
+   * El precio tal y como se enseña (`85 €`). Vacío = no se enseña. Lo decidió
+   * Gabriel para esta primera tanda; el D-02 sigue abierto (ver PENDIENTES D-68).
+   */
+  readonly price: string;
+  /** La letra pequeña del precio (`pago único`). */
+  readonly priceNote: string;
+  readonly cta: EnlaceHome;
+  /**
+   * Las capturas del panel de este plan, en una galería con flechas. La etiqueta
+   * dice qué pantalla es («Timeline del día»). Una lista vacía = sin galería.
+   */
+  readonly shots: readonly DiapositivaHome[];
 }
 
 export interface PanelesHome extends SeccionHome {
@@ -342,18 +355,70 @@ export interface LibertadHome extends SeccionHome {
   readonly closing: string;
 }
 
-export interface PlanHome {
-  readonly name: string;
-  readonly tagline: string;
-  readonly items: readonly string[];
-  /** Vacío = no se enseña precio. Los precios no están decididos (D-02). */
-  readonly price: string;
-  readonly cta: EnlaceHome;
+/**
+ * Una captura con su etiqueta. En el escaparate es cómo se ve en un móvil una
+ * plantilla con una paleta («Botánica · Salvia»); en los paneles, una pantalla
+ * del panel («Timeline del día»).
+ */
+export interface DiapositivaHome {
+  readonly image: ImagenHome;
+  readonly label: string;
 }
 
-export interface PlanesHome extends SeccionHome {
-  readonly basico: PlanHome;
-  readonly extendido: PlanHome;
+/**
+ * El escaparate: lo que verán los invitados. Dos formas de enseñarlo que el
+ * superadmin enciende y apaga por separado: **el mosaico** (una sola imagen con
+ * todas las plantillas juntas) y **el carrusel** (una captura de móvil por
+ * plantilla, para recorrerlas).
+ */
+export interface EscaparateHome extends SeccionHome {
+  readonly mosaic: {
+    readonly enabled: boolean;
+    readonly show: VisibilidadHome;
+    readonly image: ImagenHome | null;
+  };
+  readonly carousel: {
+    readonly enabled: boolean;
+    readonly show: VisibilidadHome;
+    readonly slides: readonly DiapositivaHome[];
+  };
+  /**
+   * Una captura de la pantalla «Diseño» del panel, debajo del mosaico: las
+   * plantillas y las paletas con todas sus opciones, tal como las verán los
+   * novios al elegir.
+   */
+  readonly design: {
+    readonly enabled: boolean;
+    readonly show: VisibilidadHome;
+    readonly image: ImagenHome | null;
+    readonly label: string;
+  };
+}
+
+/**
+ * En qué pantallas se ve una pieza del escaparate: en todas, solo en las
+ * estrechas (móvil) o solo en las anchas (escritorio). El corte es el de la
+ * propia HOME: una caja de 44 rem.
+ */
+export type VisibilidadHome = 'todos' | 'movil' | 'escritorio';
+
+export const VISIBILIDADES_HOME: readonly VisibilidadHome[] = ['todos', 'movil', 'escritorio'];
+
+/**
+ * El formulario de contacto. Los nombres y el correo se piden siempre; el resto
+ * de campos se encienden y apagan. A dónde llega la solicitud y a qué correo se
+ * avisa **no** está aquí (este documento es público): ver `platform/homeRequests`.
+ */
+export interface ContactoHome extends SeccionHome {
+  readonly submitLabel: string;
+  readonly successTitle: string;
+  readonly successText: string;
+  /** La frase de la casilla de aceptación: qué se hace con los datos. */
+  readonly privacy: string;
+  readonly askPhone: boolean;
+  readonly askDate: boolean;
+  readonly askPlan: boolean;
+  readonly askMessage: boolean;
 }
 
 export interface CierreHome {
@@ -385,9 +450,10 @@ export interface ContenidoHome {
   readonly hero: HeroHome;
   readonly promesa: PromesaHome;
   readonly pasos: PasosHome;
+  readonly escaparate: EscaparateHome;
   readonly paneles: PanelesHome;
   readonly libertad: LibertadHome;
-  readonly planes: PlanesHome;
+  readonly contacto: ContactoHome;
   readonly cierre: CierreHome;
   readonly pie: PieHome;
 }
@@ -467,11 +533,70 @@ export const HOME_DE_FABRICA: ContenidoHome = {
       },
     ],
   },
+  escaparate: {
+    enabled: true,
+    title: 'Lo que verán vuestros invitados',
+    intro:
+      '<p>Ocho plantillas y dieciocho paletas de colores. Elegís la que va con vosotros y la web se ve así en el móvil de cada invitado.</p>',
+    mosaic: {
+      enabled: true,
+      // En una caja estrecha el mosaico queda muy pequeño: ahí manda el carrusel.
+      show: 'escritorio',
+      image: IMG(
+        '/home/mosaico.webp',
+        'Ocho webs de boda en un móvil, cada una con una plantilla y una paleta distintas',
+      ),
+    },
+    carousel: {
+      enabled: true,
+      show: 'todos',
+      slides: [
+        { image: IMG('/home/movil-clasica.webp', 'Plantilla Clásica'), label: 'Clásica' },
+        {
+          image: IMG('/home/movil-botanica.webp', 'Plantilla Botánica con la paleta Salvia'),
+          label: 'Botánica · Salvia',
+        },
+        {
+          image: IMG('/home/movil-romantica.webp', 'Plantilla Romántica con la paleta Rosa palo'),
+          label: 'Romántica · Rosa palo',
+        },
+        {
+          image: IMG('/home/movil-moderna.webp', 'Plantilla Moderna con la paleta Grafito y oro'),
+          label: 'Moderna · Grafito y oro',
+        },
+        {
+          image: IMG('/home/movil-barroca.webp', 'Plantilla Barroca con la paleta Burdeos y oro'),
+          label: 'Barroca · Burdeos y oro',
+        },
+        {
+          image: IMG('/home/movil-sevillana.webp', 'Plantilla Sevillana con la paleta Terracota'),
+          label: 'Sevillana · Terracota',
+        },
+        {
+          image: IMG('/home/movil-cottage.webp', 'Plantilla Cottage con la paleta Oliva'),
+          label: 'Cottage · Oliva',
+        },
+        {
+          image: IMG('/home/movil-acuarela.webp', 'Plantilla Acuarela con la paleta Lavanda'),
+          label: 'Acuarela · Lavanda',
+        },
+      ],
+    },
+    design: {
+      enabled: true,
+      show: 'todos',
+      image: IMG(
+        '/home/diseno.webp',
+        'Pantalla de Diseño del panel de los novios, con las ocho plantillas y las dieciocho paletas de colores para elegir',
+      ),
+      label: 'Así elegiréis plantilla y colores desde vuestro panel.',
+    },
+  },
   paneles: {
     enabled: true,
     title: 'Dos formas de vivirlo',
     intro:
-      '<p>Empezad por lo sencillo o llevad toda la organización dentro. Podéis elegir lo que necesitáis.</p>',
+      '<p>Empezad por lo sencillo o llevad toda la organización dentro. Podéis empezar con el básico y pasar al extendido cuando lo necesitéis.</p>',
     basico: {
       label: 'Plan básico',
       title: 'La sencillez de una sola página',
@@ -481,10 +606,32 @@ export const HOME_DE_FABRICA: ContenidoHome = {
         'Mapa, cronología y preguntas frecuentes',
         'Regalos, alojamiento y autobuses',
       ],
-      image: IMG(
-        '/home/panel-basico.webp',
-        'El panel del plan básico con el resumen de confirmaciones',
-      ),
+      price: '85 €',
+      priceNote: 'pago único',
+      cta: { label: 'Quiero el básico', url: '#contacto' },
+      shots: [
+        {
+          image: IMG(
+            '/home/galeria-basico-1.webp',
+            'El formulario de confirmación de asistencia en el panel del plan básico',
+          ),
+          label: 'Formulario de confirmación',
+        },
+        {
+          image: IMG(
+            '/home/galeria-basico-2.webp',
+            'La pantalla de cómo llegar, con los sitios de la boda y su pin',
+          ),
+          label: 'Cómo llegar',
+        },
+        {
+          image: IMG(
+            '/home/galeria-basico-3.webp',
+            'La cronología del día, hora a hora, en el panel del plan básico',
+          ),
+          label: 'Timeline del día',
+        },
+      ],
     },
     extendido: {
       label: 'Plan extendido',
@@ -493,9 +640,41 @@ export const HOME_DE_FABRICA: ContenidoHome = {
       bullets: [
         'Reparto de mesas arrastrando a los invitados',
         'Presupuesto, proveedores y tareas enlazados',
-        'Galería de fotos, quiz, música y libro de firmas',
+        'Galería de fotos, Trivial, música y libro de firmas',
       ],
-      image: IMG('/home/panel-extendido.webp', 'El panel del plan extendido con todos los módulos'),
+      price: '250 €',
+      priceNote: 'pago único',
+      cta: { label: 'Quiero el extendido', url: '#contacto' },
+      shots: [
+        {
+          image: IMG(
+            '/home/galeria-extendido-1.webp',
+            'El reparto de mesas con los invitados sentados en cada una',
+          ),
+          label: 'Mesas con sus invitados',
+        },
+        {
+          image: IMG(
+            '/home/galeria-extendido-2.webp',
+            'La galería de fotos de los invitados, con las fotos desenfocadas',
+          ),
+          label: 'Galería de fotos',
+        },
+        {
+          image: IMG(
+            '/home/galeria-extendido-3.webp',
+            'La página de tareas con su progreso y lo que vence primero',
+          ),
+          label: 'Tareas',
+        },
+        {
+          image: IMG(
+            '/home/galeria-extendido-4.webp',
+            'La lista de tareas de la boda, completa, con las hechas y las que faltan',
+          ),
+          label: 'Todas las tareas de la boda',
+        },
+      ],
     },
   },
   libertad: {
@@ -537,33 +716,25 @@ export const HOME_DE_FABRICA: ContenidoHome = {
     ],
     closing: 'Es vuestra boda. Nosotros solo ponemos las herramientas.',
   },
-  planes: {
-    enabled: false,
-    title: 'Elegid vuestro plan',
-    intro: '<p>Podéis empezar con el básico y pasar al extendido cuando lo necesitéis.</p>',
-    basico: {
-      name: 'Básico',
-      tagline: 'Una página que lo cuenta todo.',
-      items: ['Web de una página', 'Confirmaciones', 'Mapa, cronología y preguntas'],
-      price: '',
-      cta: { label: 'Quiero el básico', url: '#contacto' },
-    },
-    extendido: {
-      name: 'Extendido',
-      tagline: 'La organización completa.',
-      items: [
-        'Web de varias páginas',
-        'Mesas, presupuesto y proveedores',
-        'Galería, quiz y música',
-      ],
-      price: '',
-      cta: { label: 'Quiero el extendido', url: '#contacto' },
-    },
+  contacto: {
+    enabled: true,
+    title: '¿Empezamos con vuestra web?',
+    intro:
+      '<p>Contadnos quiénes sois y os escribimos para preparar vuestra web de boda y el acceso a vuestro panel.</p>',
+    submitLabel: 'Quiero mi web de boda',
+    successTitle: '¡Recibido!',
+    successText: 'Os escribimos muy pronto al correo que nos habéis dado.',
+    privacy:
+      'Acepto que Nupcialis use estos datos para contestarme. No se comparten con nadie y puedo pedir que se borren cuando quiera.',
+    askPhone: true,
+    askDate: true,
+    askPlan: true,
+    askMessage: true,
   },
   cierre: {
     enabled: true,
-    title: '¿Empezamos con vuestra web?',
-    text: '<p>Escribidnos y os preparamos vuestra web de boda y el acceso a vuestro panel.</p>',
+    title: '¿Prefieres escribirnos?',
+    text: '<p>Si os resulta más cómodo, contadnos vuestro caso por correo y os contestamos igual.</p>',
     cta: { label: 'Escribirnos', url: 'mailto:hola@nupcialis.com' },
     contact: 'hola@nupcialis.com',
   },
@@ -695,6 +866,13 @@ function vinetas(valor: unknown, reserva: readonly string[]): readonly string[] 
   });
 }
 
+function imagenDeDiapositiva(valor: unknown): ImagenHome | null {
+  const o = objeto(valor);
+  if (!esUrlDeImagenHome(o['url'])) return null;
+  const path = esRutaDeImagenHome(o['path']) ? o['path'] : '';
+  return { path, url: o['url'], alt: frase(o['alt'], MAX_ALT, '') };
+}
+
 function panel(valor: unknown, reserva: PanelHome, html: SaneadorHtml): PanelHome {
   const o = objeto(valor);
   return {
@@ -702,18 +880,69 @@ function panel(valor: unknown, reserva: PanelHome, html: SaneadorHtml): PanelHom
     title: frase(o['title'], MAX_TITULO, reserva.title),
     text: 'text' in o ? html(o['text'], MAX_HTML) : reserva.text,
     bullets: vinetas(o['bullets'], reserva.bullets),
-    image: 'image' in o ? imagen(o['image'], reserva.image) : reserva.image,
+    price: frase(o['price'], MAX_ETIQUETA, reserva.price),
+    priceNote: frase(o['priceNote'], MAX_ETIQUETA, reserva.priceNote),
+    cta: enlace(o['cta'], reserva.cta),
+    // Una lista guardada vacía a propósito es «sin galería»; que falte la
+    // clave —un documento anterior a las galerías— es «las de fábrica».
+    shots: lista(o['shots'], MAX_DIAPOSITIVAS, reserva.shots, (x) => {
+      const d = objeto(x);
+      const image = imagenDeDiapositiva(d['image']);
+      return image === null ? null : { image, label: frase(d['label'], MAX_ETIQUETA, '') };
+    }),
   };
 }
 
-function plan(valor: unknown, reserva: PlanHome): PlanHome {
+function visibilidad(valor: unknown, reserva: VisibilidadHome): VisibilidadHome {
+  return VISIBILIDADES_HOME.find((v) => v === valor) ?? reserva;
+}
+
+function escaparate(valor: unknown, reserva: EscaparateHome, html: SaneadorHtml): EscaparateHome {
+  const o = objeto(valor);
+  const mosaico = objeto(o['mosaic']);
+  const carrusel = objeto(o['carousel']);
+  const diseno = objeto(o['design']);
+  return {
+    ...seccion(o, reserva, html),
+    design: {
+      enabled: booleano(diseno['enabled'], reserva.design.enabled),
+      show: visibilidad(diseno['show'], reserva.design.show),
+      image:
+        'image' in diseno ? imagen(diseno['image'], reserva.design.image) : reserva.design.image,
+      label: frase(diseno['label'], MAX_FRASE, reserva.design.label),
+    },
+    mosaic: {
+      enabled: booleano(mosaico['enabled'], reserva.mosaic.enabled),
+      show: visibilidad(mosaico['show'], reserva.mosaic.show),
+      image:
+        'image' in mosaico ? imagen(mosaico['image'], reserva.mosaic.image) : reserva.mosaic.image,
+    },
+    carousel: {
+      enabled: booleano(carrusel['enabled'], reserva.carousel.enabled),
+      show: visibilidad(carrusel['show'], reserva.carousel.show),
+      // Una lista guardada vacía a propósito es «sin capturas»; que falte la
+      // clave es «las de fábrica».
+      slides: lista(carrusel['slides'], MAX_DIAPOSITIVAS, reserva.carousel.slides, (x) => {
+        const d = objeto(x);
+        const image = imagenDeDiapositiva(d['image']);
+        return image === null ? null : { image, label: frase(d['label'], MAX_ETIQUETA, '') };
+      }),
+    },
+  };
+}
+
+function contacto(valor: unknown, reserva: ContactoHome, html: SaneadorHtml): ContactoHome {
   const o = objeto(valor);
   return {
-    name: frase(o['name'], MAX_ETIQUETA, reserva.name),
-    tagline: frase(o['tagline'], MAX_FRASE, reserva.tagline),
-    items: vinetas(o['items'], reserva.items),
-    price: frase(o['price'], MAX_ETIQUETA, reserva.price),
-    cta: enlace(o['cta'], reserva.cta),
+    ...seccion(o, reserva, html),
+    submitLabel: frase(o['submitLabel'], MAX_ETIQUETA, reserva.submitLabel) || reserva.submitLabel,
+    successTitle: frase(o['successTitle'], MAX_TITULO, reserva.successTitle),
+    successText: frase(o['successText'], MAX_FRASE, reserva.successText),
+    privacy: frase(o['privacy'], MAX_FRASE, reserva.privacy) || reserva.privacy,
+    askPhone: booleano(o['askPhone'], reserva.askPhone),
+    askDate: booleano(o['askDate'], reserva.askDate),
+    askPlan: booleano(o['askPlan'], reserva.askPlan),
+    askMessage: booleano(o['askMessage'], reserva.askMessage),
   };
 }
 
@@ -733,7 +962,6 @@ export function sanearHome(
   const pasos = objeto(o['pasos']);
   const paneles = objeto(o['paneles']);
   const libertad = objeto(o['libertad']);
-  const planes = objeto(o['planes']);
   const cierre = objeto(o['cierre']);
   const pie = objeto(o['pie']);
 
@@ -771,6 +999,7 @@ export function sanearHome(
         return title === '' ? null : { title, text: frase(p['text'], MAX_FRASE, '') };
       }),
     },
+    escaparate: escaparate(o['escaparate'], fabrica.escaparate, html),
     paneles: {
       ...seccion(paneles, fabrica.paneles, html),
       basico: panel(paneles['basico'], fabrica.paneles.basico, html),
@@ -781,11 +1010,7 @@ export function sanearHome(
       items: items(libertad['items'], MAX_ITEMS_LIBERTAD, fabrica.libertad.items),
       closing: frase(libertad['closing'], MAX_FRASE, fabrica.libertad.closing),
     },
-    planes: {
-      ...seccion(planes, fabrica.planes, html),
-      basico: plan(planes['basico'], fabrica.planes.basico),
-      extendido: plan(planes['extendido'], fabrica.planes.extendido),
-    },
+    contacto: contacto(o['contacto'], fabrica.contacto, html),
     cierre: {
       enabled: booleano(cierre['enabled'], fabrica.cierre.enabled),
       title: frase(cierre['title'], MAX_TITULO, fabrica.cierre.title),

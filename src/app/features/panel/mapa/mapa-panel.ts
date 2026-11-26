@@ -318,6 +318,15 @@ import { NpInput } from '../../../design-system/components/field/input';
         align-items: flex-start;
         justify-content: space-between;
       }
+      /* El texto cede; el botón no: con el ancho justo, no se encoge. */
+      .mpn__intro > div {
+        flex: 1 1 0;
+        min-inline-size: 0;
+      }
+      .mpn__intro > button {
+        flex: none;
+        white-space: nowrap;
+      }
     }
     .mpn__lista {
       display: flex;

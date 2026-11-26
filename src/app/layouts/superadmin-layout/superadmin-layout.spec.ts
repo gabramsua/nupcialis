@@ -48,6 +48,7 @@ describe('el menú lateral del superadmin', () => {
       'Estadísticas',
       'Finanzas',
       'Proveedores',
+      'Solicitudes',
       'Recordatorios',
       'Catálogos',
       'Planes y módulos',
@@ -56,7 +57,7 @@ describe('el menú lateral del superadmin', () => {
       'Consejos',
       'Web de inicio',
     ]);
-    expect(SECCIONES_SUPERADMIN).toHaveLength(11);
+    expect(SECCIONES_SUPERADMIN).toHaveLength(12);
   });
 
   it('se pliega y se despliega, y lo dice a los lectores de pantalla', () => {

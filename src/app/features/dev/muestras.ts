@@ -68,6 +68,9 @@ const SECCIONES = sanearSecciones(
   }),
 );
 
+/** Una portada de muestra, para las capturas de la HOME. No es de ninguna boda real. */
+export const FOTO_DE_MUESTRA = '/home/muestra-portada.webp';
+
 export const BODA_DE_MUESTRA: Muestra = {
   nombres: { partnerA: 'María', partnerB: 'Gabriel' },
   weddingDate: new Date('2027-06-12T00:00:00.000Z'),

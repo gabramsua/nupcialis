@@ -14,7 +14,7 @@ import { NpHomeBoton } from './home-boton';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (cierre().enabled) {
-      <section class="hz" id="contacto">
+      <section class="hz" id="escribenos">
         <div class="hz__caja">
           <h2 class="hz__titulo">{{ cierre().title }}</h2>
           @if (cierre().text) {

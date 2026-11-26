@@ -2,18 +2,21 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { NpIcon } from '../../design-system/icons/icon';
 import type { PanelHome } from './home';
+import { NpHomeBoton } from './home-boton';
 import { NpHomeCabecera } from './home-cabecera';
+import { NpHomeGaleria } from './home-galeria';
 
 /**
- * Los dos paneles: lo que ven los novios del plan básico y del extendido.
+ * Los dos planes, cada uno con lo que ven los novios en su panel.
  *
- * Cada uno lleva una captura real del panel dentro de una ventana de
- * navegador. Es la sección que enseña el producto de verdad: la sencillez del
- * básico frente a todo lo que cabe en el extendido.
+ * Es la sección que enseña el producto **y** lo vende: cada plan lleva su
+ * texto, lo que incluye, su cartel de precio con el botón que lleva al
+ * formulario, y una galería con flechas de capturas del panel. El precio solo
+ * se enseña si se escribe, y la letra pequeña («pago único») es opcional.
  */
 @Component({
   selector: 'np-home-paneles',
-  imports: [NpIcon, NpHomeCabecera],
+  imports: [NpIcon, NpHomeBoton, NpHomeCabecera, NpHomeGaleria],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="hn" id="paneles">
@@ -34,11 +37,31 @@ import { NpHomeCabecera } from './home-cabecera';
               </ul>
             }
 
-            @if (panel.image; as img) {
-              <figure class="hn__ventana">
-                <div class="hn__barra" aria-hidden="true"><i></i><i></i><i></i></div>
-                <img [src]="img.url" [alt]="img.alt" loading="lazy" width="1680" height="1144" />
-              </figure>
+            @if (panel.price || panel.cta.label) {
+              <div class="hn__compra">
+                @if (panel.price) {
+                  <p class="hn__precio">
+                    <span class="hn__cifra">{{ panel.price }}</span>
+                    @if (panel.priceNote) {
+                      <span class="hn__nota">{{ panel.priceNote }}</span>
+                    }
+                  </p>
+                }
+                @if (panel.cta.label) {
+                  <np-home-boton
+                    [enlace]="panel.cta"
+                    [variante]="$index === 1 ? 'primario' : 'secundario'"
+                  />
+                }
+              </div>
+            }
+
+            @if (panel.shots.length > 0) {
+              <np-home-galeria
+                class="hn__galeria"
+                [capturas]="panel.shots"
+                [nombre]="'Capturas del ' + panel.label.toLowerCase()"
+              />
             }
           </article>
         }
@@ -59,11 +82,11 @@ import { NpHomeCabecera } from './home-cabecera';
       gap: 1.4rem;
     }
     .hn__panel {
-      display: grid;
-      align-content: start;
+      display: flex;
+      flex-direction: column;
       gap: 0.9rem;
       overflow: hidden;
-      padding: clamp(1.5rem, 4cqi, 2.4rem) clamp(1.5rem, 4cqi, 2.4rem) 0;
+      padding: clamp(1.5rem, 4cqi, 2.4rem);
       border: var(--h-borde);
       border-radius: var(--h-radio);
       background: var(--h-surface);
@@ -76,7 +99,7 @@ import { NpHomeCabecera } from './home-cabecera';
         0 0 0 1px var(--h-accent);
     }
     .hn__etiqueta {
-      justify-self: start;
+      align-self: flex-start;
       margin: 0;
       padding: 0.3rem 0.8rem;
       border-radius: 999px;
@@ -119,33 +142,39 @@ import { NpHomeCabecera } from './home-cabecera';
       margin-block-start: 0.1rem;
       color: var(--h-accent);
     }
-    /* La captura va dentro de una ventana de navegador que sale por abajo. */
-    .hn__ventana {
-      margin: 0.8rem 0 0;
-      overflow: hidden;
-      border: 1px solid color-mix(in srgb, var(--h-text) 18%, transparent);
-      border-block-end: 0;
-      border-radius: 0.7rem 0.7rem 0 0;
-      background: var(--h-bg);
-      box-shadow: 0 -4px 30px color-mix(in srgb, var(--h-text) 10%, transparent);
-    }
-    .hn__barra {
+    .hn__compra {
       display: flex;
-      gap: 0.35rem;
-      padding: 0.55rem 0.8rem;
-      border-block-end: 1px solid color-mix(in srgb, var(--h-text) 12%, transparent);
-      background: color-mix(in srgb, var(--h-text) 6%, var(--h-surface));
+      flex-wrap: wrap;
+      gap: 0.8rem 1.2rem;
+      align-items: center;
+      margin-block-start: 0.3rem;
     }
-    .hn__barra i {
-      inline-size: 0.6rem;
-      block-size: 0.6rem;
-      border-radius: 50%;
-      background: color-mix(in srgb, var(--h-text) 25%, transparent);
+    .hn__precio {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.2rem 0.6rem;
+      margin: 0;
+      padding: 0.3rem 1rem 0.4rem;
+      border: 1px solid var(--h-accent);
+      border-radius: var(--h-radio-boton);
+      background: var(--h-bg-alt);
     }
-    .hn__ventana img {
-      display: block;
-      inline-size: 100%;
-      block-size: auto;
+    .hn__cifra {
+      color: var(--h-accent);
+      font-family: var(--h-font-title);
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .hn__nota {
+      color: var(--h-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    /* La galería baja hasta el fondo: las dos quedan a la misma altura. */
+    .hn__galeria {
+      margin-block-start: auto;
     }
     @container home (min-width: 60rem) {
       .hn__rejilla {

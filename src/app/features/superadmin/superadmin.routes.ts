@@ -67,6 +67,11 @@ export const superadminRoutes: Routes = [
               import('./proveedores/proveedores-pantalla').then((m) => m.PantallaProveedores),
           },
           {
+            path: 'solicitudes',
+            loadComponent: () =>
+              import('./solicitudes/solicitudes-pantalla').then((m) => m.PantallaSolicitudes),
+          },
+          {
             path: 'recordatorios',
             loadComponent: () =>
               import('./gestion/recordatorios-pantalla').then((m) => m.PantallaRecordatorios),

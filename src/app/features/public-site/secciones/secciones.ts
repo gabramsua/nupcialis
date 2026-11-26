@@ -327,7 +327,7 @@ export const SECCIONES_INICIALES: readonly Seccion[] = [
     type: 'quiz',
     enabled: false,
     order: 9,
-    fields: { titulo: 'El juego de la boda' },
+    fields: { titulo: 'El Trivial de la boda' },
   },
   {
     id: 'galeria',

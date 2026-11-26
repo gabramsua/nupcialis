@@ -114,12 +114,29 @@ import {
 } from '../public-site/playlist/playlist';
 import { PreguntasQuizStore } from '../panel/quiz/preguntas-quiz.store';
 import { MesasStore } from '../panel/mesas/mesas.store';
+import { PUERTA_PREGUNTAS } from '../../core/rsvp/preguntas-gateway';
+import { PUERTA_RESPUESTAS } from '../../core/rsvp/respuestas-gateway';
+import { ALMACEN_CONTRATOS, PUERTA_PROVEEDORES } from '../../core/proveedores/proveedores-gateway';
+import { PUERTA_PRESUPUESTO } from '../../core/presupuesto/presupuesto-gateway';
+import { ProveedoresStore } from '../panel/proveedores/proveedores.store';
+import { PresupuestoStore } from '../panel/presupuesto/presupuesto.store';
+import { PreguntasStore } from '../panel/rsvp/preguntas.store';
+import {
+  FOTOS_ESCAPARATE,
+  HITOS_ESCAPARATE,
+  INVITADOS_ESCAPARATE,
+  MESAS_ESCAPARATE,
+  puertaPreguntasEscaparate,
+  UBICACIONES_ESCAPARATE,
+} from './escaparate-panel';
 import { GaleriaPanelStore } from '../panel/galeria/galeria.store';
 import { RegalosStore } from '../panel/regalos/regalos.store';
 import { RecibidosStore } from '../panel/regalos/recibidos.store';
 import { RankingQuizStore } from '../panel/quiz/ranking-quiz.store';
 import { CronologiaStore } from '../panel/cronologia/cronologia.store';
 import { FaqsStore } from '../panel/faqs/faqs.store';
+import { PALETAS } from '../public-site/paletas/paletas';
+import { FIREBASE_STORAGE } from '../../core/firebase/storage.providers';
 import { BodaStore } from '../panel/boda.store';
 import { SECCIONES_INICIALES } from '../public-site/secciones/secciones';
 import { MODULOS, menuDeModulos, modulosNoVisibles, type BodaDelPanel } from '../panel/boda';
@@ -327,6 +344,38 @@ const BODA: BodaDelPanel = {
  */
 export const PLAN_DE_MUESTRA = new InjectionToken<'basic' | 'extended'>('PLAN_DE_MUESTRA');
 
+/**
+ * Con datos llenos, para las capturas de la HOME (`/dev/panel-basico` y
+ * `/dev/panel-extendido`). Sin él, los dobles son los austeros de siempre.
+ */
+export const ESCAPARATE_DE_MUESTRA = new InjectionToken<boolean>('ESCAPARATE_DE_MUESTRA');
+
+/**
+ * Los módulos que trae el plan básico (`ACTIVOS_BASICO` de las functions), todos
+ * visibles: el menú de la captura tiene que ser el que ve una pareja de ese plan.
+ */
+const MODULOS_BASICO = [
+  'publicSite',
+  'rsvp',
+  'guests',
+  'map',
+  'timeline',
+  'faqs',
+  'gifts',
+  'accommodation',
+  'buses',
+] as const;
+
+const BODA_BASICA_COMPLETA: BodaDelPanel = {
+  ...BODA,
+  // Para la captura de «Diseño»: una plantilla y una paleta ya elegidas.
+  templateId: 'romantica',
+  palette: PALETAS.find((p) => p.id === 'rosa-palo')?.colores ?? null,
+  modulos: Object.fromEntries(
+    MODULOS_BASICO.map((m) => [m, { enabled: true, visibility: 'visible' as const }]),
+  ) as BodaDelPanel['modulos'],
+};
+
 /** La misma boda con todos los módulos del plan extendido encendidos. */
 const BODA_EXTENDIDA: BodaDelPanel = {
   ...BODA,
@@ -411,8 +460,8 @@ const UBICACIONES: readonly UbicacionDelPanel[] = [
 ];
 
 /** Guarda en memoria y devuelve lo que haya, como haría Firestore. */
-function puertaUbicaciones(): PuertaUbicaciones {
-  const datos = [...UBICACIONES];
+function puertaUbicaciones(escaparate = false): PuertaUbicaciones {
+  const datos = [...(escaparate ? UBICACIONES_ESCAPARATE : UBICACIONES)];
 
   return {
     async listar() {
@@ -507,8 +556,8 @@ function puertaPlaylistPanel(): PuertaPlaylistPanel {
   };
 }
 
-function puertaCronologia(): PuertaCronologia {
-  const datos = [...HITOS];
+function puertaCronologia(escaparate = false): PuertaCronologia {
+  const datos = [...(escaparate ? HITOS_ESCAPARATE : HITOS)];
 
   return {
     async listar() {
@@ -557,8 +606,9 @@ function puertaFaqs(): PuertaFaqs {
 /** La boda de muestra, con lo justo de `BodaStore` que usan estas pantallas. */
 class BodaStoreDeMuestra {
   private readonly plan = inject(PLAN_DE_MUESTRA, { optional: true });
+  private readonly escaparate = inject(ESCAPARATE_DE_MUESTRA, { optional: true });
   private readonly _boda = signal<BodaDelPanel | null>(
-    this.plan === 'extended' ? BODA_EXTENDIDA : BODA,
+    this.plan === 'extended' ? BODA_EXTENDIDA : this.escaparate ? BODA_BASICA_COMPLETA : BODA,
   );
 
   readonly boda = this._boda.asReadonly();
@@ -584,6 +634,25 @@ class BodaStoreDeMuestra {
   }): Promise<boolean> {
     const boda = this._boda();
     if (boda) this._boda.set({ ...boda, dressCode: sanearDressCode({ ...dress }) });
+    return true;
+  }
+
+  // La pantalla de diseño: plantilla, paleta y portada, en memoria.
+  async cambiarPlantilla(id: string): Promise<boolean> {
+    const boda = this._boda();
+    if (boda) this._boda.set({ ...boda, templateId: id });
+    return true;
+  }
+
+  async guardarPaleta(colores: BodaDelPanel['palette']): Promise<boolean> {
+    const boda = this._boda();
+    if (boda) this._boda.set({ ...boda, palette: colores });
+    return true;
+  }
+
+  async guardarPortada(path: string | null, url: string | null): Promise<boolean> {
+    const boda = this._boda();
+    if (boda) this._boda.set({ ...boda, heroImagePath: path, heroImageUrl: url });
     return true;
   }
 
@@ -747,13 +816,13 @@ const INVITADOS_MESAS: Invitado[] = [
   invitadoDeMuestra('p3', 'Marta Vega', null),
 ];
 
-function puertasDeMesas(): {
+function puertasDeMesas(escaparate = false): {
   mesas: PuertaMesas;
   sentar: PuertaSentar;
   invitados: PuertaInvitados;
 } {
-  const mesas = [...MESAS];
-  let invitados = [...INVITADOS_MESAS];
+  const mesas = [...(escaparate ? MESAS_ESCAPARATE : MESAS)];
+  let invitados = [...(escaparate ? INVITADOS_ESCAPARATE : INVITADOS_MESAS)];
 
   return {
     mesas: {
@@ -793,30 +862,98 @@ function puertasDeMesas(): {
  * Las tareas de muestra, con fechas relativas a hoy para que salgan en todos
  * los estados: vencidas, de esta semana, próximas, sin fecha y hechas.
  */
-function puertaTareas(): PuertaTareas {
+function puertaTareas(escaparate = false): PuertaTareas {
   const hoy = new Date();
   const en = (dias: number): Date =>
     new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + dias));
 
-  let lista: TareaDelPanel[] = [
-    ['reservar', 'Reservar la finca', 'Lugar', 'tent', -40, true, 'both', 'high'],
-    ['fotografo', 'Contratar fotógrafo', 'Proveedores', 'camera', -6, false, 'A', 'normal'],
-    ['catering', 'Pagar la señal del catering', 'Proveedores', 'chef-hat', -2, false, 'B', 'high'],
-    ['vestido', 'Segunda prueba del vestido', 'Novios', 'dress', 3, false, 'A', 'normal'],
+  // Para las capturas de la HOME: una lista de boda creíble, con casi todo en
+  // marcha, un par de cosas hechas y una sola vencida.
+  const delEscaparate: readonly (readonly [
+    string,
+    string,
+    string,
+    string,
+    number | null,
+    boolean,
+    string,
+    string,
+  ])[] = [
+    ['reservar', 'Reservar la finca', 'Lugar', 'tent', -120, true, 'both', 'high'],
+    ['catering', 'Contratar el catering', 'Proveedores', 'chef-hat', -90, true, 'both', 'high'],
+    ['fotografo', 'Contratar fotógrafo', 'Proveedores', 'camera', -60, true, 'A', 'normal'],
+    ['vestido', 'Elegir el vestido', 'Novios', 'dress', -45, true, 'A', 'normal'],
+    ['traje', 'Elegir el traje', 'Novios', 't-shirt', -30, true, 'B', 'normal'],
+    ['senal', 'Pagar la señal del catering', 'Proveedores', 'chef-hat', -2, false, 'B', 'high'],
+    ['prueba', 'Segunda prueba del vestido', 'Novios', 'dress', 3, false, 'A', 'normal'],
     ['invitaciones', 'Enviar las invitaciones', 'Invitados', 'envelope', 6, false, 'both', 'high'],
+    [
+      'alojamiento',
+      'Reservar alojamiento para los de fuera',
+      'Invitados',
+      'bed',
+      9,
+      false,
+      'A',
+      'normal',
+    ],
     [
       'musica',
       'Cerrar la música con el DJ',
       'Proveedores',
       'music-notes',
-      45,
+      25,
       false,
       'B',
       'normal',
     ],
-    ['mesas', 'Montar las mesas', 'Invitados', 'table', 90, false, 'both', 'normal'],
+    ['menu', 'Cerrar el menú y las alergias', 'El día', 'fork-knife', 45, false, 'both', 'normal'],
+    ['mesas', 'Montar las mesas', 'Invitados', 'table', 90, false, 'both', 'high'],
+    ['numero', 'Dar el número final al catering', 'El día', 'chef-hat', 120, false, 'B', 'high'],
     ['luna', 'Pensar la luna de miel', 'Novios', 'list-checks', null, false, 'both', 'low'],
-  ].map(([id, title, category, icon, dias, done, assignedTo, priority], i) => ({
+  ];
+
+  let lista: TareaDelPanel[] = (
+    escaparate
+      ? delEscaparate
+      : [
+          ['reservar', 'Reservar la finca', 'Lugar', 'tent', -40, true, 'both', 'high'],
+          ['fotografo', 'Contratar fotógrafo', 'Proveedores', 'camera', -6, false, 'A', 'normal'],
+          [
+            'catering',
+            'Pagar la señal del catering',
+            'Proveedores',
+            'chef-hat',
+            -2,
+            false,
+            'B',
+            'high',
+          ],
+          ['vestido', 'Segunda prueba del vestido', 'Novios', 'dress', 3, false, 'A', 'normal'],
+          [
+            'invitaciones',
+            'Enviar las invitaciones',
+            'Invitados',
+            'envelope',
+            6,
+            false,
+            'both',
+            'high',
+          ],
+          [
+            'musica',
+            'Cerrar la música con el DJ',
+            'Proveedores',
+            'music-notes',
+            45,
+            false,
+            'B',
+            'normal',
+          ],
+          ['mesas', 'Montar las mesas', 'Invitados', 'table', 90, false, 'both', 'normal'],
+          ['luna', 'Pensar la luna de miel', 'Novios', 'list-checks', null, false, 'both', 'low'],
+        ]
+  ).map(([id, title, category, icon, dias, done, assignedTo, priority], i) => ({
     id: id as string,
     title: title as string,
     description: '',
@@ -886,10 +1023,78 @@ export function provideDoblesDelPanel(
   plan: 'basic' | 'extended' = 'basic',
   conCabecera = false,
 ): EnvironmentProviders {
-  const deMesas = puertasDeMesas();
+  const deMesas = puertasDeMesas(conCabecera);
 
   return makeEnvironmentProviders([
     { provide: PLAN_DE_MUESTRA, useValue: plan },
+    { provide: ESCAPARATE_DE_MUESTRA, useValue: conCabecera },
+    // La pantalla de diseño crea su almacén de portada al abrirse; aquí no sube nada.
+    { provide: FIREBASE_STORAGE, useValue: {} },
+    { provide: PUERTA_PREGUNTAS, useFactory: puertaPreguntasEscaparate },
+    PreguntasStore,
+    // Las demás pantallas que enseña la HOME enlazan con proveedores, presupuesto
+    // y respuestas: vacíos, pero presentes.
+    {
+      provide: PUERTA_RESPUESTAS,
+      useValue: {
+        async leer() {
+          return { ok: true, datos: { preguntas: [], invitados: [] } };
+        },
+        async guardar() {
+          return { ok: true, estado: 'confirmed' };
+        },
+        async guardarEnLote() {
+          return { ok: true, cambiados: 0, omitidos: 0 };
+        },
+      },
+    },
+    {
+      provide: PUERTA_PROVEEDORES,
+      useValue: {
+        async listar() {
+          return { ok: true, proveedores: [] };
+        },
+        async guardar() {
+          return { ok: true, id: 'nuevo' };
+        },
+        async borrar() {
+          return { ok: true, id: '' };
+        },
+      },
+    },
+    {
+      provide: ALMACEN_CONTRATOS,
+      useValue: {
+        async subir() {
+          return '';
+        },
+        async url() {
+          return '';
+        },
+        async borrar() {
+          return;
+        },
+      },
+    },
+    ProveedoresStore,
+    {
+      provide: PUERTA_PRESUPUESTO,
+      useValue: {
+        async listar() {
+          return { ok: true, partidas: [] };
+        },
+        async guardar() {
+          return { ok: true, id: 'nueva' };
+        },
+        async marcarPagada() {
+          return { ok: true, id: '' };
+        },
+        async enlazarProveedor() {
+          return { ok: true, id: '' };
+        },
+      },
+    },
+    PresupuestoStore,
     {
       provide: SessionStore,
       useValue: conCabecera
@@ -910,14 +1115,14 @@ export function provideDoblesDelPanel(
     { provide: PUERTA_AUTH, useValue: { salir: async () => undefined } },
     { provide: BodaStore, useClass: BodaStoreDeMuestra },
     { provide: PUERTA_ALOJAMIENTOS, useFactory: puertaAlojamientos },
-    { provide: PUERTA_CRONOLOGIA, useFactory: puertaCronologia },
+    { provide: PUERTA_CRONOLOGIA, useFactory: () => puertaCronologia(conCabecera) },
     { provide: PUERTA_FAQS, useFactory: puertaFaqs },
-    { provide: PUERTA_UBICACIONES, useFactory: puertaUbicaciones },
+    { provide: PUERTA_UBICACIONES, useFactory: () => puertaUbicaciones(conCabecera) },
     AlojamientosStore,
     UbicacionesStore,
     { provide: PUERTA_PLAYLIST_PANEL, useFactory: puertaPlaylistPanel },
     PlaylistStore,
-    { provide: PUERTA_TAREAS, useFactory: puertaTareas },
+    { provide: PUERTA_TAREAS, useFactory: () => puertaTareas(conCabecera) },
     TareasStore,
     CronologiaStore,
     FaqsStore,
@@ -925,7 +1130,7 @@ export function provideDoblesDelPanel(
     { provide: PUERTA_RANKING_QUIZ, useFactory: puertaRankingQuiz },
     PreguntasQuizStore,
     RankingQuizStore,
-    { provide: PUERTA_GALERIA_PANEL, useFactory: puertaGaleriaPanel },
+    { provide: PUERTA_GALERIA_PANEL, useFactory: () => puertaGaleriaPanel(conCabecera) },
     GaleriaPanelStore,
     { provide: PUERTA_REGALOS_PANEL, useFactory: puertaRegalosPanel },
     RegalosStore,
@@ -1107,8 +1312,8 @@ export function provideGaleriaDeMuestra(): EnvironmentProviders {
  * el botón de borrar no quita nada no enseña lo que hay que mirar, que es qué
  * pinta tiene la rejilla cuando se queda con tres fotos o con ninguna.
  */
-function puertaGaleriaPanel(): PuertaGaleriaPanel {
-  let fotos = fotosDeMuestra();
+function puertaGaleriaPanel(escaparate = false): PuertaGaleriaPanel {
+  let fotos = escaparate ? [...FOTOS_ESCAPARATE] : fotosDeMuestra();
 
   return {
     async listar() {

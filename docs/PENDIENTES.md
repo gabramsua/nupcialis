@@ -1940,6 +1940,113 @@ móvil = cajón agrupado** («La boda» / «Participa»). Lo que hice y supuse y
    y caracteres de texto. Total 5 plantillas.
 8. **Quiz:** no se ha tocado (esperas a tener 10 preguntas).
 
+### D-69 · Capturas de la HOME, galería con flechas y precios dentro de los paneles — **pendiente de validar**
+
+**Pedido por ti (2026-11-26)**, tras validar la propuesta de capturas. Lo que decidí yo y necesita
+tu visto bueno:
+
+1. **La «foto» de la pareja es una ilustración mía** (una playa al atardecer con una pareja en
+   silueta), no una fotografía: no tengo acceso a fotos reales. Está en todas las plantillas del
+   mosaico y el carrusel y en el móvil de la portada. Con una foto real (tuya, o de un banco libre
+   **con tu permiso para descargarla y con licencia comercial**) se regenera todo con
+   `tools/capturas-escaparate.cjs` + `tools/componer-escaparate.py`.
+2. **Las insignias («8» y «2») y las cifras 198/236 y 185/236 son solo de la imagen.** En el panel
+   no existen todavía (pendiente de implementar, como dijiste). Ojo: una captura con cosas que el
+   producto aún no hace es publicidad adelantada; conviene tenerlas antes de que lleguen clientes.
+3. **El velo de la plantilla Romántica se aligera solo al fotografiar.** En la web real, con foto,
+   la Romántica la tapa casi del todo (72–82 % de opacidad); si quieres que la foto se vea de
+   verdad, hay que tocar la plantilla (no lo he hecho: es tu producto para los novios).
+4. **«Cómo llegar» en el panel es una lista de sitios con pin**, no un mapa: es lo que hay.
+5. **La cuarta captura de Tareas** está a menos zoom (78 %) para que quepan más tareas; el menú
+   lateral no enseña «Tareas» marcado porque queda por debajo del pliegue.
+6. **Precio y botones dentro de «Dos formas de vivirlo».** Quité «Elegid vuestro plan» y el campo
+   «frase corta» y la lista de «qué incluye» de cada plan (los puntos del panel ya lo dicen). El
+   subtítulo es: _«Empezad por lo sencillo o llevad toda la organización dentro. Podéis empezar con
+   el básico y pasar al extendido cuando lo necesitéis.»_ (quité «Podéis elegir lo que necesitáis»
+   para no repetir «podéis»). Los dos botones («Quiero el básico» y «Quiero el extendido») llevan al
+   formulario. **D-02 sigue abierta.**
+7. **Una HOME ya guardada no cambia sola** (lo guardado manda): conservará su título y subtítulo
+   antiguos de los paneles, pero sí recibe precio, botón y galerías de fábrica, porque su
+   documento no los tiene. Las claves viejas (`planes`, `paneles.*.image`) se ignoran. Para ver
+   el subtítulo nuevo, edítalo a mano o «Restaurar de fábrica».
+8. **El selector de tipografías** pide **todas** las fuentes del catálogo a Google Fonts, pero solo
+   en `/superadmin/home`; la web pública sigue descargando solo las dos que usa. En Safari el
+   desplegable nativo no aplica la tipografía a las opciones (sí al valor elegido).
+
+### D-70 · Visibilidad del escaparate por pantalla y captura de «Diseño» — **pendiente de validar**
+
+**Pedido por ti (2026-11-26):** «poder modificar la visibilidad del carrusel» y una captura de
+`/panel/diseno` bajo el mosaico, con todas las opciones. Supuestos míos:
+
+1. **«Visibilidad» = en qué pantallas se ve.** El interruptor de encender/apagar ya existía; lo que
+   no se podía era dejar el carrusel solo en móvil o solo en escritorio. Cada pieza (mosaico, diseño,
+   carrusel) tiene ahora «Dónde se ve»: todas / solo estrechas / solo anchas (corte: la caja de 44 rem
+   de la HOME). Si querías otra cosa, dímelo.
+2. **Defectos:** mosaico solo escritorio, carrusel en todas, diseño en todas. Con ellos la HOME se ve
+   como antes. Se retira la regla automática («si están los dos, en estrecho solo el carrusel»):
+   ahora es explícita. Un documento guardado sin `show` toma estos valores.
+3. **La captura de «Diseño» se ve ilegible en un móvil** (1400 px de ancho reducidos a ~350): se
+   leen las plantillas y los colores, no los textos. Si prefieres que sea solo de escritorio, se
+   cambia en el editor sin tocar código.
+4. **Enseña la Romántica y «Rosa palo» marcadas** y no incluye la foto de portada (es otra decisión
+   y alarga la imagen). Los nombres de «Ana & Luis» salen de las miniaturas reales del panel.
+5. **La imagen no se actualiza sola:** si se añade una plantilla o una paleta, hay que regenerarla
+   (`tools/capturas-escaparate.cjs <carpeta> diseno`). El texto de la intro («ocho plantillas y
+   dieciocho paletas») tampoco.
+6. **El tope de «qué incluye» por plan sube de 6 a 12** (lo pediste para añadir un punto al extendido).
+   Un test falla si cambia el número de plantillas o de paletas, para acordarse de regenerar las
+   imágenes; está también en `CLAUDE.md`.
+
+### D-68 · TRIVIAL, escaparate de plantillas, precios y formulario en la HOME — **pendiente de validar**
+
+**Pedido por ti (2026-11-26).** Lo que decidí yo al hacerlo y necesita tu visto bueno:
+
+1. **«Trivial», con mayúscula inicial y solo lo visible.** Menú, panel, web de la pareja, planes,
+   estadísticas, ayudas, correos de ejemplo y la HOME dicen «Trivial». **No he tocado** la ruta
+   `/quiz`, las colecciones, las funciones ni los identificadores. **Ojo con la marca:** «Trivial
+   Pursuit» es marca registrada; «trivial» a secas es una palabra común en español para este tipo
+   de juego, pero conviene que lo valides antes de hacerlo cartel. Las bodas **ya creadas**
+   conservan el título de sección que tenían guardado («El juego de la boda»): el nuevo título por
+   defecto («El Trivial de la boda») solo se aplica a las bodas nuevas.
+2. **Escaparate: mosaico y carrusel, los dos encendidos de fábrica.** Con los dos activos, en una
+   pantalla estrecha solo sale el carrusel (el mosaico repetiría lo mismo, minúsculo). Se
+   apagan por separado en `/superadmin/home` → «Plantillas y paletas». Las ocho capturas
+   usan una **portada de muestra ilustrada** (no es una foto real) y una combinación
+   plantilla+paleta que elegí yo: Clásica (la suya), Botánica·Salvia, Romántica·Rosa palo,
+   Moderna·Grafito y oro, Barroca·Burdeos y oro, Sevillana·Terracota, Cottage·Oliva y
+   Acuarela·Lavanda. Con **fotos reales de boda** (con permiso) se vería mucho mejor.
+3. **Precios: 85 € el básico y 250 € el extendido, pago único** (los fijaste tú). **D-02 sigue
+   formalmente abierta**: esto es lo que se enseña en la HOME, no una decisión de catálogo. Los
+   textos de lo que incluye cada plan son los de antes. Se cambian desde el editor, y con el precio
+   vacío no sale cartel.
+4. **El formulario guarda en `homeRequests`, no en `weddingRequests`.** El `weddingRequests` de
+   REQUISITOS §5 (F5) es el embudo completo —slug deseado, plan, importe congelado, referencia de
+   pago, activar— y no quería ocupar su nombre con un modelo más pobre. Esto es un **contacto**:
+   nombres, correo, teléfono, fecha (texto libre), plan que le interesa y mensaje. Cuando llegue F5
+   se decidirá si una solicitud de la HOME se «convierte» en la de F5 o se sustituye.
+5. **Obligatorios: nombres, correo y aceptar el tratamiento de datos.** Teléfono, fecha, plan y
+   mensaje se encienden y apagan. La casilla **no se puede apagar** (RGPD) y su texto es mío:
+   _«Acepto que Nupcialis use estos datos para contestarme. No se comparten con nadie y puedo pedir
+   que se borren cuando quiera.»_ **Necesita revisión legal**: no hay todavía política de
+   privacidad enlazada (B-A3).
+6. **Frenos:** App Check, **5 solicitudes por hora y por IP** (se guarda un hash de la IP, no la
+   IP) y un campo trampa que un bot rellena y una persona no ve (al bot se le da el «recibido» sin
+   guardar nada). Es freno contra torpeza, no contra un atacante decidido.
+7. **Bandeja** `/superadmin/solicitudes`: estados Nueva / Contactada / Convertida en boda /
+   Descartada y una nota. **No hay borrar** (los datos personales de gente que no es cliente
+   deberían tener plazo; **propón cuánto**: hoy se quedan hasta que se borren a mano en Firestore).
+8. **Aviso por correo:** al guardar una solicitud se encola un correo en `mail` a la dirección que
+   pongas en la propia pantalla (vacía = sin aviso). **La extensión «Trigger Email» sigue sin
+   instalar**, así que los avisos se quedan en cola sin enviar: de momento, la bandeja es lo único
+   fiable. La dirección vive en `platform/homeRequests`, que **no es legible** desde el navegador
+   (solo `platform/home` es público).
+9. **El botón «Escribirnos» del cierre** sigue siendo un `mailto:hola@nupcialis.com`, ahora como
+   alternativa («¿Prefieres escribirnos?») bajo el formulario. El ancla `#contacto` (a la que
+   apuntan los botones de la portada y de los planes) es ahora el formulario.
+
+**Para aplicar:** desplegar las cuatro funciones nuevas, la regla de Firestore y abrir
+`/superadmin/home` y `/superadmin/solicitudes` (ver `PARA-GABRIEL.md`).
+
 ### D-67 · Proveedores comercializadores y cobro en el alta — **pendiente de validar**
 
 Hecho sin preguntarte (F0.7.7–F0.7.9, lo que no dependía de tu respuesta). Supuestos míos:
@@ -2014,11 +2121,11 @@ Lo que decidí yo al construirla y necesita tu visto bueno:
    vuestra boda. Nosotros solo ponemos las herramientas.») → llamada final → pie. Las capturas son
    del panel real con datos de muestra (`/dev/panel-basico` y `/dev/panel-extendido`), no mock-ups,
    y se pueden cambiar subiendo otras.
-4. **La llamada a la acción apunta a `mailto:hola@nupcialis.com`** (provisional: **no sé qué correo
+4. _(Superado por D-68: la llamada a la acción lleva ahora al formulario.)_ **La llamada a la acción apunta a `mailto:hola@nupcialis.com`** (provisional: **no sé qué correo
    o formulario quieres**). Hasta que exista el embudo de solicitud (`B-A2`, `weddingRequests`),
    un botón que lleve a una dirección real es lo único honesto. Se cambia desde el editor. **Decide
    a dónde debe llevar.**
-5. **Sin precios.** La sección «Planes» existe pero viene **apagada** y con el precio vacío (D-02:
+5. _(Superado por D-68: precios 85 € y 250 €.)_ **Sin precios.** La sección «Planes» existe pero viene **apagada** y con el precio vacío (D-02:
    los precios no están decididos); si la enciendes y dejas el precio vacío, no enseña ninguno.
 6. **Guardar = publicar al instante.** Hay borrador con vista previa, pero «Guardar y publicar» lo
    pone en la web ya; no hay un paso intermedio de «en revisión». «Restaurar de fábrica» borra lo

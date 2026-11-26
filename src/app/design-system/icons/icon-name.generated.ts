@@ -121,6 +121,7 @@ export type NpIconName =
   | 'tent'
   | 'train'
   | 'trash'
+  | 'tray'
   | 'trophy'
   | 'upload-simple'
   | 'user'
@@ -222,6 +223,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'table': "Mesas",
   'seat': "Asiento",
   'envelope': "Invitación",
+  'tray': "Bandeja",
   'whatsapp-logo': "WhatsApp",
   'share-network': "Compartir",
   'download-simple': "Exportar",
@@ -250,7 +252,7 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'bell': "Avisos",
   'star': "Destacado",
   'question': "Preguntas frecuentes",
-  'game-controller': "Quiz",
+  'game-controller': "Trivial",
   'trophy': "Ranking",
   'images': "Galería",
   'note-pencil': "Libro de firmas",

@@ -1,4 +1,4 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
 
@@ -10,8 +10,10 @@ import { NpIcon } from '../../../design-system/icons/icon';
 import {
   ACENTOS_HOME,
   FUENTES_HOME,
+  fuenteDeHome,
   HOME_DE_FABRICA,
   INFO_PLANTILLAS_HOME,
+  MAX_DIAPOSITIVAS,
   MAX_ENLACES_PIE,
   MAX_ETIQUETA,
   MAX_FRASE,
@@ -25,6 +27,7 @@ import {
   type ContenidoHome,
   type ImagenHome,
   type PlantillaHome,
+  VISIBILIDADES_HOME,
 } from '../../home/home';
 import { NpHomePagina } from '../../home/home-pagina';
 import { NpHcHtml, NpHcIcono, NpHcImagen, NpHcTexto } from './home-campos';
@@ -36,9 +39,10 @@ type Seccion =
   | 'hero'
   | 'promesa'
   | 'pasos'
+  | 'escaparate'
   | 'paneles'
   | 'libertad'
-  | 'planes'
+  | 'contacto'
   | 'cierre'
   | 'pie'
   | 'seo';
@@ -48,9 +52,10 @@ const SECCIONES: readonly Seccion[] = [
   'hero',
   'promesa',
   'pasos',
+  'escaparate',
   'paneles',
   'libertad',
-  'planes',
+  'contacto',
   'cierre',
   'pie',
   'seo',
@@ -89,6 +94,7 @@ const SECCIONES: readonly Seccion[] = [
 })
 export class PantallaHome {
   private readonly puerta = inject(PUERTA_HOME_ADMIN);
+  private readonly documento = inject(DOCUMENT);
 
   protected readonly secciones = SECCIONES;
   protected readonly plantillas = INFO_PLANTILLAS_HOME;
@@ -96,6 +102,14 @@ export class PantallaHome {
   protected readonly titulos = FUENTES_HOME.filter((f) => f.tipo === 'titulo');
   protected readonly cuerpos = FUENTES_HOME.filter((f) => f.tipo === 'cuerpo');
   protected readonly fabrica = HOME_DE_FABRICA;
+  protected readonly camposDeContacto = [
+    { ruta: 'askPhone', clave: 'pedirTelefono' },
+    { ruta: 'askDate', clave: 'pedirFecha' },
+    { ruta: 'askPlan', clave: 'pedirPlan' },
+    { ruta: 'askMessage', clave: 'pedirMensaje' },
+  ] as const;
+
+  protected readonly visibilidades = VISIBILIDADES_HOME;
 
   protected readonly max = {
     titulo: MAX_TITULO,
@@ -109,6 +123,7 @@ export class PantallaHome {
     libertad: MAX_ITEMS_LIBERTAD,
     vinetas: MAX_VINETAS,
     enlacesPie: MAX_ENLACES_PIE,
+    diapositivas: MAX_DIAPOSITIVAS,
   } as const;
 
   protected readonly carga = signal<Carga>('cargando');
@@ -134,7 +149,25 @@ export class PantallaHome {
   private conocidas: ReadonlySet<string> = new Set();
 
   constructor() {
+    this.cargarTipografias();
     void this.cargar();
+  }
+
+  /**
+   * Todas las tipografías del catálogo, de una vez, para que el selector enseñe
+   * cada una en su estilo. Solo se piden aquí, en el editor del superadmin: la
+   * web pública descarga solo las dos que usa.
+   */
+  private cargarTipografias(): void {
+    const cabecera = this.documento.head;
+    if (!cabecera) return;
+    const familias = [...new Set(FUENTES_HOME.map((f) => `family=${f.google}`))];
+    const url = `https://fonts.googleapis.com/css2?${familias.join('&')}&display=swap`;
+    if (cabecera.querySelector(`link[href="${url}"]`)) return;
+    const enlace = this.documento.createElement('link');
+    enlace.rel = 'stylesheet';
+    enlace.href = url;
+    cabecera.appendChild(enlace);
   }
 
   protected async cargar(): Promise<void> {
@@ -205,6 +238,22 @@ export class PantallaHome {
 
   protected conIcono(): { icon: string; title: string; text: string } {
     return { icon: 'heart', title: '', text: '' };
+  }
+
+  /** Una captura nueva del carrusel: parte de una de serie, para sustituirla por la tuya. */
+  protected conDiapositiva(): { image: ImagenHome; label: string } {
+    return { image: { path: '', url: '/home/movil-clasica.webp', alt: '' }, label: '' };
+  }
+
+  /** Una captura nueva de la galería de un plan: parte de una de serie. */
+  protected conCaptura(plan: string): { image: ImagenHome; label: string } {
+    const serie = plan === 'basico' ? 'galeria-basico-1' : 'galeria-extendido-1';
+    return { image: { path: '', url: `/home/${serie}.webp`, alt: '' }, label: '' };
+  }
+
+  /** La tipografía de una opción del selector, para que se vea en su estilo. */
+  protected familiaDe(id: string): string | null {
+    return fuenteDeHome(id)?.familia ?? null;
   }
 
   // --- imágenes --------------------------------------------------------

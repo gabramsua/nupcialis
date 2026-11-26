@@ -74,8 +74,11 @@ export function moverEn<E>(lista: readonly E[], desde: number, hacia: number): r
 export function rutasDeImagenes(contenido: ContenidoHome): ReadonlySet<string> {
   const imagenes: (ImagenHome | null)[] = [
     contenido.hero.image,
-    contenido.paneles.basico.image,
-    contenido.paneles.extendido.image,
+    contenido.escaparate.mosaic.image,
+    contenido.escaparate.design.image,
+    ...contenido.escaparate.carousel.slides.map((d) => d.image),
+    ...contenido.paneles.basico.shots.map((d) => d.image),
+    ...contenido.paneles.extendido.shots.map((d) => d.image),
   ];
   return new Set(imagenes.flatMap((i) => (i !== null && i.path !== '' ? [i.path] : [])));
 }

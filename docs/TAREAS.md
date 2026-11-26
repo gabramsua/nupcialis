@@ -902,9 +902,11 @@ que hace que el básico se sienta completo; **C** = segunda ola. **G** = lo hace
 - [ ] `B-A1` **El botón «Confirmar asistencia» no sale en bodas abiertas**, que es el modo
       por defecto del alta: `puedeConfirmar` exige sesión identificada
       (`public-shell.ts`, `cabecera-boda.ts`). `/confirmar` ya sabe pedir los dígitos.
-- [ ] `B-A2` **Embudo de contratación**: landing real (hoy es un rótulo), formulario de
-      solicitud (`weddingRequests`, no existe), bandeja en superadmin y pantalla con la
-      referencia de Bizum (D-25). Une con `S1.1`, `F0.7.7` y la bandeja de F5.
+- [~] `B-A2` **Embudo de contratación**: **hecho el primer tramo** (D-68): landing, formulario de
+  contacto → bandeja `/superadmin/solicitudes` (`homeRequests`) con aviso por correo.
+  Falta el embudo completo de F5 (`weddingRequests` con `desiredSlug`, plan y cobro,
+  activar, pantalla con la referencia de Bizum, D-25). Une con `S1.1`, `F0.7.7` y la
+  bandeja de F5.
 - [ ] `B-A3` **RGPD mínimo**: aviso de privacidad y términos visibles (hoy una sola línea
       en acompañantes), aviso de almacenamiento local, contrato de encargo aceptado en el
       alta, botón de supresión de un invitado (§9.4, no existe) y retención + purga (D-01).
@@ -934,10 +936,10 @@ que hace que el básico se sienta completo; **C** = segunda ola. **G** = lo hace
 
 Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
 
-- [~] `S1.1` **Landing pública de venta** (D-65): **hecha la HOME** (una página vertical sin
-  menú, tres plantillas, capturas del panel básico y extendido, sección de libertad de
-  los novios) y su **editor en `/superadmin/home`**. Falta lo que depende de ti: el destino
-  real de la llamada a la acción (hoy `mailto:`), el texto definitivo y los precios (D-02).
+- [~] `S1.1` **Landing pública de venta** (D-65, D-68): **hecha la HOME** (una página vertical sin
+  menú, tres plantillas, escaparate de plantillas, capturas del panel, planes con precio y
+  formulario de contacto) y su **editor en `/superadmin/home`**. Falta el texto definitivo y
+  cerrar los precios (D-02).
 - [ ] `S1.3d` **Estadísticas por landing**: visitas y conversión.
 - [x] `S1.3e` **Módulo financiero del superadmin** (D-48): `/superadmin/finanzas`,
       libro de cobros por boda (importe en céntimos, método, estado, fecha, número
@@ -988,8 +990,52 @@ Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
       panel básico y extendido, generadas del panel real con datos de muestra
       (`/dev/panel-basico`, `/dev/panel-extendido`).
 - [ ] `H.6` **Iterar plantillas** (lo dijiste): más plantillas, otra paleta, animaciones, vídeo.
-- [ ] `H.7` **Estadísticas de la HOME** (`S1.3d`) y formulario de solicitud (`B-A2`): hoy la
-      llamada final es un `mailto:`.
+- [ ] `H.7` **Estadísticas de la HOME** (`S1.3d`): visitas y conversión (el formulario ya existe,
+      ver `H.12`).
+- [x] `H.9` **TRIVIAL** (D-68): el módulo del quiz se llama «Trivial» en todo lo que se ve (menú,
+      panel, web de la pareja, planes, estadísticas, HOME). Solo lo visible: la ruta `/quiz`, las
+      colecciones y los identificadores del código no cambian.
+- [x] `H.10` **Escaparate de plantillas** (D-68): sección «Lo que verán vuestros invitados» con
+      **mosaico** (una imagen con las ocho plantillas) y **carrusel** (una captura de móvil por
+      plantilla, con flechas y scroll táctil). Se encienden y apagan por separado en
+      `/superadmin/home`; las capturas salen de `/dev/previa?plantilla=…&paleta=…&foto=1&barra=0`
+      con `tools/capturas-home.cjs` y `tools/capturas-home.py`. Regeneradas también las del panel
+      y la portada (decían «Juego»).
+- [x] `H.11` **Planes con precio** (D-68, reubicado en D-69): **85 €** y **250 €** «pago único», con
+      cartel de precio, letra pequeña y botón editables. Desde D-69 viven **dentro de «Dos formas de
+      vivirlo»** (cada plan: texto, lo que incluye, precio, botón y galería); la sección aparte
+      «Elegid vuestro plan» ya no existe.
+- [x] `H.12` **Formulario de contacto** (D-68): sección editable (textos, campos opcionales,
+      casilla de aceptación) y llamada pública `createHomeRequest` (App Check, 5 por hora y IP,
+      campo trampa); bandeja `/superadmin/solicitudes` (estado y nota) y correo de aviso a una
+      dirección configurable (`platform/homeRequests`, no pública). Regla `homeRequests` con test de
+      aislamiento. El botón principal de la HOME lleva al formulario.
+- [x] `H.13` **Capturas de la HOME a validar** (D-69): panel con insignias «8 respuestas nuevas» y
+      «2 fotos nuevas» y cifras 198/236 y 185/236 (solo en la imagen), móvil Romántica con una
+      playa al atardecer, esa misma foto en las ocho plantillas del mosaico y el carrusel.
+      `tools/capturas-escaparate.cjs` fotografía las rutas de desarrollo con datos de muestra
+      (`src/app/features/dev/escaparate-panel.ts`) y `tools/componer-escaparate.py` las compone
+      en `public/home/`.
+- [x] `H.14` **Galería con flechas por plan** (D-69): `np-home-galeria` (flechas, teclado, contador,
+      da la vuelta). Básico: formulario de confirmación, cómo llegar y timeline del día.
+      Extendido: mesas con invitados, galería con fotos en blur, tareas y la lista de tareas
+      completa. Editables en `/superadmin/home` → «Capturas del panel y precios».
+- [x] `H.15` **Selector de tipografías con vista previa** (D-69): cada opción de
+      `/superadmin/home` → «Estilo» se ve en su propia letra (en el desplegable nativo: Chrome,
+      Edge y Firefox; Safari no estila las opciones).
+- [x] `H.16` **Botones del panel con ancho natural** (D-69): «Añadir un sitio» (Cómo llegar) y
+      «Añadir un momento» (Timeline) ya no se encogen; cede el texto de al lado.
+- [x] `H.17` **Visibilidad por pantalla del mosaico y del carrusel** (D-70): cada pieza del
+      escaparate se enciende/apaga y elige «en todas las pantallas», «solo móvil» o «solo
+      escritorio» (`show`). De fábrica el mosaico es solo de escritorio (lo de siempre: en móvil
+      manda el carrusel) y el carrusel sale en todas. Sustituye a la regla automática.
+- [x] `H.18` **Captura de «Diseño» bajo el mosaico** (D-70): `public/home/diseno.webp`, la pantalla
+      `/panel/diseno` con las 8 plantillas y las 18 paletas (Romántica y Rosa palo marcadas), con
+      pie editable y su propio «Dónde se ve». Ruta de desarrollo `/dev/panel-basico/design`;
+      `capturas-escaparate.cjs <carpeta> diseno` y `componer-escaparate.py <png> <salida> diseno`.
+- [x] `H.19` **Hasta 12 puntos por plan** (D-70): `MAX_VINETAS` pasa de 6 a 12 (cliente y funciones).
+      Nuevo test que avisa si cambia el número de plantillas o paletas: hay que regenerar
+      `diseno.webp`, `mosaico.webp` y el carrusel (regla añadida a `CLAUDE.md`).
 - [ ] `H.8` **Alojar las tipografías** en vez de Google Fonts, si prefieres (RGPD, D-65.8).
 
 ---
@@ -1047,6 +1093,9 @@ donde toque.
 
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-26 | **Capturas de la HOME, galería con flechas y precios en los paneles** (D-69): capturas nuevas del panel y del móvil (playa en todas las plantillas), galería con flechas por plan (3 + 4 capturas), precio y botón dentro de «Dos formas de vivirlo» (se elimina «Elegid vuestro plan»), selector de tipografías con cada letra en su estilo y botones del mapa y la cronología con ancho natural.                                                                                                               |
+| 2026-11-26 | **Escaparate de la HOME: visibilidad por pantalla y captura de «Diseño»** (D-70): el mosaico, el carrusel y la nueva captura de `/panel/diseno` (8 plantillas y 18 paletas, bajo el mosaico) se encienden y apagan por separado y cada una elige si se ve en todas las pantallas, solo en móvil o solo en escritorio.                                                                                                                                                                                            |
+| 2026-11-26 | **TRIVIAL, escaparate, precios y formulario de la HOME** (D-68): el quiz pasa a llamarse «Trivial» en todo lo visible; la HOME gana un escaparate de plantillas (mosaico + carrusel, apagables por separado), los planes con 85 € y 250 € «pago único» y un formulario de contacto que llega a una bandeja nueva (`/superadmin/solicitudes`) con aviso por correo. Capturas móviles de las ocho plantillas generadas con una previa de desarrollo parametrizable.                                                |
 | 2026-11-25 | **La HOME de `nupcialis.com`** (D-65): una página vertical sin menú con tres plantillas, capturas reales del panel básico y extendido y la sección «vosotros sois los dueños», y su editor completo en `/superadmin/home` (borrador, vista previa, Jodit, iconos, imágenes, SEO, restaurar). El test de contraste cazó que el acento «oro» no se leía sobre fondos tintados. Arreglado además el job `funciones` del CI, que estaba anidado dentro de `reglas`.                                                  |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                                                                                                                                                                                                     |
 | 2026-09-16 | Primer contacto con Firebase de verdad, y dos fallos que solo aparecen ahí. El acceso con Google se colgaba por la política de ventanas emergentes del servidor de desarrollo (`RE.8`: hay que servir esa cabecera también en producción). Y entrar sin el claim de superadmin mandaba a la raíz, que contestaba «no encontramos esta boda»: el dominio raíz se confundía con una boda inexistente, así que `nupcialis.com` habría dicho eso mismo a quien fuera a ver qué vendemos.                             |

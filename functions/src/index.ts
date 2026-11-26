@@ -60,6 +60,12 @@ export {
   savePayment,
 } from './superadmin-boda';
 export { listPartners, savePartner, settlePartnerPayments } from './partners';
+export {
+  createHomeRequest,
+  listHomeRequests,
+  saveHomeRequestSettings,
+  updateHomeRequest,
+} from './solicitudes';
 export { setUserClaims } from './set-user-claims';
 export { setMyWebStatus } from './publicar-pareja';
 export { setWeddingStatus } from './set-wedding-status';

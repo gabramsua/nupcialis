@@ -20,6 +20,7 @@ export const SECCIONES_SUPERADMIN: readonly Seccion[] = [
   { ruta: '/superadmin/estadisticas', clave: 'estadisticas', icono: 'chart-bar', exacta: false },
   { ruta: '/superadmin/finanzas', clave: 'finanzas', icono: 'currency-eur', exacta: false },
   { ruta: '/superadmin/proveedores', clave: 'proveedores', icono: 'storefront', exacta: false },
+  { ruta: '/superadmin/solicitudes', clave: 'solicitudes', icono: 'tray', exacta: false },
   { ruta: '/superadmin/recordatorios', clave: 'recordatorios', icono: 'bell', exacta: false },
   { ruta: '/superadmin/catalogos', clave: 'catalogos', icono: 'list-checks', exacta: false },
   { ruta: '/superadmin/planes', clave: 'planes', icono: 'sliders-horizontal', exacta: false },

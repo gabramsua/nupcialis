@@ -34,8 +34,8 @@ describe('planes y módulos', () => {
     expect(p.texto()).toContain('Plan básico');
     expect(p.texto()).toContain('3 bodas');
     expect(casilla(p.raiz, 0, 'Confirmaciones').checked).toBe(true);
-    expect(casilla(p.raiz, 0, 'Juego').checked).toBe(false);
-    expect(casilla(p.raiz, 1, 'Juego').checked).toBe(true);
+    expect(casilla(p.raiz, 0, 'Trivial').checked).toBe(false);
+    expect(casilla(p.raiz, 1, 'Trivial').checked).toBe(true);
   });
 
   it('la web pública no se puede quitar', async () => {
@@ -61,7 +61,7 @@ describe('planes y módulos', () => {
       ),
     );
 
-    casilla(p.raiz, 0, 'Juego').click();
+    casilla(p.raiz, 0, 'Trivial').click();
     p.fixture.detectChanges();
     await p.pulsar(p.boton('Guardar cambios'));
 

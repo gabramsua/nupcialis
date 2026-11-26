@@ -186,7 +186,7 @@
       "preguntas": "Preguntas",
       "historia": "Historia",
       "mapa": "Cómo llegar",
-      "quiz": "Quiz",
+      "quiz": "Trivial",
       "galeria": "Galería",
       "playlist": "Playlist",
       "regalos": "Regalos",
@@ -250,7 +250,7 @@
         "sin-verificar": "Para jugar hace falta que escribas los cuatro últimos dígitos de tu móvil.",
         "sin-sesion": "Para jugar tienes que entrar primero con el enlace que te mandaron los novios. Vuelve a la web y entra desde allí.",
         "red": "No hay conexión. Inténtalo otra vez en un momento.",
-        "error": "No se ha podido cargar el juego. Inténtalo otra vez."
+        "error": "No se ha podido cargar el Trivial. Inténtalo otra vez."
       },
       "volver": "Volver a la web",
       "tu": "tú",
@@ -511,7 +511,7 @@
       "tables": "Mesas",
       "map": "Cómo llegar",
       "gallery": "Galería",
-      "quiz": "Juego",
+      "quiz": "Trivial",
       "gifts": "Regalos",
       "playlist": "Música",
       "guestbook": "Libro de firmas",
@@ -574,7 +574,7 @@
         "cronologia": "El día, hora a hora",
         "alojamientos": "Dónde dormir",
         "dressCode": "Cómo vestir",
-        "quiz": "El juego de la boda",
+        "quiz": "El Trivial de la boda",
         "galeria": "Las fotos",
         "regalos": "Regalos",
         "mapa": "Cómo llegar",
@@ -864,13 +864,13 @@
         "phone": "Teléfono"
       },
       "modoAyuda": {
-        "open": "Cualquiera con el enlace ve la web. Si activáis el juego o la galería, los invitados tendrán que identificarse (nombre y últimos 4 dígitos del móvil) justo al entrar en ellos.",
+        "open": "Cualquiera con el enlace ve la web. Si activáis el Trivial o la galería, los invitados tendrán que identificarse (nombre y últimos 4 dígitos del móvil) justo al entrar en ellos.",
         "name_phone4": "Cada invitado escribe su nombre y los cuatro últimos números de su móvil. Es el que mejor funciona: casi nadie se equivoca y no hay que recordar nada.",
         "phone": "Cada invitado escribe su móvil entero. Un poco más seguro, un poco más pesado de teclear."
       },
       "abiertaAviso": {
         "titulo": "Para jugar y subir fotos, los invitados tendrán que identificarse",
-        "ayuda": "Aunque la web sea abierta, el juego (ranking con nombre) y la galería (quién sube cada foto) piden nombre y los 4 últimos dígitos del móvil. Comprobad que todos vuestros invitados están en la lista con su teléfono."
+        "ayuda": "Aunque la web sea abierta, el Trivial (ranking con nombre) y la galería (quién sube cada foto) piden nombre y los 4 últimos dígitos del móvil. Comprobad que todos vuestros invitados están en la lista con su teléfono."
       },
       "sinTelefono": {
         "titulo": "Hay invitados sin teléfono",
@@ -1254,13 +1254,13 @@
       "ninguno": "Ninguno todavía"
     },
     "quiz": {
-      "titulo": "El juego de la boda",
+      "titulo": "El Trivial de la boda",
       "ayuda": "Preguntas sobre vosotros. Los invitados juegan desde el móvil durante el banquete y compiten por el ranking.",
       "anadir": "Añadir una pregunta",
       "verRanking": "Quién ha jugado",
       "cargando": "Cargando las preguntas…",
       "ninguna": "Todavía no hay preguntas",
-      "ningunaDescripcion": "El juego empieza vacío: las preguntas las ponéis vosotros. Empezad por las fáciles —dónde os conocisteis, quién se declaró, de qué equipo es él— y leed arriba cómo funciona.",
+      "ningunaDescripcion": "El Trivial empieza vacío: las preguntas las ponéis vosotros. Empezad por las fáciles —dónde os conocisteis, quién se declaró, de qué equipo es él— y leed arriba cómo funciona.",
       "nueva": "Nueva pregunta",
       "editar": "Editar la pregunta",
       "duplicar": "Duplicar",
@@ -1270,8 +1270,8 @@
       "vale": "Vale {{puntos}} puntos",
       "apagada": "No se pregunta",
       "aMedias": "A medio escribir",
-      "apagar": "Quitar del juego",
-      "encender": "Poner en el juego",
+      "apagar": "Quitar del Trivial",
+      "encender": "Poner en el Trivial",
       "sinEnunciado": "Sin enunciado",
       "sinCorrecta": "Falta la respuesta correcta",
       "confirmarBorrado": "¿Borrar «{{texto}}»?",
@@ -1297,7 +1297,7 @@
       "buscar": "Buscar en preguntas y respuestas",
       "sinResultados": "Ninguna pregunta ni respuesta coincide con esa búsqueda",
       "como": {
-        "titulo": "Cómo funciona el juego",
+        "titulo": "Cómo funciona el Trivial",
         "partida": "Cada partida son {{n}} preguntas elegidas al azar entre las que tengáis listas (si hay menos, se juegan las que haya; hacen falta al menos {{min}}). Cada invitado puede repetir el juego las veces que quiera.",
         "puntos": "Cada acierto suma según la dificultad: fácil {{facil}}, normal {{normal}} y difícil {{dificil}} puntos. Fallar no resta.",
         "ranking": "El ranking enseña a los {{tope}} mejores. De cada invitado cuenta su mejor partida, así que repetir no llena la tabla.",
@@ -1316,15 +1316,15 @@
       "porRevisarAyuda": "Cambiad las respuestas de muestra por las vuestras y guardad: así se juega.",
       "sugerencias": {
         "titulo": "Preguntas sugeridas",
-        "ayuda": "Ideas para empezar. Al añadir una, llega a vuestro quiz apagada y con respuestas de muestra: editadla con vuestras respuestas y guardadla para que se juegue.",
+        "ayuda": "Ideas para empezar. Al añadir una, llega a vuestro Trivial apagada y con respuestas de muestra: editadla con vuestras respuestas y guardadla para que se juegue.",
         "ejemplo": "Ejemplo de respuesta: {{respuesta}}",
-        "anadir": "Añadir a nuestro quiz",
-        "yaEsta": "Ya está en vuestro quiz",
-        "anadida": "Añadida a vuestro quiz. Editadla con vuestras respuestas para activarla.",
+        "anadir": "Añadir a nuestro Trivial",
+        "yaEsta": "Ya está en vuestro Trivial",
+        "anadida": "Añadida a vuestro Trivial. Editadla con vuestras respuestas para activarla.",
         "fallo": "No se ha podido añadir la pregunta. Inténtalo de nuevo."
       },
       "pruebaTitulo": "Las partidas de prueba se borran al publicar",
-      "pruebaTexto": "Podéis probar el juego antes de publicar vuestra web, pero esas partidas y sus puntuaciones se eliminan en cuanto la publiquéis, para que el ranking empiece limpio. Las preguntas se quedan.",
+      "pruebaTexto": "Podéis probar el Trivial antes de publicar vuestra web, pero esas partidas y sus puntuaciones se eliminan en cuanto la publiquéis, para que el ranking empiece limpio. Las preguntas se quedan.",
       "identidadTitulo": "Los invitados tendrán que identificarse para jugar",
       "identidadTexto": "Para salir en el ranking, cada invitado escribe su nombre y los 4 últimos dígitos de su móvil (o el teléfono entero, según el acceso que hayáis elegido). Si alguien no está en la lista con su teléfono, no podrá jugar: revisadlo antes de publicar.",
       "identidadLista": "Ir a la lista de invitados"
@@ -1892,7 +1892,7 @@
       "aBorrador": "Volver a borrador",
       "yaPublicada": "¡Publicada! Ya podéis compartir el enlace.",
       "yaBorrador": "Vuestra web vuelve a ser un borrador: los invitados ya no pueden entrar.",
-      "quizAviso": "Se borrarán las partidas de prueba del juego",
+      "quizAviso": "Se borrarán las partidas de prueba del Trivial",
       "quizAvisoTexto": "Las partidas que hayáis jugado para probarlo, con sus puntuaciones, se eliminan al publicar para que el ranking empiece limpio. Las preguntas no se tocan.",
       "error": "No se ha podido hacer el cambio",
       "errorTexto": "Inténtalo otra vez en un momento. Si sigue fallando, avisadnos.",
@@ -2276,7 +2276,7 @@
       "telefonoPista": "Opcional. Para poder llamar a la pareja si hace falta. Si es de otro país, con su prefijo (+44…).",
       "plan": "Plan contratado",
       "planBasico": "Básico · una sola página",
-      "planExtendido": "Extendido · varias páginas, con galería y juego",
+      "planExtendido": "Extendido · varias páginas, con galería y Trivial",
       "crear": "Crear la boda",
       "abrir": "Nueva boda",
       "lugarAbrirMaps": "Buscar en Google Maps",
@@ -2323,7 +2323,7 @@
         "invitados": "Invitados",
         "fotos": "Fotos subidas",
         "almacenamiento": "Almacenamiento de fotos",
-        "partidasQuiz": "Partidas de quiz",
+        "partidasQuiz": "Partidas de Trivial",
         "accesosInvitados": "Accesos de invitados"
       },
       "recortado": "Hay más bodas de las que se miden",
@@ -2624,12 +2624,12 @@
       "tipo": {
         "tasks": "Tareas",
         "budget": "Presupuesto",
-        "quiz": "Preguntas del quiz"
+        "quiz": "Preguntas del Trivial"
       },
       "nota": {
         "tasks": "Se copian a la lista de tareas de cada boda nueva, con la fecha calculada desde el día de la boda. Si el catálogo está vacío, se usan las de fábrica.",
         "budget": "Se copian al presupuesto de cada boda nueva. Si el catálogo está vacío, se usan las de fábrica.",
-        "quiz": "No se copian solas: cada pareja las ve como sugerencias y añade a su quiz las que quiere (llegan apagadas para que cambien las respuestas)."
+        "quiz": "No se copian solas: cada pareja las ve como sugerencias y añade a su Trivial las que quiere (llegan apagadas para que cambien las respuestas)."
       },
       "cargando": "Cargando…",
       "errorCarga": "No se ha podido cargar el catálogo",
@@ -2714,7 +2714,8 @@
       "plegar": "Plegar menú",
       "desplegar": "Desplegar menú",
       "home": "Web de inicio",
-      "proveedores": "Proveedores"
+      "proveedores": "Proveedores",
+      "solicitudes": "Solicitudes"
     },
     "planes": {
       "titulo": "Planes y módulos",
@@ -2833,9 +2834,10 @@
         "hero": "Portada",
         "promesa": "Lo que hace Nupcialis",
         "pasos": "Cómo funciona",
-        "paneles": "Capturas del panel (básico y extendido)",
+        "escaparate": "Plantillas y paletas (mosaico, diseño y carrusel)",
+        "paneles": "Capturas del panel y precios (básico y extendido)",
         "libertad": "Libertad de los novios",
-        "planes": "Planes",
+        "contacto": "Formulario de contacto",
         "cierre": "Llamada final",
         "pie": "Pie de página",
         "seo": "SEO (buscadores y redes)"
@@ -2863,9 +2865,8 @@
         "imagenPortada": "Imagen de la portada",
         "captura": "Captura",
         "fraseCierre": "Frase de cierre",
-        "nombre": "Nombre del plan",
-        "frase": "Frase corta",
         "precio": "Precio",
+        "notaPrecio": "Letra pequeña del precio",
         "vinetas": "Puntos",
         "vineta": "Punto",
         "contacto": "Línea de contacto",
@@ -2874,11 +2875,40 @@
       },
       "paneles": {
         "basico": "Plan básico",
-        "extendido": "Plan extendido"
+        "extendido": "Plan extendido",
+        "nota": "Cada plan lleva su texto, su cartel de precio con el botón y una galería de capturas con flechas. Los precios de fábrica (85 € y 250 €, pago único) los fijó Gabriel para esta primera versión; la decisión de precios (D-02) sigue abierta. Si dejas un precio vacío, la web no enseña cartel.",
+        "sinPrecio": "Vacío: sin precio",
+        "galeria": "Galería de capturas del plan. Se pasan con las flechas, en el orden de esta lista.",
+        "etiquetaCaptura": "Nombre de la pantalla"
       },
-      "planes": {
-        "nota": "Los precios todavía no están decididos: déjalos vacíos y la web no enseña ninguno. La sección está apagada de fábrica.",
-        "sinPrecio": "Vacío: sin precio"
+      "escaparate": {
+        "nota": "Cómo se ven las plantillas en el móvil de los invitados y cómo las eligen los novios. El mosaico (una imagen con todas juntas), la captura de Diseño y el carrusel (una captura por plantilla) se encienden y apagan por separado, y de cada una eliges en qué pantallas se ve.",
+        "mosaico": "Mosaico",
+        "carrusel": "Carrusel",
+        "diseno": "Captura de Diseño (debajo del mosaico)",
+        "notaDiseno": "La pantalla de Diseño del panel, con todas las plantillas y paletas que verán los novios al elegir.",
+        "imagenMosaico": "Imagen del mosaico",
+        "imagenDiseno": "Captura de Diseño",
+        "pieDiseno": "Pie de la captura",
+        "etiquetaCaptura": "Etiqueta (plantilla · paleta)",
+        "dondeSeVe": "Dónde se ve",
+        "visibilidad": {
+          "todos": "En todas las pantallas",
+          "movil": "Solo en pantallas estrechas (móvil)",
+          "escritorio": "Solo en pantallas anchas (escritorio)"
+        }
+      },
+      "contacto": {
+        "nota": "El formulario donde las parejas piden su web. Las solicitudes llegan a «Solicitudes», donde también eliges el correo al que avisar. Nombres, correo y la casilla de aceptación se piden siempre.",
+        "boton": "Texto del botón de enviar",
+        "aceptacion": "Texto de la casilla de aceptación",
+        "camposOpcionales": "Campos opcionales",
+        "pedirTelefono": "Pedir teléfono",
+        "pedirFecha": "Pedir fecha de la boda",
+        "pedirPlan": "Preguntar qué plan les interesa",
+        "pedirMensaje": "Dejar un cuadro de mensaje",
+        "tituloExito": "Título tras enviar",
+        "textoExito": "Texto tras enviar"
       },
       "seo": {
         "titulo": "Título de la pestaña",
@@ -2889,6 +2919,41 @@
         "red": "No hay conexión con el servidor. Inténtalo otra vez.",
         "largo": "El contenido es demasiado largo para guardarse.",
         "otro": "No se ha podido completar la operación."
+      }
+    },
+    "solicitudes": {
+      "titulo": "Solicitudes",
+      "ayuda": "Las parejas que han pedido su web por el formulario de la web de inicio. Márcalas según avancen y apunta una nota. Son datos personales de gente que todavía no es cliente: bórralas cuando dejen de hacer falta.",
+      "cargando": "Cargando solicitudes…",
+      "errorCarga": "No se han podido leer las solicitudes",
+      "ninguna": "Todavía no ha llegado ninguna",
+      "ningunaDescripcion": "Cuando alguien rellene el formulario de la web de inicio, aparecerá aquí.",
+      "resumen": "{{total}} solicitudes, {{nuevas}} sin atender.",
+      "avisoTitulo": "Correo de aviso",
+      "avisoAyuda": "A esta dirección llega un correo con cada solicitud nueva. Déjalo vacío para no recibir avisos: la bandeja funciona igual. El envío necesita la extensión de correo instalada.",
+      "guardarAviso": "Guardar",
+      "avisoGuardado": "Guardado.",
+      "correo": "Correo",
+      "telefono": "Teléfono",
+      "fecha": "Fecha de la boda",
+      "plan": "Plan",
+      "estado": "Estado",
+      "nota": "Nota",
+      "errorGuardar": "No se ha podido guardar el cambio. Inténtalo otra vez.",
+      "errorAviso": {
+        "correo": "Ese correo no es válido.",
+        "otro": "No se ha podido guardar. Inténtalo otra vez."
+      },
+      "planes": {
+        "basic": "Básico",
+        "extended": "Extendido",
+        "undecided": "Aún no lo saben"
+      },
+      "estados": {
+        "new": "Nueva",
+        "contacted": "Contactada",
+        "converted": "Convertida en boda",
+        "discarded": "Descartada"
       }
     },
     "proveedores": {

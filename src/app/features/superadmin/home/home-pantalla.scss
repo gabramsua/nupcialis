@@ -232,3 +232,9 @@ small,
   max-inline-size: 24rem;
   margin-inline: auto;
 }
+
+/* Cada fuente del selector, en su estilo: el nombre dice cuál es y la letra
+   enseña cómo se ve. Un poco más grande, para que se aprecie. */
+.ph__fuente {
+  font-size: 1.1rem;
+}

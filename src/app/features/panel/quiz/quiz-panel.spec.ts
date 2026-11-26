@@ -268,7 +268,7 @@ describe('cómo funciona el juego', () => {
     const p = montarPreguntas([pregunta({ id: 'a' })]);
     await p.asentar();
 
-    expect(p.texto()).toContain('Cómo funciona el juego');
+    expect(p.texto()).toContain('Cómo funciona el Trivial');
     expect(p.texto()).toContain('10 preguntas');
     expect(p.texto()).toContain('fácil 10, normal 20 y difícil 30');
     expect(p.texto()).toContain('20 mejores');
@@ -468,10 +468,10 @@ describe('sugerencias del superadmin', () => {
   });
 
   /** Las respuestas de las sugerencias son de muestra: no pueden jugarse sin revisar. */
-  it('«Añadir a nuestro quiz» la copia apagada, para que la pareja ponga sus respuestas', async () => {
+  it('«Añadir a nuestro Trivial» la copia apagada, para que la pareja ponga sus respuestas', async () => {
     const p = montarPreguntas([], {}, [sugerida({ id: 's1' })]);
     await p.asentar();
-    await p.pulsar(p.boton('Añadir a nuestro quiz'));
+    await p.pulsar(p.boton('Añadir a nuestro Trivial'));
 
     expect(p.escrituras).toHaveLength(1);
     expect(p.escrituras[0]).toMatchObject({
@@ -480,7 +480,7 @@ describe('sugerencias del superadmin', () => {
       wrongAnswers: ['Sevilla', 'Bilbao', 'Cádiz'],
       enabled: false,
     });
-    expect(p.texto()).toContain('Añadida a vuestro quiz');
+    expect(p.texto()).toContain('Añadida a vuestro Trivial');
   });
 
   it('una pregunta ya añadida no se vuelve a ofrecer (aunque cambien tildes o signos)', async () => {
@@ -490,7 +490,7 @@ describe('sugerencias del superadmin', () => {
 
     // Desaparece de las sugerencias, sin chip de «ya está» (D-54).
     expect(p.texto()).not.toContain('¿En qué ciudad nos conocimos?');
-    expect(p.boton('Añadir a nuestro quiz')).toBeUndefined();
+    expect(p.boton('Añadir a nuestro Trivial')).toBeUndefined();
   });
 
   it('una pregunta por revisar no cuenta como jugable y lo dice', async () => {

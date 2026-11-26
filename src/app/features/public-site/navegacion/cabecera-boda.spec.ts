@@ -107,7 +107,7 @@ describe('la cabecera de la web de varias páginas', () => {
       'Historia',
       'Programa',
       'Alojamiento',
-      'Quiz',
+      'Trivial',
       'Galería',
     ]);
     expect(el.querySelector('.cb__boton-mas')).toBeNull();
@@ -139,7 +139,7 @@ describe('la cabecera de la web de varias páginas', () => {
     expect(mas?.getAttribute('aria-expanded')).toBe('true');
     expect(textos(el, '.cb__panel .cb__item')).toEqual([
       'Dress code',
-      'Quiz',
+      'Trivial',
       'Galería',
       'Playlist',
     ]);
@@ -161,7 +161,7 @@ describe('la cabecera de la web de varias páginas', () => {
       'Historia',
       'Programa',
       'Alojamiento',
-      'Quiz',
+      'Trivial',
       'Galería',
     ]);
   });

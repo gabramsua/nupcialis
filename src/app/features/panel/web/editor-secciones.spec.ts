@@ -435,7 +435,7 @@ describe('las secciones que ofrece el editor', () => {
     }
     for (const fuera of [
       'Nuestra historia',
-      'El juego de la boda',
+      'El Trivial de la boda',
       'Las fotos',
       'La música',
       'Libro de firmas',
@@ -463,7 +463,7 @@ describe('las secciones que ofrece el editor', () => {
 
     for (const dentro of [
       'Nuestra historia',
-      'El juego de la boda',
+      'El Trivial de la boda',
       'Las fotos',
       'Libro de firmas',
       'Personas importantes',

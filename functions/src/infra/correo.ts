@@ -14,6 +14,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 
 import {
+  escaparHtml,
   montarCorreo,
   plantillaEfectiva,
   type Datos,
@@ -57,6 +58,36 @@ export async function encolarCorreo(pedido: PedidoDeCorreo): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('No se pudo encolar el correo', pedido.plantilla, error);
+    return false;
+  }
+}
+
+/**
+ * Un aviso interno a una dirección de Nupcialis (no a una pareja): texto plano,
+ * sin plantilla editable. Cada línea se escapa para el HTML: lo que escribió un
+ * desconocido en un formulario no puede colar etiquetas. **Nunca lanza.**
+ */
+export async function encolarAviso(
+  para: string,
+  asunto: string,
+  lineas: readonly string[],
+  origen: string,
+): Promise<boolean> {
+  try {
+    await db()
+      .collection('mail')
+      .add({
+        to: [para],
+        message: {
+          subject: asunto,
+          text: lineas.join('\n'),
+          html: lineas.map((l) => `<p>${escaparHtml(l)}</p>`).join(''),
+        },
+        meta: { plantilla: origen, weddingId: null, createdAt: FieldValue.serverTimestamp() },
+      });
+    return true;
+  } catch (error) {
+    console.error('No se pudo encolar el aviso', origen, error);
     return false;
   }
 }

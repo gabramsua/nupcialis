@@ -68,6 +68,21 @@ service cloud.firestore {
       allow write: if false;             // solo Admin SDK
     }
 
+    // Solicitudes del formulario de la HOME (D-68): datos personales de gente que
+    // todavía no es cliente. Solo las lee el superadmin y solo las escribe
+    // `createHomeRequest` (pública, con App Check y límite por IP) y
+    // `updateHomeRequest`, ambas desde el Admin SDK.
+    match /homeRequests/{requestId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // El contador de solicitudes por IP (hash). Interno: ni siquiera el
+    // superadmin lo lee.
+    match /homeRequestLimits/{key} {
+      allow read, write: if false;       // solo Admin SDK
+    }
+
     // Qué recordatorios de después de la boda ya se han enviado (S1.3f).
     match /reminderMarks/{markId} {
       allow read: if isSuperadmin();
