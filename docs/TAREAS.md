@@ -627,13 +627,15 @@ Tres decisiones de un minuto cada una, por lo que abren:
       alguno llega al panel o al superadmin. Encontró uno de verdad: la
       envoltura pública importaba `features/panel/invitados/invitacion` solo
       para leer el nombre del enlace. Eso vive ahora en `core/acceso`.
-- [ ] `F0.7.7` **Datos de cobro en el alta de boda**: plan, importe cobrado, método
-      (`bizum` o `partner_cash`), fecha y proveedor. Hace falta desde la primera
-      venta; si se deja para F5 hay que rellenar a mano lo ya vendido. Ver D-25.
-- [ ] `F0.7.8` Colección `partners` y su alta desde el panel, con tarifa mayorista
-      por plan e interruptor `active`. Sin cuenta ni acceso para el proveedor.
-- [ ] `F0.7.9` Vista de saldo por proveedor: bodas activas y pendiente de liquidar,
-      con cierre de varias de una vez.
+- [x] `F0.7.7` **Datos de cobro en el alta de boda** (D-67): casilla «Apuntar ya el cobro»
+      con proveedor, importe (con la tarifa mayorista del plan si hay proveedor), método
+      (`bizum`, transferencia, efectivo, `partner_cash`…), estado y fecha. Se apunta
+      **después** de crear la boda; si falla, la boda queda y se avisa. Ver D-25.
+- [x] `F0.7.8` Colección `partners` y su alta desde `/superadmin/proveedores`, con tarifa
+      mayorista por plan e interruptor `active`. Sin cuenta ni acceso para el proveedor.
+      Funciones `listPartners` y `savePartner`; reglas con test de aislamiento.
+- [x] `F0.7.9` Saldo por proveedor: bodas, pendiente y liquidado, y **liquidación en bloque**
+      (`settlePartnerPayments`, todo o nada, auditada).
 
 ---
 
@@ -655,9 +657,11 @@ Antes que plantillas, paletas y resúmenes. Ver `PUESTA-EN-MARCHA.md` bloque 7.
 - [x] `RE.5` Alta real de una boda desde `/superadmin` contra el proyecto (`mms`) — **G**
 - [ ] `RE.6` Comprobar el subdominio en Authentication → Authorized domains (cierra `F0.6.X`) — **G**
 - [ ] `RE.7` Proyecto de Firebase aparte para producción, antes de la primera pareja que pague
-- [ ] `RE.8` **Servir `Cross-Origin-Opener-Policy: same-origin-allow-popups` en producción**
-      (`headers` de `vercel.json`). Sin esa cabecera el acceso con Google se queda
-      colgado sin dar error, igual que pasaba en local.
+- [x] `RE.8` **Servir `Cross-Origin-Opener-Policy: same-origin-allow-popups` en producción**
+      (`headers` de `vercel.json`, ya en el repositorio con las reescrituras de la SPA y
+      las cabeceras de seguridad). Sin esa cabecera el acceso con Google se queda
+      colgado sin dar error, igual que pasaba en local. **Falta una CSP** (primero en modo
+      _report-only_; ver `PUESTA-EN-MARCHA.md`, Bloque 8). Se comprobará en el despliegue real.
 
 ---
 
@@ -930,7 +934,10 @@ que hace que el básico se sienta completo; **C** = segunda ola. **G** = lo hace
 
 Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
 
-- [ ] `S1.1` **Landing pública de venta**, atractiva y funcional (hoy es un rótulo).
+- [~] `S1.1` **Landing pública de venta** (D-65): **hecha la HOME** (una página vertical sin
+  menú, tres plantillas, capturas del panel básico y extendido, sección de libertad de
+  los novios) y su **editor en `/superadmin/home`**. Falta lo que depende de ti: el destino
+  real de la llamada a la acción (hoy `mailto:`), el texto definitivo y los precios (D-02).
 - [ ] `S1.3d` **Estadísticas por landing**: visitas y conversión.
 - [x] `S1.3e` **Módulo financiero del superadmin** (D-48): `/superadmin/finanzas`,
       libro de cobros por boda (importe en céntimos, método, estado, fecha, número
@@ -955,7 +962,35 @@ Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
       superadmin (D-48): `/superadmin/bodas/:id` con resumen, contactos, cobros y
       las últimas 100 entradas del registro de esa boda (índice nuevo en
       `auditLog`).
-- [ ] `S1.4` **Repaso de seguridad** (HTTPS, auth, datos sensibles): casi todo ya está; falta recopilarlo.
+- [x] `S1.4` **Repaso de seguridad** (HTTPS, auth, datos sensibles): recopilado en
+      `docs/REVISION-SEGURIDAD.md`, con lo que falta por orden (CSP en modo informe,
+      App Check exigente, Dependabot, copia de Firestore).
+
+---
+
+## La web de inicio (HOME) — 2026-11-25
+
+- [x] `H.1` **Modelo y saneado** (`dominio/home.ts`, copia literal en `features/home/home.ts`):
+      plantillas, fuentes, acentos, iconos, límites, contenido de fábrica y `sanearHome`
+      (nunca lanza, idempotente, URL solo `https`/`mailto`/`tel`/ancla/ruta). 26 tests.
+- [x] `H.2` **Servidor**: `saveHome` y `resetHome` (superadmin, auditadas, HTML saneado) sobre
+      `platform/home`; reglas de Firestore (lectura pública, nadie escribe) y de Storage
+      (`platform/home/`, solo superadmin) con `tests/rules/home.spec.ts`.
+- [x] `H.3` **Página pública**: `np-home-pagina` (hero, promesa, pasos, capturas del panel,
+      libertad, planes, cierre y pie), tres plantillas por variables CSS, container queries
+      (la vista previa estrecha se ve en móvil), sprite de iconos `home` propio, carga de
+      Google Fonts solo aquí. `np-home-landing` la monta en `/` con espera máxima de 2,5 s y
+      respaldo de fábrica.
+- [x] `H.4` **Editor `/superadmin/home`**: borrador + vista previa (escritorio/móvil), plantilla,
+      tipografías, acento, Jodit en los textos con formato, selector de iconos, subida/cambio/
+      quitado de imágenes con limpieza de Storage, SEO, publicar, descartar y restaurar.
+- [x] `H.5` **Imágenes de serie** (`public/home/`): portada (panel + móvil) y capturas del
+      panel básico y extendido, generadas del panel real con datos de muestra
+      (`/dev/panel-basico`, `/dev/panel-extendido`).
+- [ ] `H.6` **Iterar plantillas** (lo dijiste): más plantillas, otra paleta, animaciones, vídeo.
+- [ ] `H.7` **Estadísticas de la HOME** (`S1.3d`) y formulario de solicitud (`B-A2`): hoy la
+      llamada final es un `mailto:`.
+- [ ] `H.8` **Alojar las tipografías** en vez de Google Fonts, si prefieres (RGPD, D-65.8).
 
 ---
 
@@ -997,12 +1032,14 @@ donde toque.
       `activateRequest`, `settleRequests`, el aviso por Telegram y
       `purgeOldRequests`. **No bloquea la primera venta**: con `provisionWedding`
       y el panel de F0.7 ya se puede dar de alta una boda cobrada por Bizum.
-- [ ] **Reglas de aislamiento de `weddingRequests` y `partners`**, con su batería.
-      Son colecciones raíz nuevas y solo el superadmin puede leerlas; la escritura,
-      solo desde Cloud Function. Sin test, no se mergea.
-- [ ] **Lint de `functions/` en el CI.** Hoy `ng lint` solo mira `src/**`, así que
-      el paquete de funciones lo revisa únicamente el hook de pre-commit. Si
-      alguien comitea con `--no-verify`, nadie más lo mira.
+- [x] **Reglas de aislamiento de `partners`**, con su batería (`contabilidad.spec.ts`).
+      **`weddingRequests` no existe aún**: sin regla, la colección raíz está cerrada por
+      defecto. Cuando llegue la bandeja (B-A2) traerá su regla y su test; sin test, no se mergea.
+- [ ] **Ruta `/alta?ref=CODIGO`** del proveedor: el código ya se guarda y es único, pero la
+      ruta pública que lo usa pertenece a la bandeja de solicitudes (F5).
+- [x] **Lint de `functions/` en el CI.** El job `funciones` (compilar, lint, tests de
+      dominio) estaba **mal sangrado, anidado dentro de `reglas`**, así que no corría por
+      su cuenta; corregido.
 
 ---
 
@@ -1010,6 +1047,7 @@ donde toque.
 
 | Fecha      | Qué se hizo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-25 | **La HOME de `nupcialis.com`** (D-65): una página vertical sin menú con tres plantillas, capturas reales del panel básico y extendido y la sección «vosotros sois los dueños», y su editor completo en `/superadmin/home` (borrador, vista previa, Jodit, iconos, imágenes, SEO, restaurar). El test de contraste cazó que el acento «oro» no se leía sobre fondos tintados. Arreglado además el job `funciones` del CI, que estaba anidado dentro de `reglas`.                                                  |
 | 2026-09-07 | Requisitos cerrados. Creados `CLAUDE.md`, `PLAN-IMPLEMENTACION.md`, `PENDIENTES.md` y `TAREAS.md`. Repositorio inicializado.                                                                                                                                                                                                                                                                                                                                                                                     |
 | 2026-09-16 | Primer contacto con Firebase de verdad, y dos fallos que solo aparecen ahí. El acceso con Google se colgaba por la política de ventanas emergentes del servidor de desarrollo (`RE.8`: hay que servir esa cabecera también en producción). Y entrar sin el claim de superadmin mandaba a la raíz, que contestaba «no encontramos esta boda»: el dominio raíz se confundía con una boda inexistente, así que `nupcialis.com` habría dicho eso mismo a quien fuera a ver qué vendemos.                             |
 | 2026-09-14 | Preparado el salto a Firebase de verdad, que era lo que tocaba antes que seguir con paletas: `npm run start:real` levanta la app contra el proyecto sin emuladores, y `functions/tools/dar-superadmin.mjs` concede el claim que ninguna pantalla otorga. El script se niega a arrancar si la clave de cuenta de servicio está dentro del repositorio, que es público. A partir de ahí todo depende de activar Blaze.                                                                                             | \n  | 2026-09-14 | Panel de la pareja y selector de plantilla. La navegación la dibujan los módulos activos de esa boda, no una lista fija: un módulo apagado no sale en gris con un candado, no sale. Cada entrada enseña su visibilidad, que es lo que explica por qué la web parece vacía con ocho módulos encendidos. El selector dibuja cada plantilla con sus colores y su letra de verdad, no con una captura que envejece. Arreglado además el `theme.templateId` de la semilla, que borraba la plantilla en vez de cambiarla. 118 tests. | \n  | 2026-09-14 | Catálogo de plantillas. Las dos portadas del boceto no eran dos direcciones a elegir: son las dos primeras **plantillas** del catálogo, que es lo que `theme.templateId` dice desde el primer día. Cada una viaja en su propio chunk —1,5 y 1,3 kB comprimidos— y solo se descarga la de esa boda, tipografías incluidas. La paleta de la pareja entra como variables CSS con reserva por plantilla, así que una boda sin paleta elegida se ve bien igual. 109 tests. | \n  | 2026-09-14 | F0.7.2 y F0.7.3: el superadmin deja de ser un `<h1>`. Listado de bodas ordenable y alta por formulario, así que dar de alta una boda ya no pasa por un script. El listado ordena por urgencia, no por fecha de alta: primero las bodas con el subdominio sin autorizar, con su botón de reintentar en la propia fila. Los enlaces de acceso se enseñan una sola vez y con su advertencia. 95 tests. | \n  | 2026-09-14 | Prueba de extremo a extremo del alta (`npm run probar:alta`) y semilla reescrita para que **llame a `provisionWedding`** en vez de escribir documentos a mano: mantener aquí una copia del modelo ya se había quedado obsoleta. Cazado un desajuste real que F0.6 había introducido: la proyección escribe `coupleNames` como objeto y la web pública lo leía como cadena, así que la portada habría salido sin nombres. De paso, la conjunción "y" pasa a los ficheros de traducción, donde debía estar. App Check deja de exigirse dentro del emulador. |

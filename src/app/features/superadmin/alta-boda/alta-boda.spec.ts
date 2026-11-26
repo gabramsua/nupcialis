@@ -9,6 +9,9 @@ import {
   type PuertaAlta,
   type ResultadoAlta,
 } from '../../../core/alta/alta-gateway';
+import { PUERTA_LLAMADAS } from '../../../core/llamadas/llamadas-gateway';
+import { PUERTA_GESTION } from '../../../core/superadmin/gestion-gateway';
+import type { PagoEnEdicion } from '../gestion/gestion';
 import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
 import { AltaBoda } from './alta-boda';
 
@@ -19,8 +22,17 @@ import { AltaBoda } from './alta-boda';
 
 const ES = JSON.parse(readFileSync('public/i18n/es.json', 'utf8')) as Record<string, unknown>;
 
-function montar() {
+const PEPE = {
+  id: 'p1',
+  name: 'Invitaciones Pepe',
+  code: 'pepe',
+  wholesalePrice: { basic: 3000, extended: 6000 },
+  active: true,
+};
+
+function montar(opciones: { pagoFalla?: boolean } = {}) {
   const enviadas: DatosDeAlta[] = [];
+  const pagos: PagoEnEdicion[] = [];
   const puerta: PuertaAlta = {
     async crearBoda(datos): Promise<ResultadoAlta> {
       enviadas.push(datos);
@@ -47,12 +59,34 @@ function montar() {
         translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
       }),
     ],
-    providers: [provideIconSprite('panel'), { provide: PUERTA_ALTA, useValue: puerta }],
+    providers: [
+      provideIconSprite('panel'),
+      { provide: PUERTA_ALTA, useValue: puerta },
+      {
+        provide: PUERTA_GESTION,
+        useValue: {
+          async guardarPago(_id: string | null, pago: PagoEnEdicion) {
+            pagos.push(pago);
+            return opciones.pagoFalla
+              ? { ok: false, fallo: { tipo: 'red' } }
+              : { ok: true, datos: { id: 'x', ...pago } };
+          },
+        },
+      },
+      {
+        provide: PUERTA_LLAMADAS,
+        useValue: {
+          async llamar(_n: string, _d: unknown, leer: (c: unknown) => unknown) {
+            return { ok: true, datos: leer({ proveedores: [PEPE] }) };
+          },
+        },
+      },
+    ],
   });
 
   const fixture = TestBed.createComponent(AltaBoda);
   fixture.detectChanges();
-  return { fixture, el: fixture.nativeElement as HTMLElement, enviadas };
+  return { fixture, el: fixture.nativeElement as HTMLElement, enviadas, pagos };
 }
 
 function escribir(el: HTMLElement, selector: string, valor: string): void {
@@ -165,5 +199,113 @@ describe('Alta de boda: ceremonia y lugares', () => {
     await enviar(fixture);
 
     expect(enviadas[0]?.receptionPlace).toMatchObject({ name: 'Finca' });
+  });
+});
+
+async function activarCobro(fixture: ReturnType<typeof montar>['fixture']): Promise<void> {
+  const el = fixture.nativeElement as HTMLElement;
+  el.querySelector<HTMLInputElement>('input[formControlName="conCobro"]')?.click();
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+}
+
+function elegir(el: HTMLElement, nombre: string, valor: string): void {
+  const campo = el.querySelector<HTMLSelectElement>(`select[formControlName="${nombre}"]`)!;
+  campo.value = valor;
+  campo.dispatchEvent(new Event('change'));
+}
+
+describe('Alta de boda: cobro', () => {
+  it('sin marcar la casilla no se apunta ningún cobro ni se piden proveedores', async () => {
+    const { fixture, el, pagos } = montar();
+    expect(el.querySelector('np-cobro-de-alta')).toBeNull();
+    rellenarBasico(el);
+    await enviar(fixture);
+    expect(pagos).toHaveLength(0);
+  });
+
+  it('un cobro directo se apunta a la boda creada, sin proveedor', async () => {
+    const { fixture, el, pagos } = montar();
+    rellenarBasico(el);
+    await activarCobro(fixture);
+    escribir(el, 'input[formControlName="importe"]', '299,50');
+    await enviar(fixture);
+
+    expect(pagos).toEqual([
+      {
+        weddingId: 'w',
+        amountCents: 29950,
+        concept: 'Plan básico',
+        method: 'bizum',
+        status: 'pending',
+        paidOn: null,
+        invoiceNumber: '',
+        notes: '',
+        partnerId: '',
+      },
+    ]);
+  });
+
+  it('con proveedor, rellena su tarifa del plan y deja el cobro en partner_cash pendiente', async () => {
+    const { fixture, el, pagos } = montar();
+    rellenarBasico(el);
+    await activarCobro(fixture);
+    elegir(el, 'partnerId', 'p1');
+    fixture.detectChanges();
+
+    expect(el.querySelector<HTMLInputElement>('input[formControlName="importe"]')?.value).toBe(
+      '30',
+    );
+
+    elegir(el, 'plan', 'extended');
+    fixture.detectChanges();
+    expect(el.querySelector<HTMLInputElement>('input[formControlName="importe"]')?.value).toBe(
+      '60',
+    );
+
+    await enviar(fixture);
+    expect(pagos[0]).toMatchObject({
+      partnerId: 'p1',
+      method: 'partner_cash',
+      status: 'pending',
+      amountCents: 6000,
+      concept: 'Plan extendido',
+    });
+  });
+
+  it('un importe escrito a mano no lo pisa la tarifa', async () => {
+    const { fixture, el } = montar();
+    await activarCobro(fixture);
+    escribir(el, 'input[formControlName="importe"]', '45');
+    elegir(el, 'partnerId', 'p1');
+    fixture.detectChanges();
+    expect(el.querySelector<HTMLInputElement>('input[formControlName="importe"]')?.value).toBe(
+      '45',
+    );
+  });
+
+  it('un importe ilegible frena el alta antes de crear nada', async () => {
+    const { fixture, el, enviadas, pagos } = montar();
+    rellenarBasico(el);
+    await activarCobro(fixture);
+    escribir(el, 'input[formControlName="importe"]', 'mucho');
+    await enviar(fixture);
+
+    expect(enviadas).toHaveLength(0);
+    expect(pagos).toHaveLength(0);
+    expect(el.textContent).toContain('importe válido');
+  });
+
+  it('si el cobro no se puede apuntar, la boda sigue creada y avisa de anotarlo a mano', async () => {
+    const { fixture, el, enviadas } = montar({ pagoFalla: true });
+    rellenarBasico(el);
+    await activarCobro(fixture);
+    escribir(el, 'input[formControlName="importe"]', '299');
+    await enviar(fixture);
+
+    expect(enviadas).toHaveLength(1);
+    expect(el.textContent).toContain('La boda está creada, pero el cobro no');
+    expect(el.textContent).toContain('Anótalo a mano en Finanzas');
   });
 });

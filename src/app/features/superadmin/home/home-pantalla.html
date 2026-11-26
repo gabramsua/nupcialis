@@ -1,0 +1,733 @@
+<ng-container *transloco="let t">
+  <header class="ph__cabecera">
+    <div class="ph__titulo">
+      <h1>{{ t('superadmin.home.titulo') }}</h1>
+      <p>{{ t('superadmin.home.ayuda') }}</p>
+    </div>
+
+    @if (carga() === 'lista') {
+      <div class="ph__acciones">
+        <span class="ph__estado" role="status">
+          @if (sucio()) {
+            <np-icon name="warning" weight="fill" />
+            {{ t('superadmin.home.sinPublicar') }}
+          } @else if (publicado()) {
+            <np-icon name="check-circle" weight="fill" />
+            {{ t('superadmin.home.publicado') }}
+          } @else if (hayGuardado()) {
+            {{ t('superadmin.home.alDia') }}
+          } @else {
+            {{ t('superadmin.home.deFabrica') }}
+          }
+        </span>
+
+        <button
+          npButton
+          variant="ghost"
+          size="sm"
+          type="button"
+          [disabled]="!sucio()"
+          (click)="descartar()"
+        >
+          {{ t('superadmin.home.descartar') }}
+        </button>
+        <button
+          npButton
+          variant="primary"
+          size="sm"
+          type="button"
+          [disabled]="!sucio()"
+          [loading]="ocupado() === 'guardando'"
+          (click)="guardar()"
+        >
+          <np-icon name="upload-simple" />
+          {{ t('superadmin.home.guardar') }}
+        </button>
+      </div>
+    }
+  </header>
+
+  @switch (carga()) {
+    @case ('cargando') {
+      <p class="ph__aviso">{{ t('superadmin.home.cargando') }}</p>
+    }
+    @case ('error') {
+      <div class="ph__aviso">
+        <np-alert status="declined" [heading]="t('superadmin.home.error')">
+          <p>{{ textoDeFallo(fallo(), t) }}</p>
+        </np-alert>
+        <button npButton size="sm" type="button" (click)="cargar()">
+          {{ t('superadmin.home.reintentar') }}
+        </button>
+      </div>
+    }
+    @default {
+      @let b = borrador();
+
+      <div class="ph__cuerpo" [attr.data-vista]="vista()">
+        <div class="ph__form">
+          @if (fallo(); as f) {
+            <np-alert status="declined" [heading]="t('superadmin.home.error')">
+              <p>{{ textoDeFallo(f, t) }}</p>
+            </np-alert>
+          }
+
+          @for (s of secciones; track s) {
+            <section class="ph__seccion" [class.ph__seccion--abierta]="abierta() === s">
+              <h2>
+                <button
+                  type="button"
+                  class="ph__cab"
+                  [attr.aria-expanded]="abierta() === s"
+                  (click)="alternar(s)"
+                >
+                  <span>{{ t('superadmin.home.sec.' + s) }}</span>
+                  <np-icon [name]="abierta() === s ? 'caret-up' : 'caret-down'" />
+                </button>
+              </h2>
+
+              @if (abierta() === s) {
+                <div class="ph__contenido">
+                  @switch (s) {
+                    @case ('estilo') {
+                      <fieldset class="ph__grupo">
+                        <legend>{{ t('superadmin.home.estilo.plantilla') }}</legend>
+                        <div class="ph__plantillas">
+                          @for (p of plantillas; track p.id) {
+                            <button
+                              type="button"
+                              class="ph__plantilla"
+                              [attr.aria-pressed]="b.template === p.id"
+                              [attr.data-oscura]="p.oscura ? '' : null"
+                              (click)="elegirPlantilla(p.id)"
+                            >
+                              <strong>{{ p.nombre }}</strong>
+                              <small>{{ p.descripcion }}</small>
+                            </button>
+                          }
+                        </div>
+                      </fieldset>
+
+                      <div class="ph__fila">
+                        <label class="ph__select">
+                          <span>{{ t('superadmin.home.estilo.fuenteTitulo') }}</span>
+                          <select
+                            npInput
+                            [value]="b.fontTitle"
+                            (change)="poner('fontTitle', valorDe($event))"
+                          >
+                            <option value="" [selected]="b.fontTitle === ''">
+                              {{ t('superadmin.home.estilo.dePlantilla') }}
+                            </option>
+                            @for (f of titulos; track f.id) {
+                              <option [value]="f.id" [selected]="b.fontTitle === f.id">
+                                {{ f.nombre }}
+                              </option>
+                            }
+                          </select>
+                        </label>
+                        <label class="ph__select">
+                          <span>{{ t('superadmin.home.estilo.fuenteCuerpo') }}</span>
+                          <select
+                            npInput
+                            [value]="b.fontBody"
+                            (change)="poner('fontBody', valorDe($event))"
+                          >
+                            <option value="" [selected]="b.fontBody === ''">
+                              {{ t('superadmin.home.estilo.dePlantilla') }}
+                            </option>
+                            @for (f of cuerpos; track f.id) {
+                              <option [value]="f.id" [selected]="b.fontBody === f.id">
+                                {{ f.nombre }}
+                              </option>
+                            }
+                          </select>
+                        </label>
+                      </div>
+
+                      <fieldset class="ph__grupo">
+                        <legend>{{ t('superadmin.home.estilo.acento') }}</legend>
+                        <div class="ph__acentos">
+                          <button
+                            type="button"
+                            class="ph__acento ph__acento--auto"
+                            [attr.aria-pressed]="b.accent === ''"
+                            (click)="poner('accent', '')"
+                          >
+                            {{ t('superadmin.home.estilo.dePlantilla') }}
+                          </button>
+                          @for (a of acentos; track a.id) {
+                            <button
+                              type="button"
+                              class="ph__acento"
+                              [attr.aria-pressed]="b.accent === a.id"
+                              [style.--c]="a.base"
+                              [style.--s]="a.suave"
+                              (click)="poner('accent', a.id)"
+                            >
+                              <span class="ph__muestra"></span>{{ a.nombre }}
+                            </button>
+                          }
+                        </div>
+                      </fieldset>
+                    }
+
+                    @case ('hero') {
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.etiqueta')"
+                        [valor]="b.hero.eyebrow"
+                        [maximo]="max.etiqueta * 2"
+                        (cambia)="poner('hero.eyebrow', $event)"
+                      />
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.titulo')"
+                        [valor]="b.hero.title"
+                        [maximo]="max.titulo"
+                        [filas]="2"
+                        (cambia)="poner('hero.title', $event)"
+                      />
+                      <np-hc-html
+                        [etiqueta]="t('superadmin.home.campo.subtitulo')"
+                        [valor]="b.hero.subtitle"
+                        [maximo]="max.htmlCorto"
+                        (cambia)="poner('hero.subtitle', $event)"
+                      />
+                      <ng-container
+                        *ngTemplateOutlet="
+                          enlace;
+                          context: {
+                            ruta: 'hero.cta',
+                            nombre: t('superadmin.home.campo.botonPrincipal'),
+                          }
+                        "
+                      />
+                      <ng-container
+                        *ngTemplateOutlet="
+                          enlace;
+                          context: {
+                            ruta: 'hero.secondary',
+                            nombre: t('superadmin.home.campo.botonSecundario'),
+                          }
+                        "
+                      />
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.nota')"
+                        [valor]="b.hero.note"
+                        [maximo]="max.frase"
+                        (cambia)="poner('hero.note', $event)"
+                      />
+                      <np-hc-imagen
+                        [etiqueta]="t('superadmin.home.campo.imagenPortada')"
+                        [imagen]="b.hero.image"
+                        [deFabrica]="fabrica.hero.image"
+                        [subiendo]="subiendo() === 'hero.image'"
+                        (elegir)="subir('hero.image', $event)"
+                        (quitar)="poner('hero.image', null)"
+                        (deSerie)="poner('hero.image', fabrica.hero.image)"
+                        (alt)="cambiarAlt('hero.image', $event)"
+                      />
+                    }
+
+                    @case ('promesa') {
+                      <ng-container
+                        *ngTemplateOutlet="
+                          cabeceraSeccion;
+                          context: { ruta: 'promesa', s: b.promesa }
+                        "
+                      />
+                      <ng-container
+                        *ngTemplateOutlet="
+                          items;
+                          context: {
+                            ruta: 'promesa.items',
+                            lista: b.promesa.items,
+                            tope: max.promesa,
+                          }
+                        "
+                      />
+                    }
+
+                    @case ('pasos') {
+                      <ng-container
+                        *ngTemplateOutlet="cabeceraSeccion; context: { ruta: 'pasos', s: b.pasos }"
+                      />
+                      @for (p of b.pasos.items; track $index) {
+                        <div class="ph__item">
+                          <div class="ph__item-cab">
+                            <strong>{{ $index + 1 }}</strong>
+                            <ng-container
+                              *ngTemplateOutlet="
+                                controles;
+                                context: { ruta: 'pasos.items', i: $index, n: b.pasos.items.length }
+                              "
+                            />
+                          </div>
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.titulo')"
+                            [valor]="p.title"
+                            [maximo]="max.etiqueta"
+                            (cambia)="poner('pasos.items.' + $index + '.title', $event)"
+                          />
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.texto')"
+                            [valor]="p.text"
+                            [maximo]="max.frase"
+                            [filas]="2"
+                            (cambia)="poner('pasos.items.' + $index + '.text', $event)"
+                          />
+                        </div>
+                      }
+                      @if (b.pasos.items.length < max.pasos) {
+                        <button
+                          npButton
+                          size="sm"
+                          type="button"
+                          (click)="anadir('pasos.items', { title: '', text: '' }, max.pasos)"
+                        >
+                          <np-icon name="plus" /> {{ t('superadmin.home.anadir') }}
+                        </button>
+                      }
+                    }
+
+                    @case ('paneles') {
+                      <ng-container
+                        *ngTemplateOutlet="
+                          cabeceraSeccion;
+                          context: { ruta: 'paneles', s: b.paneles }
+                        "
+                      />
+                      @for (q of ['basico', 'extendido']; track q) {
+                        <fieldset class="ph__grupo">
+                          <legend>{{ t('superadmin.home.paneles.' + q) }}</legend>
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.etiqueta')"
+                            [valor]="valor('paneles.' + q + '.label')"
+                            [maximo]="max.etiqueta"
+                            (cambia)="poner('paneles.' + q + '.label', $event)"
+                          />
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.titulo')"
+                            [valor]="valor('paneles.' + q + '.title')"
+                            [maximo]="max.titulo"
+                            (cambia)="poner('paneles.' + q + '.title', $event)"
+                          />
+                          <np-hc-html
+                            [etiqueta]="t('superadmin.home.campo.texto')"
+                            [valor]="valor('paneles.' + q + '.text')"
+                            [maximo]="max.html"
+                            (cambia)="poner('paneles.' + q + '.text', $event)"
+                          />
+                          <ng-container
+                            *ngTemplateOutlet="
+                              vinetas;
+                              context: {
+                                ruta: 'paneles.' + q + '.bullets',
+                                lista:
+                                  q === 'basico'
+                                    ? b.paneles.basico.bullets
+                                    : b.paneles.extendido.bullets,
+                              }
+                            "
+                          />
+                          <np-hc-imagen
+                            [etiqueta]="t('superadmin.home.campo.captura')"
+                            [imagen]="imagen('paneles.' + q + '.image')"
+                            [deFabrica]="imagenDeSerie('paneles.' + q + '.image')"
+                            [subiendo]="subiendo() === 'paneles.' + q + '.image'"
+                            (elegir)="subir('paneles.' + q + '.image', $event)"
+                            (quitar)="poner('paneles.' + q + '.image', null)"
+                            (deSerie)="
+                              poner(
+                                'paneles.' + q + '.image',
+                                imagenDeSerie('paneles.' + q + '.image')
+                              )
+                            "
+                            (alt)="cambiarAlt('paneles.' + q + '.image', $event)"
+                          />
+                        </fieldset>
+                      }
+                    }
+
+                    @case ('libertad') {
+                      <ng-container
+                        *ngTemplateOutlet="
+                          cabeceraSeccion;
+                          context: { ruta: 'libertad', s: b.libertad }
+                        "
+                      />
+                      <ng-container
+                        *ngTemplateOutlet="
+                          items;
+                          context: {
+                            ruta: 'libertad.items',
+                            lista: b.libertad.items,
+                            tope: max.libertad,
+                          }
+                        "
+                      />
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.fraseCierre')"
+                        [valor]="b.libertad.closing"
+                        [maximo]="max.frase"
+                        (cambia)="poner('libertad.closing', $event)"
+                      />
+                    }
+
+                    @case ('planes') {
+                      <p class="ph__nota">{{ t('superadmin.home.planes.nota') }}</p>
+                      <ng-container
+                        *ngTemplateOutlet="
+                          cabeceraSeccion;
+                          context: { ruta: 'planes', s: b.planes }
+                        "
+                      />
+                      @for (q of ['basico', 'extendido']; track q) {
+                        <fieldset class="ph__grupo">
+                          <legend>{{ t('superadmin.home.paneles.' + q) }}</legend>
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.nombre')"
+                            [valor]="valor('planes.' + q + '.name')"
+                            [maximo]="max.etiqueta"
+                            (cambia)="poner('planes.' + q + '.name', $event)"
+                          />
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.frase')"
+                            [valor]="valor('planes.' + q + '.tagline')"
+                            [maximo]="max.frase"
+                            (cambia)="poner('planes.' + q + '.tagline', $event)"
+                          />
+                          <np-hc-texto
+                            [etiqueta]="t('superadmin.home.campo.precio')"
+                            [valor]="valor('planes.' + q + '.price')"
+                            [maximo]="max.etiqueta"
+                            [pista]="t('superadmin.home.planes.sinPrecio')"
+                            (cambia)="poner('planes.' + q + '.price', $event)"
+                          />
+                          <ng-container
+                            *ngTemplateOutlet="
+                              vinetas;
+                              context: {
+                                ruta: 'planes.' + q + '.items',
+                                lista:
+                                  q === 'basico' ? b.planes.basico.items : b.planes.extendido.items,
+                              }
+                            "
+                          />
+                          <ng-container
+                            *ngTemplateOutlet="
+                              enlace;
+                              context: {
+                                ruta: 'planes.' + q + '.cta',
+                                nombre: t('superadmin.home.campo.boton'),
+                              }
+                            "
+                          />
+                        </fieldset>
+                      }
+                    }
+
+                    @case ('cierre') {
+                      <label class="ph__check">
+                        <input
+                          type="checkbox"
+                          [checked]="b.cierre.enabled"
+                          (change)="alternarActiva('cierre.enabled', $event)"
+                        />
+                        {{ t('superadmin.home.mostrar') }}
+                      </label>
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.titulo')"
+                        [valor]="b.cierre.title"
+                        [maximo]="max.titulo"
+                        (cambia)="poner('cierre.title', $event)"
+                      />
+                      <np-hc-html
+                        [etiqueta]="t('superadmin.home.campo.texto')"
+                        [valor]="b.cierre.text"
+                        [maximo]="max.html"
+                        (cambia)="poner('cierre.text', $event)"
+                      />
+                      <ng-container
+                        *ngTemplateOutlet="
+                          enlace;
+                          context: { ruta: 'cierre.cta', nombre: t('superadmin.home.campo.boton') }
+                        "
+                      />
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.contacto')"
+                        [valor]="b.cierre.contact"
+                        [maximo]="max.etiqueta * 2"
+                        (cambia)="poner('cierre.contact', $event)"
+                      />
+                    }
+
+                    @case ('pie') {
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.campo.textoPie')"
+                        [valor]="b.pie.text"
+                        [maximo]="max.frase"
+                        (cambia)="poner('pie.text', $event)"
+                      />
+                      @for (e of b.pie.links; track $index) {
+                        <div class="ph__item">
+                          <div class="ph__item-cab">
+                            <strong>{{ $index + 1 }}</strong>
+                            <ng-container
+                              *ngTemplateOutlet="
+                                controles;
+                                context: { ruta: 'pie.links', i: $index, n: b.pie.links.length }
+                              "
+                            />
+                          </div>
+                          <ng-container
+                            *ngTemplateOutlet="
+                              enlace;
+                              context: {
+                                ruta: 'pie.links.' + $index,
+                                nombre: t('superadmin.home.campo.enlace'),
+                              }
+                            "
+                          />
+                        </div>
+                      }
+                      @if (b.pie.links.length < max.enlacesPie) {
+                        <button
+                          npButton
+                          size="sm"
+                          type="button"
+                          (click)="anadir('pie.links', { label: '', url: '#' }, max.enlacesPie)"
+                        >
+                          <np-icon name="plus" /> {{ t('superadmin.home.anadir') }}
+                        </button>
+                      }
+                    }
+
+                    @case ('seo') {
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.seo.titulo')"
+                        [valor]="b.seo.title"
+                        [maximo]="max.titulo"
+                        (cambia)="poner('seo.title', $event)"
+                      />
+                      <np-hc-texto
+                        [etiqueta]="t('superadmin.home.seo.descripcion')"
+                        [valor]="b.seo.description"
+                        [maximo]="max.seoDescripcion"
+                        [filas]="3"
+                        (cambia)="poner('seo.description', $event)"
+                      />
+                    }
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          <section class="ph__restaurar">
+            @if (confirmando()) {
+              <p>{{ t('superadmin.home.restaurarPregunta') }}</p>
+              <div class="ph__acciones">
+                <button
+                  npButton
+                  variant="danger"
+                  size="sm"
+                  type="button"
+                  [loading]="ocupado() === 'restaurando'"
+                  (click)="restaurar()"
+                >
+                  {{ t('superadmin.home.restaurarSi') }}
+                </button>
+                <button
+                  npButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  (click)="confirmando.set(false)"
+                >
+                  {{ t('superadmin.home.restaurarNo') }}
+                </button>
+              </div>
+            } @else {
+              <button
+                npButton
+                variant="ghost"
+                size="sm"
+                type="button"
+                [disabled]="!hayGuardado() && !sucio()"
+                (click)="confirmando.set(true)"
+              >
+                {{ t('superadmin.home.restaurar') }}
+              </button>
+              <small>{{ t('superadmin.home.restaurarAyuda') }}</small>
+            }
+          </section>
+        </div>
+
+        <aside class="ph__previa" [attr.aria-label]="t('superadmin.home.vistaPrevia')">
+          <div class="ph__previa-cab">
+            <strong>{{ t('superadmin.home.vistaPrevia') }}</strong>
+            <div class="ph__vista" role="group" [attr.aria-label]="t('superadmin.home.vista')">
+              <button
+                type="button"
+                [attr.aria-pressed]="vista() === 'escritorio'"
+                (click)="vista.set('escritorio')"
+              >
+                {{ t('superadmin.home.vistaEscritorio') }}
+              </button>
+              <button
+                type="button"
+                [attr.aria-pressed]="vista() === 'movil'"
+                (click)="vista.set('movil')"
+              >
+                {{ t('superadmin.home.vistaMovil') }}
+              </button>
+            </div>
+          </div>
+          <div class="ph__marco">
+            <div class="ph__lienzo" inert>
+              <np-home-pagina [contenido]="b" />
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <ng-template #enlace let-ruta="ruta" let-nombre="nombre">
+        <div class="ph__enlace">
+          <np-hc-texto
+            [etiqueta]="nombre + ' · ' + t('superadmin.home.campo.textoEnlace')"
+            [valor]="valor(ruta + '.label')"
+            [maximo]="max.etiqueta"
+            (cambia)="poner(ruta + '.label', $event)"
+          />
+          <np-hc-texto
+            [etiqueta]="nombre + ' · ' + t('superadmin.home.campo.destino')"
+            [valor]="valor(ruta + '.url')"
+            [maximo]="600"
+            [pista]="t('superadmin.home.campo.destinoPista')"
+            (cambia)="poner(ruta + '.url', $event)"
+          />
+        </div>
+      </ng-template>
+
+      <ng-template #cabeceraSeccion let-ruta="ruta" let-s="s">
+        <label class="ph__check">
+          <input
+            type="checkbox"
+            [checked]="s.enabled"
+            (change)="alternarActiva(ruta + '.enabled', $event)"
+          />
+          {{ t('superadmin.home.mostrar') }}
+        </label>
+        <np-hc-texto
+          [etiqueta]="t('superadmin.home.campo.titulo')"
+          [valor]="s.title"
+          [maximo]="max.titulo"
+          (cambia)="poner(ruta + '.title', $event)"
+        />
+        <np-hc-html
+          [etiqueta]="t('superadmin.home.campo.intro')"
+          [valor]="s.intro"
+          [maximo]="max.html"
+          (cambia)="poner(ruta + '.intro', $event)"
+        />
+      </ng-template>
+
+      <ng-template #controles let-ruta="ruta" let-i="i" let-n="n">
+        <span class="ph__controles">
+          <button
+            type="button"
+            class="ph__mini"
+            [disabled]="i === 0"
+            [attr.aria-label]="t('superadmin.home.subir')"
+            (click)="mover(ruta, i, -1)"
+          >
+            <np-icon name="caret-up" />
+          </button>
+          <button
+            type="button"
+            class="ph__mini"
+            [disabled]="i === n - 1"
+            [attr.aria-label]="t('superadmin.home.bajar')"
+            (click)="mover(ruta, i, 1)"
+          >
+            <np-icon name="caret-down" />
+          </button>
+          <button
+            type="button"
+            class="ph__mini"
+            [attr.aria-label]="t('superadmin.home.quitar')"
+            (click)="quitar(ruta, i)"
+          >
+            <np-icon name="trash" />
+          </button>
+        </span>
+      </ng-template>
+
+      <ng-template #items let-ruta="ruta" let-lista="lista" let-tope="tope">
+        @for (it of lista; track $index) {
+          <div class="ph__item">
+            <div class="ph__item-cab">
+              <strong>{{ $index + 1 }}</strong>
+              <ng-container
+                *ngTemplateOutlet="controles; context: { ruta: ruta, i: $index, n: lista.length }"
+              />
+            </div>
+            <np-hc-icono
+              [valor]="it.icon"
+              (cambia)="poner(ruta + '.' + $index + '.icon', $event)"
+            />
+            <np-hc-texto
+              [etiqueta]="t('superadmin.home.campo.titulo')"
+              [valor]="it.title"
+              [maximo]="max.etiqueta"
+              (cambia)="poner(ruta + '.' + $index + '.title', $event)"
+            />
+            <np-hc-texto
+              [etiqueta]="t('superadmin.home.campo.texto')"
+              [valor]="it.text"
+              [maximo]="max.frase"
+              [filas]="2"
+              (cambia)="poner(ruta + '.' + $index + '.text', $event)"
+            />
+          </div>
+        }
+        @if (lista.length < tope) {
+          <button npButton size="sm" type="button" (click)="anadir(ruta, conIcono(), tope)">
+            <np-icon name="plus" /> {{ t('superadmin.home.anadir') }}
+          </button>
+        }
+      </ng-template>
+
+      <ng-template #vinetas let-ruta="ruta" let-lista="lista">
+        <div class="ph__vinetas">
+          <span class="ph__etiqueta">{{ t('superadmin.home.campo.vinetas') }}</span>
+          @for (v of lista; track $index) {
+            <div class="ph__vineta">
+              <np-hc-texto
+                [etiqueta]="t('superadmin.home.campo.vineta') + ' ' + ($index + 1)"
+                [valor]="v"
+                [maximo]="max.frase"
+                (cambia)="poner(ruta + '.' + $index, $event)"
+              />
+              <span class="ph__controles">
+                <button
+                  type="button"
+                  class="ph__mini"
+                  [attr.aria-label]="t('superadmin.home.quitar')"
+                  (click)="quitar(ruta, $index)"
+                >
+                  <np-icon name="trash" />
+                </button>
+              </span>
+            </div>
+          }
+          @if (lista.length < max.vinetas) {
+            <button npButton size="sm" type="button" (click)="anadir(ruta, '', max.vinetas)">
+              <np-icon name="plus" /> {{ t('superadmin.home.anadir') }}
+            </button>
+          }
+        </div>
+      </ng-template>
+    }
+  }
+</ng-container>

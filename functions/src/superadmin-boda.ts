@@ -64,6 +64,7 @@ function pagoParaCliente(id: string, d: Record<string, unknown>) {
     paidOn: typeof d['paidOn'] === 'string' ? d['paidOn'] : null,
     invoiceNumber: textoDe(d['invoiceNumber']),
     notes: textoDe(d['notes']),
+    partnerId: textoDe(d['partnerId']),
   };
 }
 

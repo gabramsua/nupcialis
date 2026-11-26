@@ -61,7 +61,7 @@ function sprite(superficie) {
 
 mkdirSync(SALIDA_SPRITES, { recursive: true });
 
-for (const superficie of ['public', 'panel']) {
+for (const superficie of ['public', 'panel', 'home']) {
   const { contenido, total } = sprite(superficie);
   const destino = join(SALIDA_SPRITES, `${superficie}.svg`);
   writeFileSync(destino, contenido, 'utf8');

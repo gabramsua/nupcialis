@@ -31,6 +31,22 @@ npm run deploy:functions
 npm run deploy:rules
 ```
 
+**Tanda D-67 (proveedores y cobro en el alta).** Tres funciones nuevas, **`listPartners`**,
+**`savePartner`** y **`settlePartnerPayments`**, y **regla nueva de Firestore (`partners`)**:
+`npm run deploy:functions` y `npm run deploy:rules`. Sin las funciones, `/superadmin/proveedores`
+y la casilla de cobro del alta no cargan proveedores; sin la regla no pasa nada visible (la
+colección ya estaba cerrada por defecto) pero queda explícita. `savePayment` y `provisionWedding`
+no cambian de firma, pero `savePayment` ahora acepta `partnerId` y el método `partner_cash`:
+**hay que redesplegarla**. Mira también `docs/REVISION-SEGURIDAD.md` (S1.4) para lo que falta
+de seguridad antes de vender.
+
+**Tanda D-65 (la HOME).** Dos funciones nuevas, **`saveHome`** y **`resetHome`**, y **reglas
+nuevas de Firestore (`platform/home`) y de Storage (`platform/home/`)**:
+`npm run deploy:functions` y `npm run deploy:rules`. Sin las funciones el editor
+`/superadmin/home` no puede guardar; sin las reglas, la portada no puede leer lo guardado
+(pinta lo de fábrica) y no se pueden subir imágenes. No hay dependencias nuevas; el sprite
+`public/icons/home.svg` ya va en el commit (`npm run icons` lo regenera).
+
 **Tras el smoke test 1** hay que redesplegar `provisionWedding` (el enlace de alta
 ahora continúa en `/panel/acceso`) con `npm run deploy:functions`.
 
@@ -420,6 +436,14 @@ que sustituye al aislamiento por bases de datos separadas.
 
 ## 5. Lo que necesita tus ojos
 
+**La HOME (D-65), sin desplegar nada para verla:** `localhost:4200/dev/home` enseña la portada
+con las tres plantillas, y `localhost:4200/dev/home-editor` el editor con guardado en memoria
+(también `/dev/panel-basico` y `/dev/panel-extendido`, de donde salen las capturas). **Lee el
+texto de fábrica entero** —es lo que va a ver quien llegue— y dime a dónde debe llevar el botón
+«Quiero mi web de boda» (hoy `mailto:hola@nupcialis.com`). Ya con las funciones desplegadas,
+abre `/superadmin/home`, cambia un título, sube una imagen, publica y mira `/` en el móvil; y
+«Restaurar de fábrica». Los fallos de Google Fonts que veas en mi sandbox no existen en la tuya.
+
 **Tanda 27 (D-57), plan completo:** abre una boda con plan extendido y mira (a) la
 cabecera en escritorio y móvil con tus plantillas y paletas, (b) que «Más» se abre y
 cierra, (c) que desde el quiz o la galería los enlaces del menú te llevan a la
@@ -487,8 +511,10 @@ desbloquean:
 - `RE.7` **Proyecto de producción aparte, antes de la primera pareja que pague.**
   Hoy las bodas de prueba tienen invitados inventados con teléfonos y alergias;
   en cuanto haya una boda real al lado, eso es un asunto de datos personales.
-- `RE.8` Servir `Cross-Origin-Opener-Policy: same-origin-allow-popups` en
-  producción, o el acceso con Google se rompe en algunos navegadores.
+- `RE.8` ~~Servir `Cross-Origin-Opener-Policy`~~ **Hecho** en `vercel.json` (con las
+  reescrituras de la SPA y las cabeceras de seguridad). El análisis del pase a producción
+  (por qué Vercel y no Firebase Hosting, pasos y la decisión de dos o tres proyectos de
+  Firebase) está en `PUESTA-EN-MARCHA.md`, **Bloque 8**: es lo que hablamos mañana.
 - `RE.6` Comprobar el subdominio en Authentication → Authorized domains.
 
 ---

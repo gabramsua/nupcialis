@@ -454,7 +454,7 @@
     "salir": "Cerrar sesión",
     "resumen": "Resumen",
     "error": "No hemos podido cargar vuestra boda",
-    "ocultos": "Tenéis {{n}} secciones activas que los invitados todavía no ven.",
+    "ocultos": "Hay secciones activas que los invitados todavía no ven ({{n}}).",
     "estado": {
       "draft": "Sin publicar",
       "active": "Publicada",
@@ -1036,7 +1036,7 @@
         "fecha": "Poned la fecha de la boda",
         "publicar": "Vuestra web sigue en borrador: nadie puede verla",
         "invitados": "Cargad vuestra lista de invitados",
-        "ocultos": "Tenéis {{n}} módulos encendidos que los invitados no ven",
+        "ocultos": "Hay módulos encendidos que los invitados no ven ({{n}})",
         "portada": "Falta la foto de portada",
         "sin-entrar": "{{n}} invitados no han abierto todavía la invitación",
         "sin-contestar": "{{n}} invitados no han contestado"
@@ -2285,7 +2285,24 @@
       "correoEnviado": "Correo de acceso enviado.",
       "correoNoEnviado": "El correo no ha podido salir. Copia el enlace o reenvíalo desde la ficha de la boda.",
       "copiar": "Copiar enlace",
-      "copiado": "Copiado"
+      "copiado": "Copiado",
+      "cobro": {
+        "apuntar": "Apuntar ya el cobro de esta boda",
+        "titulo": "Cobro",
+        "proveedor": "Quién la ha traído",
+        "directo": "Directo (sin proveedor)",
+        "importe": "Importe (€)",
+        "metodo": "Método de cobro",
+        "estado": "Estado",
+        "fecha": "Fecha del cobro",
+        "errorImporte": "Escribe el importe del cobro como un importe válido (por ejemplo 299 o 299,50).",
+        "sinApuntarTitulo": "La boda está creada, pero el cobro no",
+        "sinApuntar": "No se ha podido apuntar el cobro. Anótalo a mano en Finanzas.",
+        "concepto": {
+          "basic": "Plan básico",
+          "extended": "Plan extendido"
+        }
+      }
     },
     "estadisticas": {
       "enlace": "Estadísticas y límites",
@@ -2380,19 +2397,24 @@
       },
       "accion": {
         "authorizeWeddingDomain": "Subdominio autorizado en Auth",
+        "createPartner": "Proveedor dado de alta",
         "createPayment": "Cobro apuntado",
         "deletePayment": "Cobro borrado",
         "generateCoupleResetLink": "Enlace de restablecimiento generado",
         "markReminderSent": "Aviso marcado como enviado",
         "provisionWedding": "Boda dada de alta",
+        "resetHome": "Web de inicio restaurada de fábrica",
         "revokeUserClaims": "Acceso revocado",
+        "saveHome": "Web de inicio publicada",
         "setCompanionQuota": "Cupo de acompañantes cambiado (ya retirado)",
         "setGuestRsvp": "Respuesta de un invitado cambiada",
         "setGuestsRsvp": "Respuesta de varios invitados cambiada",
         "setUserClaims": "Acceso concedido",
         "setWeddingLimits": "Tope de fotos cambiado",
         "setWeddingStatus": "Estado de la boda cambiado",
+        "settlePartnerPayments": "Cobros de un proveedor liquidados",
         "unmarkReminderSent": "Aviso desmarcado",
+        "updatePartner": "Proveedor modificado",
         "updatePayment": "Cobro modificado"
       },
       "enviarCorreo": "Correo de reestablecer contraseña",
@@ -2510,7 +2532,8 @@
         "bizum": "Bizum",
         "transferencia": "Transferencia",
         "efectivo": "Efectivo",
-        "otro": "Otro"
+        "otro": "Otro",
+        "partner_cash": "Efectivo vía proveedor"
       },
       "estado": {
         "pending": "Pendiente",
@@ -2538,7 +2561,8 @@
         "fecha": "Un cobro cobrado necesita una fecha válida; uno pendiente no la lleva.",
         "factura": "El número de factura admite hasta 40 caracteres.",
         "notas": "Las notas admiten hasta 500 caracteres.",
-        "otro": "No se ha podido guardar el cobro."
+        "otro": "No se ha podido guardar el cobro.",
+        "proveedor": "El efectivo de un proveedor necesita proveedor: apúntalo desde «Proveedores» o al dar de alta la boda."
       },
       "csv": {
         "boda": "Boda",
@@ -2688,7 +2712,9 @@
       "colaCorreos": "Cola de correos",
       "consejos": "Consejos",
       "plegar": "Plegar menú",
-      "desplegar": "Desplegar menú"
+      "desplegar": "Desplegar menú",
+      "home": "Web de inicio",
+      "proveedores": "Proveedores"
     },
     "planes": {
       "titulo": "Planes y módulos",
@@ -2767,6 +2793,154 @@
       "personalizado": "editado",
       "original": "Volver al original",
       "sinConsejo": "Sin consejo: el módulo no mostrará nada."
+    },
+    "home": {
+      "titulo": "Web de inicio",
+      "ayuda": "La portada de nupcialis.com: plantilla, tipografías, colores, textos, imágenes y SEO. Se edita sobre un borrador; no llega a la web hasta que pulsas «Guardar y publicar».",
+      "cargando": "Cargando la web de inicio…",
+      "error": "No se ha podido completar la operación",
+      "reintentar": "Reintentar",
+      "sinPublicar": "Cambios sin publicar",
+      "publicado": "Publicado. Ya lo ve todo el mundo.",
+      "alDia": "Publicado y al día",
+      "deFabrica": "Sin guardar nada: se muestra lo de fábrica",
+      "guardar": "Guardar y publicar",
+      "descartar": "Descartar cambios",
+      "restaurar": "Restaurar de fábrica",
+      "restaurarAyuda": "Borra lo guardado y la web vuelve a los textos y las imágenes que trae la aplicación.",
+      "restaurarPregunta": "¿Seguro? Se pierde lo publicado y se borran las imágenes que hayas subido. No se puede deshacer.",
+      "restaurarSi": "Sí, restaurar",
+      "restaurarNo": "Cancelar",
+      "vista": "Tamaño de la vista previa",
+      "vistaPrevia": "Vista previa",
+      "vistaEscritorio": "Escritorio",
+      "vistaMovil": "Móvil",
+      "mostrar": "Mostrar esta sección",
+      "anadir": "Añadir",
+      "subir": "Subir",
+      "bajar": "Bajar",
+      "quitar": "Quitar",
+      "icono": "Icono",
+      "sinImagen": "Sin imagen",
+      "subirImagen": "Subir imagen",
+      "cambiarImagen": "Cambiar imagen",
+      "quitarImagen": "Quitar imagen",
+      "imagenDeSerie": "Volver a la de fábrica",
+      "subiendo": "Subiendo…",
+      "textoAlternativo": "Texto alternativo (para lectores de pantalla)",
+      "sec": {
+        "estilo": "Estilo: plantilla, tipografías y color",
+        "hero": "Portada",
+        "promesa": "Lo que hace Nupcialis",
+        "pasos": "Cómo funciona",
+        "paneles": "Capturas del panel (básico y extendido)",
+        "libertad": "Libertad de los novios",
+        "planes": "Planes",
+        "cierre": "Llamada final",
+        "pie": "Pie de página",
+        "seo": "SEO (buscadores y redes)"
+      },
+      "estilo": {
+        "plantilla": "Plantilla",
+        "fuenteTitulo": "Tipografía de los títulos",
+        "fuenteCuerpo": "Tipografía del texto",
+        "acento": "Color de acento",
+        "dePlantilla": "La de la plantilla"
+      },
+      "campo": {
+        "etiqueta": "Etiqueta pequeña",
+        "titulo": "Título",
+        "subtitulo": "Subtítulo",
+        "intro": "Texto de introducción",
+        "texto": "Texto",
+        "nota": "Nota bajo los botones",
+        "botonPrincipal": "Botón principal",
+        "botonSecundario": "Botón secundario",
+        "boton": "Botón",
+        "textoEnlace": "texto",
+        "destino": "enlace",
+        "destinoPista": "https://…, mailto:…, #ancla o /ruta",
+        "imagenPortada": "Imagen de la portada",
+        "captura": "Captura",
+        "fraseCierre": "Frase de cierre",
+        "nombre": "Nombre del plan",
+        "frase": "Frase corta",
+        "precio": "Precio",
+        "vinetas": "Puntos",
+        "vineta": "Punto",
+        "contacto": "Línea de contacto",
+        "textoPie": "Texto del pie",
+        "enlace": "Enlace"
+      },
+      "paneles": {
+        "basico": "Plan básico",
+        "extendido": "Plan extendido"
+      },
+      "planes": {
+        "nota": "Los precios todavía no están decididos: déjalos vacíos y la web no enseña ninguno. La sección está apagada de fábrica.",
+        "sinPrecio": "Vacío: sin precio"
+      },
+      "seo": {
+        "titulo": "Título de la pestaña",
+        "descripcion": "Descripción para buscadores"
+      },
+      "fallo": {
+        "sinPermiso": "Esta cuenta no tiene permiso para editar la web de inicio.",
+        "red": "No hay conexión con el servidor. Inténtalo otra vez.",
+        "largo": "El contenido es demasiado largo para guardarse.",
+        "otro": "No se ha podido completar la operación."
+      }
+    },
+    "proveedores": {
+      "titulo": "Proveedores",
+      "ayuda": "Quienes os traen bodas. Cada uno tiene su tarifa mayorista por plan y un saldo: lo que os debe por los cobros que hizo en efectivo. Liquidar es marcar esos cobros como cobrados de una vez.",
+      "nuevo": "Nuevo proveedor",
+      "editar": "Editar",
+      "editarTitulo": "Editar proveedor",
+      "cargando": "Cargando proveedores…",
+      "errorCarga": "No se han podido leer los proveedores",
+      "ninguno": "Todavía no hay proveedores",
+      "ningunoDescripcion": "Crea el primero para poder apuntar bodas a su nombre.",
+      "debenTotal": "Os deben en total {{importe}}.",
+      "activo": "Activo",
+      "inactivo": "Inactivo",
+      "bodas": "Bodas",
+      "debe": "Os debe",
+      "liquidadoYa": "Ya liquidado",
+      "tarifa": "Tarifa (básico / extendido)",
+      "liquidar": "Liquidar cobros ({{n}})",
+      "marcarTodos": "Marcar todos",
+      "fechaCobro": "Fecha en que lo ha liquidado",
+      "liquidarSeleccion": "Liquidar {{n}} · {{importe}}",
+      "liquidado": "Liquidación hecha",
+      "liquidadoTexto": "{{n}} cobros marcados como cobrados, {{importe}} en total.",
+      "campo": {
+        "nombre": "Nombre",
+        "codigo": "Código",
+        "codigoAyuda": "Minúsculas, números y guiones, de 3 a 32 caracteres. Es una etiqueta para reconocerlo, no una contraseña.",
+        "contacto": "Persona de contacto",
+        "email": "Correo",
+        "telefono": "Teléfono",
+        "tarifaBasico": "Tarifa mayorista, plan básico (€)",
+        "tarifaExtendido": "Tarifa mayorista, plan extendido (€)",
+        "activo": "Activo (se le pueden apuntar bodas nuevas)"
+      },
+      "error": {
+        "nombre": "Escribe un nombre de hasta 80 caracteres.",
+        "codigo": "El código solo admite minúsculas, números y guiones, de 3 a 32 caracteres.",
+        "codigoRepetido": "Ya hay otro proveedor con ese código.",
+        "tarifa": "Las tarifas tienen que ser un importe válido (o quedar vacías).",
+        "contacto": "El nombre de contacto es demasiado largo.",
+        "email": "Ese correo no parece válido.",
+        "telefono": "Ese teléfono no es válido.",
+        "seleccion": "Marca al menos un cobro (y no más de los permitidos).",
+        "fecha": "Elige una fecha de liquidación válida.",
+        "yaCobrado": "Alguno de los cobros ya estaba cobrado. Recarga y vuelve a intentarlo: no se ha cambiado nada.",
+        "otroProveedor": "Alguno de los cobros no es de este proveedor. No se ha cambiado nada.",
+        "noExiste": "Ese proveedor o alguno de sus cobros ya no existe. No se ha cambiado nada.",
+        "demasiados": "Son demasiados cobros de una vez; liquida por tandas.",
+        "otro": "No se ha podido completar la operación. Inténtalo de nuevo."
+      }
     }
   },
   "rsvp": {

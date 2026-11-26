@@ -64,6 +64,7 @@ describe('validarPago', () => {
         'method',
         'notes',
         'paidOn',
+        'partnerId',
         'status',
         'weddingId',
       ].sort(),

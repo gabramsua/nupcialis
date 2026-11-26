@@ -9,7 +9,7 @@
 
 export type EstadoBoda = 'draft' | 'active' | 'archived';
 
-export const METODOS_PAGO = ['bizum', 'transferencia', 'efectivo', 'otro'] as const;
+export const METODOS_PAGO = ['bizum', 'transferencia', 'efectivo', 'partner_cash', 'otro'] as const;
 export type MetodoPago = (typeof METODOS_PAGO)[number];
 
 export const ESTADOS_PAGO = ['pending', 'paid'] as const;
@@ -59,6 +59,8 @@ export interface Pago {
   readonly paidOn: string | null;
   readonly invoiceNumber: string;
   readonly notes: string;
+  /** El proveedor comercializador por el que entró (D-26), o `''` si fue directo. */
+  readonly partnerId: string;
 }
 
 export type PagoEnEdicion = Omit<Pago, 'id'>;
@@ -180,6 +182,7 @@ export function leerPago(valor: unknown): Pago | null {
     paidOn: textoONull(o['paidOn']),
     invoiceNumber: texto(o['invoiceNumber']),
     notes: texto(o['notes']),
+    partnerId: texto(o['partnerId']),
   };
 }
 
@@ -379,19 +382,24 @@ export function diaAFecha(dia: string | null): Date | null {
 /** Las acciones del registro de auditoría que tienen etiqueta propia. */
 export const ACCIONES_CONOCIDAS = [
   'authorizeWeddingDomain',
+  'createPartner',
   'createPayment',
   'deletePayment',
   'generateCoupleResetLink',
   'markReminderSent',
   'provisionWedding',
+  'resetHome',
   'revokeUserClaims',
+  'saveHome',
   'setCompanionQuota',
   'setGuestRsvp',
   'setGuestsRsvp',
   'setUserClaims',
   'setWeddingLimits',
   'setWeddingStatus',
+  'settlePartnerPayments',
   'unmarkReminderSent',
+  'updatePartner',
   'updatePayment',
 ] as const;
 

@@ -47,7 +47,7 @@
         {
           "id": "confetti",
           "etiqueta": "Fiesta",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "balloon",
@@ -57,12 +57,12 @@
         {
           "id": "flower",
           "etiqueta": "Flores",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "camera",
           "etiqueta": "Fotos",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "video-camera",
@@ -97,7 +97,7 @@
         {
           "id": "users-three",
           "etiqueta": "Llegada de invitados",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "hands-clapping",
@@ -112,7 +112,7 @@
         {
           "id": "sparkle",
           "etiqueta": "Primer baile",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "person-simple-walk",
@@ -177,7 +177,7 @@
         {
           "id": "map-pin",
           "etiqueta": "Ubicación",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "navigation-arrow",
@@ -192,7 +192,7 @@
         {
           "id": "clock",
           "etiqueta": "Hora",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "calendar",
@@ -207,7 +207,7 @@
         {
           "id": "users",
           "etiqueta": "Grupo",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "user",
@@ -227,12 +227,12 @@
         {
           "id": "heart",
           "etiqueta": "Pareja",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "diamond",
           "etiqueta": "Anillos",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "dress",
@@ -252,7 +252,7 @@
         {
           "id": "hand-heart",
           "etiqueta": "Testigos",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "steering-wheel",
@@ -317,7 +317,7 @@
         {
           "id": "check-circle",
           "etiqueta": "Confirmado",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "x-circle",
@@ -357,7 +357,7 @@
         {
           "id": "eye-slash",
           "etiqueta": "Oculto",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         },
         {
           "id": "lock-simple",
@@ -372,7 +372,7 @@
         {
           "id": "gift",
           "etiqueta": "Regalo",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "currency-eur",
@@ -392,7 +392,7 @@
         {
           "id": "device-mobile",
           "etiqueta": "Bizum",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "money",
@@ -412,12 +412,12 @@
         {
           "id": "list-checks",
           "etiqueta": "Checklist",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         },
         {
           "id": "chart-bar",
           "etiqueta": "Presupuesto",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         },
         {
           "id": "chart-pie-slice",
@@ -437,7 +437,7 @@
         {
           "id": "table",
           "etiqueta": "Mesas",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         },
         {
           "id": "seat",
@@ -447,7 +447,7 @@
         {
           "id": "envelope",
           "etiqueta": "Invitación",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         },
         {
           "id": "whatsapp-logo",
@@ -477,12 +477,12 @@
         {
           "id": "palette",
           "etiqueta": "Diseño",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         },
         {
           "id": "sliders-horizontal",
           "etiqueta": "Módulos",
-          "surfaces": ["panel"]
+          "surfaces": ["panel", "home"]
         }
       ]
     },
@@ -542,7 +542,7 @@
         {
           "id": "caret-right",
           "etiqueta": "Siguiente",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "caret-left",
@@ -557,7 +557,7 @@
         {
           "id": "check",
           "etiqueta": "Aceptar",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "arrow-left",
@@ -587,7 +587,7 @@
         {
           "id": "star",
           "etiqueta": "Destacado",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "question",
@@ -607,7 +607,7 @@
         {
           "id": "images",
           "etiqueta": "Galería",
-          "surfaces": ["public", "panel"]
+          "surfaces": ["public", "panel", "home"]
         },
         {
           "id": "note-pencil",
@@ -648,6 +648,71 @@
           "id": "book-open",
           "etiqueta": "Historia",
           "surfaces": ["panel", "public"]
+        }
+      ]
+    },
+    "venta": {
+      "titulo": "La web de venta",
+      "iconos": [
+        {
+          "id": "paint-brush",
+          "etiqueta": "Pincel",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "storefront",
+          "etiqueta": "Tienda",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "seal-check",
+          "etiqueta": "Sello de garantía",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "rocket",
+          "etiqueta": "Cohete",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "lock-open",
+          "etiqueta": "Candado abierto",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "shield-check",
+          "etiqueta": "Escudo",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "calendar-check",
+          "etiqueta": "Calendario con visto",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "desktop",
+          "etiqueta": "Ordenador",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "cursor-click",
+          "etiqueta": "Clic",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "magic-wand",
+          "etiqueta": "Varita",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "layout",
+          "etiqueta": "Maquetación",
+          "surfaces": ["home"]
+        },
+        {
+          "id": "arrow-right",
+          "etiqueta": "Flecha",
+          "surfaces": ["home"]
         }
       ]
     }

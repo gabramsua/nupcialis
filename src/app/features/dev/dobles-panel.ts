@@ -9,8 +9,16 @@
  * **Solo en desarrollo.** La ruta que los provee no se registra en producción.
  */
 
-import { EnvironmentProviders, computed, makeEnvironmentProviders, signal } from '@angular/core';
+import {
+  EnvironmentProviders,
+  InjectionToken,
+  computed,
+  inject,
+  makeEnvironmentProviders,
+  signal,
+} from '@angular/core';
 
+import { PUERTA_AUTH } from '../../core/auth/auth-gateway';
 import { SessionStore } from '../../core/auth/session.store';
 import {
   PUERTA_MESAS,
@@ -114,7 +122,7 @@ import { CronologiaStore } from '../panel/cronologia/cronologia.store';
 import { FaqsStore } from '../panel/faqs/faqs.store';
 import { BodaStore } from '../panel/boda.store';
 import { SECCIONES_INICIALES } from '../public-site/secciones/secciones';
-import { menuDeModulos, type BodaDelPanel } from '../panel/boda';
+import { MODULOS, menuDeModulos, modulosNoVisibles, type BodaDelPanel } from '../panel/boda';
 
 function enDias(dias: number): string {
   return new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -311,6 +319,21 @@ const BODA: BodaDelPanel = {
     mensaje:
       'Lo único que queremos es que vengáis. Si aun así os apetece regalarnos algo, aquí lo tenéis.',
   }),
+};
+
+/**
+ * El plan de la boda de muestra. Solo lo provee `/dev/panel-extendido`: sin él
+ * sale el plan básico, que es lo que esperan el resto de pantallas de muestra.
+ */
+export const PLAN_DE_MUESTRA = new InjectionToken<'basic' | 'extended'>('PLAN_DE_MUESTRA');
+
+/** La misma boda con todos los módulos del plan extendido encendidos. */
+const BODA_EXTENDIDA: BodaDelPanel = {
+  ...BODA,
+  plan: 'extended',
+  modulos: Object.fromEntries(
+    MODULOS.map((m) => [m, { enabled: true, visibility: 'visible' as const }]),
+  ) as BodaDelPanel['modulos'],
 };
 
 /** Guarda en memoria y devuelve lo que haya, como haría Firestore. */
@@ -533,15 +556,25 @@ function puertaFaqs(): PuertaFaqs {
 
 /** La boda de muestra, con lo justo de `BodaStore` que usan estas pantallas. */
 class BodaStoreDeMuestra {
-  private readonly _boda = signal<BodaDelPanel | null>(BODA);
+  private readonly plan = inject(PLAN_DE_MUESTRA, { optional: true });
+  private readonly _boda = signal<BodaDelPanel | null>(
+    this.plan === 'extended' ? BODA_EXTENDIDA : BODA,
+  );
 
   readonly boda = this._boda.asReadonly();
   readonly menu = computed(() => {
     const boda = this._boda();
     return boda ? menuDeModulos(boda) : [];
   });
+  readonly sinPublicar = computed(() => {
+    const boda = this._boda();
+    return boda ? modulosNoVisibles(boda) : 0;
+  });
   readonly estado = () => 'lista' as const;
   readonly error = () => null;
+  async cargar(): Promise<void> {
+    return;
+  }
 
   async guardarDressCode(dress: {
     description: string;
@@ -849,11 +882,32 @@ function puertaTareas(): PuertaTareas {
   };
 }
 
-export function provideDoblesDelPanel(): EnvironmentProviders {
+export function provideDoblesDelPanel(
+  plan: 'basic' | 'extended' = 'basic',
+  conCabecera = false,
+): EnvironmentProviders {
   const deMesas = puertasDeMesas();
 
   return makeEnvironmentProviders([
-    { provide: SessionStore, useValue: { weddingId: () => 'muestra' } },
+    { provide: PLAN_DE_MUESTRA, useValue: plan },
+    {
+      provide: SessionStore,
+      useValue: conCabecera
+        ? {
+            // Lo que lee la cabecera del panel entero (`/dev/panel-basico`).
+            weddingId: () => 'muestra',
+            sesion: () => ({
+              uid: 'muestra',
+              email: 'maria@ejemplo.com',
+              rol: 'owner',
+              weddingId: 'muestra',
+              guestId: null,
+            }),
+            resuelta: () => true,
+          }
+        : { weddingId: () => 'muestra' },
+    },
+    { provide: PUERTA_AUTH, useValue: { salir: async () => undefined } },
     { provide: BodaStore, useClass: BodaStoreDeMuestra },
     { provide: PUERTA_ALOJAMIENTOS, useFactory: puertaAlojamientos },
     { provide: PUERTA_CRONOLOGIA, useFactory: puertaCronologia },

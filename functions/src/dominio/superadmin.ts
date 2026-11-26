@@ -8,7 +8,12 @@
 
 // ---------- pagos ----------
 
-export const METODOS_PAGO = ['bizum', 'transferencia', 'efectivo', 'otro'] as const;
+/**
+ * `partner_cash` es el efectivo que **liquida un proveedor comercializador**
+ * (D-26): la pareja le pagó a él y él nos paga a nosotros después, así que el
+ * cobro puede estar `pending` con la boda ya activa.
+ */
+export const METODOS_PAGO = ['bizum', 'transferencia', 'efectivo', 'partner_cash', 'otro'] as const;
 export type MetodoPago = (typeof METODOS_PAGO)[number];
 
 export const ESTADOS_PAGO = ['pending', 'paid'] as const;
@@ -31,10 +36,22 @@ export interface PagoValido {
   readonly paidOn: string | null;
   readonly invoiceNumber: string;
   readonly notes: string;
+  /** El proveedor comercializador por el que entró, o `''` si fue directo (D-26). */
+  readonly partnerId: string;
 }
 
 export type MotivoPagoInvalido =
-  'boda' | 'importe' | 'concepto' | 'metodo' | 'estado' | 'fecha' | 'factura' | 'notas';
+  | 'boda'
+  | 'importe'
+  | 'concepto'
+  | 'metodo'
+  | 'estado'
+  | 'fecha'
+  | 'factura'
+  | 'notas'
+  | 'proveedor';
+
+export const MAX_ID_PROVEEDOR = 64;
 
 export type ResultadoPago =
   | { readonly ok: true; readonly pago: PagoValido }
@@ -98,6 +115,11 @@ export function validarPago(valor: unknown): ResultadoPago {
   const notes = texto(p['notes'], MAX_NOTAS);
   if (notes === null) return { ok: false, motivo: 'notas' };
 
+  const partnerId = texto(p['partnerId'], MAX_ID_PROVEEDOR);
+  if (partnerId === null || partnerId.includes('/')) return { ok: false, motivo: 'proveedor' };
+  // El efectivo de un proveedor sin proveedor no tiene a quién reclamárselo.
+  if (method === 'partner_cash' && partnerId === '') return { ok: false, motivo: 'proveedor' };
+
   return {
     ok: true,
     pago: {
@@ -109,6 +131,7 @@ export function validarPago(valor: unknown): ResultadoPago {
       paidOn: status === 'paid' ? (paidOn as string) : null,
       invoiceNumber,
       notes,
+      partnerId,
     },
   };
 }

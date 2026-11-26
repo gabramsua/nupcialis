@@ -40,6 +40,7 @@ const MOTIVOS: Record<string, string> = {
   fecha: 'superadmin.finanzas.error.fecha',
   factura: 'superadmin.finanzas.error.factura',
   notas: 'superadmin.finanzas.error.notas',
+  proveedor: 'superadmin.finanzas.error.proveedor',
 };
 
 /**
@@ -529,6 +530,8 @@ export class PantallaFinanzas {
   private readonly puerta = inject(PUERTA_GESTION);
 
   protected readonly metodos = METODOS_PAGO;
+  /** Al editar se conserva el proveedor del cobro: aquí no se elige, se hereda. */
+  private readonly proveedorEnEdicion = signal('');
   protected readonly estados = ESTADOS_PAGO;
 
   protected readonly carga = signal<Carga>('cargando');
@@ -632,6 +635,7 @@ export class PantallaFinanzas {
 
   protected nuevo(): void {
     this.editandoId.set(null);
+    this.proveedorEnEdicion.set('');
     this.errorForm.set(null);
     this.form.reset({
       weddingId: this.filtroBoda(),
@@ -648,6 +652,7 @@ export class PantallaFinanzas {
 
   protected editar(p: Pago): void {
     this.editandoId.set(p.id);
+    this.proveedorEnEdicion.set(p.partnerId);
     this.errorForm.set(null);
     this.form.reset({
       weddingId: p.weddingId,
@@ -688,6 +693,7 @@ export class PantallaFinanzas {
       paidOn: v.status === 'paid' ? v.paidOn : null,
       invoiceNumber: v.invoiceNumber,
       notes: v.notes,
+      partnerId: this.proveedorEnEdicion(),
     });
     this.guardando.set(false);
 

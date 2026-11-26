@@ -15,6 +15,7 @@ export { authorizeWeddingDomain } from './authorize-wedding-domain';
 export { addCompanion, deleteCompanion } from './companions';
 export { completeWeddings } from './completar-bodas';
 export { getTips, listTips, resetTip, saveTip } from './consejos';
+export { resetHome, saveHome } from './home';
 export { recordOwnerLogin } from './entrada-pareja';
 export { recordWebVisit } from './visitas-web';
 export { deleteWedding, updateWedding } from './gestion-boda';
@@ -58,6 +59,7 @@ export {
   markReminderSent,
   savePayment,
 } from './superadmin-boda';
+export { listPartners, savePartner, settlePartnerPayments } from './partners';
 export { setUserClaims } from './set-user-claims';
 export { setMyWebStatus } from './publicar-pareja';
 export { setWeddingStatus } from './set-wedding-status';

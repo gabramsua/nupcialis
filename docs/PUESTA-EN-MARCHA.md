@@ -204,6 +204,66 @@ repositorio y el proyecto de Firebase.
 
 ---
 
+## Bloque 8 · El pase a producción — análisis del 25/11/2026
+
+> Surgió de la pregunta «¿compro el dominio en Firebase y lo dejo todo allí?». La
+> respuesta corta es **no**; el razonamiento, para que mañana no haya que repetirlo.
+
+### Por qué no «todo en Firebase»
+
+- **Firebase Hosting no vende dominios.** Solo sirve dominios que has comprado en otro sitio
+  (o los gestiona vía Google Domains/Squarespace, que ya no es un producto de Firebase).
+  Comprar «en Firebase» no existe.
+- **No hay wildcard.** Hosting admite dominios personalizados de uno en uno, con un tope de
+  unos **20 subdominios/apex por sitio**. Nupcialis necesita `*.nupcialis.com`: un subdominio
+  por boda, **sin darlos de alta a mano**. Es el motivo por el que Vercel ganó en §3.
+- **Lo que sí se queda en Firebase** (y es lo que hace falta): Auth, Firestore, Storage,
+  Functions y App Check. Hosting solo sirve ficheros estáticos; eso lo hace Vercel.
+
+### La opción elegida: Vercel + wildcard
+
+- Vercel emite el certificado del wildcard **solo si controla el DNS**: hay que apuntar el
+  dominio a sus nameservers (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`), o delegar solo el
+  reto `_acme-challenge` con un CNAME. **Hobby no sirve** para un producto de pago (uso
+  comercial prohibido); **Pro cuesta 20 $/mes con un puesto incluido**.
+- El dominio ya está comprado (`nupcialis.com`, en Hostalia): **no hace falta moverlo**, solo
+  cambiar los nameservers. Los dominios gratis del primer año de Vercel solo valen para 16
+  TLD y **no incluyen `.com` ni `.es`**: no cuentes con ahorrar ahí.
+- En `vercel.json` (ya en el repositorio, `RE.8`): reescritura a `index.html` para las rutas
+  de la SPA, cabecera `Cross-Origin-Opener-Policy: same-origin-allow-popups` (sin ella el
+  acceso con Google se cuelga, 16/09), `nosniff`, `Referrer-Policy`, `X-Frame-Options`,
+  `Permissions-Policy`, HSTS y caché larga solo para los ficheros con hash.
+  **Falta una CSP**: es la pieza que más protege y la que más rompe (Firebase, Google Fonts,
+  teselas del mapa, Storage). Plan: ponerla primero en `Content-Security-Policy-Report-Only`.
+
+### Pasos, en orden (cada uno desbloquea el siguiente)
+
+1. **G** Crear el **proyecto de Firebase de producción** (ver decisión abajo), activar Blaze y
+   fijar una **alerta de presupuesto** (`B-A8`).
+2. **G** Cuenta de Vercel Pro; importar el repositorio; `vercel.json` ya está.
+3. **G** Añadir `nupcialis.com` y `*.nupcialis.com` en Vercel; cambiar los nameservers en
+   Hostalia. **Propagación: hasta 48 h**, hazlo con tiempo.
+4. **G** Variables de entorno de producción (config web de Firebase, clave de reCAPTCHA de App
+   Check) y `environment.prod`. Registrar los dominios en Auth → Authorized domains (D-16:
+   `authorizeWeddingDomain` ya lo hace por boda; el tope de la lista **no está documentado**).
+5. **C** `firebase deploy` de functions y reglas al proyecto de producción
+   (`npm run deploy:functions`, `npm run deploy:rules`), y `functions/tools/dar-superadmin.mjs`.
+6. **G** Instalar «Trigger Email» con un SMTP (`B-A4`, D-05): sin él no salen los correos.
+7. **G** App Check en modo exigente (solo después de comprobar que nada legítimo falla).
+8. **G** Copia diaria de Firestore y reporte de errores (`B-A8`): hoy no hay ninguno.
+9. **Prueba de punta a punta en producción** con una boda real de prueba y un móvil de 360 px
+   (`B-A7`, `S-4`).
+
+### Decisión abierta (suya): ¿dos proyectos de Firebase o tres?
+
+- **Dos** (desarrollo + producción): menos coste y menos configuración. Lo habitual.
+- **Tres** (desarrollo + _staging_ + producción): permite ensayar el despliegue y las reglas
+  con datos parecidos a los reales sin tocar a los clientes. **Mi recomendación: dos ahora**,
+  y un tercero cuando haya clientes de pago y algo que proteger. `angular.json` ya tiene una
+  configuración `staging`, así que el salto es barato.
+
+---
+
 ## Bloque 7 · Cerrar el alta de bodas contra Firebase de verdad — **G**, con dos herramientas mías
 
 El alta ya no pasa por un script: está el formulario del panel de superadmin.

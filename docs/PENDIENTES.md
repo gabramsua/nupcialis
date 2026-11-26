@@ -1940,6 +1940,25 @@ móvil = cajón agrupado** («La boda» / «Participa»). Lo que hice y supuse y
    y caracteres de texto. Total 5 plantillas.
 8. **Quiz:** no se ha tocado (esperas a tener 10 preguntas).
 
+### D-67 · Proveedores comercializadores y cobro en el alta — **pendiente de validar**
+
+Hecho sin preguntarte (F0.7.7–F0.7.9, lo que no dependía de tu respuesta). Supuestos míos:
+
+1. **El cobro se apunta después de crear la boda, no en la misma operación.** Si el cobro falla,
+   la boda queda creada y la pantalla avisa de anotarlo en Finanzas. Prefiero eso a no dar de alta
+   una boda por un fallo de contabilidad. El importe ilegible sí frena el alta antes de crear nada.
+2. **Los proveedores no se borran**: se desactivan (`active`). Un proveedor con cobros no puede
+   desaparecer sin dejar huérfanos.
+3. **`partner_cash` exige proveedor** y es «efectivo que cobró el proveedor». Nace `pending`: sigue
+   pendiente hasta que nos lo liquida. Un cobro con proveedor lo creas desde el alta; en Finanzas el
+   proveedor se hereda al editar, pero no se elige.
+4. **Liquidar es todo o nada** (máx. 200 cobros por vez) y pasa los cobros a `paid` con método
+   `partner_cash` y la fecha dada. Si uno ya estaba cobrado o es de otro proveedor, no se toca ninguno.
+5. **Tarifas mayoristas en céntimos**, por plan; vacío = 0. No son precios públicos (D-02 sigue abierta).
+6. **El código del proveedor** (`pepe`, 3–32, minúsculas/números/guiones) es una etiqueta única, no
+   una credencial. La ruta `/alta?ref=` todavía no existe (pertenece a la bandeja, F5).
+7. **El saldo no se guarda**: se calcula de los cobros, así que no puede desfasarse.
+
 ### D-66 · Regalos sin identificarse en el básico y plazo de confirmación por defecto — **pendiente de validar**
 
 **Pedido por ti (2026-11-25).** Dos decisiones mías al aplicarlo:
@@ -1973,6 +1992,51 @@ menú, sin salida. Además la visibilidad de módulo hoy solo la lee la web para
 que el plan trae al nacer la boda. Se respeta «muy pronto» y lo ya visible. «Añadir módulos
 nuevos» repara de paso las bodas que ya quedaron en encendido+oculto. Si algún día quieres que la
 pareja anuncie módulos «muy pronto», hará falta ese mando; no existe todavía.
+
+### D-65 · Tanda 35: la HOME de `nupcialis.com` y su editor — **pendiente de validar**
+
+La portada del producto era un rótulo. Ahora es **una sola página vertical, sin menú**, pensada
+para que una pareja que entra quiera quedarse, y se edita entera desde `/superadmin/home`
+(plantilla, tipografías, color, textos con Jodit, iconos, imágenes y SEO).
+
+Lo que decidí yo al construirla y necesita tu visto bueno:
+
+1. **Tres plantillas**: **Luz** (clara y cálida, serif elegante), **Editorial** (de revista, bloques
+   de color y sombra dura, titular a dos columnas) y **Noche** (oscura, dorados). Los nombres son
+   míos. Cambiar de plantilla cambia solo la apariencia; los textos son los mismos.
+2. **Texto de fábrica escrito por mí**, en español y en «vosotros». Titular: «Una web preciosa para
+   vuestros invitados. Un panel para tenerlo todo a mano.» **Léelo entero**: es lo que va a ver
+   quien llegue, y se cambia desde el editor.
+3. **Orden de la página**: portada con imagen (panel + móvil) → «Todo lo de la boda, donde lo vais
+   a encontrar» (3 tarjetas) → «Así de fácil» (4 pasos) → **capturas del panel básico y del
+   extendido** (con su lista de lo que incluye cada uno) → **«Vosotros sois los dueños»** (6
+   tarjetas: temas, colores, invitados, mesas, proveedores y qué se ve y qué no; cierra con «Es
+   vuestra boda. Nosotros solo ponemos las herramientas.») → llamada final → pie. Las capturas son
+   del panel real con datos de muestra (`/dev/panel-basico` y `/dev/panel-extendido`), no mock-ups,
+   y se pueden cambiar subiendo otras.
+4. **La llamada a la acción apunta a `mailto:hola@nupcialis.com`** (provisional: **no sé qué correo
+   o formulario quieres**). Hasta que exista el embudo de solicitud (`B-A2`, `weddingRequests`),
+   un botón que lleve a una dirección real es lo único honesto. Se cambia desde el editor. **Decide
+   a dónde debe llevar.**
+5. **Sin precios.** La sección «Planes» existe pero viene **apagada** y con el precio vacío (D-02:
+   los precios no están decididos); si la enciendes y dejas el precio vacío, no enseña ninguno.
+6. **Guardar = publicar al instante.** Hay borrador con vista previa, pero «Guardar y publicar» lo
+   pone en la web ya; no hay un paso intermedio de «en revisión». «Restaurar de fábrica» borra lo
+   guardado **y las imágenes subidas** (pide confirmación; no se puede deshacer).
+7. **La HOME se indexa siempre** (`noindex` fuera): la portada del producto tiene que salir en
+   Google. Las webs de las parejas siguen en `noindex` salvo que ellas lo cambien.
+8. **Tipografías de Google Fonts**, cargadas solo en la HOME y solo las dos elegidas (8 de título,
+   6 de texto, de una lista cerrada). Es una petición a un tercero desde la portada: **si prefieres
+   alojarlas nosotros (RGPD), dímelo** y las empaqueto.
+9. **Si Firestore tarda más de 2,5 s o falla, se pinta lo de fábrica**: la portada nunca se queda en
+   blanco. Hasta saber cuál pintar no se enseña nada, para que no parpadee el texto equivocado.
+10. **El acento «Oro viejo» lo oscurecí** (`#8a6a14` → `#7d5f10`) para que se lea como texto sobre
+    los fondos tintados: el test de contraste lo cazó.
+11. **Arreglo de paso**: los avisos «Tenéis 1 secciones activas…» / «1 módulos encendidos…» ya no
+    concuerdan mal en singular («Hay secciones activas que los invitados todavía no ven (1)»).
+
+**Para aplicar:** desplegar `saveHome` y `resetHome`, las reglas de Firestore y de Storage, y abrir
+`/superadmin/home` (ver `PARA-GABRIEL.md`).
 
 ### D-64 · Tanda 34: repaso tras probar la tanda 33 — **pendiente de validar**
 

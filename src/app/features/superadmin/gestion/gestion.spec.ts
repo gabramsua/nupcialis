@@ -25,6 +25,7 @@ const PAGO: Pago = {
   paidOn: '2026-11-20',
   invoiceNumber: 'F-1',
   notes: '',
+  partnerId: '',
 };
 
 describe('eurosACentimos', () => {

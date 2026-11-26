@@ -47,14 +47,16 @@ describe('el menú lateral del superadmin', () => {
       'Bodas',
       'Estadísticas',
       'Finanzas',
+      'Proveedores',
       'Recordatorios',
       'Catálogos',
       'Planes y módulos',
       'Correos',
       'Cola de correos',
       'Consejos',
+      'Web de inicio',
     ]);
-    expect(SECCIONES_SUPERADMIN).toHaveLength(9);
+    expect(SECCIONES_SUPERADMIN).toHaveLength(11);
   });
 
   it('se pliega y se despliega, y lo dice a los lectores de pantalla', () => {

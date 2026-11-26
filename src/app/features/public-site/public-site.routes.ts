@@ -12,6 +12,8 @@ import { provideGaleria } from '../../core/galeria/galeria.providers';
 import { provideRegalos } from '../../core/regalos/regalos.providers';
 import { PUERTA_REGALOS_ABIERTOS } from '../../core/regalos/regalos-abiertos-gateway';
 import { crearPuertaRegalosAbiertosFirebase } from '../../core/firebase/regalos-abiertos-gateway.firebase';
+import { PUERTA_HOME_PUBLICA } from '../../core/home/home-gateway';
+import { crearPuertaHomePublicaFirebase } from '../../core/firebase/home-gateway.firebase';
 import { provideLibro } from '../../core/libro/libro.providers';
 import { providePlaylist } from '../../core/playlist/playlist.providers';
 
@@ -34,6 +36,8 @@ export const publicSiteRoutes: Routes = [
       { provide: PUERTA_RSVP, useFactory: crearPuertaRsvpFirebase },
       // Los regalos del plan básico, sin identificarse (D-66).
       { provide: PUERTA_REGALOS_ABIERTOS, useFactory: crearPuertaRegalosAbiertosFirebase },
+      // La HOME de nupcialis.com: solo lectura del documento público.
+      { provide: PUERTA_HOME_PUBLICA, useFactory: crearPuertaHomePublicaFirebase },
     ],
     resolve: { tenant: tenantResolver },
     loadComponent: () =>

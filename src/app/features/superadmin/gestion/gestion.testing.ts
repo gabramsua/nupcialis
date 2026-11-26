@@ -56,6 +56,7 @@ export function pago(parcial: Partial<Pago> = {}): Pago {
     paidOn: '2026-11-20',
     invoiceNumber: 'F-1',
     notes: '',
+    partnerId: '',
     ...parcial,
   };
 }

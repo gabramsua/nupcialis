@@ -33,6 +33,7 @@ import { SesionInvitado } from '../../core/firebase/sesion-invitado';
 import { registrarVisitaWeb } from '../../core/firebase/visita-web';
 import { NpCabeceraBoda } from '../../features/public-site/navegacion/cabecera-boda';
 import { conCabecera as bodaConCabecera } from '../../features/public-site/tema';
+import { NpHomeLanding } from '../../features/home/home-landing';
 import { Entrar } from '../../features/public-site/acceso/entrar';
 import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-code';
 
@@ -60,6 +61,7 @@ import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-co
     NpIcon,
     Entrar,
     NpCabeceraBoda,
+    NpHomeLanding,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[style]': 'variablesDeMarca()' },
@@ -143,13 +145,13 @@ import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-co
         }
         @case ('landing') {
           <!--
-            Marcador honesto de la landing comercial, que es F5. Dice lo que es
-            el producto en vez de fingir una web de boda que aquí no existe.
+            La HOME de nupcialis.com, que edita el superadmin. En un bloque
+            diferido: es la única superficie que la necesita, y una boda no
+            descarga ni una línea de esto.
           -->
-          <main class="np-landing">
-            <h1>{{ t('app.name') }}</h1>
-            <p>{{ t('app.tagline') }}</p>
-          </main>
+          @defer {
+            <np-home-landing />
+          }
         }
         @case ('no-publicada') {
           <np-empty-state
@@ -187,24 +189,6 @@ import { DRESS_CODE_VACIO } from '../../features/public-site/dress-code/dress-co
       display: block;
       min-block-size: 100dvh;
       background: var(--np-marca-background, var(--np-surface-canvas));
-    }
-    .np-landing {
-      display: grid;
-      place-content: center;
-      gap: var(--np-space-2);
-      min-block-size: 100dvh;
-      padding: var(--np-space-5);
-      text-align: center;
-      color: var(--np-surface-text);
-    }
-    .np-landing h1 {
-      margin: 0;
-      font-size: var(--np-text-3xl);
-      font-weight: var(--np-weight-semibold);
-    }
-    .np-landing p {
-      margin: 0;
-      color: var(--np-surface-text-muted);
     }
     /* Discreta y arriba: es información, no una acción que haya que destacar.
        Pero el «¿no eres tú?» tiene que ser pulsable con el pulgar. */

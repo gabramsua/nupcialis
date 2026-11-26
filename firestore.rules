@@ -60,9 +60,27 @@ service cloud.firestore {
       allow write: if false;             // solo Admin SDK
     }
 
+    // Proveedores comercializadores (D-26, F0.7.8): su tarifa mayorista y su
+    // contacto son cosa de Gabriel. Se leen solo como superadmin y se escriben
+    // únicamente desde `savePartner`, que valida y deja rastro en auditLog.
+    match /partners/{partnerId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
     // Qué recordatorios de después de la boda ya se han enviado (S1.3f).
     match /reminderMarks/{markId} {
       allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // La HOME de nupcialis.com (la página de venta). Es contenido público del
+    // producto, sin datos de nadie: la lee cualquiera, incluso sin sesión. Solo
+    // existe el documento `home`; cualquier otro documento de esta colección
+    // queda cerrado. Se escribe únicamente desde `saveHome`, que sanea el HTML
+    // del editor (regla de oro 5): ni el superadmin escribe desde el cliente.
+    match /platform/{docId} {
+      allow read: if docId == 'home';
       allow write: if false;             // solo Admin SDK
     }
 

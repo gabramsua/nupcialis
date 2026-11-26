@@ -6,6 +6,7 @@ export type NpIconName =
   | 'airplane'
   | 'archive'
   | 'arrow-left'
+  | 'arrow-right'
   | 'arrows-clockwise'
   | 'baby'
   | 'balloon'
@@ -17,6 +18,7 @@ export type NpIconName =
   | 'bus'
   | 'cake'
   | 'calendar'
+  | 'calendar-check'
   | 'camera'
   | 'car'
   | 'car-simple'
@@ -42,6 +44,8 @@ export type NpIconName =
   | 'credit-card'
   | 'crown-simple'
   | 'currency-eur'
+  | 'cursor-click'
+  | 'desktop'
   | 'device-mobile'
   | 'diamond'
   | 'disco-ball'
@@ -71,11 +75,14 @@ export type NpIconName =
   | 'heart'
   | 'images'
   | 'info'
+  | 'layout'
   | 'leaf'
   | 'link-simple'
   | 'list'
   | 'list-checks'
+  | 'lock-open'
   | 'lock-simple'
+  | 'magic-wand'
   | 'magnifying-glass'
   | 'map-pin'
   | 'martini'
@@ -85,6 +92,7 @@ export type NpIconName =
   | 'music-notes'
   | 'navigation-arrow'
   | 'note-pencil'
+  | 'paint-brush'
   | 'palette'
   | 'pencil-simple'
   | 'person-simple-walk'
@@ -93,14 +101,18 @@ export type NpIconName =
   | 'plus'
   | 'prohibit'
   | 'question'
+  | 'rocket'
+  | 'seal-check'
   | 'seat'
   | 'share-network'
+  | 'shield-check'
   | 'sign-out'
   | 'sliders-horizontal'
   | 'sparkle'
   | 'spinner-gap'
   | 'star'
   | 'steering-wheel'
+  | 'storefront'
   | 'suitcase'
   | 'sun'
   | 't-shirt'
@@ -249,4 +261,16 @@ export const NP_ICON_LABELS: Record<NpIconName, string> = {
   'chat-circle-text': "Respuestas",
   'sign-out': "Cerrar sesión",
   'book-open': "Historia",
+  'paint-brush': "Pincel",
+  'storefront': "Tienda",
+  'seal-check': "Sello de garantía",
+  'rocket': "Cohete",
+  'lock-open': "Candado abierto",
+  'shield-check': "Escudo",
+  'calendar-check': "Calendario con visto",
+  'desktop': "Ordenador",
+  'cursor-click': "Clic",
+  'magic-wand': "Varita",
+  'layout': "Maquetación",
+  'arrow-right': "Flecha",
 };

@@ -277,6 +277,14 @@ auditLog/{entryId}
 Solo superadmin. Recoge tanto las acciones del superadmin como los **accesos de los novios al panel**.
 
 ```
+platform/home
+  content: ContenidoHome          // plantilla, tipografías, acento, SEO y los textos, iconos e imágenes de cada sección
+  updatedAt, updatedBy
+```
+
+La HOME de `nupcialis.com` (D-65). **Lectura pública** (la ve cualquiera que abra la portada), **escritura solo desde `saveHome` / `resetHome`**: ni siquiera el superadmin escribe desde el navegador, porque el HTML se sanea en el servidor. Si el documento no existe, la web pinta lo de fábrica (`HOME_DE_FABRICA`, en `dominio/home.ts` y copiado literal en `features/home/home.ts`). El modelo es una región «COPIA LITERAL» compartida por cliente y servidor, igual que las demás, y un test compara las dos copias. Test de aislamiento en `tests/rules/home.spec.ts`.
+
+```
 payments/{paymentId}
   weddingId, amountCents (entero), concept, method: 'bizum' | 'transferencia' | 'efectivo' | 'otro'
   status: 'pending' | 'paid', paidOn: 'YYYY-MM-DD' | null, invoiceNumber, notes
@@ -331,7 +339,11 @@ partners/{partnerId}
 Los **proveedores comercializadores**, que no tienen nada que ver con los
 proveedores de una boda concreta (`weddings/{id}/vendors`, §8.16): estos venden
 Nupcialis, aquellos los contrata la pareja para su boda. Solo superadmin, sin
-cuenta ni acceso propio. Ver §4.1.
+cuenta ni acceso propio. Ver §4.1. **Solo lectura del superadmin, escritura solo desde
+`savePartner`** (valida, código único, auditado), con test de aislamiento. El `code` es
+`[a-z0-9-]{3,32}`; la tarifa mayorista va en **céntimos**. Los cobros (`payments`) llevan
+`partnerId` opcional y el método `partner_cash` (efectivo cobrado por el proveedor) lo exige;
+el saldo del proveedor **se calcula** de esos cobros y no se guarda.
 
 ### 5.2 Documento de la boda
 
@@ -626,6 +638,7 @@ weddings/{weddingId}/story/{fichero}.jpg      // fotos de «Nuestra historia»: 
 weddings/{weddingId}/gallery/{photoId}/original.jpg
 weddings/{weddingId}/gallery/{photoId}/thumb.jpg
 weddings/{weddingId}/vendors/{vendorId}/{contrato}.pdf
+platform/home/{marca-de-tiempo}.jpg            // imágenes de la HOME de nupcialis.com: lectura pública, escribe y borra solo el superadmin (≤10 MB, imagen)
 ```
 
 Los ficheros de la galería **no los escribe el navegador**: los escribe `uploadPhoto` con el SDK de administrador, y se sirven por URL con `firebaseStorageDownloadTokens`, no con `makePublic()`. Así el bucket no necesita lectura abierta y una foto borrada deja de servirse al borrar el fichero.
@@ -709,6 +722,7 @@ Solo como pegamento. Todas con App Check activado.
 | `getWeddingFile`                                             | callable (superadmin)                 | Ficha de una boda: resumen, correos de la pareja (de Firebase Auth), últimas 100 entradas de `auditLog` y cobros                                                                   |
 | `generateCoupleResetLink`                                    | callable (superadmin)                 | Genera el enlace de restablecimiento de una cuenta **de esa boda**; no envía nada y no guarda el enlace                                                                            |
 | `listPayments`, `savePayment`, `deletePayment`               | callable (superadmin)                 | Libro de cobros (S1.3e); importe en céntimos, todo auditado                                                                                                                        |
+| `listPartners`, `savePartner`, `settlePartnerPayments`       | callable (superadmin)                 | Proveedores comercializadores y liquidación en bloque de sus cobros pendientes (todo o nada), auditado (D-26, F0.7.8–9)                                                            |
 | `getReminders`, `markReminderSent`                           | callable (superadmin)                 | Avisos de después de la boda y su marca de enviado (S1.3f)                                                                                                                         |
 | `saveCatalogItem`, `deleteCatalogItem`, `loadFactoryCatalog` | callable (superadmin)                 | CRUD de los catálogos de tareas, presupuesto y preguntas del quiz (D-49); `loadFactoryCatalog` solo si el catálogo está vacío                                                      |
 | `completeWeddings`                                           | callable (superadmin)                 | Añade a las bodas ya creadas los `modules.*` y el cartel de «Nuestra historia» que les falten, sin pisar lo que la pareja decidió (D-50). Idempotente                              |
@@ -730,6 +744,7 @@ Solo como pegamento. Todas con App Check activado.
 | `recomputeCounters`                                          | trigger Firestore                     | Mantener `counters`                                                                                                                                                                |
 | ~~`onPhotoUploaded`~~                                        | —                                     | No existe: la miniatura la hace el **navegador** con un `canvas` y la manda en la misma llamada que la grande. Ver §8.5                                                            |
 | ~~`sanitizeRichContent`~~                                    | —                                     | No existe como función aparte: el saneado del HTML vive en `dominio/html.ts` y lo aplica `syncPublicProjection`, que ya reconstruye `content` con lista blanca. Ver §8.1           |
+| `saveHome` / `resetHome`                                     | callable (superadmin)                 | Guardar y publicar la HOME de `nupcialis.com` (`platform/home`, saneada en servidor con la lista blanca de `dominio/html.ts`) y volver a lo de fábrica. Auditadas (D-65)           |
 | `exportGuests`                                               | callable (owner)                      | XLSX de invitados con menús, alergias y mesas                                                                                                                                      |
 | `archiveWeddings` / `scheduledBackup`                        | programadas                           | Ciclo de vida y copias                                                                                                                                                             |
 
@@ -1376,7 +1391,8 @@ weddings/{weddingId}/checklistItems/{id}
 ### 8.18 Panel de superadmin
 
 - Listado de bodas con slug, estado, fecha, plan, invitados y última actividad.
-- Alta de boda mediante `provisionWedding`.
+- Alta de boda mediante `provisionWedding`, con cobro opcional (proveedor, importe, método, estado).
+- **Proveedores comercializadores** (`/superadmin/proveedores`): alta y edición con tarifa mayorista por plan, interruptor `active`, saldo (bodas, pendiente, liquidado) y liquidación en bloque.
 - Suspender, archivar y reactivar.
 - Acceso de soporte al panel de una boda, siempre registrado.
 - **Registro de accesos de los novios**: qué cuenta entró, cuándo, desde qué IP y con qué agente, con vista por boda y vista global. Sirve para soporte y para detectar cuentas compartidas o abandonadas.
@@ -1388,7 +1404,8 @@ weddings/{weddingId}/checklistItems/{id}
 - **Cobros** (`/superadmin/finanzas`, S1.3e): libro por boda con importe en céntimos, método, estado, fecha de cobro, número de factura y notas; totales de cobrado y pendiente, filtros por boda y estado, y **exportación a CSV** de lo que se ve. No hay pasarela de pago, no emite facturas y no fija precios (D-02).
 - **Recordatorios** (`/superadmin/recordatorios`, S1.3f): a los **60 días** de la boda, para cada boda activa, el correo de agradecimiento, la encuesta de satisfacción, el aviso a la pareja de que puede bajar las fotos y de que la web se cierra, y la tarea de cierre para el superadmin. Se enseñan dos semanas antes, con el texto listo para copiar, y se **marcan como enviados** a mano. No se envía nada.
 
-- **Menú lateral** (D-53): vertical, plegable (recuerda su estado) y con la sección activa resaltada: Bodas, Estadísticas, Finanzas, Recordatorios, Catálogos, Planes y módulos, Correos y Consejos. Cierra la sesión desde el pie.
+- **Web de inicio** (`/superadmin/home`, `platform/home`, D-65): editor de la portada de `nupcialis.com` con vista previa en vivo (escritorio / móvil) y un **borrador**: nada llega a la web hasta «Guardar y publicar» (`saveHome`). Cambia **plantilla** (Luz, Editorial, Noche), **tipografías** de títulos y texto (8 y 6 de Google Fonts), **color de acento** (6, con su versión para fondo oscuro), y **todos los textos** (Jodit donde hay formato), **iconos** (33), **imágenes** (portada y las dos capturas del panel, con texto alternativo; subir, quitar o volver a la de serie) y **SEO**. «Restaurar de fábrica» (`resetHome`) borra lo guardado y la web vuelve a los textos de la aplicación. Es una sola página vertical **sin menú**: portada, lo que hace Nupcialis, cómo funciona, capturas del panel básico y extendido, libertad de los novios, planes (apagada de fábrica, D-02), llamada final y pie.
+- **Menú lateral** (D-53): vertical, plegable (recuerda su estado) y con la sección activa resaltada: Bodas, Estadísticas, Finanzas, Recordatorios, Catálogos, Planes y módulos, Correos, Consejos y Web de inicio. Cierra la sesión desde el pie.
 - **Correos** (`/superadmin/correos`, D-53): los textos de los correos de Nupcialis (`emailTemplates/{id}`: `parejaAcceso`, `parejaRestablecer`, `invitadoInvitacion`), editables, con vista previa y «volver al original». El servidor solo **encola** el correo en `mail`; lo envía la extensión Firebase «Trigger Email». Marcadores: `{novios}`, `{nombre}`, `{fecha}`, `{enlace}`, `{web}`, `{correo}`. El diseño del correo es siempre el de Nupcialis; el superadmin cambia asunto y mensaje.
 - **Alta de boda** (D-53): el lugar de la ceremonia y de la celebración se da con **un enlace de Google Maps** pegado (sin buscador propio); al crear, el enlace de acceso de la pareja se **envía por correo** con la plantilla `parejaAcceso` y se puede **copiar**; la ficha permite reenviarlo.
 - **Planes y módulos** (`/superadmin/planes`, `plans/{plan}`, D-53): qué módulos trae cada plan. Se aplica a todas las bodas de ese plan; **añadir es inmediato, quitar pide confirmación con el número de bodas afectadas y solo desactiva** (los datos de la pareja se conservan). `publicSite` no se puede quitar. Las bodas nuevas nacen con lo que diga el plan.

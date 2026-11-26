@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   inject,
+  Injector,
   output,
   signal,
 } from '@angular/core';
@@ -16,12 +17,15 @@ import {
   type PlanContratado,
   type TipoDeCeremonia,
 } from '../../../core/alta/alta-gateway';
+import { PUERTA_GESTION } from '../../../core/superadmin/gestion-gateway';
 import { normalizarSlug, MENSAJES_SLUG, validarSlug } from '../../../core/tenant/slug';
 import { NpAlert } from '../../../design-system/components/alert/alert';
 import { NpButton } from '../../../design-system/components/button/button';
 import { NpField } from '../../../design-system/components/field/field';
 import { NpInput } from '../../../design-system/components/field/input';
 import { NpIcon } from '../../../design-system/icons/icon';
+import { eurosACentimos } from '../../../shared/dinero';
+import { COBRO_VACIO, CobroDeAlta, type CobroEditable } from './cobro-de-alta';
 import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
 
 /**
@@ -39,6 +43,7 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
     ReactiveFormsModule,
     TranslocoDirective,
     LugarDeAlta,
+    CobroDeAlta,
     NpAlert,
     NpButton,
     NpField,
@@ -53,6 +58,12 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
           <np-alert status="confirmed" [heading]="t('superadmin.alta.creada', { slug: alta.slug })">
             <p>{{ t('superadmin.alta.creadaDescripcion') }}</p>
           </np-alert>
+
+          @if (cobroSinApuntar()) {
+            <np-alert status="attention" [heading]="t('superadmin.alta.cobro.sinApuntarTitulo')">
+              <p>{{ t('superadmin.alta.cobro.sinApuntar') }}</p>
+            </np-alert>
+          }
 
           @for (aviso of alta.avisos; track aviso) {
             <np-alert status="attention" [heading]="t('superadmin.alta.avisoTitulo')">
@@ -215,6 +226,19 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
             </select>
           </np-field>
 
+          <label class="np-alta__opcion">
+            <input type="checkbox" formControlName="conCobro" />
+            {{ t('superadmin.alta.cobro.apuntar') }}
+          </label>
+          @if (conCobro()) {
+            <np-cobro-de-alta [plan]="planElegido()" [(value)]="cobro" />
+            @if (errorCobro()) {
+              <p class="np-alta__error" role="alert">
+                {{ t('superadmin.alta.cobro.errorImporte') }}
+              </p>
+            }
+          }
+
           <button npButton variant="primary" type="submit" [loading]="enviando()">
             <np-icon name="plus" />
             {{ t('superadmin.alta.crear') }}
@@ -302,6 +326,11 @@ import { LUGAR_VACIO, LugarDeAlta, type LugarEditable } from './lugar-de-alta';
       gap: var(--np-space-2);
       min-block-size: var(--np-tap-target);
     }
+    .np-alta__error {
+      margin: 0;
+      color: var(--np-declined-fg);
+      font-size: var(--np-text-sm);
+    }
     @media (max-width: 40rem) {
       .np-alta__pareja {
         grid-template-columns: 1fr;
@@ -313,6 +342,8 @@ export class AltaBoda {
   private readonly puerta = inject(PUERTA_ALTA);
   private readonly fb = inject(FormBuilder);
   private readonly i18n = inject(TranslocoService);
+  /** El cobro se apunta por la gestión; solo se pide si de verdad hay cobro. */
+  private readonly injector = inject(Injector);
 
   /** Para que el listado se recargue sin que esta pantalla sepa quién escucha. */
   readonly altaHecha = output<AltaCreada>();
@@ -329,11 +360,18 @@ export class AltaBoda {
     ceremonyType: ['civil' as TipoDeCeremonia, Validators.required],
     /** Solo con ceremonia civil: se casan donde celebran. */
     mismoSitio: [false],
+    /** Apuntar el cobro de esta boda ya (F0.7.7). */
+    conCobro: [false],
   });
 
   protected readonly tipos: readonly TipoDeCeremonia[] = ['civil', 'religious'];
   protected readonly lugarCeremonia = signal<LugarEditable>(LUGAR_VACIO);
   protected readonly lugarCelebracion = signal<LugarEditable>(LUGAR_VACIO);
+
+  protected readonly cobro = signal<CobroEditable>(COBRO_VACIO);
+  protected readonly errorCobro = signal(false);
+  /** La boda se creó pero el cobro no se pudo apuntar: hay que hacerlo a mano en Finanzas. */
+  protected readonly cobroSinApuntar = signal(false);
 
   protected readonly enviando = signal(false);
   protected readonly creada = signal<AltaCreada | null>(null);
@@ -346,6 +384,8 @@ export class AltaBoda {
   private readonly fechaEscrita = signal('');
   private readonly tipoElegido = signal<TipoDeCeremonia>('civil');
   private readonly mismoSitioMarcado = signal(false);
+  protected readonly conCobro = signal(false);
+  protected readonly planElegido = signal<PlanContratado>('basic');
 
   /** Una ceremonia religiosa casi nunca es en el salón del banquete: solo se ofrece en civil. */
   protected readonly puedeSerMismoSitio = computed(() => this.tipoElegido() === 'civil');
@@ -367,6 +407,12 @@ export class AltaBoda {
     );
     this.formulario.controls.mismoSitio.valueChanges.subscribe((valor) =>
       this.mismoSitioMarcado.set(valor ?? false),
+    );
+    this.formulario.controls.conCobro.valueChanges.subscribe((valor) =>
+      this.conCobro.set(valor ?? false),
+    );
+    this.formulario.controls.plan.valueChanges.subscribe((valor) =>
+      this.planElegido.set(valor ?? 'basic'),
     );
   }
 
@@ -416,9 +462,38 @@ export class AltaBoda {
 
   protected otraMas(): void {
     this.creada.set(null);
-    this.formulario.reset({ plan: 'basic', ceremonyType: 'civil', mismoSitio: false });
+    this.formulario.reset({
+      plan: 'basic',
+      ceremonyType: 'civil',
+      mismoSitio: false,
+      conCobro: false,
+    });
+    this.cobro.set(COBRO_VACIO);
+    this.cobroSinApuntar.set(false);
+    this.errorCobro.set(false);
     this.lugarCeremonia.set(LUGAR_VACIO);
     this.lugarCelebracion.set(LUGAR_VACIO);
+  }
+
+  /** `true` si quedó apuntado. La boda ya existe: un fallo aquí no la deshace. */
+  private async apuntarCobro(
+    weddingId: string,
+    cobro: CobroEditable,
+    amountCents: number,
+  ): Promise<boolean> {
+    const pagado = cobro.estado === 'paid';
+    const r = await this.injector.get(PUERTA_GESTION).guardarPago(null, {
+      weddingId,
+      amountCents,
+      concept: this.i18n.translate(`superadmin.alta.cobro.concepto.${this.planElegido()}`),
+      method: cobro.metodo,
+      status: cobro.estado,
+      paidOn: pagado ? cobro.fecha || new Date().toISOString().slice(0, 10) : null,
+      invoiceNumber: '',
+      notes: '',
+      partnerId: cobro.partnerId,
+    });
+    return r.ok;
   }
 
   protected async enviar(): Promise<void> {
@@ -426,6 +501,13 @@ export class AltaBoda {
       this.formulario.markAllAsTouched();
       return;
     }
+
+    // El importe se comprueba antes de crear nada: no se da de alta una boda
+    // para descubrir después que el cobro no se puede apuntar.
+    const cobro = this.conCobro() ? this.cobro() : null;
+    const importe = cobro ? eurosACentimos(cobro.importe) : null;
+    this.errorCobro.set(cobro !== null && importe === null);
+    if (this.errorCobro()) return;
 
     this.enviando.set(true);
     this.fallo.set(null);
@@ -453,6 +535,12 @@ export class AltaBoda {
     this.enviando.set(false);
 
     if (resultado.ok) {
+      this.cobroSinApuntar.set(false);
+      if (cobro && importe !== null) {
+        this.cobroSinApuntar.set(
+          !(await this.apuntarCobro(resultado.alta.weddingId, cobro, importe)),
+        );
+      }
       this.creada.set(resultado.alta);
       this.altaHecha.emit(resultado.alta);
       return;

@@ -583,7 +583,8 @@ export class FichaBoda {
   protected readonly falloEnlace = signal<FalloGestion | null>(null);
   protected readonly copiado = signal(false);
 
-  protected readonly metodos = METODOS_PAGO;
+  /** El efectivo de proveedor se apunta desde «Proveedores», no desde una boda suelta. */
+  protected readonly metodos = METODOS_PAGO.filter((m) => m !== 'partner_cash');
   protected readonly importeCobro = signal('');
   protected readonly metodoCobro = signal<MetodoPago>('efectivo');
   protected readonly guardandoCobro = signal(false);
@@ -680,6 +681,7 @@ export class FichaBoda {
       paidOn: new Date().toISOString().slice(0, 10),
       invoiceNumber: '',
       notes: '',
+      partnerId: '',
     });
     this.guardandoCobro.set(false);
 

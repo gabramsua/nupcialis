@@ -19,6 +19,7 @@ export const SECCIONES_SUPERADMIN: readonly Seccion[] = [
   { ruta: '/superadmin', clave: 'bodas', icono: 'heart', exacta: true },
   { ruta: '/superadmin/estadisticas', clave: 'estadisticas', icono: 'chart-bar', exacta: false },
   { ruta: '/superadmin/finanzas', clave: 'finanzas', icono: 'currency-eur', exacta: false },
+  { ruta: '/superadmin/proveedores', clave: 'proveedores', icono: 'storefront', exacta: false },
   { ruta: '/superadmin/recordatorios', clave: 'recordatorios', icono: 'bell', exacta: false },
   { ruta: '/superadmin/catalogos', clave: 'catalogos', icono: 'list-checks', exacta: false },
   { ruta: '/superadmin/planes', clave: 'planes', icono: 'sliders-horizontal', exacta: false },
@@ -30,6 +31,7 @@ export const SECCIONES_SUPERADMIN: readonly Seccion[] = [
     exacta: false,
   },
   { ruta: '/superadmin/consejos', clave: 'consejos', icono: 'sparkle', exacta: false },
+  { ruta: '/superadmin/home', clave: 'home', icono: 'palette', exacta: false },
 ];
 
 const CLAVE_PLEGADO = 'np.superadmin.menuPlegado';

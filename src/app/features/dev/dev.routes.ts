@@ -1,3 +1,4 @@
+import { provideHomeAdminDeMuestra } from './home-admin-de-muestra';
 import { provideEstadisticasDeMuestra } from './previa-estadisticas';
 import { Routes } from '@angular/router';
 
@@ -64,6 +65,17 @@ export const devRoutes: Routes = [
       ),
   },
   {
+    // La HOME de nupcialis.com con lo de fábrica y las tres plantillas.
+    path: 'home',
+    loadComponent: () => import('./previa-home').then((m) => m.PreviaHome),
+  },
+  {
+    // El editor de la HOME del superadmin, con guardado en memoria.
+    path: 'home-editor',
+    providers: [provideIconSprite('panel'), provideHomeAdminDeMuestra()],
+    loadComponent: () => import('../superadmin/home/home-pantalla').then((m) => m.PantallaHome),
+  },
+  {
     // El mapa del invitado con tres sitios de muestra.
     path: 'mapa',
     providers: [provideIconSprite('public')],
@@ -81,5 +93,30 @@ export const devRoutes: Routes = [
     path: 'panel',
     providers: [provideIconSprite('panel'), provideDoblesDelPanel()],
     loadComponent: () => import('./previa-panel').then((m) => m.PreviaPanel),
+  },
+  {
+    // El panel entero (cabecera, menú y el inicio) con el plan básico. De aquí
+    // salen las capturas de la HOME: `public/home/panel-basico.webp`.
+    path: 'panel-basico',
+    providers: [provideIconSprite('panel'), provideDoblesDelPanel('basic', true)],
+    loadComponent: () => import('../../layouts/panel-shell/panel-shell').then((m) => m.PanelShell),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('../panel/resumen/resumen').then((m) => m.PanelResumen),
+      },
+    ],
+  },
+  {
+    // Igual, con todos los módulos del plan extendido. `panel-extendido.webp`.
+    path: 'panel-extendido',
+    providers: [provideIconSprite('panel'), provideDoblesDelPanel('extended', true)],
+    loadComponent: () => import('../../layouts/panel-shell/panel-shell').then((m) => m.PanelShell),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('../panel/resumen/resumen').then((m) => m.PanelResumen),
+      },
+    ],
   },
 ];

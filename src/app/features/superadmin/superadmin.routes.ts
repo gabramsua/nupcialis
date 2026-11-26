@@ -10,6 +10,9 @@ import { provideFirebaseAuth } from '../../core/firebase/auth.providers';
 import { provideFirestore } from '../../core/firebase/firestore.providers';
 import { provideAppCheck } from '../../core/firebase/appcheck.providers';
 import { provideFirebaseFunctions } from '../../core/firebase/functions.providers';
+import { provideFirebaseStorage } from '../../core/firebase/storage.providers';
+import { PUERTA_HOME_ADMIN } from '../../core/home/home-gateway';
+import { crearPuertaHomeAdminFirebase } from '../../core/firebase/home-gateway.firebase';
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
 
 export const superadminRoutes: Routes = [
@@ -59,6 +62,11 @@ export const superadminRoutes: Routes = [
               import('./gestion/finanzas-pantalla').then((m) => m.PantallaFinanzas),
           },
           {
+            path: 'proveedores',
+            loadComponent: () =>
+              import('./proveedores/proveedores-pantalla').then((m) => m.PantallaProveedores),
+          },
+          {
             path: 'recordatorios',
             loadComponent: () =>
               import('./gestion/recordatorios-pantalla').then((m) => m.PantallaRecordatorios),
@@ -81,6 +89,16 @@ export const superadminRoutes: Routes = [
             path: 'cola-correos',
             loadComponent: () =>
               import('./cola-correos/cola-correos-pantalla').then((m) => m.PantallaColaCorreos),
+          },
+          {
+            // La portada de nupcialis.com. Es la única pantalla del superadmin
+            // que sube ficheros, así que Storage se provee solo aquí.
+            path: 'home',
+            providers: [
+              provideFirebaseStorage(),
+              { provide: PUERTA_HOME_ADMIN, useFactory: crearPuertaHomeAdminFirebase },
+            ],
+            loadComponent: () => import('./home/home-pantalla').then((m) => m.PantallaHome),
           },
           {
             path: 'consejos',
