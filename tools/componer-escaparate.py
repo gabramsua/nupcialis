@@ -1,6 +1,6 @@
 """Compone las imágenes de la HOME a partir de las capturas de `capturas-escaparate.cjs`.
 
-    python3 tools/componer-escaparate.py <carpeta-con-los-png> <carpeta-de-salida> [diseno]
+    python3 tools/componer-escaparate.py <carpeta-con-los-png> <carpeta-de-salida> [diseno|invitados]
 
 Genera, en la carpeta de salida:
   - hero.webp               portátil con el resumen del panel + móvil Romántica (1360x960, transparente)
@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 
 origen, destino = Path(sys.argv[1]), Path(sys.argv[2])
-SOLO = sys.argv[3] if len(sys.argv) > 3 else None  # `diseno`: solo esa imagen
+SOLO = sys.argv[3] if len(sys.argv) > 3 else None  # `diseno` o `invitados`: solo esa imagen
 destino.mkdir(parents=True, exist_ok=True)
 
 SS = 3  # supersampling para bordes limpios
@@ -130,12 +130,17 @@ if SOLO is None:
     # --- Paneles ------------------------------------------------------------
     GALERIAS = {
         'basico': ['panel-basico-rsvp.png', 'panel-basico-map.png', 'panel-basico-timeline.png'],
-        'extendido': ['panel-extendido-tables.png', 'panel-extendido-gallery.png', 'panel-extendido-checklist.png', 'panel-extendido-checklist-completa.png'],
+        'extendido': ['panel-extendido-tables.png', 'panel-extendido-gallery.png', 'panel-extendido-checklist.png', 'panel-extendido-guests.png'],
     }
     for plan, fotos in GALERIAS.items():
         for i, f in enumerate(fotos, 1):
             guardar(pantalla(f), f'galeria-{plan}-{i}.webp')
 
 
+# --- La lista de invitados: la cuarta captura del extendido, sola ----------------
+if SOLO == 'invitados':
+    guardar(pantalla('panel-extendido-guests.png'), 'galeria-extendido-4.webp')
+
 # --- «Diseño»: plantillas y paletas, en su ventana ----------------------------
-guardar(ventana(Image.open(origen / 'panel-basico-design.png'), 1400), 'diseno.webp')
+if SOLO in (None, 'diseno'):
+    guardar(ventana(Image.open(origen / 'panel-basico-design.png'), 1400), 'diseno.webp')

@@ -912,8 +912,10 @@ que hace que el básico se sienta completo; **C** = segunda ola. **G** = lo hace
       alta, botón de supresión de un invitado (§9.4, no existe) y retención + purga (D-01).
 - [ ] `B-A4` **G** Correo transaccional: instalar «Trigger Email» y un SMTP (D-05). Sin él,
       el acceso de la pareja y los avisos solo salen copiando el enlace.
-- [ ] `B-A5` **G** Producción: proyecto aparte (`RE.7`), hosting con wildcard (`F0.3.7`),
-      cabecera COOP (`RE.8`), App Check en modo exigente.
+- [~] `B-A5` **G** Producción: proyecto aparte (`RE.7`), hosting con wildcard (`F0.3.7`),
+  cabecera COOP (`RE.8`), App Check en modo exigente. **Repo listo y guía escrita**
+  (`docs/DESPLIEGUE.md`, D-71): Node 22.x fijado, solo `main` se construye, `npm run deploy:prod`.
+  Faltan las cuentas y los clics de Gabriel.
 - [ ] `B-A6` **G** Decidir qué incluye el plan básico y su precio (D-02). Hoy un básico
       puede activar todos los módulos salvo galería, quiz e historia.
 - [ ] `B-A7` **G** Prueba de punta a punta en navegador y en móvil de 360 px (`F1.4c`).
@@ -1036,6 +1038,9 @@ Backlog recogido, pendiente de ordenar con Gabriel (ver D-44):
 - [x] `H.19` **Hasta 12 puntos por plan** (D-70): `MAX_VINETAS` pasa de 6 a 12 (cliente y funciones).
       Nuevo test que avisa si cambia el número de plantillas o paletas: hay que regenerar
       `diseno.webp`, `mosaico.webp` y el carrusel (regla añadida a `CLAUDE.md`).
+- [x] `H.20` **Cuarta captura del extendido: la lista de invitados** (D-70): sustituye a «Todas las
+      tareas». 162 invitados de muestra en siete grupos de colores, con los tres estados de
+      respuesta (`/dev/panel-extendido/guests`).
 - [ ] `H.8` **Alojar las tipografías** en vez de Google Fonts, si prefieres (RGPD, D-65.8).
 
 ---

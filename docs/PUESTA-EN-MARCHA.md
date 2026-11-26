@@ -206,6 +206,9 @@ repositorio y el proyecto de Firebase.
 
 ## Bloque 8 · El pase a producción — análisis del 25/11/2026
 
+> **La guía paso a paso, con casillas, está en `docs/DESPLIEGUE.md` (26/11/2026).** Lo de aquí
+> abajo es el razonamiento.
+
 > Surgió de la pregunta «¿compro el dominio en Firebase y lo dejo todo allí?». La
 > respuesta corta es **no**; el razonamiento, para que mañana no haya que repetirlo.
 

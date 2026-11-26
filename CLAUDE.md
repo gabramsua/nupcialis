@@ -213,6 +213,10 @@ bases de datos separadas (§6).
 1. Marca en `docs/TAREAS.md` lo completado y añade lo que haya surgido.
 2. Si has tomado una decisión que no estaba en los requisitos, anótala en `docs/PENDIENTES.md` para que Gabriel la valide.
 3. Si el cambio altera el modelo de datos o una regla de negocio, actualiza `docs/REQUISITOS.md` en el mismo commit.
+4. Si añades o quitas una **plantilla o una paleta** de la web pública, regenera las imágenes de la HOME
+   (`public/home/diseno.webp`, `mosaico.webp` y `movil-*.webp`, con `tools/capturas-escaparate.cjs` y
+   `tools/componer-escaparate.py`), añade su captura al carrusel y retoca la introducción del
+   escaparate («Ocho plantillas y dieciocho paletas»). Lo vigila `home-escaparate.spec.ts`.
 
 ## Qué no hacer
 

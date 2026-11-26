@@ -11,6 +11,16 @@ que preguntarlo.
 
 ---
 
+**LO PRIMERO: el despliegue a producción (D-71).** Sigue **`docs/DESPLIEGUE.md`** de arriba abajo:
+Vercel Pro, el dominio y el wildcard, el Firebase de producción, desplegar reglas y funciones,
+hacerte superadmin y la prueba de humo. **Empieza por el DNS** (es lo que más espera). Cuando
+tengas el Firebase de producción, **pásame el ID del proyecto, el `firebaseConfig` y la clave de
+sitio de App Check** (no son secretos) y te devuelvo el parche con `environment.prod.ts` rellenado.
+Antes de nada, mira **tu zona DNS en Hostalia** y dime si el correo `hola@nupcialis.com` vive ahí:
+decide qué opción de wildcard te conviene.
+
+---
+
 ## 1. Antes de arrancar (cinco minutos, y bloquea todo lo demás)
 
 ```bash
@@ -40,7 +50,11 @@ mosaico y carrusel, y `design` nuevo) y la copia de `functions/src/dominio/home.
    «Mostrar» y «Dónde se ve». La captura de Diseño (debajo del mosaico) tiene su imagen y su pie.
 2. Si ya guardaste la HOME, el escaparate guardado no trae la captura de Diseño y toma la de fábrica;
    el mosaico y el carrusel conservan su comportamiento de siempre.
-3. Mira **PENDIENTES D-70** (qué entiendo por «visibilidad» y que en móvil la captura se ve pequeña).
+3. La cuarta captura del extendido (`galeria-extendido-4.webp`) es ahora la **lista de invitados**
+   (162 ficticios, siete grupos de colores, los tres estados de respuesta): se ve en «Dos formas de
+   vivirlo». Si ya habías guardado la HOME con las capturas de serie, la imagen cambia sola; el pie
+   y el texto alternativo guardados se quedan: edítalos o «Restaurar de fábrica».
+4. Mira **PENDIENTES D-70** (qué entiendo por «visibilidad» y que en móvil la captura se ve pequeña).
 
 **Tanda D-69 (capturas, galería con flechas y precios en los paneles de la HOME).** Sin funciones
 ni reglas nuevas, sin dependencias. **Imágenes nuevas** en `public/home/` (`galeria-basico-1..3`,

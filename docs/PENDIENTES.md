@@ -1957,8 +1957,7 @@ tu visto bueno:
    la Romántica la tapa casi del todo (72–82 % de opacidad); si quieres que la foto se vea de
    verdad, hay que tocar la plantilla (no lo he hecho: es tu producto para los novios).
 4. **«Cómo llegar» en el panel es una lista de sitios con pin**, no un mapa: es lo que hay.
-5. **La cuarta captura de Tareas** está a menos zoom (78 %) para que quepan más tareas; el menú
-   lateral no enseña «Tareas» marcado porque queda por debajo del pliegue.
+5. ~~La cuarta captura de Tareas~~ Sustituida por la de Invitados (D-70.7).
 6. **Precio y botones dentro de «Dos formas de vivirlo».** Quité «Elegid vuestro plan» y el campo
    «frase corta» y la lista de «qué incluye» de cada plan (los puntos del panel ya lo dicen). El
    subtítulo es: _«Empezad por lo sencillo o llevad toda la organización dentro. Podéis empezar con
@@ -1996,6 +1995,40 @@ tu visto bueno:
 6. **El tope de «qué incluye» por plan sube de 6 a 12** (lo pediste para añadir un punto al extendido).
    Un test falla si cambia el número de plantillas o de paletas, para acordarse de regenerar las
    imágenes; está también en `CLAUDE.md`.
+7. **La cuarta captura del extendido es ahora la lista de invitados** (en lugar de «Todas las tareas»):
+   162 invitados **ficticios** (nombres y apellidos combinados al azar y de forma determinista, sin
+   teléfonos), en siete grupos con su color, 97 confirmados, 38 sin contestar, los demás «No viene»,
+   y un par de acompañantes enlazados. Si algún nombre coincide con una persona real es casualidad.
+   Está a menos zoom (78 %) para que quepan más filas. Los datos viven en
+   `src/app/features/dev/escaparate-panel.ts` (`INVITADOS_LISTA_ESCAPARATE`) y la ruta de
+   desarrollo es `/dev/panel-extendido/guests`. Para regenerarla:
+   `node tools/capturas-escaparate.cjs <carpeta> guests` y
+   `python3 tools/componer-escaparate.py <carpeta> public/home invitados`.
+
+### D-71 · Despliegue a producción: supuestos — **pendiente de validar**
+
+Pedido por ti (2026-11-26): «avanzar con la vida del producto, rápido e indoloro, con Vercel».
+La guía está en `docs/DESPLIEGUE.md`. Lo que asumí:
+
+1. **Dos proyectos de Firebase** (el actual de desarrollo y uno nuevo y limpio de producción), no tres.
+   Es lo que ya recomendaba el bloque 8 de `PUESTA-EN-MARCHA.md`; un tercero (_staging_) cuando haya
+   clientes de pago.
+2. **Firestore y Storage en `europe-west1`**, igual que las funciones, en vez de `eur3`: evita
+   desajustes de región con los disparadores y mantiene los datos en la UE. Se fija al crear.
+3. **Producción = rama `main`; las demás no se construyen** (`ignoreCommand` en `vercel.json`). Las
+   previews de Vercel no sirven: la aplicación resuelve la boda por el host y `*.vercel.app` no es de
+   ninguna.
+4. **Node 22.x fijado** (`engines.node` pasa de `>=22` a `22.x`, también en el `package-lock.json`).
+   Con `>=22` Vercel elegiría la 26.x, que ni probamos ni lleva el CI. En tu máquina, con Node 24, `npm`
+   avisa de que el motor no coincide, pero no falla.
+5. **Instalación con `HUSKY=0 npm ci`**: en Vercel no hay `.git` útil y no queremos engancharse a los
+   _hooks_. Si Vercel trae npm 10 y falla, el arreglo está en la tabla de `DESPLIEGUE.md`.
+6. **Wildcard: dos caminos.** Vercel permite delegar solo el `_acme-challenge` y dejar los
+   nameservers en Hostalia (opción B), con la salvedad de que el wildcard no cubre el dominio raíz ni
+   `www`. Lo recomendable depende de si tienes correo en Hostalia. **Me falta que mires tu zona DNS.**
+7. **No se activa App Check exigente en la consola el primer día** (las funciones ya lo exigen por
+   código): solo después de un día de métricas.
+8. **Brevo o Resend** como SMTP de la extensión Trigger Email (D-05 sigue abierta para el producto).
 
 ### D-68 · TRIVIAL, escaparate de plantillas, precios y formulario en la HOME — **pendiente de validar**
 

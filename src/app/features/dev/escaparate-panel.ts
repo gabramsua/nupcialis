@@ -1,4 +1,7 @@
-import type { Invitado } from '../../core/invitados/invitados-gateway';
+import { computed, signal } from '@angular/core';
+
+import type { Invitado, PuertaInvitados } from '../../core/invitados/invitados-gateway';
+import type { Grupo } from '../../core/invitados/grupos-gateway';
 import type { PreguntaDelPanel, PuertaPreguntas } from '../../core/rsvp/preguntas-gateway';
 import type { FotoPublica } from '../public-site/galeria/galeria';
 import type { Mesa } from '../panel/mesas/mesas';
@@ -182,6 +185,271 @@ export const INVITADOS_ESCAPARATE: Invitado[] = [
   invitado('d1', 'Cuñado de la tía Remedios', null, { rsvpStatus: 'declined' }),
   invitado('d2', 'Marga Torres', null, { rsvpStatus: 'pending' }),
 ];
+
+// ---------------------------------------------------------------------------
+// La lista de invitados (captura «Invitados con sus grupos»)
+// ---------------------------------------------------------------------------
+
+/**
+ * Los grupos de la boda de muestra, cada uno con su color de la paleta
+ * categórica (la pareja los reparte y la lista los pinta con ellos).
+ */
+export const GRUPOS_ESCAPARATE: readonly Grupo[] = [
+  {
+    id: 'fam-a',
+    name: 'Familia de María',
+    photoAudience: 'public',
+    color: 'rosa',
+    order: 0,
+    porDefecto: false,
+  },
+  {
+    id: 'fam-b',
+    name: 'Familia de Gabriel',
+    photoAudience: 'public',
+    color: 'azul',
+    order: 1,
+    porDefecto: false,
+  },
+  {
+    id: 'primos',
+    name: 'Primos',
+    photoAudience: 'public',
+    color: 'ciruela',
+    order: 2,
+    porDefecto: false,
+  },
+  {
+    id: 'uni',
+    name: 'Universidad',
+    photoAudience: 'restricted',
+    color: 'esmeralda',
+    order: 3,
+    porDefecto: false,
+  },
+  {
+    id: 'trabajo',
+    name: 'Compañeros de trabajo',
+    photoAudience: 'restricted',
+    color: 'mostaza',
+    order: 4,
+    porDefecto: false,
+  },
+  {
+    id: 'pueblo',
+    name: 'Amigos del pueblo',
+    photoAudience: 'restricted',
+    color: 'coral',
+    order: 5,
+    porDefecto: false,
+  },
+  {
+    id: 'padel',
+    name: 'Pádel',
+    photoAudience: 'restricted',
+    color: 'turquesa',
+    order: 6,
+    porDefecto: false,
+  },
+];
+
+const NOMBRES = [
+  'Ana',
+  'Pablo',
+  'Lucía',
+  'Javier',
+  'Carmen',
+  'Daniel',
+  'Marta',
+  'Álvaro',
+  'Laura',
+  'Sergio',
+  'Elena',
+  'Adrián',
+  'Paula',
+  'Hugo',
+  'Sara',
+  'Iván',
+  'Claudia',
+  'Rubén',
+  'Noelia',
+  'Marcos',
+  'Irene',
+  'Óscar',
+  'Cristina',
+  'Raúl',
+  'Beatriz',
+  'Diego',
+  'Patricia',
+  'Nacho',
+  'Silvia',
+  'Mario',
+  'Rocío',
+  'Alberto',
+  'Natalia',
+  'Jorge',
+  'Alicia',
+  'Fernando',
+  'Eva',
+  'Víctor',
+  'Lorena',
+  'Ismael',
+  'Teresa',
+  'Manuel',
+  'Inés',
+  'Rafael',
+  'Pilar',
+  'Andrés',
+  'Julia',
+  'Tomás',
+  'Sofía',
+  'Enrique',
+];
+const APELLIDOS = [
+  'García',
+  'Martínez',
+  'López',
+  'Sánchez',
+  'Pérez',
+  'Gómez',
+  'Fernández',
+  'Díaz',
+  'Moreno',
+  'Muñoz',
+  'Álvarez',
+  'Romero',
+  'Alonso',
+  'Gutiérrez',
+  'Navarro',
+  'Torres',
+  'Domínguez',
+  'Vázquez',
+  'Ramos',
+  'Gil',
+  'Serrano',
+  'Blanco',
+  'Molina',
+  'Morales',
+  'Suárez',
+  'Ortega',
+  'Delgado',
+  'Castro',
+  'Ortiz',
+  'Rubio',
+  'Marín',
+  'Sanz',
+  'Iglesias',
+  'Medina',
+  'Cortés',
+  'Garrido',
+  'Castillo',
+  'Santos',
+  'Lozano',
+];
+
+/** Cuántos de cada grupo, y a qué lado de la pareja pertenecen. */
+const REPARTO: readonly (readonly [string, number, 'A' | 'B' | 'both'])[] = [
+  ['fam-a', 30, 'A'],
+  ['fam-b', 28, 'B'],
+  ['primos', 18, 'both'],
+  ['uni', 24, 'A'],
+  ['trabajo', 20, 'B'],
+  ['pueblo', 26, 'both'],
+  ['padel', 16, 'B'],
+];
+
+/**
+ * 162 invitados repartidos en siete grupos y en los tres estados de respuesta
+ * (la mayoría confirmados, un buen puñado sin contestar y unos pocos que no
+ * vienen), con niños en las familias y acompañantes enlazados a su titular.
+ * Determinista: la misma captura sale igual cada vez.
+ */
+export const INVITADOS_LISTA_ESCAPARATE: Invitado[] = (() => {
+  let semilla = 20270612;
+  const azar = (): number => {
+    semilla = (semilla * 1103515245 + 12345) % 2147483648;
+    return semilla / 2147483648;
+  };
+  const elige = <T>(lista: readonly T[]): T => lista[Math.floor(azar() * lista.length)]!;
+
+  const lista: Invitado[] = [];
+  const usados = new Set<string>();
+  let n = 0;
+  for (const [grupo, cuantos, lado] of REPARTO) {
+    // Una familia comparte apellido; los amigos no.
+    const apellidoDeFamilia = elige(APELLIDOS);
+    let titular: Invitado | null = null;
+    for (let i = 0; i < cuantos; i++) {
+      n++;
+      const familia = grupo === 'fam-a' || grupo === 'fam-b';
+      const nuevoNombre = (): string => {
+        const ap =
+          familia && azar() < 0.55 ? apellidoDeFamilia : `${elige(APELLIDOS)} ${elige(APELLIDOS)}`;
+        return `${elige(NOMBRES)} ${ap}`;
+      };
+      let nombre = nuevoNombre();
+      while (usados.has(nombre)) nombre = nuevoNombre();
+      usados.add(nombre);
+
+      const t = azar();
+      const estado = t < 0.6 ? 'confirmed' : t < 0.86 ? 'pending' : 'declined';
+      // Cada cuarto invitado de un grupo viene con su pareja, enlazada al titular.
+      const acompanante = titular !== null && i % 4 === 1;
+      const invitado = {
+        id: `g${n}`,
+        fullName: nombre,
+        nickname: '',
+        phone: null,
+        side: lado,
+        ageGroup: familia && azar() < 0.14 ? 'child' : 'adult',
+        groupIds: [grupo],
+        rsvpStatus: acompanante ? titular!.rsvpStatus : estado,
+        isCompanion: acompanante,
+        invitedById: acompanante ? titular!.id : null,
+        loginCount: estado === 'pending' ? 0 : 1 + Math.floor(azar() * 5),
+        notes: '',
+        menu: 'Normal',
+        allergies: '',
+        tableId: null,
+        apuntadoPorInvitado: false,
+        altaEn: null,
+      } as Invitado;
+      lista.push(invitado);
+      if (!acompanante) titular = invitado;
+    }
+  }
+  return lista;
+})();
+
+/** Los grupos de muestra con la forma del `GruposStore`, que aquí no habla con Firestore. */
+export function gruposStoreDeMuestra() {
+  const _grupos = signal<readonly Grupo[]>(GRUPOS_ESCAPARATE);
+  return {
+    grupos: _grupos.asReadonly(),
+    estado: () => 'lista' as const,
+    fallo: () => null,
+    porId: computed(() => new Map(_grupos().map((g) => [g.id, g]))),
+    async cargar() {
+      return;
+    },
+    async guardar() {
+      return { ok: true as const, id: 'nuevo', creado: true };
+    },
+    async borrar() {
+      return { ok: true as const, miembros: 0 };
+    },
+    async reordenar() {
+      return { ok: true as const };
+    },
+  };
+}
+
+/** Lo justo de `PuertaInvitados` para que la pantalla de invitados se abra con la lista de muestra. */
+export const PUERTA_INVITADOS_ESCAPARATE = {
+  async listar() {
+    return { ok: true as const, invitados: [...INVITADOS_LISTA_ESCAPARATE] };
+  },
+} as unknown as PuertaInvitados;
 
 // ---------------------------------------------------------------------------
 // Fotos de la galería

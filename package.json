@@ -4,13 +4,14 @@
   "description": "SaaS multi-tenant de organización de bodas",
   "private": true,
   "engines": {
-    "node": ">=22",
+    "node": "22.x",
     "npm": ">=11"
   },
   "scripts": {
     "build": "npm run check:plantillas && ng build",
     "check:plantillas": "node tools/comprueba-plantillas.mjs",
     "deploy:functions": "node tools/desplegar-functions.mjs",
+    "deploy:prod": "npm run deploy:rules -- --project prod && npm run deploy:functions -- --project prod",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "format": "prettier --write \"**/*.{ts,html,scss,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,html,scss,json,md}\"",

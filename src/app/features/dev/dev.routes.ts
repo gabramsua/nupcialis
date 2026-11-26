@@ -3,6 +3,9 @@ import { provideEstadisticasDeMuestra } from './previa-estadisticas';
 import { Routes } from '@angular/router';
 
 import { provideIconSprite } from '../../design-system/icons/icon-sprite.providers';
+import { PUERTA_INVITADOS } from '../../core/invitados/invitados-gateway';
+import { GruposStore } from '../panel/invitados/grupos.store';
+import { PUERTA_INVITADOS_ESCAPARATE, gruposStoreDeMuestra } from './escaparate-panel';
 import {
   provideDoblesDelPanel,
   provideGaleriaDeMuestra,
@@ -137,6 +140,15 @@ export const devRoutes: Routes = [
         loadComponent: () => import('../panel/resumen/resumen').then((m) => m.PanelResumen),
       },
       // Las pantallas que enseña el carrusel de capturas del plan extendido.
+      {
+        // La lista de invitados: más de 160, en siete grupos de colores.
+        path: 'guests',
+        providers: [
+          { provide: PUERTA_INVITADOS, useValue: PUERTA_INVITADOS_ESCAPARATE },
+          { provide: GruposStore, useFactory: gruposStoreDeMuestra },
+        ],
+        loadComponent: () => import('../panel/invitados/invitados').then((m) => m.Invitados),
+      },
       {
         path: 'tables',
         loadComponent: () => import('../panel/mesas/mesas-pantalla').then((m) => m.PanelMesas),

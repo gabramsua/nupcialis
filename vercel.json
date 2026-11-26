@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm ci",
+  "installCommand": "HUSKY=0 npm ci",
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/nupcialis/browser",
   "cleanUrls": false,

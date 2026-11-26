@@ -33,8 +33,8 @@ const PANTALLAS = [
   ['extendido', 'tables', 'Mesas', null],
   ['extendido', 'gallery', 'Galería', 'galeria'],
   ['extendido', 'checklist', 'Tareas', null],
-  // La misma pantalla más ancha y más alta, para que se vea la lista entera.
-  ['extendido', 'checklist', 'Tareas', 'completa'],
+  // La lista de invitados (162, en siete grupos de colores), más ancha y alta.
+  ['extendido', 'guests', 'Invitados', 'completa'],
   // «Diseño»: las ocho plantillas y las dieciocho paletas, sin la foto de portada.
   ['basico', 'design', 'Diseño', 'diseno'],
 ];
@@ -87,7 +87,7 @@ function retoques(opciones) {
   }
 
   if (retoque === 'completa') {
-    // Algo menos de zoom: caben más tareas en la misma captura.
+    // Algo menos de zoom: caben más filas en la misma captura.
     document.documentElement.style.zoom = '0.78';
     document.querySelectorAll('np-alert').forEach((e) => e.remove());
   }
@@ -144,7 +144,7 @@ async function esperar(pagina) {
     await pagina.evaluate(retoques, { activo, retoque, resumen: false });
     await pagina.waitForTimeout(400);
     await pagina.screenshot({
-      path: `${salida}/panel-${plan}-${ruta}${completa ? '-completa' : ''}.png`,
+      path: `${salida}/panel-${plan}-${ruta}.png`,
     });
     await contexto.close();
   }

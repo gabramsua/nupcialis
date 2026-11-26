@@ -668,9 +668,9 @@ export const HOME_DE_FABRICA: ContenidoHome = {
         {
           image: IMG(
             '/home/galeria-extendido-4.webp',
-            'La lista de tareas de la boda, completa, con las hechas y las que faltan',
+            'La lista de invitados, con más de 160 personas en siete grupos de colores y su respuesta',
           ),
-          label: 'Todas las tareas de la boda',
+          label: 'Invitados por grupos y respuestas',
         },
       ],
     },
