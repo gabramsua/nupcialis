@@ -46,12 +46,12 @@ importa mucho y se acepta mantener el Worker.
 
 ## Bloque 0 · Decisiones que bloquean
 
-| ID | Decisión | Bloquea | Quién |
-|---|---|---|---|
-| D-15 | Dominio definitivo | Bloque 1 | ✅ `nupcialis.com` |
-| D-12 | Familia de iconos base | F0.2 | ✅ Phosphor |
+| ID   | Decisión                         | Bloquea    | Quién                    |
+| ---- | -------------------------------- | ---------- | ------------------------ |
+| D-15 | Dominio definitivo               | Bloque 1   | ✅ `nupcialis.com`       |
+| D-12 | Familia de iconos base           | F0.2       | ✅ Phosphor              |
 | D-16 | Dónde vive el panel de la pareja | F0.3, F0.4 | ✅ Subdominio de la boda |
-| D-03 | Editor de texto enriquecido | F1 | ✅ Jodit con `ngx-jodit` |
+| D-03 | Editor de texto enriquecido      | F1         | ✅ Jodit con `ngx-jodit` |
 
 **Ninguna decisión bloquea ya el arranque de F0.**
 
@@ -73,11 +73,44 @@ un subdominio de boda puede escribir cookies visibles en otro.
 
 Depende de D-15.
 
-- [ ] `B1.1` Decidir el dominio y comprarlo. **No en Cloudflare Registrar**, que obliga a sus nameservers y rompería el wildcard de Vercel. Registradores neutros: Porkbun, Namecheap, Dynadot. O directamente en Vercel, que además regala el primer año con Pro.
-- [ ] `B1.2` Comprar defensivamente la variante obvia (`.es` si se va a `.com`, o al revés). Son 15 € al año contra el disgusto de que alguien la registre después.
+- [x] `B1.1` **`nupcialis.com` comprado en Hostalia el 09/09/2026.** 0,59 € el primer
+      año; **la renovación son 12,99 € + IVA**, unos 15,7 €.
+- [ ] `B1.1a` Activar **renovación automática**. Perder el dominio por un descuido
+      de quince euros sería un desastre desproporcionado.
+- [ ] `B1.1b` Comprobar y activar la **privacidad WHOIS** del `.com`. Sin ella, tu
+      nombre y tu dirección quedan en un registro público que rastrean los
+      spammers.
+- [ ] `B1.2` Registrar `nupcialis.es`, que en Hostalia es **gratis el primer año**
+      y 6,99 € + IVA después. Los `.es` no publican datos de particulares, así que
+      ahí no hace falta privacidad.
+
+> **Por qué Hostalia y no Porkbun.** La recomendación original era "no compres el
+> dominio en tu proveedor de hosting", y el hosting aquí es Vercel; Hostalia es
+> solo el registrador, así que el acoplamiento que preocupaba no aplica.
+> Verificado el 09/09/2026 lo único que era un "no" técnico: **Hostalia permite
+> cambiar los servidores DNS a nameservers externos desde su panel**, sin
+> restricciones ni coste, que es lo que exige el wildcard de Vercel. La
+> diferencia de precio frente a un registrador especialista son tres o cuatro
+> euros al año.
+
 - [ ] `B1.3` Crear cuenta de Vercel y contratar **Pro**.
-- [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel.
-- [ ] `B1.5` Crear cuenta de Google Cloud con facturación activada. Firebase necesita **plan Blaze** para Cloud Functions; el nivel gratuito sigue aplicándose, pero hace falta tarjeta.
+- [ ] `B1.4` Apuntar el dominio a los nameservers de Vercel desde el panel de
+      Hostalia: `ns1.vercel-dns.com` y `ns2.vercel-dns.com`. **La propagación
+      tarda entre 24 y 48 horas**: no te asustes si a los diez minutos no va.
+- [ ] `B1.5` Cuenta de Google para Firebase. **Recomendación: usa tu Gmail actual**,
+      no crees uno vacío. Lo que de verdad da separación no es la cuenta, es esto:
+  - [ ] `B1.5a` **Cuenta de facturación propia** para Nupcialis, separada de la de
+        tus proyectos antiguos. Es lo que impide que una función en bucle aquí
+        toque el presupuesto de otra cosa, y lo que te deja ver el coste real del
+        producto aislado.
+  - [ ] `B1.5b` **Un segundo propietario** en los tres proyectos: otra cuenta de
+        Google que controles. Perder el acceso a la cuenta personal es el modo de
+        fallo que más se subestima y del que peor se sale.
+  - [ ] `B1.5c` Verificación en dos pasos con códigos de recuperación guardados
+        fuera del móvil.
+  - [ ] `B1.5d` Reservar pronto los IDs `nupcialis-dev`, `nupcialis-staging` y
+        `nupcialis-prod`: los identificadores de proyecto son únicos a nivel
+        mundial y no se pueden cambiar después. Firebase necesita **plan Blaze** para Cloud Functions; el nivel gratuito sigue aplicándose, pero hace falta tarjeta.
 - [ ] `B1.6` Decidir el correo de la organización (`hola@`, `soporte@`) — hace falta para el registrador, para Firebase y para las notificaciones.
 
 **Coste recurrente estimado:** Vercel Pro ~20 $/mes, dominio 10-40 €/año, Firebase
@@ -86,11 +119,16 @@ Fuera de esto, el `.com` aparcado si se decide negociarlo.
 
 ## Bloque 2 · Repositorio — **G** crea, **C** configura
 
-- [ ] `B2.1` **G**: crear el repositorio en GitHub (privado) y pasarme la URL.
-- [ ] `B2.2` **C**: añadir el remoto y subir el trabajo hecho.
+- [x] `B2.1` **G**: repositorio creado en `github.com/gabramsua/nupcialis`.
+- [x] `B2.1b` **G**: **el repositorio se queda público**, decidido el 08/09/2026,
+      de momento y de forma consciente. No hay secretos commiteados. Si algún día
+      se cierra, recordar que el historial ya es público: lo que se subió, subido
+      está.
+- [x] ~~`B2.1c`~~ _(contexto original de la decisión)_: **el repositorio es público.** Decidir si es lo que quieres: hoy cualquiera lee `REQUISITOS.md` entero, con el modelo de negocio, la estrategia de dominio, los planes de precio y el razonamiento de seguridad. No hay secretos commiteados —lo he comprobado—, así que no es una fuga, pero sí es tu plan de producto a la vista. Se cambia en Settings → General → Danger Zone.
+- [x] `B2.2` **C**: remoto añadido. **G** hace los push.
 - [ ] `B2.3` **G**: protección de rama en `main` — sin push directo, revisión antes de fusionar.
 - [ ] `B2.4` **C**: plantilla de pull request con recordatorio de las siete reglas de oro.
-- [ ] `B2.5` **C**: workflow de GitHub Actions con lint, build, tests unitarios y **tests de reglas** como bloqueantes.
+- [x] `B2.5` **C**: workflow de GitHub Actions con lint, formato, tests unitarios, build y batería de reglas, en todas las ramas.
 - [ ] `B2.6` **G**: dar de alta los secretos de Actions (tokens de Firebase y Vercel).
 - [ ] `B2.7` **C**: `.env.example` documentando cada variable, sin valores reales.
 
@@ -102,7 +140,7 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 - [ ] `B3.2` En los tres: Firestore en modo nativo, **región europea** (`eur3` o `europe-west1`). **Esto no se puede cambiar después:** la ubicación de Firestore se fija al crearla.
 - [ ] `B3.3` Activar Storage en la misma región.
 - [ ] `B3.4` Activar Authentication con email/contraseña y Google.
-- [ ] `B3.5` Plan Blaze en `staging` y `prod`. `dev` puede quedarse en Spark si se trabaja con emuladores.
+- [ ] `B3.5` Plan Blaze en los tres proyectos. Sin emuladores (D-33), `dev` también necesita Blaze: las Cloud Functions no se despliegan en Spark.
 - [ ] `B3.6` App Check con reCAPTCHA Enterprise, en modo de solo monitorización al principio.
 - [ ] `B3.7` Registrar la app web en cada proyecto y guardarme las claves de configuración.
 - [ ] `B3.8` Presupuesto y alertas de facturación en Google Cloud. **No te saltes esto:** Blaze es pago por uso y una función mal escrita en bucle se nota en la factura.
@@ -119,20 +157,25 @@ Tres proyectos, no uno. Es la única forma de tocar sin miedo.
 
 ## Bloque 5 · Entorno local — **G**
 
-- [ ] `B5.1` Node LTS (20 o 22).
+- [ ] `B5.1` **Node 22.22.3 o superior** (o 24.15+, o 26+). Angular 22 lo exige y
+      con Node 20 el CLI ni arranca. En Windows: `winget install OpenJS.NodeJS.LTS`,
+      o `fnm`/`nvm-windows` si quieres varias versiones a la vez.
+- [ ] `B5.1b` **npm 11 o superior**, después de instalar Node: `npm i -g npm@11`.
+      Node trae npm 10 de serie, y con npm 10 la instalación de este proyecto
+      falla con un error críptico (`edgesOut`) al resolver un peer de Vitest.
+      Hay que repetirlo cada vez que se cambia de versión de Node.
 - [ ] `B5.2` `npm i -g @angular/cli firebase-tools`.
 - [ ] `B5.3` `firebase login` y comprobar acceso a los tres proyectos.
 - [ ] `B5.4` `gh` autenticado, si quieres que yo pueda crear ramas y PRs.
-- [ ] `B5.5` Java runtime, que lo necesitan los emuladores de Firestore.
-- [ ] `B5.6` Verificar que `firebase emulators:start` levanta y responde.
+- [ ] `B5.5` Java runtime. Ya solo lo necesita `npm run test:rules`, que en el día a día corre en el CI.
 
 ## Bloque 6 · Spikes de verificación — **C**
 
 Pruebas cortas para no construir sobre una suposición. Ninguna pasa de medio día.
 
-- [x] `S-1` **Dominios autorizados de Firebase Auth.** *Hecho 08/09/2026.* No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
-- [x] `S-2` **Comparativa de familias de iconos.** *Hecho 08/09/2026.* Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
-- [x] `S-3` **Editor de texto enriquecido.** *Cerrado por decisión 08/09/2026:* Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
+- [x] `S-1` **Dominios autorizados de Firebase Auth.** _Hecho 08/09/2026._ No admiten comodín, pero se añaden por API (Identity Toolkit Admin v2). `provisionWedding` lo hace como un paso más del alta y el panel se queda en el subdominio de la boda. No hay límite documentado: queda como riesgo instrumentado.
+- [x] `S-2` **Comparativa de familias de iconos.** _Hecho 08/09/2026._ Phosphor 50/50 conceptos, Lucide 49/50 (sin WhatsApp), Tabler 49/50 (sin baile). Elegido **Phosphor**, MIT, seis pesos.
+- [x] `S-3` **Editor de texto enriquecido.** _Cerrado por decisión 08/09/2026:_ Jodit con `ngx-jodit`. Queda medir su peso real al integrarlo y, si compromete el presupuesto de 200 KB, cargarlo solo en el panel.
 - [ ] `S-4` **Wildcard en Vercel de punta a punta.** Desplegar una página mínima y comprobar que tres subdominios inventados resuelven con certificado válido, y cuánto tarda uno nuevo la primera vez.
 - [ ] `S-5` **Coste de la galería.** Estimar almacenamiento y transferencia de una boda de 150 invitados subiendo fotos, para fijar las cuotas por plan.
 
@@ -156,5 +199,241 @@ S-2 ──> D-12 ──> F0.2 (sistema visual) ──> todo lo demás
 y depende de una decisión de diez minutos. El dominio, en cambio, no bloquea nada
 hasta que haya algo que desplegar.
 
-**Se puede empezar F0.1 hoy mismo** con emuladores, sin dominio, sin Vercel y sin
-proyectos de Firebase creados. Solo hace falta el repositorio.
+**Se puede empezar F0.1 hoy mismo** sin dominio y sin Vercel: basta el
+repositorio y el proyecto de Firebase.
+
+---
+
+## Bloque 8 · El pase a producción — análisis del 25/11/2026
+
+> Surgió de la pregunta «¿compro el dominio en Firebase y lo dejo todo allí?». La
+> respuesta corta es **no**; el razonamiento, para que mañana no haya que repetirlo.
+
+### Por qué no «todo en Firebase»
+
+- **Firebase Hosting no vende dominios.** Solo sirve dominios que has comprado en otro sitio
+  (o los gestiona vía Google Domains/Squarespace, que ya no es un producto de Firebase).
+  Comprar «en Firebase» no existe.
+- **No hay wildcard.** Hosting admite dominios personalizados de uno en uno, con un tope de
+  unos **20 subdominios/apex por sitio**. Nupcialis necesita `*.nupcialis.com`: un subdominio
+  por boda, **sin darlos de alta a mano**. Es el motivo por el que Vercel ganó en §3.
+- **Lo que sí se queda en Firebase** (y es lo que hace falta): Auth, Firestore, Storage,
+  Functions y App Check. Hosting solo sirve ficheros estáticos; eso lo hace Vercel.
+
+### La opción elegida: Vercel + wildcard
+
+- Vercel emite el certificado del wildcard **solo si controla el DNS**: hay que apuntar el
+  dominio a sus nameservers (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`), o delegar solo el
+  reto `_acme-challenge` con un CNAME. **Hobby no sirve** para un producto de pago (uso
+  comercial prohibido); **Pro cuesta 20 $/mes con un puesto incluido**.
+- El dominio ya está comprado (`nupcialis.com`, en Hostalia): **no hace falta moverlo**, solo
+  cambiar los nameservers. Los dominios gratis del primer año de Vercel solo valen para 16
+  TLD y **no incluyen `.com` ni `.es`**: no cuentes con ahorrar ahí.
+- En `vercel.json` (ya en el repositorio, `RE.8`): reescritura a `index.html` para las rutas
+  de la SPA, cabecera `Cross-Origin-Opener-Policy: same-origin-allow-popups` (sin ella el
+  acceso con Google se cuelga, 16/09), `nosniff`, `Referrer-Policy`, `X-Frame-Options`,
+  `Permissions-Policy`, HSTS y caché larga solo para los ficheros con hash.
+  **Falta una CSP**: es la pieza que más protege y la que más rompe (Firebase, Google Fonts,
+  teselas del mapa, Storage). Plan: ponerla primero en `Content-Security-Policy-Report-Only`.
+
+### Pasos, en orden (cada uno desbloquea el siguiente)
+
+1. **G** Crear el **proyecto de Firebase de producción** (ver decisión abajo), activar Blaze y
+   fijar una **alerta de presupuesto** (`B-A8`).
+2. **G** Cuenta de Vercel Pro; importar el repositorio; `vercel.json` ya está.
+3. **G** Añadir `nupcialis.com` y `*.nupcialis.com` en Vercel; cambiar los nameservers en
+   Hostalia. **Propagación: hasta 48 h**, hazlo con tiempo.
+4. **G** Variables de entorno de producción (config web de Firebase, clave de reCAPTCHA de App
+   Check) y `environment.prod`. Registrar los dominios en Auth → Authorized domains (D-16:
+   `authorizeWeddingDomain` ya lo hace por boda; el tope de la lista **no está documentado**).
+5. **C** `firebase deploy` de functions y reglas al proyecto de producción
+   (`npm run deploy:functions`, `npm run deploy:rules`), y `functions/tools/dar-superadmin.mjs`.
+6. **G** Instalar «Trigger Email» con un SMTP (`B-A4`, D-05): sin él no salen los correos.
+7. **G** App Check en modo exigente (solo después de comprobar que nada legítimo falla).
+8. **G** Copia diaria de Firestore y reporte de errores (`B-A8`): hoy no hay ninguno.
+9. **Prueba de punta a punta en producción** con una boda real de prueba y un móvil de 360 px
+   (`B-A7`, `S-4`).
+
+### Decisión abierta (suya): ¿dos proyectos de Firebase o tres?
+
+- **Dos** (desarrollo + producción): menos coste y menos configuración. Lo habitual.
+- **Tres** (desarrollo + _staging_ + producción): permite ensayar el despliegue y las reglas
+  con datos parecidos a los reales sin tocar a los clientes. **Mi recomendación: dos ahora**,
+  y un tercero cuando haya clientes de pago y algo que proteger. `angular.json` ya tiene una
+  configuración `staging`, así que el salto es barato.
+
+---
+
+## Bloque 7 · Cerrar el alta de bodas contra Firebase de verdad — **G**, con dos herramientas mías
+
+El alta ya no pasa por un script: está el formulario del panel de superadmin.
+Desde D-33 todo se prueba contra Firebase directamente, así que este bloque dejó
+de ser una excepción y es, sencillamente, cómo se trabaja.
+
+El orden es este, y el primer punto lo bloquea todo.
+
+1. **Activar el plan Blaze.** Sin él no se despliega ninguna Cloud Function, y
+   sin funciones no hay alta. Pendiente de la verificación de los datos de pago.
+   Nada de lo que sigue se puede hacer antes.
+2. `npm run deploy:rules` — esto sí funciona hoy, sin Blaze.
+3. `npm run deploy:functions`.
+4. **Concederte el superadmin.** El claim no lo otorga ninguna pantalla del
+   producto a propósito, así que va a mano:
+
+   ```bash
+   # descarga la clave de cuenta de servicio y guárdala FUERA del repositorio
+   export GOOGLE_APPLICATION_CREDENTIALS=/ruta/fuera/del/repo/clave.json
+   node functions/tools/dar-superadmin.mjs tu-correo@ejemplo.com
+   ```
+
+   Si la cuenta todavía no existe en el proyecto, añade `--crear` y el script la
+   crea y devuelve un enlace para que pongas la contraseña. La alternativa es
+   levantar la app con `npm start`, entrar en
+   `localhost:4200/superadmin/acceso` y pulsar «Entrar con Google»: eso también
+   crea la cuenta, y `localhost` ya está en los dominios autorizados de fábrica.
+
+   El script se niega a arrancar si la clave está dentro del repositorio:
+   es público, y esa clave abre el proyecto entero sin caducidad ni segundo
+   factor. **Bórrala al terminar.**
+
+5. **Levantar la aplicación**, que ya habla con el proyecto de Firebase:
+
+   ```bash
+   npm start
+   ```
+
+   Entra por `localhost:4200/superadmin` y da de alta una boda desde el
+   formulario. Con eso queda probado de verdad el camino entero: transacción del
+   slug, semillas, cuentas de Auth, claims y **el alta del subdominio en los
+   dominios autorizados**.
+
+6. **Comprobar en la consola de Firebase** que el subdominio de esa boda aparece
+   en Authentication → Settings → Authorized domains. Ese es el único punto que
+   cierra F0.6.X.
+
+**Si el acceso con Google abre la ventana y la cierra sin entrar**, mira la
+consola: `Cross-Origin-Opener-Policy policy would block the window.closed call`.
+El servidor de desarrollo servía una política que impide a la página leer si la
+ventana emergente se ha cerrado, que es justo como lo detecta el SDK de Firebase,
+y el acceso se quedaba colgado sin decir nada. Ya está puesta la cabecera
+`same-origin-allow-popups` en `angular.json`; basta con reiniciar `ng serve`.
+**En producción hay que servir esa misma cabecera** (en Vercel, `headers` de
+`vercel.json`), o el acceso con Google fallará igual para las parejas.
+
+### «Cannot determine backend specification. Timeout after 10000»
+
+Si `npm run deploy:functions` muere con esto:
+
+```
+Error: User code failed to load. Cannot determine backend specification.
+Timeout after 10000.
+```
+
+**No es que el código falle.** Antes de desplegar, la CLI carga
+`functions/lib/index.js` en un proceso aparte para averiguar qué funciones hay,
+y le da diez segundos. Cargar `firebase-admin` y `firebase-functions` son
+cientos de ficheros, y justo antes la CLI ha hecho un `npm ci` que los ha dejado
+todos fríos: en Windows, con el antivirus escaneando cada uno la primera vez que
+se lee, pasar de diez segundos es lo normal. En Linux el mismo `index.js` carga
+en menos de un segundo.
+
+Ya está resuelto en el repositorio: `npm run deploy:functions` pasa por
+`tools/desplegar-functions.mjs`, que sube `FUNCTIONS_DISCOVERY_TIMEOUT` a 120
+segundos. Si te lo encuentras con la CLI a pelo:
+
+```bash
+FUNCTIONS_DISCOVERY_TIMEOUT=120 firebase deploy --only functions
+```
+
+**Si aun con 120 segundos falla, entonces sí es el código.** Significa que algo
+en el ámbito global de alguna función hace trabajo pesado o llamadas de red al
+cargarse, y eso se arregla moviéndolo a `onInit()`, no subiendo el número. Para
+verlo, lo que enseña el error de verdad es:
+
+```bash
+firebase deploy --only functions --debug
+```
+
+Y para comprobar que el problema no es nuestro, esto tiene que cargar rápido y
+sin lanzar:
+
+```bash
+node -e "require('./functions/lib/index.js')"
+```
+
+### App Check: el 401 de `provisionWedding`
+
+Si el alta responde **401 Unauthorized**, no es tu sesión ni tus claims: es App
+Check. Las funciones lo exigen fuera del emulador y el navegador no manda ningún
+token hasta que se configura.
+
+**La clave de App Check no es ninguna de las que ya tienes en el entorno.** El
+`apiKey` y el `appId` de `environment.*.ts` son la configuración web de Firebase
+y llevan ahí desde el primer día; App Check necesita **otra clave distinta**, la
+de reCAPTCHA, en el campo `appCheckSiteKey`. Mientras ese campo esté a `null`, la
+aplicación no inicializa App Check y toda invocable responde 401. Confundirlas es
+el despiste que cuesta la tarde.
+
+Usamos **reCAPTCHA Enterprise**, no v3: la consola de Firebase ya solo ofrece
+Enterprise al registrar una app nueva. v3 no está formalmente obsoleto, pero
+Google dice que las integraciones nuevas vayan a Enterprise, y la consola no te
+deja crear la clave de v3 aunque quisieras.
+
+Tres pasos, una vez:
+
+1. **Crea la clave.** Consola de Firebase → **App Check** → pestaña **Apps** →
+   tu app web → **Registrar** → **reCAPTCHA Enterprise**. Si no tienes clave
+   todavía, el enlace te lleva a Google Cloud → reCAPTCHA → **Crear clave**, y
+   ahí lo que importa es:
+   - Tipo de plataforma: **sitio web**.
+   - Tipo de clave: **basada en puntuación** (_score-based_), **no** casilla. Una
+     clave de casilla haría aparecer el «no soy un robot» a los invitados de la
+     boda, que es exactamente lo que no queremos.
+   - Dominios: `nupcialis.com` y los subdominios que uses. **No añadas
+     `localhost`**: Google no lo permite en una clave de producción, y para local
+     está el paso 3.
+2. **Pega la clave** en `appCheckSiteKey` de `src/environments/environment.real.ts`
+   (y en `environment.ts`, `environment.staging.ts` y `environment.prod.ts` cuando
+   toque). **No es un secreto**: viaja en el bundle de cualquier visitante, igual
+   que el resto de la configuración web de Firebase.
+3. **Token de depuración para `localhost`.** Como la clave no cubre `localhost`,
+   en desarrollo la aplicación activa sola el proveedor de depuración. Arranca
+   `npm start`, abre la consola del navegador y busca una línea con un
+   UUID: es el token. Regístralo en **App Check → Apps → tu app → los tres puntos
+   → Administrar tokens de depuración**.
+
+   **Un token por origen, y esto muerde.** El SDK lo guarda en el almacenamiento
+   del navegador, que está separado por origen: `mms.localhost` no comparte nada
+   con `localhost` ni con `otraboda.localhost`. Cada subdominio con el que
+   pruebes genera el suyo, y sin registrar responde **401** en toda llamada a una
+   función — que es como se ve: «No se ha podido cargar la lista».
+
+   Para no ir a la consola una vez por boda de prueba, **reutiliza un token**:
+   abre el subdominio nuevo con el parámetro y se queda guardado ahí.
+
+   ```
+   http://mms.localhost:4200/panel?appcheck=TU-UUID-REGISTRADO
+   ```
+
+   **El parámetro se queda en la barra hasta que navegues a otro sitio.** Se
+   intentó quitarlo por código y el router de Angular lo devuelve: reescribe la
+   URL desde su propio estado en cuanto termina la navegación inicial. No
+   compensa pelearse con eso por estética — hace falta una vez por subdominio y
+   a partir de ahí se navega sin él. Para olvidarlo:
+   `localStorage.removeItem('np-appcheck-debug-token')`.
+
+   **El token no va en el repositorio**, ni siquiera en `environment.real.ts`:
+   salta App Check entero y este repositorio es público.
+
+Después de eso, recarga y el alta debería pasar.
+
+**Dos cosas que van a chirriar en el paso 5 y son esperables.** El acceso con
+contraseña funciona desde `<slug>.localhost`, pero el de Google no: ese host no
+está en los dominios autorizados. Es la regla 8 vista de cerca. Y las funciones
+invocables exigen App Check siempre, así que desde `localhost` hace falta un
+token de depuración registrado (abajo, y en `functions/README.md`).
+
+**Lo que escribas trabajando se queda.** No hay emuladores que reiniciar
+(D-33): reutiliza las bodas de prueba que ya existan en vez de dar de alta una
+nueva cada vez, porque cada alta consume un dominio autorizado y ese límite
+Firebase no lo documenta (§11).

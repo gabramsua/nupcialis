@@ -1,0 +1,86 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner(wid) {
+      return request.auth != null
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'owner';
+    }
+
+    function isGuestOf(wid) {
+      return request.auth != null
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'guest';
+    }
+
+    function isSuperadmin() {
+      return request.auth != null && request.auth.token.superadmin == true;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
+    }
+
+    // Las imágenes de la HOME de nupcialis.com: públicas, y solo las sube y
+    // borra el superadmin.
+    match /platform/home/{file} {
+      allow read: if true;
+      allow create, update: if isSuperadmin() && isImage()
+                            && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isSuperadmin();
+    }
+
+    match /weddings/{wid}/hero/{file} {
+      allow read: if true;                                   // portada pública
+      allow write: if isOwner(wid) && isImage()
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Las fotos de «Nuestra historia»: públicas como la portada (las pinta la
+    // web de la boda), y solo las sube y borra la pareja de esa boda.
+    match /weddings/{wid}/story/{file} {
+      allow read: if true;
+      allow create, update: if isOwner(wid) && isImage()
+                            && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isOwner(wid);
+    }
+
+    // Las fotos de las personas importantes: públicas como la portada (las
+    // pinta la web), y solo las sube y borra la pareja de esa boda. Que haya
+    // consentimiento lo exigen las reglas de Firestore y la proyección: una
+    // foto subida sin él no sale en la web.
+    match /weddings/{wid}/party/{file} {
+      allow read: if true;
+      allow create, update: if isOwner(wid) && isImage()
+                            && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isOwner(wid);
+    }
+
+    // La galería no se lee directamente: las URLs las entrega listPhotos, que
+    // es quien decide la visibilidad según el grupo de quien pregunta.
+    match /weddings/{wid}/gallery/{photoId}/{file} {
+      allow read: if false;
+      allow write: if (isGuestOf(wid) || isOwner(wid)) && isImage()
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Contratos de proveedores: privados de la pareja.
+    //
+    // Leer y escribir van separados: en una lectura `request.resource` no
+    // existe, y una regla que lo mira la deniega siempre (la pareja no podía
+    // abrir sus propios contratos). Solo PDF y hasta 20 MB.
+    match /weddings/{wid}/vendors/{vendorId}/{file} {
+      allow read: if isOwner(wid);
+      allow create, update: if isOwner(wid)
+                            && request.resource.contentType == 'application/pdf'
+                            && request.resource.size < 20 * 1024 * 1024;
+      allow delete: if isOwner(wid);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,277 @@
+rules_version = '2';
+
+// Nupcialis — aislamiento multi-tenant.
+//
+// Esta es la pieza que sustituye al aislamiento por bases de datos separadas.
+// Toda regla nueva llega acompañada de su test en tests/rules/. Sin test, no se
+// mergea. Ver docs/REQUISITOS.md §6.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // El weddingId sale SIEMPRE del custom claim del token, nunca de un campo
+    // del documento ni de la URL, que el cliente sí puede falsear.
+    function isOwner(wid) {
+      return signedIn()
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'owner';
+    }
+
+    function isGuestOf(wid) {
+      return signedIn()
+        && request.auth.token.weddingId == wid
+        && request.auth.token.role == 'guest';
+    }
+
+    function isSuperadmin() {
+      return signedIn() && request.auth.token.superadmin == true;
+    }
+
+    // Campos que mueve el servidor y la pareja no puede tocar.
+    function noSystemFields() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['counters', 'plan', 'status', 'ownerUids', 'slug', 'createdAt', 'limits', 'access']);
+    }
+
+    // ---------- colecciones raíz ----------
+
+    // Único documento legible por un anónimo antes de resolver el tenant.
+    match /slugs/{slug} {
+      allow read: if true;
+      allow write: if false;             // solo Admin SDK
+    }
+
+    match /auditLog/{entryId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // Cobros de Nupcialis a las parejas (S1.3e). Es contabilidad de Gabriel: ni
+    // la pareja ni nadie más la ve, y solo se escribe desde las funciones, que
+    // validan el importe y dejan rastro en auditLog.
+    match /payments/{paymentId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // Proveedores comercializadores (D-26, F0.7.8): su tarifa mayorista y su
+    // contacto son cosa de Gabriel. Se leen solo como superadmin y se escriben
+    // únicamente desde `savePartner`, que valida y deja rastro en auditLog.
+    match /partners/{partnerId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // Qué recordatorios de después de la boda ya se han enviado (S1.3f).
+    match /reminderMarks/{markId} {
+      allow read: if isSuperadmin();
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // La HOME de nupcialis.com (la página de venta). Es contenido público del
+    // producto, sin datos de nadie: la lee cualquiera, incluso sin sesión. Solo
+    // existe el documento `home`; cualquier otro documento de esta colección
+    // queda cerrado. Se escribe únicamente desde `saveHome`, que sanea el HTML
+    // del editor (regla de oro 5): ni el superadmin escribe desde el cliente.
+    match /platform/{docId} {
+      allow read: if docId == 'home';
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // Catálogos del superadmin: las tareas y el presupuesto «originales» que se
+    // copian a cada boda nueva, y las preguntas sugeridas del quiz. Solo se
+    // escriben desde las funciones (validan y dejan rastro). Las tareas y el
+    // presupuesto solo los lee el superadmin: el alta los copia desde servidor.
+    // Las preguntas sugeridas las lee también **cualquier pareja** —es lo que
+    // pinta «Sugerencias» en su quiz—; llevan respuestas de muestra, no las de
+    // ninguna boda, así que no hay nada que filtrar.
+    match /catalog/{tipo}/items/{itemId} {
+      allow read: if isSuperadmin()
+        || (tipo == 'quiz' && signedIn() && request.auth.token.role == 'owner');
+      allow write: if false;             // solo Admin SDK
+    }
+
+    // ---------- una boda ----------
+
+    match /weddings/{wid} {
+      allow read: if isOwner(wid) || isSuperadmin();
+      allow update: if isOwner(wid) && noSystemFields();
+      allow create, delete: if false;    // solo provisionWedding
+
+      // Proyección pública: lo único que ve un visitante anónimo.
+      match /public/{docId} {
+        allow read: if true;
+        allow write: if false;           // lo escribe syncPublicProjection
+      }
+
+      // ---- cerradas al cliente, siempre por Cloud Function ----
+      //
+      // guests: si se pudiera consultar, cualquiera se descarga la lista de
+      // invitados con sus teléfonos.
+      // photos: la visibilidad depende del grupo de quien pregunta, y eso solo
+      // se evalúa con garantías en servidor.
+      match /guests/{guestId}  { allow read, write: if false; }
+      match /photos/{photoId}  { allow read, write: if false; }
+
+      // ---- privado de la pareja ----
+      //
+      // Importes de dinero asociados a personas con nombre y apellidos. Es el
+      // dato más sensible del producto.
+      match /giftsReceived/{id} {
+        allow read, write: if isOwner(wid);
+      }
+
+      match /guestAccessLog/{id} {
+        allow read: if isOwner(wid);
+        allow write: if false;           // lo escribe guestLogin
+      }
+
+      // Contador de intentos de acceso por IP, que lleva guestLogin. Cerrado a
+      // todo el mundo, la pareja incluida: poder leerlo o borrarlo desde el
+      // navegador sería poder quitarse de encima el límite de intentos.
+      match /loginAttempts/{id} { allow read, write: if false; }
+
+      match /budgetItems/{id}    { allow read, write: if isOwner(wid); }
+      match /vendors/{id}        { allow read, write: if isOwner(wid); }
+      match /checklistItems/{id} { allow read, write: if isOwner(wid); }
+
+      // ---- lectura para invitados, escritura solo de la pareja ----
+
+      // guestGroups se lee directamente pero se escribe por función
+      // (upsertGroup, deleteGroup). Dos invariantes —nadie en dos grupos
+      // restringidos, ningún invitado apuntando a un grupo borrado— necesitan
+      // mirar los invitados, y los invitados están cerrados al cliente.
+      match /guestGroups/{id}    { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if false; }
+      match /tables/{id}         { allow read: if isOwner(wid) || isGuestOf(wid);
+                                   allow write: if isOwner(wid); }
+      // El invitado **no lee los sitios de aquí**: los visibles le llegan por la
+      // proyección pública. Si pudiera consultar la colección vería también los
+      // que la pareja apuntó como internos —dónde aparcan los proveedores—, y
+      // `visibleToGuests` no protegería nada.
+      match /locations/{id}      { allow read: if isOwner(wid);
+                                   allow write: if isOwner(wid); }
+      // Las preguntas frecuentes **no las lee el invitado de aquí**: las lee de
+      // la proyección pública, donde llegan ya saneadas y solo las que tienen
+      // respuesta escrita. Dos motivos: en una boda abierta no hay sesión de
+      // invitado con la que leer nada, y una pregunta a medio escribir —o
+      // apagada— no tiene por qué estar al alcance de una consulta directa.
+      match /faqs/{id}           { allow read: if isOwner(wid);
+                                   allow write: if isOwner(wid); }
+      // Igual que las preguntas y la cronología: lo publicable le llega al
+      // invitado por la proyección, que es lo único que puede leer una boda
+      // abierta, y lo que está a medio apuntar se queda aquí.
+      match /accommodations/{id} { allow read: if isOwner(wid);
+                                   allow write: if isOwner(wid); }
+      // Las personas importantes (§8.12) **tampoco las lee el invitado de aquí**:
+      // lo visible le llega por la proyección pública, sin el teléfono y con la
+      // foto solo si hay consentimiento. Y la pareja **no puede guardar una foto
+      // sin haber confirmado ese consentimiento** (PENDIENTES D-61): son fotos
+      // de terceros publicadas en una web. Borrar va aparte porque al borrar no
+      // hay documento nuevo contra el que comprobar nada.
+      match /weddingParty/{id}   { allow read: if isOwner(wid);
+                                   allow create, update: if isOwner(wid)
+                                     && (request.resource.data.get('photoPath', null) == null
+                                         || request.resource.data.get('photoConsent', false) == true);
+                                   allow delete: if isOwner(wid); }
+      // La cronología **tampoco la lee el invitado de aquí**: lo visible le
+      // llega por la proyección pública, y lo interno —la hora a la que llega
+      // el fotógrafo, el montaje— se queda en esta colección, que es de la
+      // pareja. Una regla no puede filtrar por `visibleToGuests` en una
+      // consulta de lista, así que la única forma honesta de cumplir §8.13 es
+      // que el invitado no lea aquí.
+      match /timelineEvents/{id} { allow read: if isOwner(wid);
+                                   allow write: if isOwner(wid); }
+      // Las preguntas del formulario las escribe la pareja desde su panel. Lo
+      // único que no puede hacer es borrar las de sistema (REQUISITOS §8.2):
+      // otras partes del producto dependen de su `mapsTo` —la del menú alimenta
+      // la exportación al catering—, así que se desactivan, no se borran. Y
+      // tampoco puede quitarles el `isSystem`, que sería borrarlas en dos pasos.
+      match /formQuestions/{id} {
+        allow read: if isOwner(wid) || isGuestOf(wid);
+        allow create: if isOwner(wid);
+        allow update: if isOwner(wid)
+                      && (resource.data.isSystem != true
+                          || request.resource.data.isSystem == true);
+        allow delete: if isOwner(wid) && resource.data.isSystem != true;
+      }
+      // La lista de regalos **el invitado no la lee de aquí**: se la sirve
+      // `getGifts`. Dos motivos. El primero, que la reserva es anónima para el
+      // resto (§8.8) y `reservedBy` vive en el documento: una regla puede
+      // negar una escritura, no esconder un campo de una lectura. El segundo,
+      // que reservar sin pisar la reserva de otro es una transacción y no un
+      // `update`, así que la escritura del invitado tampoco podía ir aquí.
+      match /gifts/{id}          { allow read: if isOwner(wid);
+                                   allow write: if isOwner(wid); }
+
+      // ---- quiz ----
+      //
+      // Las tres colecciones están cerradas al invitado, y cada una por su
+      // motivo. Todo lo que necesita para jugar le llega por `startQuiz`,
+      // `submitQuiz` y `listQuizRanking`.
+      //
+      // quizQuestions: **llevan la respuesta correcta dentro**. Dejar que un
+      // invitado leyera esta colección sería dejarle leer las respuestas antes
+      // de contestar, y entonces la corrección en servidor (regla de oro 4) no
+      // serviría de nada: el tramposo no falsea la puntuación, la saca bien.
+      match /quizQuestions/{id} {
+        allow read: if isOwner(wid);
+        allow write: if isOwner(wid);
+      }
+      // quizGames: una partida en curso, con sus preguntas enteras. Mismo
+      // motivo, y además no es de nadie más que de la función.
+      match /quizGames/{id} {
+        allow read, write: if false;
+      }
+      // quizStats: cuántos contestan y cuántos aciertan cada pregunta. Lo
+      // escribe solo `submitQuiz`; la pareja lo lee para ver qué preguntas
+      // salen fáciles o difíciles. Escribirlo desde el cliente falsearía las
+      // etiquetas, y el invitado no tiene por qué leerlo.
+      match /quizStats/{id} {
+        allow read: if isOwner(wid);
+        allow write: if false;
+      }
+      // quizResults: lo escribe la función tras corregir. Si el cliente pudiera
+      // escribir aquí, cualquiera se pone primero desde la consola del
+      // navegador, y la corrección en servidor (regla de oro 4) no serviría de
+      // nada. Leerla tampoco: guarda el `guestId` y los tiempos de cada
+      // partida, y el ranking que ve el invitado pasa por `listQuizRanking`,
+      // que devuelve el nombre y los puntos y nada más (D-11).
+      match /quizResults/{id} {
+        allow read: if isOwner(wid);
+        allow write: if false;
+      }
+
+      // ---- contenidos moderados de invitados ----
+
+      // La playlist la sirve `listPlaylist`, no una lectura directa: cada
+      // canción guarda los `guestId` de quien la votó, y una regla puede negar
+      // una lectura pero no esconder un campo de ella. Con la colección
+      // abierta, cualquier invitado sabría quién ha votado qué. Proponer y
+      // votar pasan por `suggestSong` y `voteSong`.
+      match /playlistSuggestions/{id} {
+        allow read: if isOwner(wid);
+        allow write: if isOwner(wid);
+      }
+      // El libro de firmas lo sirve `listGuestbook`, no una lectura directa:
+      // cada firma guarda el `guestId` de su autor y una regla puede negar una
+      // lectura pero no esconder un campo de ella. Firmar y borrar la propia
+      // pasan por `signGuestbook` y `deleteGuestbookEntry`.
+      match /guestbookEntries/{id} {
+        allow read: if isOwner(wid);
+        allow write: if isOwner(wid);
+      }
+    }
+
+    // ---------- denegar por defecto ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

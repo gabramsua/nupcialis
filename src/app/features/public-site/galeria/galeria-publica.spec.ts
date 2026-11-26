@@ -1,0 +1,308 @@
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+import { provideIconSprite } from '../../../design-system/icons/icon-sprite.providers';
+import {
+  PUERTA_GALERIA,
+  type FotoPublica,
+  type PuertaGaleria,
+  type ResultadoFotos,
+} from '../../../core/galeria/galeria-gateway';
+import { NpGaleriaPublica } from './galeria-publica';
+
+/**
+ * La galería, como la abre el invitado.
+ *
+ * Lo que se vigila:
+ *
+ * 1. **Que la rejilla cargue miniaturas y no las fotos grandes.** Una rejilla
+ *    de cuarenta fotos a 1600 px son veinte megas por la red de una finca.
+ * 2. **Que haya más de una página** y que la segunda se añada a la primera en
+ *    vez de reemplazarla.
+ * 3. **Que solo se ofrezca borrar lo que se puede borrar**, que es lo suyo.
+ */
+
+const ES = JSON.parse(readFileSync('public/i18n/es.json', 'utf8')) as Record<string, unknown>;
+
+function foto(parcial: Partial<FotoPublica> & { id: string }): FotoPublica {
+  return {
+    url: `https://fotos.example.com/${parcial.id}.jpg`,
+    urlMiniatura: `https://fotos.example.com/${parcial.id}-mini.jpg`,
+    guestId: 'g1',
+    autor: 'Ana Ruiz',
+    pie: '',
+    album: 'dia',
+    creadoEn: '2027-06-12T20:00:00.000Z',
+    ...parcial,
+  };
+}
+
+function montar(paginas: readonly ResultadoFotos[]) {
+  const subidas: { nombre: string; album: string }[] = [];
+  const pedidos: string[] = [];
+  const borradas: string[] = [];
+  let n = 0;
+
+  const doble: PuertaGaleria = {
+    async listar(cursor, album) {
+      pedidos.push(album);
+      // La primera llamada y las recargas tras subir vuelven a la página uno.
+      const pagina = cursor === null ? (album === 'camino' ? 1 : 0) : n;
+      n = pagina + 1;
+      return paginas[pagina] ?? { ok: true, fotos: [], cursor: null };
+    },
+    async subir(archivo, _pie, album) {
+      subidas.push({ nombre: archivo.name, album });
+      return { ok: true, id: 'nueva' };
+    },
+    async borrar(photoId) {
+      borradas.push(photoId);
+      return { ok: true };
+    },
+  };
+
+  TestBed.configureTestingModule({
+    imports: [
+      TranslocoTestingModule.forRoot({
+        langs: { es: ES },
+        translocoConfig: { availableLangs: ['es'], defaultLang: 'es' },
+      }),
+    ],
+    providers: [
+      provideIconSprite('public'),
+      provideRouter([]),
+      { provide: PUERTA_GALERIA, useValue: doble },
+    ],
+  });
+
+  const fixture = TestBed.createComponent(NpGaleriaPublica);
+  fixture.detectChanges();
+
+  const raiz = fixture.nativeElement as HTMLElement;
+
+  const asentar = async () => {
+    await new Promise((listo) => setTimeout(listo, 0));
+    fixture.detectChanges();
+  };
+
+  return {
+    fixture,
+    raiz,
+    subidas,
+    pedidos,
+    borradas,
+    asentar,
+    texto: () => raiz.textContent?.replace(/\s+/g, ' ') ?? '',
+    miniaturas: () => [...raiz.querySelectorAll<HTMLImageElement>('.gl__miniatura img')],
+    boton(texto: string) {
+      return [...raiz.querySelectorAll('button')].find((b) =>
+        b.textContent?.includes(texto),
+      ) as HTMLButtonElement;
+    },
+    async pulsar(boton: HTMLButtonElement) {
+      boton.click();
+      await asentar();
+    },
+  };
+}
+
+const PAGINA_UNA: ResultadoFotos = {
+  ok: true,
+  fotos: [foto({ id: 'f1' }), foto({ id: 'f2' })],
+  cursor: '2027-06-12T20:00:00.000Z',
+};
+
+describe('la galería del invitado', () => {
+  it('pinta la rejilla con las miniaturas, no con las fotos grandes', async () => {
+    const p = montar([PAGINA_UNA]);
+    await p.asentar();
+
+    const fuentes = p.miniaturas().map((img) => img.getAttribute('src'));
+    expect(fuentes).toEqual([
+      'https://fotos.example.com/f1-mini.jpg',
+      'https://fotos.example.com/f2-mini.jpg',
+    ]);
+  });
+
+  it('las miniaturas se cargan en diferido', async () => {
+    const p = montar([PAGINA_UNA]);
+    await p.asentar();
+
+    expect(p.miniaturas()[0]?.getAttribute('loading')).toBe('lazy');
+  });
+
+  it('sin fotos, lo dice en vez de dejar el hueco', async () => {
+    const p = montar([{ ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('Todavía no hay fotos');
+  });
+
+  it('la segunda página se añade a la primera', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [foto({ id: 'f3' })], cursor: null }]);
+    await p.asentar();
+
+    expect(p.miniaturas()).toHaveLength(2);
+    await p.pulsar(p.boton('Ver más fotos'));
+
+    expect(p.miniaturas()).toHaveLength(3);
+    // Sin más páginas, el botón desaparece: no se pide lo que no hay.
+    expect(p.boton('Ver más fotos')).toBeUndefined();
+  });
+
+  describe('el visor', () => {
+    it('al tocar una foto la abre en grande', async () => {
+      const p = montar([PAGINA_UNA]);
+      await p.asentar();
+      await p.pulsar(p.miniaturas()[0]!.closest('button')!);
+
+      const grande = p.raiz.querySelector<HTMLImageElement>('.gl__grande');
+      expect(grande?.getAttribute('src')).toBe('https://fotos.example.com/f1.jpg');
+    });
+
+    it('se puede pasar a la siguiente y volver', async () => {
+      const p = montar([PAGINA_UNA]);
+      await p.asentar();
+      await p.pulsar(p.miniaturas()[0]!.closest('button')!);
+
+      await p.pulsar(p.boton('Siguiente'));
+      expect(p.raiz.querySelector<HTMLImageElement>('.gl__grande')?.src).toContain('f2.jpg');
+
+      await p.pulsar(p.boton('Anterior'));
+      expect(p.raiz.querySelector<HTMLImageElement>('.gl__grande')?.src).toContain('f1.jpg');
+    });
+
+    /** No se puede ofrecer borrar la foto de otro: el servidor diría que no. */
+    it('no ofrece borrar una foto que no es tuya', async () => {
+      const p = montar([PAGINA_UNA]);
+      await p.asentar();
+      await p.pulsar(p.miniaturas()[0]!.closest('button')!);
+
+      expect(p.boton('Borrar')).toBeUndefined();
+    });
+  });
+
+  it('si le falta verificarse, se lo explica', async () => {
+    const p = montar([{ ok: false, fallo: { tipo: 'sin-verificar' } }]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('cuatro últimos dígitos');
+  });
+
+  describe('mis fotos', () => {
+    const MIXTA: ResultadoFotos = {
+      ok: true,
+      fotos: [
+        foto({ id: 'a', guestId: 'g1' }),
+        foto({ id: 'b', guestId: 'g2' }),
+        foto({ id: 'c', guestId: 'g1' }),
+      ],
+      cursor: null,
+      miGuestId: 'g1',
+    };
+
+    it('ofrece borrar solo las suyas desde la rejilla', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      expect(p.raiz.querySelectorAll('[data-accion="borrar-mia"]')).toHaveLength(2);
+    });
+
+    it('con el filtro «Mis fotos» solo enseña las suyas', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      await p.pulsar(p.raiz.querySelector('[data-filtro="mias"]') as HTMLButtonElement);
+      expect(p.miniaturas().map((i) => i.getAttribute('src'))).toEqual([
+        'https://fotos.example.com/a-mini.jpg',
+        'https://fotos.example.com/c-mini.jpg',
+      ]);
+
+      await p.pulsar(p.raiz.querySelector('[data-filtro="todas"]') as HTMLButtonElement);
+      expect(p.miniaturas()).toHaveLength(3);
+    });
+
+    it('borra una foto suya y deja de enseñarla', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      await p.pulsar(p.raiz.querySelector('[data-accion="borrar-mia"]') as HTMLButtonElement);
+
+      expect(p.borradas).toEqual(['a']);
+      expect(p.miniaturas()).toHaveLength(2);
+    });
+
+    it('si no sabe quién es, no ofrece borrar nada ni el filtro', async () => {
+      const p = montar([{ ...MIXTA, miGuestId: null }]);
+      await p.asentar();
+
+      expect(p.raiz.querySelector('[data-accion="borrar-mia"]')).toBeNull();
+      expect(p.raiz.querySelector('[data-filtro]')).toBeNull();
+    });
+
+    it('trae un botón para hacer una foto con la cámara', async () => {
+      const p = montar([MIXTA]);
+      await p.asentar();
+
+      const camara = p.raiz.querySelector('input[data-origen="camara"]');
+      expect(camara?.getAttribute('capture')).toBe('environment');
+    });
+  });
+});
+
+describe('los álbumes de la galería', () => {
+  it('abre en «El día» y pide ese álbum', async () => {
+    const p = montar([PAGINA_UNA]);
+    await p.asentar();
+
+    expect(p.pedidos).toEqual(['dia']);
+    expect(p.raiz.querySelector('[data-album="dia"]')?.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ofrece los dos álbumes con su nombre', async () => {
+    const p = montar([PAGINA_UNA]);
+    await p.asentar();
+
+    expect(p.texto()).toContain('El día');
+    expect(p.texto()).toContain('Nuestro camino');
+  });
+
+  it('cambiar a «Nuestro camino» pide ese álbum y deja de enseñar las fotos del otro', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+    expect(p.miniaturas()).toHaveLength(2);
+
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    expect(p.pedidos).toEqual(['dia', 'camino']);
+    expect(p.miniaturas()).toHaveLength(0);
+    expect(p.raiz.querySelector('[data-album="camino"]')?.getAttribute('aria-selected')).toBe(
+      'true',
+    );
+  });
+
+  it('explica de qué va «Nuestro camino»', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    expect(p.texto()).toContain('a lo largo de su camino');
+  });
+
+  it('la foto que se sube va al álbum que se está mirando', async () => {
+    const p = montar([PAGINA_UNA, { ok: true, fotos: [], cursor: null }]);
+    await p.asentar();
+    await p.pulsar(p.raiz.querySelector('[data-album="camino"]') as HTMLButtonElement);
+
+    const entrada = p.raiz.querySelector('input[type="file"]') as HTMLInputElement;
+    const archivo = new File(['x'], 'viaje.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(entrada, 'files', { value: [archivo], configurable: true });
+    entrada.dispatchEvent(new Event('change'));
+    await p.asentar();
+
+    expect(p.subidas).toEqual([{ nombre: 'viaje.jpg', album: 'camino' }]);
+  });
+});

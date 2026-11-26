@@ -5,18 +5,32 @@ SaaS multi-tenant de organización de bodas. Cada pareja tiene su web pública e
 
 ## Documentación
 
-| Documento | Contenido |
-|---|---|
-| [`CLAUDE.md`](CLAUDE.md) | Guía de trabajo: stack, convenciones, reglas de oro |
-| [`docs/REQUISITOS.md`](docs/REQUISITOS.md) | Requisitos completos, modelo de datos y módulos |
-| [`docs/PLAN-IMPLEMENTACION.md`](docs/PLAN-IMPLEMENTACION.md) | Fases de entrega y criterios de terminado |
-| [`docs/PUESTA-EN-MARCHA.md`](docs/PUESTA-EN-MARCHA.md) | Cuentas, dominio, Firebase y hosting antes de F0 |
-| [`docs/TAREAS.md`](docs/TAREAS.md) | Tareas en curso |
-| [`docs/PENDIENTES.md`](docs/PENDIENTES.md) | Decisiones abiertas |
+| Documento                                                    | Contenido                                           |
+| ------------------------------------------------------------ | --------------------------------------------------- |
+| [`CLAUDE.md`](CLAUDE.md)                                     | Guía de trabajo: stack, convenciones, reglas de oro |
+| [`docs/REQUISITOS.md`](docs/REQUISITOS.md)                   | Requisitos completos, modelo de datos y módulos     |
+| [`docs/PLAN-IMPLEMENTACION.md`](docs/PLAN-IMPLEMENTACION.md) | Fases de entrega y criterios de terminado           |
+| [`docs/PUESTA-EN-MARCHA.md`](docs/PUESTA-EN-MARCHA.md)       | Cuentas, dominio, Firebase y hosting antes de F0    |
+| [`docs/TAREAS.md`](docs/TAREAS.md)                           | Tareas en curso                                     |
+| [`docs/PENDIENTES.md`](docs/PENDIENTES.md)                   | Decisiones abiertas                                 |
 
 ## Estado
 
 **Puesta en marcha.** Ver `docs/PUESTA-EN-MARCHA.md`. F0 sin empezar.
+
+## En local
+
+```bash
+npm ci
+npm run emulators   # en otra terminal
+npm run seed        # bodas de ejemplo
+npm start
+```
+
+Entra por subdominio: `http://mariaygabriel.localhost:4200`. El catálogo del
+sistema visual está en `http://localhost:4200/dev/ds`.
+
+Requiere **Node ≥ 22.22.3 y npm ≥ 11**. Ver `CLAUDE.md`.
 
 ## Stack
 

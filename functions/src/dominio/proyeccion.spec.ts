@@ -1,0 +1,650 @@
+import { describe, expect, it } from 'vitest';
+
+import { SECCIONES_INICIALES, conModulosActivos } from './secciones';
+
+import { modulosIniciales } from './planes';
+import {
+  MODULOS_PUBLICOS,
+  PROHIBIDOS_EN_PUBLICO,
+  modulosPublicos,
+  proyeccionPublica,
+  type BodaParaProyectar,
+} from './proyeccion';
+
+const BODA: BodaParaProyectar = {
+  slug: 'maria-y-gabriel',
+  status: 'active',
+  layout: 'multipage',
+  locale: 'es',
+  timezone: 'Europe/Madrid',
+  weddingDate: '2027-06-12',
+  couple: { partnerA: 'María', partnerB: 'Gabriel' },
+  guestAccessMode: 'name_phone4',
+  theme: {
+    templateId: 'jardin',
+    palette: { primary: '#123456' },
+    heroImagePath: 'bodas/x/hero.jpg',
+  },
+  modules: modulosIniciales('extended'),
+};
+
+/** Recorre el objeto entero buscando una clave, a cualquier profundidad. */
+function contieneClave(valor: unknown, clave: string): boolean {
+  if (valor === null || typeof valor !== 'object') return false;
+  if (!Array.isArray(valor) && Object.prototype.hasOwnProperty.call(valor, clave)) return true;
+  return Object.values(valor as Record<string, unknown>).some((v) => contieneClave(v, clave));
+}
+
+describe('proyeccionPublica', () => {
+  it('publica lo que la web necesita', () => {
+    const publico = proyeccionPublica(BODA);
+    expect(publico.coupleNames).toEqual({ partnerA: 'María', partnerB: 'Gabriel' });
+    expect(publico.layout).toBe('multipage');
+    expect(publico.guestAccessMode).toBe('name_phone4');
+    expect(publico.theme.templateId).toBe('jardin');
+  });
+
+  // Este es el test que importa de verdad de todo el fichero. Si algún día
+  // alguien construye la proyección con un spread de la boda, esto se pone rojo.
+  it('no filtra ningún campo interno de la boda', () => {
+    const conDatosInternos: BodaParaProyectar = {
+      ...BODA,
+      ...({
+        counters: { guestsTotal: 120 },
+        plan: 'extended',
+        ownerUids: ['uid-1', 'uid-2'],
+        notes: 'la madre de ella no viene',
+        stripeCustomerId: 'cus_123',
+      } as object),
+    };
+    const publico = proyeccionPublica(conDatosInternos);
+    for (const prohibido of PROHIBIDOS_EN_PUBLICO) {
+      expect(contieneClave(publico, prohibido), `se ha filtrado "${prohibido}"`).toBe(false);
+    }
+  });
+
+  it('no publica la configuración de los módulos, solo su visibilidad', () => {
+    const publico = proyeccionPublica({
+      ...BODA,
+      modules: {
+        gifts: {
+          enabled: true,
+          visibility: 'visible',
+          ...({ config: { iban: 'ES12...' } } as object),
+        },
+      },
+    });
+    expect(publico.publicModules['gifts']).toBe('visible');
+    expect(contieneClave(publico, 'iban')).toBe(false);
+    expect(contieneClave(publico, 'config')).toBe(false);
+  });
+
+  /**
+   * El dress code es el único módulo cuyo contenido vive en su `config`, y la
+   * regla de esta función es que ninguna `config` se copia. Estos dos tests
+   * son los que sostienen que siga siendo verdad.
+   */
+  describe('el dress code (§8.11)', () => {
+    it('se publica construido campo a campo, no copiado', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        modules: {
+          dressCode: {
+            enabled: true,
+            visibility: 'visible',
+            ...({
+              config: {
+                description: '<p>Elegante pero <b>cómodo</b>.</p>',
+                suggestedColors: ['verde-salvia', 'fucsia'],
+                avoidColors: ['blanco'],
+                tips: ['La ceremonia es sobre hierba.'],
+                notasInternas: 'llamar a la modista',
+              },
+            } as object),
+          },
+        },
+      });
+
+      expect(publico.content.dressCode.descripcion).toBe('<p>Elegante pero <b>cómodo</b>.</p>');
+      expect(publico.content.dressCode.sugeridos.map((c) => c.nombre)).toEqual(['Verde salvia']);
+      expect(publico.content.dressCode.evitar.map((c) => c.nombre)).toEqual(['Blanco']);
+      expect(publico.content.dressCode.avisos).toEqual(['La ceremonia es sobre hierba.']);
+      // Lo que no estaba en la lista blanca no viaja, aunque esté en la misma
+      // `config`: no se copia, se construye.
+      expect(contieneClave(publico, 'notasInternas')).toBe(false);
+      expect(contieneClave(publico, 'config')).toBe(false);
+    });
+
+    /**
+     * Quien decide si el invitado lo ve es el interruptor de **su sección**,
+     * igual que con las preguntas y los alojamientos. El del módulo no entra
+     * aquí: si entrara, la pareja escribiría el dress code, lo vería en su
+     * panel y no saldría en la web sin ninguna pista de por qué.
+     */
+    it('no depende del interruptor del módulo', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        modules: {
+          dressCode: {
+            enabled: false,
+            ...({ config: { description: '<p>De chaqué</p>', tips: ['Hay hierba'] } } as object),
+          },
+        },
+      });
+
+      expect(publico.content.dressCode.descripcion).toBe('<p>De chaqué</p>');
+      expect(publico.content.dressCode.avisos).toEqual(['Hay hierba']);
+    });
+
+    describe('el mapa', () => {
+      const sitio = (extra: object) => ({
+        id: 'ceremonia',
+        type: 'ceremonia',
+        name: 'Iglesia',
+        coords: { lat: 40.9481, lng: -4.1184 },
+        visibleToGuests: true,
+        order: 1,
+        ...extra,
+      });
+
+      /**
+       * Un «Cómo llegar» a una ubicación que no se publica sería un enlace al
+       * vacío: se borró, se ocultó a los invitados o no tiene pin.
+       */
+      it('el enlace de un hito o un alojamiento solo vale si esa ubicación se publica', () => {
+        const hito = (id: string, locationId: string) => ({
+          id,
+          time: '17:00',
+          title: `Hito ${id}`,
+          locationId,
+        });
+        const aloj = (id: string, locationId: string) => ({
+          id,
+          name: `Hotel ${id}`,
+          category: 'hotel',
+          enabled: true,
+          locationId,
+        });
+
+        const publico = proyeccionPublica(
+          BODA,
+          [],
+          [hito('a', 'ceremonia'), hito('b', 'oculta'), hito('c', 'borrada')],
+          [aloj('x', 'ceremonia'), aloj('y', 'sinpin')],
+          [
+            sitio({}),
+            sitio({ id: 'oculta', name: 'Oculta', visibleToGuests: false }),
+            sitio({ id: 'sinpin', name: 'Sin pin', coords: null }),
+          ],
+        );
+
+        expect(publico.content.cronologia.map((h) => h.locationId)).toEqual([
+          'ceremonia',
+          null,
+          null,
+        ]);
+        expect(publico.content.alojamientos.map((a) => a.locationId).sort()).toEqual([
+          'ceremonia',
+          null,
+        ]);
+      });
+
+      /** El punto donde la pareja deja el coche de los proveedores no es de los invitados. */
+      it('publica solo lo visible y con pin, y no lo interno', () => {
+        const publico = proyeccionPublica(
+          BODA,
+          [],
+          [],
+          [],
+          [
+            sitio({}),
+            sitio({ id: 'proveedores', name: 'Proveedores', visibleToGuests: false }),
+            sitio({ id: 'sinpin', name: 'Sin pin', coords: null }),
+            sitio({ id: 'mar', name: 'En el mar', coords: { lat: 0, lng: 0 } }),
+          ],
+        );
+
+        expect(publico.content.ubicaciones.map((u) => u.id)).toEqual(['ceremonia']);
+        expect(JSON.stringify(publico)).not.toContain('Proveedores');
+      });
+
+      it('sin ubicaciones publica la lista vacía, no un hueco', () => {
+        expect(proyeccionPublica(BODA).content.ubicaciones).toEqual([]);
+      });
+    });
+
+    it('sin nada escrito publica el dress code vacío, no un hueco', () => {
+      const publico = proyeccionPublica(BODA);
+
+      expect(publico.content.dressCode).toEqual({
+        descripcion: '',
+        sugeridos: [],
+        evitar: [],
+        avisos: [],
+      });
+    });
+
+    /** Regla de oro 5: el HTML se sanea aquí, no en el navegador de la pareja. */
+    it('sanea la descripción antes de publicarla', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        modules: {
+          dressCode: {
+            enabled: true,
+            ...({
+              config: { description: '<p>Elegante<script>robar()</script></p>' },
+            } as object),
+          },
+        },
+      });
+
+      expect(publico.content.dressCode.descripcion).not.toContain('script');
+      expect(publico.content.dressCode.descripcion).toContain('Elegante');
+    });
+  });
+
+  describe('nuestra historia', () => {
+    const FOTO =
+      'https://firebasestorage.googleapis.com/v0/b/x/o/weddings%2Fw1%2Fstory%2Fa.jpg?alt=media';
+
+    it('sin nada escrito publica la lista vacía, no cinco apartados en blanco', () => {
+      expect(proyeccionPublica(BODA).content.historia).toEqual([]);
+      expect(
+        proyeccionPublica({ ...BODA, content: { story: { beso: { html: '<p><br></p>' } } } })
+          .content.historia,
+      ).toEqual([]);
+    });
+
+    it('publica los cinco apartados en orden, con el texto saneado y sin la ruta de Storage', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        content: {
+          story: {
+            beso: {
+              html: '<p>Fue en <b>Lisboa</b><script>robar()</script></p>',
+              fotos: [{ url: FOTO, path: 'weddings/w1/story/a.jpg' }],
+            },
+          },
+        },
+      });
+
+      expect(publico.content.historia.map((a) => a.clave)).toEqual([
+        'conocemos',
+        'beso',
+        'recuerdo',
+        'viaje',
+        'pedida',
+      ]);
+      const beso = publico.content.historia[1];
+      expect(beso.html).toContain('Lisboa');
+      expect(beso.html).not.toContain('script');
+      expect(beso.fotos).toEqual([{ url: FOTO }]);
+      expect(contieneClave(publico, 'path')).toBe(false);
+    });
+
+    it('descarta las fotos que no son de Storage y se queda con dos como mucho', () => {
+      const publico = proyeccionPublica({
+        ...BODA,
+        content: {
+          story: {
+            pedida: {
+              html: '<p>Sí</p>',
+              fotos: [
+                { url: 'javascript:alert(1)', path: '' },
+                { url: 'https://ejemplo.com/a.jpg', path: '' },
+                { url: FOTO, path: '' },
+                { url: FOTO + '&b', path: '' },
+                { url: FOTO + '&c', path: '' },
+              ],
+            },
+          },
+        },
+      });
+
+      expect(publico.content.historia[4].fotos.map((f) => f.url)).toEqual([FOTO, FOTO + '&b']);
+    });
+  });
+
+  it('ante un estado corrupto se comporta como no publicada', () => {
+    expect(proyeccionPublica({ ...BODA, status: 'publicada' }).status).toBe('draft');
+    expect(proyeccionPublica({ ...BODA, status: undefined }).status).toBe('draft');
+  });
+
+  it('sobrevive a una boda a medio escribir sin lanzar', () => {
+    const publico = proyeccionPublica({});
+    expect(publico.status).toBe('draft');
+    expect(publico.coupleNames).toEqual({ partnerA: '', partnerB: '' });
+    expect(publico.theme.heroImagePath).toBeNull();
+    // Una boda sin `content` no se publica vacía: se publica con las secciones
+    // iniciales. Una web en blanco es peor que una con la portada y poco más,
+    // y el invitado ya está delante con el enlace abierto. Sin módulos activos
+    // solo entran las que son de la web en sí: portada y texto.
+    expect(publico.content.sections).toEqual(conModulosActivos(SECCIONES_INICIALES, () => false));
+  });
+});
+
+describe('secciones según el plan de la boda', () => {
+  const tipos = (modules: ReturnType<typeof modulosIniciales>) =>
+    proyeccionPublica({ modules }).content.sections.map((s) => s.type);
+
+  it('una boda del plan básico no publica quiz, galería ni historia', () => {
+    const publicadas = tipos(modulosIniciales('basic'));
+    for (const fuera of ['quiz', 'galeria', 'historia', 'playlist', 'libro', 'cortejo']) {
+      expect(publicadas, fuera).not.toContain(fuera);
+    }
+    // D-63: el plan básico ofrece cronología, preguntas, mapa, regalos y alojamiento.
+    for (const dentro of [
+      'portada',
+      'texto',
+      'rsvp',
+      'cronologia',
+      'preguntas',
+      'mapa',
+      'regalos',
+      'alojamientos',
+      'buses',
+    ]) {
+      expect(publicadas, dentro).toContain(dentro);
+    }
+  });
+
+  it('una boda del plan extendido las publica todas', () => {
+    const publicadas = tipos(modulosIniciales('extended'));
+    for (const tipo of ['quiz', 'galeria', 'historia', 'playlist', 'regalos', 'libro', 'cortejo']) {
+      expect(publicadas, tipo).toContain(tipo);
+    }
+  });
+
+  it('un módulo apagado se lleva su sección aunque la pareja la tuviera encendida', () => {
+    const modules = modulosIniciales('extended');
+    modules.quiz = { enabled: false, visibility: 'hidden' };
+    expect(tipos(modules)).not.toContain('quiz');
+  });
+});
+
+describe('autobuses en la proyección (D-63)', () => {
+  const RUTAS = [
+    { id: 'r1', sentido: 'ida', salida: 'Plaza Mayor', destino: 'Finca', hora: '17:30', x: 1 },
+    { id: 'r2', sentido: 'vuelta', salida: 'Finca', destino: 'Plaza Mayor', hora: '01:00' },
+    { id: 'mala', sentido: 'ida', salida: '', destino: 'Finca' },
+  ];
+  const conRutas = (enabled: boolean) => {
+    const modules = modulosIniciales('basic');
+    modules.buses = { enabled, visibility: 'visible', config: { rutas: RUTAS } };
+    return proyeccionPublica({ modules }).content.buses;
+  };
+
+  it('publica las rutas saneadas, solo con lo permitido', () => {
+    const rutas = conRutas(true);
+    expect(rutas.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(contieneClave(rutas, 'x')).toBe(false);
+  });
+
+  it('con el módulo apagado no publica nada, aunque haya rutas guardadas', () => {
+    expect(conRutas(false)).toEqual([]);
+  });
+
+  it('sin configuración publica una lista vacía', () => {
+    expect(proyeccionPublica({ modules: modulosIniciales('basic') }).content.buses).toEqual([]);
+  });
+});
+
+describe('personas importantes en la proyección (§8.12, D-61)', () => {
+  const persona = (parcial: Record<string, unknown> = {}) => ({
+    id: 'madrina',
+    displayName: 'Carmen Ruiz',
+    role: 'Madrina',
+    side: 'A',
+    bio: 'La tía que lo organiza todo.',
+    phone: '600112233',
+    guestId: 'g1',
+    photoPath: 'weddings/w1/party/1.jpg',
+    photoUrl: 'https://firebasestorage.googleapis.com/v0/b/x/o/1.jpg',
+    photoConsent: true,
+    photoConsentAt: { seconds: 1 },
+    visibleToGuests: true,
+    order: 1,
+    ...parcial,
+  });
+
+  const cortejo = (personas: unknown[], modules = modulosIniciales('extended')) =>
+    proyeccionPublica({ ...BODA, modules }, [], [], [], [], personas).content.cortejo;
+
+  it('publica a las visibles con lo justo: nunca el teléfono ni el vínculo con la lista', () => {
+    const [publica] = cortejo([persona()]);
+    expect(publica).toEqual({
+      id: 'madrina',
+      name: 'Carmen Ruiz',
+      role: 'Madrina',
+      side: 'A',
+      bio: 'La tía que lo organiza todo.',
+      photoUrl: 'https://firebasestorage.googleapis.com/v0/b/x/o/1.jpg',
+      order: 1,
+    });
+    for (const secreto of ['phone', 'guestId', 'photoPath', 'photoConsent', 'photoConsentAt']) {
+      expect(contieneClave(publica, secreto), secreto).toBe(false);
+    }
+  });
+
+  it('no publica a quien la pareja no ha marcado como visible', () => {
+    expect(
+      cortejo([persona({ visibleToGuests: false }), persona({ id: 'x', visibleToGuests: 'sí' })]),
+    ).toEqual([]);
+  });
+
+  it('la foto solo sale si hay consentimiento registrado', () => {
+    for (const photoConsent of [false, undefined, 'true', 1]) {
+      const [publica] = cortejo([persona({ photoConsent })]);
+      expect(publica?.photoUrl, String(photoConsent)).toBeNull();
+      // La persona sigue saliendo, con su inicial en la web.
+      expect(publica?.name).toBe('Carmen Ruiz');
+    }
+  });
+
+  it('una foto que no es https no sale aunque haya consentimiento', () => {
+    expect(cortejo([persona({ photoUrl: 'javascript:alert(1)' })])[0]?.photoUrl).toBeNull();
+    expect(cortejo([persona({ photoUrl: 'http://x.test/a.jpg' })])[0]?.photoUrl).toBeNull();
+  });
+
+  it('con el módulo apagado no se publica a nadie: son datos de terceros', () => {
+    const modules = modulosIniciales('extended');
+    modules.weddingParty = { enabled: false, visibility: 'hidden' };
+    expect(cortejo([persona()], modules)).toEqual([]);
+    // Y en el plan básico, que no lo incluye, tampoco.
+    expect(cortejo([persona()], modulosIniciales('basic'))).toEqual([]);
+  });
+});
+
+describe('modulosPublicos', () => {
+  it('no saca a la web los módulos que solo usa la pareja', () => {
+    const publicos = Object.keys(modulosPublicos(modulosIniciales('extended')));
+    expect([...publicos].sort()).toEqual([...MODULOS_PUBLICOS].sort());
+    for (const interno of ['budget', 'vendors', 'checklist', 'guests', 'tables', 'publicSite']) {
+      expect(publicos, interno).not.toContain(interno);
+    }
+  });
+
+  // El interruptor manda sobre la etiqueta: un módulo apagado que quedó marcado
+  // como "muy pronto" no debe anunciarse.
+  it('un módulo desactivado es hidden aunque diga visible', () => {
+    const publicos = modulosPublicos({ gallery: { enabled: false, visibility: 'visible' } });
+    expect(publicos['gallery']).toBe('hidden');
+  });
+
+  it('conserva el estado "muy pronto"', () => {
+    const publicos = modulosPublicos({ gallery: { enabled: true, visibility: 'soon' } });
+    expect(publicos['gallery']).toBe('soon');
+  });
+
+  it('trata una visibilidad desconocida como oculta', () => {
+    const publicos = modulosPublicos({ gallery: { enabled: true, visibility: 'publico' } });
+    expect(publicos['gallery']).toBe('hidden');
+  });
+
+  it('en el plan básico la galería y el quiz no llegan a la web', () => {
+    const publicos = modulosPublicos(modulosIniciales('basic'));
+    expect(publicos['gallery']).toBe('hidden');
+    expect(publicos['quiz']).toBe('hidden');
+    expect(publicos['rsvp']).toBe('visible');
+  });
+});
+
+/**
+ * Lo que de verdad protege a los invitados (regla de oro 5).
+ *
+ * La pareja escribe en su panel y eso acaba en el único documento que puede
+ * leer cualquiera con el enlace. Entre una cosa y la otra está esto.
+ */
+describe('el texto enriquecido que se publica', () => {
+  function conHistoria(texto: string) {
+    return proyeccionPublica({
+      ...BODA,
+      content: {
+        sections: [
+          { id: 'portada', type: 'portada', enabled: true, order: 0, fields: {} },
+          {
+            id: 'historia',
+            type: 'texto',
+            enabled: true,
+            order: 1,
+            fields: { titulo: 'Nuestra historia', texto },
+          },
+        ],
+      },
+    });
+  }
+
+  it('sale saneado, no como lo escribieron', () => {
+    const publicado = conHistoria('<p>Hola</p><script>alert(1)</script>');
+    const historia = publicado.content.sections.find((s) => s.id === 'historia');
+
+    expect(historia?.fields['texto']).toBe('<p>Hola</p>');
+  });
+
+  it('un atributo de evento no llega a la web', () => {
+    const publicado = conHistoria('<p onclick="robar()">Nos casamos</p>');
+    const historia = publicado.content.sections.find((s) => s.id === 'historia');
+
+    expect(historia?.fields['texto']).not.toContain('onclick');
+    expect(historia?.fields['texto']).toContain('Nos casamos');
+  });
+
+  it('el formato de verdad se respeta', () => {
+    const publicado = conHistoria('<p><strong>Nos conocimos</strong> en 2019.</p>');
+    const historia = publicado.content.sections.find((s) => s.id === 'historia');
+
+    expect(historia?.fields['texto']).toBe('<p><strong>Nos conocimos</strong> en 2019.</p>');
+  });
+
+  /** Lo que no es campo rico sigue siendo texto y se escapa al pintarse. */
+  it('el título no se convierte en HTML por el camino', () => {
+    const publicado = proyeccionPublica({
+      ...BODA,
+      content: {
+        sections: [
+          {
+            id: 'historia',
+            type: 'texto',
+            enabled: true,
+            order: 1,
+            fields: { titulo: '<b>Nuestra historia</b>', texto: '' },
+          },
+        ],
+      },
+    });
+    const historia = publicado.content.sections.find((s) => s.id === 'historia');
+
+    expect(historia?.fields['titulo']).toBe('<b>Nuestra historia</b>');
+  });
+});
+
+/**
+ * Las preguntas frecuentes, en la proyección (§8.9).
+ *
+ * Viajan en el documento público y no en su colección porque en una boda
+ * abierta no hay sesión de invitado con la que leer nada, y las preguntas a
+ * medio escribir de la pareja no tienen por qué estar al alcance de una
+ * consulta directa.
+ */
+describe('las preguntas frecuentes publicadas', () => {
+  const faq = (extra: Record<string, unknown> = {}) => ({
+    id: 'parking',
+    question: '¿Hay aparcamiento?',
+    answer: '<p>Sí, en la finca.</p>',
+    category: 'Cómo llegar',
+    icon: 'car-simple',
+    order: 1,
+    enabled: true,
+    ...extra,
+  });
+
+  it('salen las que tienen respuesta escrita', () => {
+    const publicado = proyeccionPublica(BODA, [faq()]);
+
+    expect(publicado.content.faqs).toHaveLength(1);
+    expect(publicado.content.faqs[0].question).toBe('¿Hay aparcamiento?');
+  });
+
+  /** La semilla de fábrica nace sin respuesta: no se publica a medias. */
+  it('las que están a medio escribir no salen', () => {
+    expect(proyeccionPublica(BODA, [faq({ answer: '' })]).content.faqs).toEqual([]);
+  });
+
+  it('la respuesta se sanea, como todo lo que escribe la pareja', () => {
+    const publicado = proyeccionPublica(BODA, [
+      faq({ answer: '<p>Sí</p><script>alert(1)</script>' }),
+    ]);
+
+    expect(publicado.content.faqs[0].answer).toBe('<p>Sí</p>');
+  });
+
+  it('sin preguntas, una lista vacía y no un hueco', () => {
+    expect(proyeccionPublica(BODA).content.faqs).toEqual([]);
+    expect(proyeccionPublica(BODA, null).content.faqs).toEqual([]);
+  });
+});
+
+/**
+ * La cronología, en la proyección (§8.13).
+ *
+ * Aquí es donde de verdad se cumple «la hora a la que llega el fotógrafo no es
+ * asunto de los invitados»: el documento público es lo único que leen.
+ */
+describe('la cronología publicada', () => {
+  const hito = (extra: Record<string, unknown> = {}) => ({
+    id: 'ceremonia',
+    time: '17:00',
+    endTime: '17:45',
+    title: 'Ceremonia',
+    description: 'En la ermita',
+    icon: 'church',
+    color: 'rosa',
+    order: 1,
+    visibleToGuests: true,
+    ...extra,
+  });
+
+  it('sale lo visible, en orden de hora', () => {
+    const publicado = proyeccionPublica(
+      BODA,
+      [],
+      [hito({ id: 'fin', time: '04:00', title: 'Fin de fiesta' }), hito()],
+    );
+
+    expect(publicado.content.cronologia.map((h) => h.id)).toEqual(['ceremonia', 'fin']);
+  });
+
+  it('lo interno no llega a la web', () => {
+    const publicado = proyeccionPublica(
+      BODA,
+      [],
+      [hito({ id: 'fotografo', title: 'Llega el fotógrafo', visibleToGuests: false }), hito()],
+    );
+
+    expect(publicado.content.cronologia.map((h) => h.id)).toEqual(['ceremonia']);
+  });
+
+  it('sin cronología, una lista vacía y no un hueco', () => {
+    expect(proyeccionPublica(BODA).content.cronologia).toEqual([]);
+  });
+});

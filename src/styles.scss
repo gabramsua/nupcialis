@@ -1,0 +1,31 @@
+// Variables de color generadas desde palette.json. Ver tools/tokens.mjs.
+@use './app/design-system/tokens/palette.generated';
+@use './app/design-system/tokens/scale';
+@use './app/design-system/components/button/button';
+@use './app/design-system/components/field/input';
+@use './app/design-system/components/table';
+@use './app/design-system/components/rich-text';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+  // Reserva el hueco de la barra de desplazamiento: sin esto, una pantalla que
+  // pasa de corta a larga al filtrar (o al revés) empuja todo el contenido unos
+  // píxeles y la página «baila».
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  min-block-size: 100dvh;
+  background: var(--np-surface-canvas);
+  color: var(--np-surface-text);
+  font-family: var(--np-font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
