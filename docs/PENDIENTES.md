@@ -2005,6 +2005,29 @@ tu visto bueno:
    `node tools/capturas-escaparate.cjs <carpeta> guests` y
    `python3 tools/componer-escaparate.py <carpeta> public/home invitados`.
 
+### D-72 · Producción sobre el proyecto de desarrollo `nupcialis-2220d` — **pendiente de validar**
+
+Pedido por ti (2026-11-27): la creación de un proyecto nuevo falló por cuota de proyectos de Google
+Cloud, y para no bloquear el lanzamiento se usa el proyecto actual también como producción.
+
+1. **`environment.prod.ts` apunta a `nupcialis-2220d`** (misma configuración web que desarrollo) y
+   `.firebaserc` tiene el alias `prod` en el mismo proyecto. `npm run deploy:prod` despliega ahí.
+2. **Riesgo asumido:** `npm start` en local escribe en los datos reales (D-33). Mientras no haya
+   proyecto de desarrollo aparte, las pruebas locales se hacen solo con bodas de nombre «TEST» que se
+   borran al terminar, y sin correos de personas reales.
+3. **No se separó con otra base de datos con nombre dentro del proyecto:** no aísla Auth, Storage,
+   Functions ni App Check y obliga a cambiar código, reglas, índices y disparadores.
+4. **Salida:** crear un proyecto de desarrollo (cuenta de Google distinta o ampliación de cuota),
+   apuntar `environment.ts` y el alias `dev` allí. `environment.prod.ts` no cambia.
+5. **Cosmético:** el popup de Google muestra `nupcialis-2220d.firebaseapp.com`; se puede cambiar con
+   un dominio de autenticación propio.
+6. **Clave de App Check única (2026-11-27):** como desarrollo y producción comparten app de Firebase,
+   comparten también la clave registrada en App Check. Se cambió la antigua (`6LeptL…`) por la clave
+   «nupcialis key» de reCAPTCHA Enterprise (`6LeIGTUu…`), con dominios `nupcialis.com` y
+   `www.nupcialis.com`. En local no importa: el desarrollo usa token de depuración.
+7. **Las bodas de prueba existentes no se han borrado.** No es imprescindible para lanzar, pero
+   conviene limpiarlas antes de dar acceso a clientes reales.
+
 ### D-71 · Despliegue a producción: supuestos — **pendiente de validar**
 
 Pedido por ti (2026-11-26): «avanzar con la vida del producto, rápido e indoloro, con Vercel».

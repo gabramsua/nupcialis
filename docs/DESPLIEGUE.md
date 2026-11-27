@@ -127,6 +127,12 @@ Mientras esto propaga, **sigue con el Paso 3**.
 
 ## Paso 3 · Firebase de producción — G (40 min)
 
+> **Cambio de plan (D-72, 2026-11-27):** la cuota de proyectos de Google Cloud impidió crear
+> `nupcialis-prod`, así que producción usa **el mismo proyecto que desarrollo, `nupcialis-2220d`**.
+> Ya está escrito en `environment.prod.ts` y en el alias `prod` de `.firebaserc`. De este paso solo
+> quedan las comprobaciones de región, plan Blaze, dominios autorizados y la clave de reCAPTCHA; lo
+> de crear proyecto, registrar la app web y copiar la configuración **ya no hace falta**.
+
 Todo en <https://console.firebase.google.com>. **Con la misma cuenta de Google que será la
 propietaria**, y con la cuenta de facturación propia de Nupcialis (`B1.5a`).
 
