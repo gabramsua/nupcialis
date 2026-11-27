@@ -41,5 +41,5 @@ export const environment: AppEnvironment = {
     appId: '1:818904056022:web:928b910f3c1fcc43f1c977',
     measurementId: 'G-XSNZHM2V26',
   },
-  appCheckSiteKey: '6LeptLMtAAAAAIZrj9sGMPDCCyDrd3CIgclPDAGt',
+  appCheckSiteKey: '6LeIGTUuAAAAAGpS95Tv_1k2BHlEhllOqLbwEL8D',
 };
